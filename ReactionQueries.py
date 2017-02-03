@@ -1,6 +1,7 @@
 import openpyxl
 import InchiGenerator
 import QueryStringManipulator
+import ECNumberFinder
 
 
 class Compound:
@@ -30,24 +31,37 @@ class ReactionQuery:
 				subNames.append(compound.sabioNames)
 		for compound in self.products:
 			if len(compound.sabioNames)>0:
-				subNames.append(compound.sabioNames)
+				prodNames.append(compound.sabioNames)
 		subAndProd.append(subNames)
 		subAndProd.append(prodNames)
+		print subAndProd
 		searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
 		return searchString
 
-	def generateLiftedReactionQuery():
+	def generateLiftedReactionQuery(self, substrates, products):
+		lifted = LiftedReactionQuery(id)
 		return ""
 
 
-
+#to work on: what to do in a reaction like amp+atp==>adp. In that case
+#there is really 2 adp molecules, but the fields think there's only one
 class LiftedReactionQuery:
-	def __init__(self, ID):
-		self.ID = ID
+	def __init__(self, id, substrates, products):
+		self.id = id
 		self.substrates = []
 		self.products = []
 		self.numParticipants = ""
 		self.genericECNumber = ""
+
+		subInchiSmiles = []
+		prodInchiSmiles = []
+
+		for compound in substrates:
+			subInchiSmiles.append(entry.inchiSmiles)
+		for compound in products:
+			prodInchiSmiles.append(entry.inchiSmiles)
+
+		#ECNumberFinder.getECNumber()
 	
 	def getQueryString():
 		return ""

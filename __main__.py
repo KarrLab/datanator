@@ -3,6 +3,9 @@ import ReactionQueries
 import numpy as np
 
 
+#to work on: filter by numparticipants
+#factor the species in findProximity out of SabioInterface
+
 class KineticInfo:
 	def __init__(self, response, name = ""):
 		self.name = name
@@ -82,6 +85,7 @@ def main():
 	for reactionQuery in reactionQueries:
 		queryString = reactionQuery.getQueryString()
 
+		print queryString
 		answer =  getSabioData(queryString)
 
 		fullResponse = FormattedData(reactionQuery.id)
@@ -91,8 +95,9 @@ def main():
 
 	#print fullResponse.__dict__
 	for formattedData in formattedDataList:
+		print formattedData.id
 		print formattedData.KmData.__dict__
-		print formattedData.VmaxData.__dict__
+		#print formattedData.VmaxData.__dict__
 
  
 if __name__ == '__main__':

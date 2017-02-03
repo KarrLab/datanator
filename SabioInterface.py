@@ -104,9 +104,6 @@ class TotalResult:
 			for entry in self.entryList:
 				entry.proximity = getTaxonomicDistance('mycoplasma pneumoniae', entry.species)
 
-			#print entry.__dict__
-
-
 
 
 #takes in a search dictionary or search string. Returns a TotalResult object if something is found. 
@@ -138,18 +135,13 @@ def getSabioData(query_dict):
 
 	# encode next request, for parameter data given entry IDs 
 	data_field = {'entryIDs[]': entryIDs} 
-	#query = {'format':'tsv', 'fields[]':['EntryID', 'Organism', 'UniprotID','ECNumber', 'Parameter']} 
 	query = {'format':'tsv', 'fields[]':['Organism',"SabioReactionID", 'Reaction','ECNumber','EntryID',  'Parameter']}
-	#query = {'format':'tsv', 'fields[]':['EntryID','Parameter']}
 
-	# make POST request 
+
 
 	request = requests.post(PARAM_QUERY_URL, params=query, data=data_field) 
-
 	request.raise_for_status()
-
 	textFile = request.text
-
 	resultObject = TotalResult(textFile)
 
 	return resultObject
