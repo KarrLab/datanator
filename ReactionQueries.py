@@ -10,7 +10,7 @@ class Compound:
 		self.sabioNames = sabioNames
 
 
-class Reaction:
+class ReactionQuery:
 	def __init__(self, ID):
 		self.ID = ID
 		self.substrates = []
@@ -22,8 +22,20 @@ class Reaction:
 	def generateQueryString():
 		return ""
 
-	def generateLiftQueryString():
+	def generateLiftedReactionQuery():
 		return ""
+
+class LiftedReactionQuery:
+	def __init__(self, ID):
+		self.ID = ID
+		self.substrates = []
+		self.products = []
+		self.numParticipants = ""
+		self.genericECNumber = ""
+	
+	def generateQueryString():
+		return ""
+
 
 
 
@@ -31,20 +43,15 @@ class Reaction:
 #internally, this method should have an ID to compound Dict, but it shouldnt share it. 
 
 #takes in an excel sheet. ouputs reation objects
-#def generateReactionQueries():
-
-
-if __name__ == '__main__':
-
-	idToCompound = {}
-	wb = openpyxl.load_workbook(filename='SmilesStuff2.xlsx')
+def generateReactionQueries(filename):
+	idToCompound = {} #this will be a dict used to find compound information about each metab id
+	wb = openpyxl.load_workbook(filename=filename)
 	ws = wb.get_sheet_by_name('Metabolites')
 
-
+	#this gets a dict that is used to correlate inchiString with Sabio's name for that compount
 	sabioNameToInchiDict = getSabioNameToInchiDict()
 
-	metabToSmiles = {}
-
+	#this instantiates a compound object for each metabolite in the excel sheet
 	i = 0
 	while i < len (ws.columns[0]):
 		id = ws.columns[0][i].value
@@ -63,19 +70,17 @@ if __name__ == '__main__':
 	for id in idToCompound:
 		print idToCompound[id].__dict__
 
-
-
-
-		#metabToSmiles[thing.value] = ws.columns[1][i].value
-		#i += 1
-
-	metabToInchi = {}
-	for metab in metabToSmiles:
-		metabToInchi[metab] = generateInchi(metabToSmiles[metab])
-
+	
 
 
 	ws = wb.get_sheet_by_name('Reactions')
 	reactionArray = []
-	#for thing in ws.columns[0]:
-	#	print thing.value
+	for thing in ws.columns[0]:
+		reactionArray.append(thing.value)
+	print reactionArray
+
+
+
+if __name__ == '__main__':
+	filename='SmilesStuff2.xlsx'
+	generateReactionQueries(filename)
