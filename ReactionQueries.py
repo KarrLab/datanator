@@ -38,9 +38,9 @@ class ReactionQuery:
 		searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
 		return searchString
 
-	def generateLiftedReactionQuery(self, substrates, products):
-		lifted = LiftedReactionQuery(id)
-		return ""
+	def generateLiftedReactionQuery(self):#, substrates, products):
+		lifted = LiftedReactionQuery(id, self.substrates, self.products)
+		return lifted
 
 
 #to work on: what to do in a reaction like amp+atp==>adp. In that case
@@ -48,23 +48,36 @@ class ReactionQuery:
 class LiftedReactionQuery:
 	def __init__(self, id, substrates, products):
 		self.id = id
-		self.substrates = []
-		self.products = []
+		self.substrates = substrates
+		self.products = products
 		self.numParticipants = ""
-		self.genericECNumber = ""
+		self.genericECNumber = self.findECNumber(self.substrates, self.products)
 
+	def findECNumber(self, substrates, products):
 		subInchiSmiles = []
 		prodInchiSmiles = []
 
 		for compound in substrates:
-			subInchiSmiles.append(entry.inchiSmiles)
+			subInchiSmiles.append(compound.inchiSmiles)
 		for compound in products:
-			prodInchiSmiles.append(entry.inchiSmiles)
+			prodInchiSmiles.append(compound.inchiSmiles)
 
-		#ECNumberFinder.getECNumber()
+		ECNum = ""
+		i = 0
+		while i<len(subInchiSmiles) and len(ECNum) == 0:
+			ECNum = ECNumberFinder.getECNumber(subInchiSmiles, prodInchiSmiles)
+			subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
+			i += 1
+
+		if len(products)>len(substrates) and len(ECNum) == 0:
+			prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
+			ECNum = ECNumberFinder.getECNumber(subInchiSmiles, prodInchiSmiles)
+			i += 1
+		return ECNum
+
 	
-	def getQueryString():
-		return ""
+	def getQueryString(self):
+		return ECNumberFinder.formatECForSabio(self.genericECNumber)
 
 
 #Input an excel sheet

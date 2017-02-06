@@ -25,10 +25,7 @@ class Entry:
 
 		kineticInfo = []
 		for line in textList:
-			#print line
-			#print line[line.find(self.entryID)+6:]
 			kineticInfo.append(line[line.find(self.entryID)+6:])
-		#print kineticInfo
 
 		for line in kineticInfo:
 			if line[0:4] == "Vmax":
@@ -99,20 +96,33 @@ class TotalResult:
 				entry = Entry(entryData)
 				self.entryList.append(entry)
 
+				
+	def getFieldList(self, entryList, field):
+		values = []
+		for entry in entryList:
+			values.append(entry.__dict__[field])
+		orderedValues = sorted(set(values))
+		return orderedValues
+
+	def narrowByNums(self, numParticipants):
+		i = 0
+		for entry in self.entryList:
+			if entry.numParticipants != numParticipants:
+				self.entryList.remove(entry)
+
 
 			#get the proximity for each entry
-			for entry in self.entryList:
-				entry.proximity = getTaxonomicDistance('mycoplasma pneumoniae', entry.species)
+			#for entry in self.entryList:
+			#	entry.proximity = getTaxonomicDistance('mycoplasma pneumoniae', entry.species)
 
 
 
 #takes in a search dictionary or search string. Returns a TotalResult object if something is found. 
 #If nothing is found, it returns "No results found for query"
-def getSabioData(query_dict):
+def getSabioData(query_dict, baseSpecies, numParticipants = []):
 	ENTRYID_QUERY_URL = 'http://sabiork.h-its.org/sabioRestWebServices/searchKineticLaws/entryIDs' 
 	#ENTRYID_QUERY_URL = 'http://sabiork.h-its.org/sabioRestWebServices/searchKineticLaws/sbml'
 	PARAM_QUERY_URL = 'http://sabiork.h-its.org/entry/exportToExcelCustomizable' 
-
 
 	# ask SABIO-RK for all EntryIDs matching a query 
 	if isinstance(query_dict, dict):	
@@ -138,11 +148,17 @@ def getSabioData(query_dict):
 	query = {'format':'tsv', 'fields[]':['Organism',"SabioReactionID", 'Reaction','ECNumber','EntryID',  'Parameter']}
 
 
-
 	request = requests.post(PARAM_QUERY_URL, params=query, data=data_field) 
 	request.raise_for_status()
 	textFile = request.text
 	resultObject = TotalResult(textFile)
+
+	for entry in resultObject.entryList:
+		entry.proximity = getTaxonomicDistance(baseSpecies, entry.species)
+
+	if len(numParticipants)>0:
+		resultObject.narrowByNums(numParticipants)
+
 
 	return resultObject
 
