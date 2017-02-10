@@ -47,7 +47,7 @@ def getQuerySearchString(subProdArray):
 
 
 def getParsedReaction(reactionString):
-	
+
 	balancedMetab = []
 	substrates = []
 	products = []

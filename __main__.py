@@ -7,26 +7,27 @@ from CreateExcelSheet import createExcelSheet
 #add other search criteria
 #make sure to use any data if less than (everything-1) was found. BUT!! I can use lift if all 
 #smiles/inchi is present
+#also, what should median be?
+#add in default setting for temp, ph, and enzyme
 
 #finish debugging the EC finder
 
 class KineticInfo:
 	def __init__(self, sabioResults, name = ""):
 		self.name = name
-		self.closestEntriesIDs = []
+		self.closestEntryIDs = []
 		self.closestEntries = []
-		self.medianEntry = []
-		self.minEntry = []
-		self.maxEntry = []
-		self.liftInfo = ""
+		self.closestValues = []
+		self.medianEntry = None
+		self.minEntry = None
+		self.maxEntry = None
+		self.liftInfo = "Lift Not Used"
 		self.reactionList = sabioResults.getFieldList(sabioResults.entryList, "reactionStoichiometry")
 
 		#should maybe change these two to only include the values of of the reactions
 		#that are in the lowest species
 		self.SabioReactionIDs = sabioResults.getFieldList(sabioResults.entryList, "reactionID")
 		self.ECNumbers = sabioResults.getFieldList(sabioResults.entryList, "ECNumber")
-
-
 
 
 		proximNums = sabioResults.getFieldList(sabioResults.entryList, "proximity")
@@ -45,7 +46,8 @@ class KineticInfo:
 
 		orderedEntries = sorted(narrowedEntries, key=lambda entry: float(entry.__dict__[name]))#, reverse=True)
 		#records closest entry Ids - this is currently not working
-		self.closestEntriesIDs = sabioResults.getFieldList(orderedEntries, "entryID")
+		self.closestEntryIDs = sabioResults.getFieldList(orderedEntries, "entryID")
+		self.closestValues = sabioResults.getFieldList(orderedEntries, self.name)
 
 		#to work on: if there are an even number, what should the median be?
 		if len(orderedEntries) >= 2:
@@ -88,9 +90,14 @@ class FormattedData:
 		self.VmaxData = None
 
 
-def createFormattedData(reactionQuery, species, proximLimit = 1000):
-	print reactionQuery.numParticipants
-	sabioResults = getSabioData(reactionQuery.getQueryString(), species, reactionQuery.numParticipants)
+def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 1000):
+	#print reactionQuery.id
+	#print reactionQuery.numParticipants
+	searchString =reactionQuery.getQueryString()
+	if len(searchString)>0:
+		searchString = defaultValues+searchString
+	print searchString
+	sabioResults = getSabioData(searchString, species, reactionQuery.numParticipants)
 	formattedData = FormattedData(reactionQuery.id)
 
 	formattedData.reactionIDs = sabioResults.getFieldList(sabioResults.entryList, "reactionID")
@@ -107,7 +114,8 @@ def createFormattedData(reactionQuery, species, proximLimit = 1000):
 		queryString = liftedQuery.getQueryString()
 		liftedSabioResults = getSabioData(queryString, species)
 		formattedData.KmData = KmInfo(liftedSabioResults)
-		formattedData.KmData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
+		if len(liftedQuery.genericECNumber)>0:
+			formattedData.KmData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
 
 
 	formattedData.VmaxData = VmaxInfo(sabioResults)
@@ -118,64 +126,37 @@ def createFormattedData(reactionQuery, species, proximLimit = 1000):
 			queryString = liftedQuery.getQueryString()
 			liftedSabioResults = getSabioData(queryString, species)
 		formattedData.VmaxData = VmaxInfo(liftedSabioResults)
-		formattedData.VmaxData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
+		if len(liftedQuery.genericECNumber)>0:
+			formattedData.VmaxData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
 
 
 	return formattedData
 
 
 
-def main(filename, species):
-	
+def main(filename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+
+	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
+
+
+	file = open("Errors.txt", "w")
+	file.write("")
 	#this is the endgame
 	formattedDataList = []
+
 	reactionQueries = ReactionQueries.generateReactionQueries(filename)
 	for reactionQuery in reactionQueries:
-		formattedData = createFormattedData(reactionQuery, species)
-		formattedDataList.append(formattedData)
-
-	#print fullResponse.__dict__
-	
-	for formattedData in formattedDataList:
-		print formattedData.__dict__
-		#print formattedData.KmData.__dict__
-		#print formattedData.VmaxData.__dict__
-	
-		#print formattedData.VmaxData.__dict__
-
-	#now I need to make a method to make this into an excel sheet
+		try:
+			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
+			formattedDataList.append(formattedData)
+		except:
+			file = open("Errors.txt", "a")
+			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
 	createExcelSheet(formattedDataList, species)
 
 
- 
 if __name__ == '__main__':
 
-	filename='SmilesStuff2.xlsx'
+	filename='SmilesStuff.xlsx'
 	species = 'mycoplasma pneumoniae'
-	main(filename, species)
-
-	#number = 1.0
-	#number = float(number/2)+.1
-	#print number
-	#print np.around(number)
-
-	"""
-	query_dict = {
-				#"Organism":'"Homo sapiens"',
-				"Substrate": "AMP AND ADP", 
-				"Product": "ADP",
-				#"Enzymename":"Adk"
-				#"EnzymeType":"wildtype"
-				#"SabioReactionID" : "5305"
-
-				#"Organism":'"Homo sapiens"',
-				#"Substrate": "nad",
-				#"Product": "nadh"
-				#"Enzymename":"Adk"
-				#"EnzymeType":"wildtyp
-				}
-	answer =  getSabioData(query_dict)
- 	fullResponse = FormattedData("blue")
-	#fullResponse.VmaxData = VmaxInfo(answer)
-	fullResponse.KmData = KmInfo(answer)
-	"""
+	main(filename, species, proximLimit = 8)

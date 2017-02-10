@@ -26,16 +26,26 @@ class ReactionQuery:
 		subAndProd = []
 		subNames = []
 		prodNames = []
+		searchString = ""
+
+		numParticipants = len(self.substrates) + len(self.products)
+
 		for compound in self.substrates:
 			if len(compound.sabioNames)>0:
 				subNames.append(compound.sabioNames)
 		for compound in self.products:
 			if len(compound.sabioNames)>0:
 				prodNames.append(compound.sabioNames)
-		subAndProd.append(subNames)
-		subAndProd.append(prodNames)
-		print subAndProd
-		searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
+
+		numSabioFound = len(subNames)+len(prodNames)
+		print numParticipants
+		print numSabioFound
+		print numSabioFound >= numParticipants - 1
+		if numSabioFound >= numParticipants - 1:
+			subAndProd.append(subNames)
+			subAndProd.append(prodNames)
+		#print subAndProd
+			searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
 		return searchString
 
 	def generateLiftedReactionQuery(self):#, substrates, products):

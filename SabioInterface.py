@@ -96,7 +96,7 @@ class TotalResult:
 				entry = Entry(entryData)
 				self.entryList.append(entry)
 
-				
+
 	def getFieldList(self, entryList, field):
 		values = []
 		for entry in entryList:
@@ -120,6 +120,11 @@ class TotalResult:
 #takes in a search dictionary or search string. Returns a TotalResult object if something is found. 
 #If nothing is found, it returns "No results found for query"
 def getSabioData(query_dict, baseSpecies, numParticipants = []):
+
+	print query_dict
+	if len(query_dict)==0:
+		return TotalResult("") 
+
 	ENTRYID_QUERY_URL = 'http://sabiork.h-its.org/sabioRestWebServices/searchKineticLaws/entryIDs' 
 	#ENTRYID_QUERY_URL = 'http://sabiork.h-its.org/sabioRestWebServices/searchKineticLaws/sbml'
 	PARAM_QUERY_URL = 'http://sabiork.h-its.org/entry/exportToExcelCustomizable' 
