@@ -9,7 +9,8 @@ install_requires = [line.rstrip() for line in open('requirements.txt')]
 
 # install package
 setup(
-    name="kineticDatanator2",
+    name='mypackage',
+    packages = ['mypackage']
     version="1.0.0",
     description="finds most relevant kinetic data",
     url="https://github.com/KarrLab/Kinetic-Datanator",

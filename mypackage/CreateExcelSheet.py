@@ -6,7 +6,7 @@ from openpyxl import Workbook
 
 def createExcelSheet(FormattedDataList, species):
 	topRow = [['Name', 'Sabio Reaction IDs', 
-	'Vmax Median Value', 'Vmax Median Entry', 'Vmax Min Entry', 'Vmax Max Entry', 'Vmax Proximity', 'Vmax Lift Info' 'Closest Vmax Sabio Entry IDs', 'Closest Vmax Values',
+	'Vmax Median Value', 'Vmax Median Entry', 'Vmax Min Entry', 'Vmax Max Entry', 'Vmax Proximity', 'Vmax Lift Info' 'Closest Vmax', 'Sabio Entry IDs', 'Closest Vmax Values',
 	'Km Median Value', 'Km Median Entry', 'Km Min Enry', 'Km Max Entry', 'Km Proximity', 'Km Lift Info', 'Closest Km Sabio Entry IDs', 'Closest Km Values']]
 
 	rows = []

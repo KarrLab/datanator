@@ -121,7 +121,6 @@ class TotalResult:
 #If nothing is found, it returns "No results found for query"
 def getSabioData(query_dict, baseSpecies, numParticipants = []):
 
-	print query_dict
 	if len(query_dict)==0:
 		return TotalResult("") 
 

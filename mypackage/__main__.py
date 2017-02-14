@@ -6,6 +6,7 @@ from CreateExcelSheet import createExcelSheet
 #add other search criteria
 #make sure to only use lift if smiles/inchi is present!!!!
 #also, what should median be?
+#make sure i update the inchi to sabio name dictionary
 
 
 #finish debugging the EC finder
@@ -158,6 +159,6 @@ def main(filename, species, tempRange = [30, 40], enzymeType = "wildtype", phRan
 
 if __name__ == '__main__':
 
-	filename='SmilesStuff2.xlsx'
+	filename='SmilesStuff.xlsx'
 	species = 'mycoplasma pneumoniae'
-	main(filename, species, proximLimit = 8)
+	main(filename, species, proximLimit = 1)

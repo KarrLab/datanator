@@ -38,18 +38,14 @@ class ReactionQuery:
 				prodNames.append(compound.sabioNames)
 
 		numSabioFound = len(subNames)+len(prodNames)
-		print numParticipants
-		print numSabioFound
-		print numSabioFound >= numParticipants - 1
 		if numSabioFound >= numParticipants - 1:
 			subAndProd.append(subNames)
 			subAndProd.append(prodNames)
-		#print subAndProd
 			searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
 		return searchString
 
 	def generateLiftedReactionQuery(self):#, substrates, products):
-		lifted = LiftedReactionQuery(id, self.substrates, self.products)
+		lifted = LiftedReactionQuery(self.id, self.substrates, self.products)
 		return lifted
 
 
@@ -58,6 +54,7 @@ class ReactionQuery:
 class LiftedReactionQuery:
 	def __init__(self, id, substrates, products):
 		self.id = id
+		#print id
 		self.substrates = substrates
 		self.products = products
 		self.numParticipants = ""
@@ -83,6 +80,7 @@ class LiftedReactionQuery:
 			prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
 			ECNum = ECNumberFinder.getECNumber(subInchiSmiles, prodInchiSmiles)
 			i += 1
+
 		return ECNum
 
 	

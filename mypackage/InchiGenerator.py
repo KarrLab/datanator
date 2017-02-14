@@ -78,6 +78,8 @@ if __name__ == '__main__':
 	mgdGMP = "NC1=NC(=O)C2=C(N1)N(C1CC(O)C(COP([O-])([O-])=O)O1)C(=O)[N-]2"
 	e3dCMP = "CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1"
 	answer = generateGenericInchi("InChI=1S/C10H14N5O7P/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(22-10)1-21-23(18,19)20")
+	#print getSabioNameToInchiDict()
+
 	print getSabioNameToInchiDict()
 
 

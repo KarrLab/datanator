@@ -52,5 +52,6 @@ if __name__ == '__main__':
 
 	#print getTaxonomy('mycoplasma pneumoniae')
 	#print getTaxonomy('mycoplasma')
-	print getTaxonomicDistance('Streptococcus canis', 'animalia')
+	#print getTaxonomicDistance('Streptococcus canis', 'animalia')
 	print getTaxonomicDistance('mycoplasma pneumoniae', 'Streptococcus bovis')
+	print getTaxonomicDistance('mycoplasma pneumoniae', 'afasf bovdis')

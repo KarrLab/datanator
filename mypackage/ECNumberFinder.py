@@ -104,9 +104,21 @@ if __name__ == '__main__':
 
 
 
-    print getECNumber([METHF, H2O], [FTHF10, H])#, H)
-    #print formatECForSabio("3.1.3")
+    #print getECNumber([u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O'],[u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O'])#, H)
+    #print formatECForSabio("2.7.4")
 
+    subArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
+    prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
+    print getECNumber(subArray, prodArray)
+
+    subArray = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
+    prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
+    print getECNumber(subArray, prodArray)
+
+
+    subArray = [u'OP([O-])([O-])=O', u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12']
+    prodArray = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
+    print getECNumber(subArray, prodArray)
 
 
 
