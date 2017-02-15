@@ -11,7 +11,6 @@ class Compound:
 		self.sabioNames = sabioNames
 
 
-
 class ReactionQuery:
 	def __init__(self, id):
 		self.id = id
@@ -21,86 +20,18 @@ class ReactionQuery:
 		self.numParticipants = [] #this is an array of two numbers, first number for substrates, second for products
 		self.keggID = ""
 		self.ECNumber = ""
+		self.genericECNumber = ""
 
-	def getQueryString(self):
-		subAndProd = []
-		subNames = []
-		prodNames = []
-		searchString = ""
-
-		numParticipants = len(self.substrates) + len(self.products)
-
-		for compound in self.substrates:
-			if len(compound.sabioNames)>0:
-				subNames.append(compound.sabioNames)
-		for compound in self.products:
-			if len(compound.sabioNames)>0:
-				prodNames.append(compound.sabioNames)
-
-		numSabioFound = len(subNames)+len(prodNames)
-		if numSabioFound >= numParticipants - 1:
-			subAndProd.append(subNames)
-			subAndProd.append(prodNames)
-			searchString = QueryStringManipulator.getQuerySearchString(subAndProd)
-		return searchString
-
-	def generateLiftedReactionQuery(self):#, substrates, products):
-		lifted = LiftedReactionQuery(self.id, self.substrates, self.products)
-		return lifted
+	def setGenericECNumberFromEzymeAlgorithm(self):
+		self.genericECNumber = ECNumberFinder.easyFindECNumber(self.substrates, self.products)
 
 
-#to work on: what to do in a reaction like amp+atp==>adp. In that case
-#there is really 2 adp molecules, but the fields think there's only one
-class LiftedReactionQuery:
-	def __init__(self, id, substrates, products):
-		self.id = id
-		#print id
-		self.substrates = substrates
-		self.products = products
-		self.numParticipants = ""
-		self.genericECNumber = self.findECNumber(self.substrates, self.products)
-
-	def findECNumber(self, substrates, products):
-		subInchiSmiles = []
-		prodInchiSmiles = []
-
-		for compound in substrates:
-			subInchiSmiles.append(compound.inchiSmiles)
-		for compound in products:
-			prodInchiSmiles.append(compound.inchiSmiles)
-
-		ECNum = ""
-		i = 0
-		while i<len(subInchiSmiles) and len(ECNum) == 0:
-			ECNum = ECNumberFinder.getECNumber(subInchiSmiles, prodInchiSmiles)
-			subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
-			i += 1
-
-		if len(products)>len(substrates) and len(ECNum) == 0:
-			prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
-			ECNum = ECNumberFinder.getECNumber(subInchiSmiles, prodInchiSmiles)
-			i += 1
-
-		return ECNum
-
-	
-	def getQueryString(self):
-		return ECNumberFinder.formatECForSabio(self.genericECNumber)
-
-
-#Input an excel sheet
-#It outputs a list of reactionQuery Objects
-def generateReactionQueries(filename):
-	reactionQueries = [] #this is the only output of this method. Its a list of reactionQueries
-	idToCompound = {} #this will be a dict used to find compound information about each metab id
-	
-	wb = openpyxl.load_workbook(filename=filename)
-	ws = wb.get_sheet_by_name('Metabolites')
-
-	#this gets a dict that is used to correlate inchiString with Sabio's name for that compount
+#this takes an workbook with "metabolites" as an input. It outputs an array of molecules
+def generateCompounds(wb):
 	sabioNameToInchiDict = InchiGenerator.getSabioNameToInchiDict()
-
+	ws = wb.get_sheet_by_name('Metabolites')
 	#this instantiates a compound object for each metabolite in the excel sheet
+	compoundList = []
 	i = 0
 	while i < len(ws.columns[0]):
 		id = ws.columns[0][i].value
@@ -113,8 +44,27 @@ def generateReactionQueries(filename):
 					sabioNames.append(name)
 
 		comp = Compound(id, smilesOrInchi, sabioNames)
-		idToCompound[id] = comp
+		compoundList.append(comp)
 		i += 1
+	return compoundList
+
+
+#Input an excel sheet data object (from openpyxl)
+#It outputs a list of reactionQuery Objects
+def generateReactionQueries(excelSheetObject):
+	reactionQueries = [] #this is the only output of this method. Its a list of reactionQueries
+	idToCompound = {} #this will be a dict used to find compound information about each metab id
+	wb = excelSheetObject
+
+	#this gets a dict that is used to correlate inchiString with Sabio's name for that compount
+	sabioNameToInchiDict = InchiGenerator.getSabioNameToInchiDict()
+
+	#this instantiates a compound object for each metabolite in the excel sheet
+	compoundList = generateCompounds(wb)
+	#this creates a dictionary of ID to compound to make it quick to find the compound object 
+	#with the compound ID. This works because each compound ID must be unique
+	for comp in compoundList:
+		idToCompound[comp.id] = comp
 
 
 	#this creates a dictionary of reaction ID to reaction string
@@ -160,10 +110,6 @@ def generateReactionQueries(filename):
 	return reactionQueries
 
 
-
-
-
-		
 
 if __name__ == '__main__':
 	filename='SmilesStuff.xlsx'

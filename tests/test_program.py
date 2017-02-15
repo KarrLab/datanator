@@ -8,12 +8,13 @@ import QueryStringManipulator
 import InchiGenerator
 import ECNumberFinder
 
+import ReactionQueries
+
 
 
 class TestProgram(unittest.TestCase):
 	def test_1(self):
 		self.assertEqual(1, 1)
-
 
 	#TaxonFinder
 	def test_getTaxonomicDistance(self):
@@ -151,10 +152,10 @@ class TestProgram(unittest.TestCase):
 
 		#now we need to make sure that it can also take in inchi strings, and return "generic" strings
 		inchiToGenericInchi = {
-"InChI=1/C23H19NO5/c1-12(25)7-17-21-14(5-6-18-23(21)29-11-26-18)15-4-3-13-8-19-20(28-10-27-19)9-16(13)22(15)24(17)2/h3-6,8-9,17H,7,10-11H2,1-2H3":"InChI=1/C23H19NO5/c1-12(25)7-17-21-14(5-6-18-23(21)29-11-26-18)15-4-3-13-8-19-20(28-10-27-19)9-16(13)22(15)24(17)2",
-"InChI=1/C20H32O6/c1-5-15-11-13(2)16(21)10-8-6-7-9-14(3)26-18(23)12-17(22)20(25-4)19(15)24/h6-8,10,13-15,17,19-20,22,24H,5,9,11-12H2,1-4H3/b7-6+,10-8+/t13-,14-,15+,17-,19+,20+/m1/s1":"InChI=1/C20H32O6/c1-5-15-11-13(2)16(21)10-8-6-7-9-14(3)26-18(23)12-17(22)20(25-4)19(15)24",
-"InChI=1S/3CN.Fe/c3*1-2":"InChI=1S/3CN.Fe/c3*1-2",
-"InChI=1/C9H8O4.C2H5NO2.CH2O3.Al.Mg.2H2O/c1-6(10)13-8-5-3-2-4-7(8)9(11)12;3-1-2(4)5;2-1(3)4;;;;/h2-5H,1H3,(H,11,12);1,3H2,(H,4,5);(H2,2,3,4);;;2*1H2/q;;;+3;+2;;/p-5":"InChI=1/C9H8O4.C2H5NO2.CH2O3.Al.Mg.2H2O/c1-6(10)13-8-5-3-2-4-7(8)9(11)12;3-1-2(4)5;2-1(3)4;;;;"
+		"InChI=1/C23H19NO5/c1-12(25)7-17-21-14(5-6-18-23(21)29-11-26-18)15-4-3-13-8-19-20(28-10-27-19)9-16(13)22(15)24(17)2/h3-6,8-9,17H,7,10-11H2,1-2H3":"InChI=1/C23H19NO5/c1-12(25)7-17-21-14(5-6-18-23(21)29-11-26-18)15-4-3-13-8-19-20(28-10-27-19)9-16(13)22(15)24(17)2",
+		"InChI=1/C20H32O6/c1-5-15-11-13(2)16(21)10-8-6-7-9-14(3)26-18(23)12-17(22)20(25-4)19(15)24/h6-8,10,13-15,17,19-20,22,24H,5,9,11-12H2,1-4H3/b7-6+,10-8+/t13-,14-,15+,17-,19+,20+/m1/s1":"InChI=1/C20H32O6/c1-5-15-11-13(2)16(21)10-8-6-7-9-14(3)26-18(23)12-17(22)20(25-4)19(15)24",
+		"InChI=1S/3CN.Fe/c3*1-2":"InChI=1S/3CN.Fe/c3*1-2",
+		"InChI=1/C9H8O4.C2H5NO2.CH2O3.Al.Mg.2H2O/c1-6(10)13-8-5-3-2-4-7(8)9(11)12;3-1-2(4)5;2-1(3)4;;;;/h2-5H,1H3,(H,11,12);1,3H2,(H,4,5);(H2,2,3,4);;;2*1H2/q;;;+3;+2;;/p-5":"InChI=1/C9H8O4.C2H5NO2.CH2O3.Al.Mg.2H2O/c1-6(10)13-8-5-3-2-4-7(8)9(11)12;3-1-2(4)5;2-1(3)4;;;;"
 		}
 		testWorked = True
 		for inchi in inchiToGenericInchi:
@@ -162,8 +163,7 @@ class TestProgram(unittest.TestCase):
 				testWorked = False
 		self.assertTrue(testWorked)
 
-
-
+	#testECNumber
 	def test_getECNumber(self):
 
 
@@ -215,8 +215,20 @@ class TestProgram(unittest.TestCase):
 		#(it should be in 3.1.3)
 		subArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
 		prodArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
-		expectedECNum = ""
+		expectedECNum = "3.1.3"
 		self.assertEqual(ECNumberFinder.getECNumber(subArray, prodArray), expectedECNum)
+
+		#try it with three
+		#IleIle[e] + ATP[c] + H2O[c] ==> IleIle[c] + PI[c] + H[c] + ADP[c]
+		subArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'O']
+		prodArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
+		expectedECNum = "3.6.1"
+		self.assertEqual(ECNumberFinder.getECNumber(subArray, prodArray), expectedECNum)
+
+		#things to test further:
+		#1) cases where the reaction is 3 and 2, or 2 and 3. 
+		#2) cases where the reaction is 3 and 3, but simply looping through each three with subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
+		#becuase the position of the 3 is wrong, and I would have to change the position of the middle, so teh side, or soemthign
 
 		"""
 
@@ -272,7 +284,27 @@ class TestProgram(unittest.TestCase):
 		2.7.1
 		"""
 
-	
+	def test_formatECForSabio(self):
+		#this simply takes an EC number as string input, and makes a generic search string
+		#by returing a string that searches for N.N.N.01, N.N.N.02, etc
+
+		expectedString = """ECNumber: ("3.1.3.0" OR "3.1.3.1" OR "3.1.3.2" OR "3.1.3.3" OR "3.1.3.4" OR "3.1.3.5" OR "3.1.3.6" OR "3.1.3.7" OR "3.1.3.8" OR "3.1.3.9" OR "3.1.3.10" OR "3.1.3.11" OR "3.1.3.12" OR "3.1.3.13" OR "3.1.3.14" OR "3.1.3.15" OR "3.1.3.16" OR "3.1.3.17" OR "3.1.3.18" OR "3.1.3.19" OR "3.1.3.20" OR "3.1.3.21" OR "3.1.3.22" OR "3.1.3.23" OR "3.1.3.24" OR "3.1.3.25" OR "3.1.3.26" OR "3.1.3.27" OR "3.1.3.28" OR "3.1.3.29" OR "3.1.3.30" OR "3.1.3.31" OR "3.1.3.32" OR "3.1.3.33" OR "3.1.3.34" OR "3.1.3.35" OR "3.1.3.36" OR "3.1.3.37" OR "3.1.3.38" OR "3.1.3.39" OR "3.1.3.40" OR "3.1.3.41" OR "3.1.3.42" OR "3.1.3.43" OR "3.1.3.44" OR "3.1.3.45" OR "3.1.3.46" OR "3.1.3.47" OR "3.1.3.48" OR "3.1.3.49" OR "3.1.3.50" OR "3.1.3.51" OR "3.1.3.52" OR "3.1.3.53" OR "3.1.3.54" OR "3.1.3.55" OR "3.1.3.56" OR "3.1.3.57" OR "3.1.3.58" OR "3.1.3.59" OR "3.1.3.60" OR "3.1.3.61" OR "3.1.3.62" OR "3.1.3.63" OR "3.1.3.64" OR "3.1.3.65" OR "3.1.3.66" OR "3.1.3.67" OR "3.1.3.68" OR "3.1.3.69" OR "3.1.3.70" OR "3.1.3.71" OR "3.1.3.72" OR "3.1.3.73" OR "3.1.3.74" OR "3.1.3.75" OR "3.1.3.76" OR "3.1.3.77" OR "3.1.3.78" OR "3.1.3.79" OR "3.1.3.80" OR "3.1.3.81" OR "3.1.3.82" OR "3.1.3.83" OR "3.1.3.84" OR "3.1.3.85" OR "3.1.3.86" OR "3.1.3.87" OR "3.1.3.88" OR "3.1.3.89" OR "3.1.3.90" OR "3.1.3.91" OR "3.1.3.92" OR "3.1.3.93" OR "3.1.3.94" OR "3.1.3.95" OR "3.1.3.96" OR "3.1.3.97" OR "3.1.3.98" OR "3.1.3.99" OR "3.1.3.100")"""
+		self.assertEqual(ECNumberFinder.formatECForSabio("3.1.3"), expectedString)
+
+		#if an empty string is sent, it should return an empty string
+		expectedString = ""
+		self.assertEqual(ECNumberFinder.formatECForSabio(""), expectedString)
+
+
+	#testingReactionQueries
+
+	def test_getQueryString():
+		reaction = ReactionQuery
+
+
+
+
+
 
 
 

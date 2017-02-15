@@ -2,6 +2,8 @@ from SabioInterface import getSabioData
 import ReactionQueries
 import numpy as np
 from CreateExcelSheet import createExcelSheet
+import openpyxl
+import TranslatorForSabio
 
 #add other search criteria
 #make sure to only use lift if smiles/inchi is present!!!!
@@ -59,10 +61,9 @@ class KineticInfo:
 			number = int(np.around(number/2+.1))
 			self.medianEntry = orderedEntries[number-1]
 
-		
 
-
-	#this checks 
+	#this checks whether the current kinetic information is biologically useful. This is helpful to know
+	#because if the data is not useful, then the use can try a more general search
 	def hasRelevantData(self, proximLimit = 1000):
 		hasRelevantData = False
 		if len(self.closestEntries)>0 and self.closestEntries[0].proximity <= proximLimit:
@@ -92,15 +93,15 @@ class FormattedData:
 def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 1000):
 	#print reactionQuery.id
 	#print reactionQuery.numParticipants
-	searchString =reactionQuery.getQueryString()
+	searchString = TranslatorForSabio.getSubstrateProductQueryString(reactionQuery)
+
 	if len(searchString)>0:
 		searchString = defaultValues+searchString
 	sabioResults = getSabioData(searchString, species, reactionQuery.numParticipants)
+	#instantiate a formatted data object with the reactionID
 	formattedData = FormattedData(reactionQuery.id)
-
 	formattedData.reactionIDs = sabioResults.getFieldList(sabioResults.entryList, "reactionID")
 
-	liftedQuery = None
 	liftedSabioResults = None
 	
 	#get the km data. If data is not present, then it searches for similar reactions. 
@@ -108,29 +109,33 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 	formattedData.KmData = KmInfo(sabioResults)
 	hasRelevantData = formattedData.KmData.hasRelevantData(proximLimit)
 	if hasRelevantData == False:
-		liftedQuery = reactionQuery.generateLiftedReactionQuery()
-		queryString = liftedQuery.getQueryString()
+		#we are about to set the genericECNumber. However, first we need ot make sure
+		#the user didn't provide their own. If the user provided their own, that genericECNumber is used instead
+		if len(reactionQuery.genericECNumber)==0:
+			reactionQuery.setGenericECNumberFromEzymeAlgorithm()
+		queryString = TranslatorForSabio.getGenericECQueryString(reactionQuery)
 		if len(queryString)>0:
 			queryString = defaultValues + queryString
 		liftedSabioResults = getSabioData(queryString, species)
 		formattedData.KmData = KmInfo(liftedSabioResults)
-		if len(liftedQuery.genericECNumber)>0:
-			formattedData.KmData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
+		if len(reactionQuery.genericECNumber)>0:
+			formattedData.KmData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
 
 
 	formattedData.VmaxData = VmaxInfo(sabioResults)
 	hasRelevantData = formattedData.VmaxData.hasRelevantData(proximLimit)
 	if hasRelevantData == False:
-		if liftedQuery == None:
-			liftedQuery = reactionQuery.generateLiftedReactionQuery()
-			queryString = liftedQuery.getQueryString()
+		#check if liftesSabioResults has already been searched. If it has, no need to search again
+		if liftedSabioResults == None:
+			if len(reactionQuery.genericECNumber)==0:
+				reactionQuery.setGenericECNumberFromEzymeAlgorithm()
+			queryString = TranslatorForSabio.getGenericECQueryString(reactionQuery)
 			if len(queryString)>0:
 				queryString = defaultValues + queryString
 			liftedSabioResults = getSabioData(queryString, species)
 		formattedData.VmaxData = VmaxInfo(liftedSabioResults)
-		if len(liftedQuery.genericECNumber)>0:
-			formattedData.VmaxData.liftInfo = "Lifted From {}".format(liftedQuery.genericECNumber)
-
+		if len(reactionQuery.genericECNumber)>0:
+			formattedData.VmaxData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
 
 	return formattedData
 
@@ -140,25 +145,26 @@ def main(filename, species, tempRange = [30, 40], enzymeType = "wildtype", phRan
 
 	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 
-
 	file = open("Errors2.txt", "w")
 	file.write("")
+
 	#this is the endgame
 	formattedDataList = []
 
-	reactionQueries = ReactionQueries.generateReactionQueries(filename)
+	excelSheetObject = openpyxl.load_workbook(filename=filename)
+	reactionQueries = ReactionQueries.generateReactionQueries(excelSheetObject)
 	for reactionQuery in reactionQueries:
-		try:
-			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
-			formattedDataList.append(formattedData)
-		except:
-			file = open("Errors2.txt", "a")
-			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
+		#try:
+		formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
+		formattedDataList.append(formattedData)
+		#except:
+		#	file = open("Errors2.txt", "a")
+		#	file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
 	createExcelSheet(formattedDataList, species)
 
 
 if __name__ == '__main__':
 
-	filename='SmilesStuff.xlsx'
+	filename='SmilesStuff2.xlsx'
 	species = 'mycoplasma pneumoniae'
 	main(filename, species, proximLimit = 1)

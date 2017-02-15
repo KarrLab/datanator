@@ -1,5 +1,34 @@
 import requests
 
+#Unlike this method, getECNumber requires a precise matchup of substrates to products
+#therefore, this method - easyFindECNumber - tries all the combinations in getECNumber
+#its basically an add-on to getECNumber that makes using it much easier
+def easyFindECNumber(substrates, products):
+    subInchiSmiles = []
+    prodInchiSmiles = []
+
+    for compound in substrates:
+        subInchiSmiles.append(compound.inchiSmiles)
+    for compound in products:
+        prodInchiSmiles.append(compound.inchiSmiles)
+
+    ECNum = ""
+    i = 0
+    while i<len(subInchiSmiles) and len(ECNum) == 0:
+        ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
+        subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
+        i += 1
+
+    if len(products)>len(substrates) and len(ECNum) == 0:
+        prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
+        ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
+        i += 1
+
+    return ECNum
+
+#input an array of substrates and an array of products
+#outputs the predicted EC number based on KEGG's ezyme 
+#the subsrates must be precisely matched with  their corresponding product
 def getECNumber(subArray, prodArray):
 
     s1 = 0
@@ -109,19 +138,30 @@ if __name__ == '__main__':
 
     subArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
     prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-    print getECNumber(subArray, prodArray)
+    #print getECNumber(subArray, prodArray)
 
     subArray = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
     prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-    print getECNumber(subArray, prodArray)
+    #print getECNumber(subArray, prodArray)
 
 
     subArray = [u'OP([O-])([O-])=O', u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12']
     prodArray = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
-    print getECNumber(subArray, prodArray)
+    #print getECNumber(subArray, prodArray)
+
+    subArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
+    prodArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
+    
+
+    subArray =[u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'O', u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O']
+    subArray = subArray[-1:] + subArray[:-1]
+    #print subArray
+    prodArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
+    #print getECNumber(subArray, prodArray)
 
 
-
+    blue =  formatECForSabio("")
+    print blue 
 
 
 
