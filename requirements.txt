@@ -2,7 +2,5 @@ requests
 ete3
 argparse
 openpyxl
-openbabel
 jxmlease
-copy
 numpy
