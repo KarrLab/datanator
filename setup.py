@@ -11,7 +11,7 @@ install_requires = [line.rstrip() for line in open('requirements.txt')]
 setup(
     name='KineticDatanator',
     packages = ['KineticDatanator'],
-    version = '0.1.3',
+    version = '0.1.4',
     description="finds most relevant kinetic data",
     url="https://github.com/KarrLab/Kinetic-Datanator",
     download_url='https://github.com/KarrLab/Kinetic-Datanator/tarball/0.1',
@@ -20,7 +20,7 @@ setup(
     license="MIT",
     keywords=['kinetic data', 'biology', 'reactions'],
    # packages=find_packages(exclude=['tests', 'tests.*']),
-    install_requires=['requests', 'openpyxl', 'ete3', 'argparse', 'openbabel', 'jxmlease', 'numpy'],
+    install_requires=['requests', 'openpyxl', 'ete3', 'argparse', 'jxmlease', 'numpy'],
     #tests_require=tests_require,
     classifiers=[]
 )
