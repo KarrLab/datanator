@@ -4,9 +4,9 @@ from openpyxl import Workbook
 
 #takes in FormattedData as an input. Saves a file 
 
-def createExcelSheet(FormattedDataList, species):
+def createExcelSheet(outputFilename, FormattedDataList, species):
 	topRow = [['Name', 'Sabio Reaction IDs', 
-	'Vmax Median Value', 'Vmax Median Entry', 'Vmax Min Entry', 'Vmax Max Entry', 'Vmax Proximity', 'Vmax Lift Info' 'Closest Vmax Sabio Entry IDs', 'Closest Vmax Values',
+	'Vmax Median Value', 'Vmax Median Entry', 'Vmax Min Entry', 'Vmax Max Entry', 'Vmax Proximity', 'Vmax Lift Info' 'Closest Vmax', 'Sabio Entry IDs', 'Closest Vmax Values',
 	'Km Median Value', 'Km Median Entry', 'Km Min Enry', 'Km Max Entry', 'Km Proximity', 'Km Lift Info', 'Closest Km Sabio Entry IDs', 'Closest Km Values']]
 
 	rows = []
@@ -28,7 +28,7 @@ def createExcelSheet(FormattedDataList, species):
 	rows = topRow + rows
 
 	wb = Workbook()
-	dest_filename = 'Results From Mycoplasma_test.xlsx'
+	dest_filename = outputFilename
 	ws1 = wb.active
 	ws1.title = "Kinetics"
 

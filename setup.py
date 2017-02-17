@@ -19,7 +19,6 @@ setup(
     author_email="yosefdroth@gmail.com",
     license="MIT",
     keywords=['kinetic data', 'biology', 'reactions'],
-    requirements = ,
    # packages=find_packages(exclude=['tests', 'tests.*']),
     install_requires=[requests, ete3, argparse, openbabel, jxmlease, copy, numpy],
     #tests_require=tests_require,
