@@ -1,3 +1,9 @@
 requests
 ete3
 argparse
+openpyxl
+import openbabel
+from jxmlease import parse
+argparse
+copy
+numpy
