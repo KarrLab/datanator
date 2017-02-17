@@ -147,7 +147,7 @@ def main(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeTyp
 
 	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 
-	file = open("Errors2.txt", "w")
+	file = open("Errors3.txt", "w")
 	file.write("")
 
 	#this is the endgame
@@ -160,7 +160,7 @@ def main(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeTyp
 			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
 			formattedDataList.append(formattedData)
 		except:
-			file = open("Errors2.txt", "a")
+			file = open("Errors3.txt", "a")
 			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
 	createExcelSheet(outputFilename, formattedDataList, species)
 
@@ -168,6 +168,6 @@ def main(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeTyp
 if __name__ == '__main__':
 
 	inputFilename='SmilesStuff.xlsx'
-	outputFilename = "blueberry2.xlsx"
+	outputFilename = "THE DATA.xlsx"
 	species = 'mycoplasma pneumoniae'
 	main(inputFilename, outputFilename, species, proximLimit = 8)
