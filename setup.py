@@ -10,28 +10,17 @@ install_requires = [line.rstrip() for line in open('requirements.txt')]
 # install package
 setup(
     name='mypackage',
-    packages = ['mypackage']
-    version="1.0.0",
+    packages = ['mypackage'],
+    version = '0.1',
     description="finds most relevant kinetic data",
     url="https://github.com/KarrLab/Kinetic-Datanator",
-    #download_url='https://github.com/KarrLab/nose2unitth/tarball/{}'.format(nose2unitth.__version__),
+    download_url='https://github.com/KarrLab/Kinetic-Datanator/tarball/0.1',
     author="Yosef Roth",
     author_email="yosefdroth@gmail.com",
     license="MIT",
-    keywords='kinetic data biology reactions',
-    packages=find_packages(exclude=['tests', 'tests.*']),
-    install_requires=install_requires,
+    keywords=['kinetic data', 'biology', 'reactions'],
+   # packages=find_packages(exclude=['tests', 'tests.*']),
+    #install_requires=install_requires,
     #tests_require=tests_require,
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Build Tools',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-    ],
-    entry_points={
-        'console_scripts': [
-            'kineticDatanator2 = __main__:main',
-        ],
-    },
+    classifiers=[]
 )
