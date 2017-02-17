@@ -9,6 +9,7 @@ import TranslatorForSabio
 #make sure to only use lift if smiles/inchi is present!!!!
 #also, what should median be?
 #make sure i update the inchi to sabio name dictionary
+#make sure i fix ecnumber in cases where we have (2)ADP or somethign like that
 
 
 #finish debugging the EC finder
@@ -94,6 +95,7 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 	#print reactionQuery.id
 	#print reactionQuery.numParticipants
 	searchString = TranslatorForSabio.getSubstrateProductQueryString(reactionQuery)
+	#print searchString
 
 	if len(searchString)>0:
 		searchString = defaultValues+searchString
@@ -141,7 +143,7 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 
 
 
-def main(filename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+def main(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
 
 	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 
@@ -151,20 +153,21 @@ def main(filename, species, tempRange = [30, 40], enzymeType = "wildtype", phRan
 	#this is the endgame
 	formattedDataList = []
 
-	excelSheetObject = openpyxl.load_workbook(filename=filename)
+	excelSheetObject = openpyxl.load_workbook(filename=inputFilename)
 	reactionQueries = ReactionQueries.generateReactionQueries(excelSheetObject)
 	for reactionQuery in reactionQueries:
-		#try:
-		formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
-		formattedDataList.append(formattedData)
-		#except:
-		#	file = open("Errors2.txt", "a")
-		#	file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
-	createExcelSheet(formattedDataList, species)
+		try:
+			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
+			formattedDataList.append(formattedData)
+		except:
+			file = open("Errors2.txt", "a")
+			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
+	createExcelSheet(outputFilename, formattedDataList, species)
 
 
 if __name__ == '__main__':
 
-	filename='SmilesStuff2.xlsx'
+	inputFilename='SmilesStuff.xlsx'
+	outputFilename = "blueberry2.xlsx"
 	species = 'mycoplasma pneumoniae'
-	main(filename, species, proximLimit = 1)
+	main(inputFilename, outputFilename, species, proximLimit = 8)

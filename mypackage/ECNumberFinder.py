@@ -4,25 +4,38 @@ import requests
 #therefore, this method - easyFindECNumber - tries all the combinations in getECNumber
 #its basically an add-on to getECNumber that makes using it much easier
 def easyFindECNumber(substrates, products):
-    subInchiSmiles = []
-    prodInchiSmiles = []
-
-    for compound in substrates:
-        subInchiSmiles.append(compound.inchiSmiles)
-    for compound in products:
-        prodInchiSmiles.append(compound.inchiSmiles)
-
+    
     ECNum = ""
-    i = 0
-    while i<len(subInchiSmiles) and len(ECNum) == 0:
-        ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
-        subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
-        i += 1
 
-    if len(products)>len(substrates) and len(ECNum) == 0:
-        prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
-        ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
-        i += 1
+    #first check to make sure that each compound has a smiles or an inchi
+    #if they do not, return an empty string
+    everyCompoundHasStructuralInfo = True
+    for compound in substrates:
+        if len(compound.inchiSmiles)==0:
+            everyCompoundHasStructuralInfo = False
+    for compound in products:
+        if len(compound.inchiSmiles)==0:
+            everyCompoundHasStructuralInfo = False
+
+    if everyCompoundHasStructuralInfo==True:
+        subInchiSmiles = []
+        prodInchiSmiles = []
+
+        for compound in substrates:
+            subInchiSmiles.append(compound.inchiSmiles)
+        for compound in products:
+            prodInchiSmiles.append(compound.inchiSmiles)
+
+        i = 0
+        while i<len(subInchiSmiles) and len(ECNum) == 0:
+            ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
+            subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
+            i += 1
+
+        if len(products)>len(substrates) and len(ECNum) == 0:
+            prodInchiSmiles = prodInchiSmiles[-1:] + prodInchiSmiles[:-1]
+            ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
+            i += 1
 
     return ECNum
 

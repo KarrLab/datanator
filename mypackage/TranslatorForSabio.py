@@ -4,6 +4,8 @@ import copy
 
 
 #input a reactionQuery
+#checks to make sure that sabio recognizes at least (all-1) of them. This ensures that the scope of the seaach
+#isn't too broad. If sabio does nor recognzie two or more of the compounds, a blank string is returned
 #outputs a search string based on its substrates and products
 def getSubstrateProductQueryString(reactionQuery):
 
@@ -13,8 +15,6 @@ def getSubstrateProductQueryString(reactionQuery):
 	subNames = []
 	prodNames = []
 	searchString = ""
-
-
 	numTotalParticipants = len(reactionQueryCopy.substrates) + len(reactionQueryCopy.products)
 
 	for compound in reactionQueryCopy.substrates:

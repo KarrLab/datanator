@@ -113,7 +113,14 @@ def generateReactionQueries(excelSheetObject):
 
 if __name__ == '__main__':
 	filename='SmilesStuff.xlsx'
-	reactionQueries = generateReactionQueries(filename)
+	excelSheetObject = openpyxl.load_workbook(filename=filename)
+	reactionQueries = generateReactionQueries(excelSheetObject)
 	for reaction in reactionQueries:
 		print reaction.__dict__
-		print reaction.getQueryString()
+	for reaction in reactionQueries:
+		for comp in reaction.substrates:
+			print comp.sabioNames
+		for comp in reaction.products:
+			print comp.sabioNames
+
+		#print reaction.getQueryString()

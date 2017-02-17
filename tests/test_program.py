@@ -9,7 +9,9 @@ import InchiGenerator
 import ECNumberFinder
 
 import ReactionQueries
+import TranslatorForSabio
 
+import SabioInterface
 
 
 class TestProgram(unittest.TestCase):
@@ -296,14 +298,84 @@ class TestProgram(unittest.TestCase):
 		self.assertEqual(ECNumberFinder.formatECForSabio(""), expectedString)
 
 
-	#testingReactionQueries
+	#testingTranslatorForSabio
 
-	def test_getQueryString():
-		reaction = ReactionQuery
+	def test_getSubstrateProductQueryString(self):
+		id = "Example Reaction 1"
+		#[c]: ATP + Pantetheine4Phosphate ==> DPCOA + PPI
+		reaction = ReactionQueries.ReactionQuery(id)
+		reaction.substrates = [ReactionQueries.Compound("ATP", sabioNames = ['ATP']), ReactionQueries.Compound("Pantetheine4Phosphate", sabioNames = ["4'-Phosphopantetheine"])]
+		reaction.products = [ReactionQueries.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), ReactionQueries.Compound("PPI", sabioNames = ['Diphosphate'])]
+		searchString = TranslatorForSabio.getSubstrateProductQueryString(reaction)
+		expectedString = """((Substrate:"ATP") AND (Substrate:"4'-Phosphopantetheine")) AND ((Product:"Dephospho-CoA" OR Product:"3'-Dephospho-CoA") AND (Product:"Diphosphate"))"""
+		self.assertEqual(searchString, expectedString)
+
+		#if sabio recognizes all of the participants except for one, it should still return a string
+		reaction = ReactionQueries.ReactionQuery(id)
+		reaction.substrates = [ReactionQueries.Compound("ATP", sabioNames = ['ATP']), ReactionQueries.Compound("Pantetheine4Phosphate", sabioNames = [])]
+		reaction.products = [ReactionQueries.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), ReactionQueries.Compound("PPI", sabioNames = ['Diphosphate'])]
+		searchString = TranslatorForSabio.getSubstrateProductQueryString(reaction)
+		expectedString = """((Substrate:"ATP")) AND ((Product:"Dephospho-CoA" OR Product:"3'-Dephospho-CoA") AND (Product:"Diphosphate"))"""
+		self.assertEqual(searchString, expectedString)
+
+		#if sabio does not recognize two or more, the code should return an empty string
+		reaction = ReactionQueries.ReactionQuery(id)
+		reaction.substrates = [ReactionQueries.Compound("ATP", sabioNames = ['ATP']), ReactionQueries.Compound("Pantetheine4Phosphate", sabioNames = [])]
+		reaction.products = [ReactionQueries.Compound("DPCOA", sabioNames = []), ReactionQueries.Compound("PPI", sabioNames = ['Diphosphate'])]
+		searchString = TranslatorForSabio.getSubstrateProductQueryString(reaction)
+		expectedString = ""
+		self.assertEqual(searchString, expectedString)
+
+
+		id = "Example Reaction 2"
+		#[c]: PAP + H2O ==> AMP + PI
+		reaction = ReactionQueries.ReactionQuery(id)
+		reaction.substrates = [ReactionQueries.Compound("PAP", sabioNames = ["Adenosine 3',5'-bisphosphate"]), ReactionQueries.Compound("H2O", sabioNames = ['H2O', 'OH-'])]
+		reaction.products = [ReactionQueries.Compound("AMP", sabioNames = ['AMP', "Adenine-9-beta-D-arabinofuranoside 5'-monophosphate"]), ReactionQueries.Compound("PI", sabioNames = ['Dihydrogen phosphate', 'Phosphate'])]
+		searchString = TranslatorForSabio.getSubstrateProductQueryString(reaction)
+		expectedString ="""((Substrate:"Adenosine 3',5'-bisphosphate") AND (Substrate:"H2O" OR Substrate:"OH-")) AND ((Product:"AMP" OR Product:"Adenine-9-beta-D-arabinofuranoside 5'-monophosphate") AND (Product:"Dihydrogen phosphate" OR Product:"Phosphate"))"""
+		self.assertEqual(searchString, expectedString)
+
+
+#SabioInterface
+	def test_getSabioData(self):
+		#[c]: PAP + H2O ==> AMP + PI
+		baseSpecies = 'mycoplasma pneumoniae'
+		searchString = """((Substrate:"Adenosine 3',5'-bisphosphate") AND (Substrate:"H2O" OR Substrate:"OH-")) AND ((Product:"AMP" OR Product:"Adenine-9-beta-D-arabinofuranoside 5'-monophosphate") AND (Product:"Dihydrogen phosphate" OR Product:"Phosphate"))"""
+		results =  SabioInterface.getSabioData(searchString, baseSpecies)
+		self.assertEqual(len(results.entryList), 3)
+
+		#one of the entries should have a km of 2.0E-6 M. 
+		containsKm = False
+		for entry in results.entryList:
+			if entry.km == "2.0E-6":
+				containsKm = True
+		self.assertTrue(containsKm)
+
+		containsVmax = False
+		for entry in results.entryList:
+			if entry.vmax == "1.33333333E-5":
+				containsVmax = True
+		self.assertTrue(containsVmax)
+
+
+		baseSpecies = 'mycoplasma pneumoniae'
+		searchString = """Product:ADP AND Substrate:AMP AND ADP"""
+		results =  SabioInterface.getSabioData(searchString, baseSpecies)
+		self.assertEqual(len(results.entryList), 76)
+		self.assertFalse(len(results.entryList)==75)
 
 
 
+	#there is a bug here, I need to fix this
+"""
+if __name__ == '__main__':
+	#main()
 
+	test_getSabioData()
+	#TestProgram.test_getSubstrateProductQueryString()
+
+"""
 
 
 
