@@ -1,5 +1,6 @@
 #import openpyxl
 from openpyxl import Workbook
+import os
 
 
 #takes in FormattedData as an input. Saves a file 
@@ -41,7 +42,7 @@ def createExcelSheet(outputFilename, FormattedDataList, species):
 			col = col+1
 		row = row+1
 
-	wb.save(filename = dest_filename)
+	wb.save(os.path.join('.', dest_filename))
 
 def formatValue(outerField, innerField = ""):
 	value = ""

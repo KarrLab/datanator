@@ -1,177 +1,110 @@
-from SabioInterface import getSabioData
-import ReactionQueries
-import numpy as np
-from CreateExcelSheet import createExcelSheet
+from cement.core.foundation import CementApp
+from cement.core.controller import CementBaseController, expose
+import os.path
 import openpyxl
-import TranslatorForSabio
+from KineticDatanator import Datanator
+class BaseController(CementBaseController):
+	class Meta:
+		label = 'base'
+		description = 'This app find information about reactions'
 
-#add other search criteria
-#make sure to only use lift if smiles/inchi is present!!!!
-#also, what should median be?
-#make sure i update the inchi to sabio name dictionary
-#make sure i fix ecnumber in cases where we have (2)ADP or somethign like that
-
-
-#finish debugging the EC finder
-
-class KineticInfo:
-	def __init__(self, sabioResults, name = ""):
-		self.name = name
-		self.closestEntryIDs = []
-		self.closestEntries = []
-		self.closestValues = []
-		self.medianEntry = None
-		self.minEntry = None
-		self.maxEntry = None
-		self.liftInfo = "Lift Not Used"
-		self.reactionList = sabioResults.getFieldList(sabioResults.entryList, "reactionStoichiometry")
-
-		#should maybe change these two to only include the values of of the reactions
-		#that are in the lowest species
-		self.SabioReactionIDs = sabioResults.getFieldList(sabioResults.entryList, "reactionID")
-		self.ECNumbers = sabioResults.getFieldList(sabioResults.entryList, "ECNumber")
-
-
-		proximNums = sabioResults.getFieldList(sabioResults.entryList, "proximity")
-
-		n = 0
-		narrowedEntries = []
-		while n < len(proximNums): 
-			for entry in sabioResults.entryList:
-				if entry.proximity == proximNums[n] and len(entry.__dict__[name])>0:
-					narrowedEntries.append(entry)
-			if len(narrowedEntries)>0:
-				break
-			else:
-				n = n+1
-		self.closestEntries = narrowedEntries
-
-		orderedEntries = sorted(narrowedEntries, key=lambda entry: float(entry.__dict__[name]))#, reverse=True)
-		#records closest entry Ids - this is currently not working
-		self.closestEntryIDs = sabioResults.getFieldList(orderedEntries, "entryID")
-		self.closestValues = sabioResults.getFieldList(orderedEntries, self.name)
-
-		#to work on: if there are an even number, what should the median be?
-		if len(orderedEntries) >= 2:
-			self.minEntry = orderedEntries[0]
-			self.maxEntry = orderedEntries[len(orderedEntries)-1]
-
-		#to work on: make sure this media is done right
-		if len(orderedEntries)>2 or len(orderedEntries)==1:
-			number = float(len(orderedEntries))
-			number = int(np.around(number/2+.1))
-			self.medianEntry = orderedEntries[number-1]
-
-
-	#this checks whether the current kinetic information is biologically useful. This is helpful to know
-	#because if the data is not useful, then the use can try a more general search
-	def hasRelevantData(self, proximLimit = 1000):
-		hasRelevantData = False
-		if len(self.closestEntries)>0 and self.closestEntries[0].proximity <= proximLimit:
-			hasRelevantData = True
-		return hasRelevantData
-
-
-class VmaxInfo(KineticInfo):
-	def __init__(self, sabioResults):
-		KineticInfo.__init__(self, sabioResults, "vmax")
-
-
-class KmInfo(KineticInfo):
-	def __init__(self, sabioResults):
-		KineticInfo.__init__(self, sabioResults, "km")
+class GetKineticsController(CementBaseController):
+	class Meta:
+		label = 'get-kinetics'
+		description = "This command gets kinetics"
+		stacked_on = 'base'
+		stacked_type = 'nested'
+		arguments = [
+		#we can make these arguments "positional" (required) by not adding "--arg" and just writing "arg"
+		#the action 'store' will store the value passed for the option in self.app.pargs
+		(['input_data_file'],dict(metavar='input-data-file', 
+			type=str, help="path to the input data spreadsheet (xlsx)")),
+		(['output_data_file'],dict(metavar='output-data-file', 
+			type=str, help="path to the output data spreadsheet (xlsx)")),
+		(['species'],dict(metavar='input-data-file', 
+			type=str, help="name of the species you are searching")),
+		#the following arguments are optional arguments, we connote this by adding "--" to the argument
+		(['--min-temp'], dict(action='store', 
+			metavar='FLOAT', help = "minimum temperature", default=30)),
+		(['--max-temp'], dict(action='store', 
+			metavar='FLOAT', help = "maximum temperature", default=40)),
+		(['--min-ph'], dict(action='store', 
+			metavar='FLOAT', help = "minimum ph",default=5)),
+		(['--max-ph'], dict(action='store', 
+			metavar='FLOAT', help = "maximum ph", default=9)),
+		# the action 'store_true' turns this option into a boolean that will be store in self.app.pargs
+		(['--include-mutants'], dict(action='store_true', 
+			help = "include mutants")),
+		(['--proxim-limit'], dict(action='store', 
+			metavar='FLOAT', help = "the maximum acceptable taxonomic distance", default=1000))
+		]
 
 
 
-class FormattedData:
-	def __init__(self, id):#, sabioResults):
-		self.id = id
-		self.reactionIDs = []
-		self.KmData = None
-		self.VmaxData = None
+		#print ECNumberFinder.formatECForSabio("a")
+	#__main__.main(self.app.pargs.input_data_file, self.app.pargs.output_data_file, self.app.pargs.species)
+		
 
+	@expose(help="This command gets kinetics", hide=True)
+	def default(self):
+		self.app.log.info("In get_kinetics")
+		self.app.log.info("Input file: '{}'".format(self.app.pargs.input_data_file))
+		self.app.log.info("Output file: '{}'".format(self.app.pargs.output_data_file))
+		self.app.log.info("Species: '{}'".format(self.app.pargs.species))
+		self.app.log.info("Minimum temperature: '{}'".format(self.app.pargs.min_temp))
+		self.app.log.info("Maximum temperature: '{}'".format(self.app.pargs.max_temp))
+		self.app.log.info("Minimum ph: '{}'".format(self.app.pargs.min_ph))
+		self.app.log.info("Maximum ph: '{}'".format(self.app.pargs.max_ph))
+		self.app.log.info("Include mutants: '{}'".format(self.app.pargs.include_mutants))
+		self.app.log.info("Proximity Limit: '{}'".format(self.app.pargs.proxim_limit))
 
-def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 1000):
-	#print reactionQuery.id
-	#print reactionQuery.numParticipants
-	searchString = TranslatorForSabio.getSubstrateProductQueryString(reactionQuery)
-	#print searchString
+#tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
 
-	if len(searchString)>0:
-		searchString = defaultValues+searchString
-	sabioResults = getSabioData(searchString, species, reactionQuery.numParticipants)
-	#instantiate a formatted data object with the reactionID
-	formattedData = FormattedData(reactionQuery.id)
-	formattedData.reactionIDs = sabioResults.getFieldList(sabioResults.entryList, "reactionID")
-
-	liftedSabioResults = None
-	
-	#get the km data. If data is not present, then it searches for similar reactions. 
-	#proximLimit is the taxonomic limit (in nodes) after which the data is presumed to be irrelevant 
-	formattedData.KmData = KmInfo(sabioResults)
-	hasRelevantData = formattedData.KmData.hasRelevantData(proximLimit)
-	if hasRelevantData == False:
-		#we are about to set the genericECNumber. However, first we need ot make sure
-		#the user didn't provide their own. If the user provided their own, that genericECNumber is used instead
-		if len(reactionQuery.genericECNumber)==0:
-			reactionQuery.setGenericECNumberFromEzymeAlgorithm()
-		queryString = TranslatorForSabio.getGenericECQueryString(reactionQuery)
-		if len(queryString)>0:
-			queryString = defaultValues + queryString
-		liftedSabioResults = getSabioData(queryString, species)
-		formattedData.KmData = KmInfo(liftedSabioResults)
-		if len(reactionQuery.genericECNumber)>0:
-			formattedData.KmData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
-
-
-	formattedData.VmaxData = VmaxInfo(sabioResults)
-	hasRelevantData = formattedData.VmaxData.hasRelevantData(proximLimit)
-	if hasRelevantData == False:
-		#check if liftesSabioResults has already been searched. If it has, no need to search again
-		if liftedSabioResults == None:
-			if len(reactionQuery.genericECNumber)==0:
-				reactionQuery.setGenericECNumberFromEzymeAlgorithm()
-			queryString = TranslatorForSabio.getGenericECQueryString(reactionQuery)
-			if len(queryString)>0:
-				queryString = defaultValues + queryString
-			liftedSabioResults = getSabioData(queryString, species)
-		formattedData.VmaxData = VmaxInfo(liftedSabioResults)
-		if len(reactionQuery.genericECNumber)>0:
-			formattedData.VmaxData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
-
-	return formattedData
+		enzymeType = "wildtype"
+		if self.app.pargs.include_mutants:
+			enzymeType = "(wildtype OR mutant)"
+		Datanator.getKineticData(self.app.pargs.input_data_file, self.app.pargs.output_data_file,
+		 self.app.pargs.species, tempRange=[self.app.pargs.min_temp, self.app.pargs.max_temp], phRange = [self.app.pargs.min_ph, self.app.pargs.max_ph],
+		 enzymeType = enzymeType, proximLimit = self.app.pargs.proxim_limit)
 
 
 
-def main(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+class GenerateTemplateController(CementBaseController):
+	class Meta:
+		label = 'generate-template'
+		description = "This command generates a template"
+		stacked_on = 'base'
+		stacked_type = 'nested'
+		arguments = []
+		#arguments = [(['input_data_file'],dict(metavar='input-data-file', 
+		#	type=str, help="path to the input data spreadsheet (xlsx)"))]
 
-	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
-	
-	file = open("Errors.txt", "w")
-	file.write("")
-	file.close()
+		#path = "/home/yosef/Desktop/messingWithCement/blue"
+		#filename = "TemplateForDatanator2.xlsx"
+		#if not os.path.exists(path):
+		#	os.makedirs(path)
+		#if not os.path.isfile('SmilesStuff23.xlsx'):
+		#wb = openpyxl.load_workbook(filename='./KineticDatanator/TemplateDocument.xlsx') 
+		#wb.save(".TheTemplateDocument.xlsx")#, as_template=False)
 
-	
-	#this is the endgame
-	formattedDataList = []
 
-	excelSheetObject = openpyxl.load_workbook(filename=inputFilename)
-	reactionQueries = ReactionQueries.generateReactionQueries(excelSheetObject)
-	for reactionQuery in reactionQueries:
-		try:
-			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
-			formattedDataList.append(formattedData)
-		except:
-			file = open("Errors.txt", "a")
-			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
-	createExcelSheet(outputFilename, formattedDataList, species)
-	
-	
-	
-if __name__ == '__main__':
+	@expose(help="This command generates a template", hide=True)
+	def default(self):
+		self.app.log.info("In generate_template")
+	#	self.app.log.info("Input file: '{}'".format(self.app.pargs.input_data_file))
+		print(os.path.dirname(os.path.realpath('inchiGenerator.py')))
+		print os.path.realpath('inchiGenerator.py')
+		print os.getcwd()
+		wb = openpyxl.load_workbook(os.path.join(os.getcwd(), 'TemplateDocument.xlsx'))
+		#wb = openpyxl.load_workbook(filename = 'TemplateDocument.xlsx')
+		wb.save(".TheTemplateDocument.xlsx")#, as_template=False)
 
-	inputFilename='SmilesStuff.xlsx'
-	outputFilename = "THE.xlsx"
-	species = 'mycoplasma pneumoniae'
-	
-	main(inputFilename, outputFilename, species, proximLimit = 8)
+class FindKineticsApp(CementApp):
+	class Meta:
+		label = "find-kinetics"
+		base_controller = "base"
+		handlers = [BaseController, GetKineticsController, GenerateTemplateController]
+
+
+with FindKineticsApp() as app:
+	app.run()

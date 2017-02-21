@@ -1,6 +1,7 @@
 import requests
 import openbabel
 from jxmlease import parse
+import os
 
 #first the openbabel part
 
@@ -52,7 +53,7 @@ def createInchiString(inchiArray):
 
 def getSabioNameToInchiDict():
 	inchiCompoundTranslator = {}
-	with open("InchiToCompound.txt") as f:
+	with open(os.path.join('.', "InchiToCompound.txt")) as f:
 		for line in f:
 			values = line.split(" - ")
 			#print values
