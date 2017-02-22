@@ -10,6 +10,12 @@ Welcome to KineticDatanator's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Installation
+============
+
+Install $project by running:
+
+    install project
 
 
 Indices and tables
