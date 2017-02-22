@@ -2,7 +2,7 @@
    sphinx-quickstart on Wed Feb 22 12:28:35 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
-html_theme = "classic"
+
 
 Welcome to KineticDatanator's documentation!
 ============================================
@@ -17,7 +17,7 @@ Installation
 Install $project by running:
 
     install project
-
+    blue
 
 Indices and tables
 ==================
