@@ -53,7 +53,7 @@ def createInchiString(inchiArray):
 
 def getSabioNameToInchiDict():
 	inchiCompoundTranslator = {}
-	with open(os.path.join('.', "InchiToCompound.txt")) as f:
+	with open(os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)), "InchiToCompound.txt"))) as f:
 		for line in f:
 			values = line.split(" - ")
 			#print values

@@ -92,12 +92,8 @@ class GenerateTemplateController(CementBaseController):
 	def default(self):
 		self.app.log.info("In generate_template")
 	#	self.app.log.info("Input file: '{}'".format(self.app.pargs.input_data_file))
-		print(os.path.dirname(os.path.realpath('inchiGenerator.py')))
-		print os.path.realpath('inchiGenerator.py')
-		print os.getcwd()
-		wb = openpyxl.load_workbook(os.path.join(os.getcwd(), 'TemplateDocument.xlsx'))
-		#wb = openpyxl.load_workbook(filename = 'TemplateDocument.xlsx')
-		wb.save(".TheTemplateDocument.xlsx")#, as_template=False)
+		wb = openpyxl.load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'TemplateDocument.xlsx'))
+		wb.save(os.path.join(".", "TheTemplateDocument.xlsx"))#, as_template=False)
 
 class FindKineticsApp(CementApp):
 	class Meta:
