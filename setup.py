@@ -20,7 +20,7 @@ setup(
     license="MIT",
     keywords=['kinetic data', 'biology', 'reactions'],
    # packages=find_packages(exclude=['tests', 'tests.*']),
-    install_requires=['requests==2.2.1', 'urllib3==1.7.1', 'openpyxl==2.3.5', 'ete3==3.0.0b35', 'argparse', 'jxmlease==1.0.1', 'numpy==1.8.2', 'cement==2.10.2],
+    install_requires=['requests==2.2.1', 'urllib3==1.7.1', 'openpyxl==2.3.5', 'ete3==3.0.0b35', 'argparse', 'jxmlease==1.0.1', 'numpy==1.8.2', 'cement==2.10.2'],
     #tests_require=tests_require,
     classifiers=[]
 )
