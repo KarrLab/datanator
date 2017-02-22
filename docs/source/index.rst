@@ -40,6 +40,7 @@ Getting Started - Getting Familiar With KineticDatanator's Command Line Interfac
 KineticDatanator can be used run directly from the command line.
 
 There are three required arguments necesssary to run the data collection method "find-kinetics"
+
 1. A path to an excel sheet with the reactions you would like to search (we will discuss the necessary formatting later)
 2. A name for the results file (the results are saved as an excel file, so the name should end in '.xlsx')
 3. The name of the species you are searching for 
