@@ -14,7 +14,7 @@ Welcome to KineticDatanator's documentation!
 Installation
 ============
 
-Install $project by running:
+Install KineticDatanator by running:
 
     install project
     blue
