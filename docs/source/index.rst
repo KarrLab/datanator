@@ -16,22 +16,34 @@ Installation
 ============
 
 **Dependencies**
+
 Install Openbabel from <https://packages.debian.org/wheezy/amd64/python-openbabel/download>
 
-**Install KineticDatanator**
-*pip install KineticDatanator
+**Install KineticDatanator**::
+
+    pip install KineticDatanator
 
 
 
 
-Install KineticDatanator by running:
-
-    install project
-    blue
-
-Indices and tables
+Getting Started
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Create a directory for your project
+
+
+Formatting The Reaction Entries
+==============================
+
+
+
+
+
+
+
+
+
+
+
+
+
