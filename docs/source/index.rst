@@ -25,7 +25,11 @@ Install Openbabel from <https://packages.debian.org/wheezy/amd64/python-openbabe
 
 **Install KineticDatanator**::
 
-    pip install KineticDatanator
+    $ pip install KineticDatanator
+
+*Install the NCBI taxonomic database*::
+
+    $ python -c 'from KineticDatanator import TaxonFinder; TaxonFinder.downloadNCBIDatabase()'
 
 
 
@@ -45,6 +49,7 @@ Let's do an example
 Create a new directory
 
 In that directory run the following command::
+
     $ python -mKineticDatanator generate-template
 
 This will output a template document to your directory. This template is an example of an excel sheet that can be entered into KineticDatanator
@@ -57,6 +62,7 @@ The second argument is a name for the output file. We will use ExampleResults.xl
 The third argument is the name of the species we are searching for. We will use 'homo sapiens'
 
 Run "find-kinetics"::
+
     $ python -mKineticDatanator get-kinetics TheTemplateDocument.xlsx ExampleResults.xlsx 'homo sapiens'
 
 

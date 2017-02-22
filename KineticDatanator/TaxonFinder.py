@@ -47,6 +47,10 @@ def getTaxonomy(baseSpecies):
 
 	return new
 
+def downloadNCBIDatabase():
+	ncbi = NCBITaxa()
+	ncbi.update_taxonomy_database()
+
 
 if __name__ == '__main__':
 
