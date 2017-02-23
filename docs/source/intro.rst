@@ -1,4 +1,20 @@
 Introduction
 ============
 
-The purpose of this project is to help scientists write better documentation.
+Motivation
+-------------
+
+Inspiring description. Large scale! Models! Systematic!
+
+
+
+How it works
+-------------
+
+Algorithms! EC numbers! 
+
+
+Databases Used
+------------
+
+Sabio. Kegg. NCBI
