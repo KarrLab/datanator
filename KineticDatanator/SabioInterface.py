@@ -149,7 +149,7 @@ def getSabioData(query_dict, baseSpecies, numParticipants = []):
 	# each entry is reported on a new line
 
 	entryIDs = [int(x) for x in request.text.strip().split('\n')]
-	print("{} mathcing entriess found".format(len(entryIDs)))
+	print("{} matching entriess found".format(len(entryIDs)))
 
 	# encode next request, for parameter data given entry IDs 
 	data_field = {'entryIDs[]': entryIDs} 
