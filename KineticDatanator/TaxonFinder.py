@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
 	i = 1
 	for node in lineage:
-		print "{}: {}".format(i, node)
+		print("{}: {}".format(i, node))
 		i = i+1
 
 

@@ -106,7 +106,7 @@ class GetTaxonomicLineage(CementBaseController):
 		lineage = (TaxonFinder.getTaxonomicLineage(self.app.pargs.species_name))
 		i = 1
 		for node in lineage:
-			print "{}: {}".format(i, node)
+			print ("{}: {}".format(i, node))
 			i = i+1
 
 
