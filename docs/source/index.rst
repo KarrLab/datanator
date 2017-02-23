@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   code_example
 
 
 
