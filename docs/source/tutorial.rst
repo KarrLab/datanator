@@ -52,7 +52,7 @@ This document has two worksheets: Reactions, and Metabolites.
 *Reactions Worksheet*
 
 .. exceltable:: Table caption
-   :file: KineticDatanator/TemplateDocument.xlsx
+   :file: ../../KineticDatanator/TemplateDocument.xlsx
    :header: 1
    :selection: A1:B2
 
