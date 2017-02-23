@@ -134,7 +134,7 @@ def getSabioData(query_dict, baseSpecies, numParticipants = []):
 
 	# ask SABIO-RK for all EntryIDs matching a query 
 	if isinstance(query_dict, dict):	
-		query_string = ' AND '.join(['%s:%s' % (k,v) for k,v in query_dict.items()]) 
+		query_string = ' AND '.join(['{}:{}'.format(k,v) for k,v in query_dict.items()]) 
 	if isinstance(query_dict, str):
 		query_string = query_dict
 	query = {'format':'txt', 'q':query_string} 
@@ -149,7 +149,7 @@ def getSabioData(query_dict, baseSpecies, numParticipants = []):
 	# each entry is reported on a new line
 
 	entryIDs = [int(x) for x in request.text.strip().split('\n')]
-	print('%d matching entries found.' % len(entryIDs)) 
+	print("{} mathcing entriess found".format(len(entryIDs)))
 
 	# encode next request, for parameter data given entry IDs 
 	data_field = {'entryIDs[]': entryIDs} 
@@ -205,12 +205,12 @@ if __name__ == '__main__':
 	searchString = """enzymeType:wildtype AND TemperatureRange:[30 TO 40] AND pHValueRange:[5 TO 9] AND ((Substrate:"Glyceraldehyde 3-phosphate" OR Substrate:"L-Glyceraldehyde 3-phosphate" OR Substrate:"Glycerone phosphate" OR Substrate:"D-Glyceraldehyde 3-phosphate") AND (Substrate:"D-Sedoheptulose 7-phosphate" OR Substrate:"Sedoheptulose 1-phosphate" OR Substrate:"Sedoheptulose 7-phosphate")) AND ((Product:"L-Xylulose 1-phosphate" OR Product:"D-Ribulose 5-phosphate" OR Product:"D-Xylose 5-phosphate" OR Product:"Ribose 5-phosphate" OR Product:"D-Arabinose 5-phosphate" OR Product:"D-Ribose 5-phosphate" OR Product:"D-Xylulose 1-phosphate" OR Product:"L-Xylulose 5-phosphate" OR Product:"Ribulose 5-phosphate" OR Product:"L-Ribulose 5-phosphate" OR Product:"Arabinose 5-phosphate" OR Product:"D-Xylulose 5-phosphate") AND (Product:"L-Xylulose 1-phosphate" OR Product:"D-Ribulose 5-phosphate" OR Product:"D-Xylose 5-phosphate" OR Product:"Ribose 5-phosphate" OR Product:"D-Arabinose 5-phosphate" OR Product:"D-Ribose 5-phosphate" OR Product:"D-Xylulose 1-phosphate" OR Product:"L-Xylulose 5-phosphate" OR Product:"Ribulose 5-phosphate" OR Product:"L-Ribulose 5-phosphate" OR Product:"Arabinose 5-phosphate" OR Product:"D-Xylulose 5-phosphate"))"""
 
 	baseSpecies = 'mycoplasma pneumoniae'
-	results =  getSabioData(searchString, baseSpecies)
+	results =  getSabioData(query_dict, baseSpecies)
 	#print len(results.entryList)
 	
 	for entry in results.entryList:
-		print entry.entryID
-		print entry.km
+		print(entry.entryID)
+		print(entry.km)
 	
 	"""
 	array = [1,2,3]

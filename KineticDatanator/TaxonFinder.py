@@ -15,7 +15,7 @@ def getTaxonomicDistance(baseSpecies, comparedSpecies):
 				genus = comparedSpecies.split(" ")[0]
 				comparedSpecies = ncbi.get_name_translator([genus])[genus][0]
 			except:
-				print "Unrecognized Species: " + comparedSpecies
+				print("Unrecognized Species: " + comparedSpecies)
 				return ""
 
 	tree = ncbi.get_topology([baseSpecies, comparedSpecies],intermediate_nodes=True)
@@ -29,10 +29,9 @@ def getTaxonomicDistance(baseSpecies, comparedSpecies):
 	distance = tree.get_tree_root().get_distance(A)
 	return distance
 
-def getTaxonomy(baseSpecies):
+def getTaxonomicLineage(baseSpecies):
 	ncbi = NCBITaxa()
 	baseSpecies = ncbi.get_name_translator([baseSpecies])[baseSpecies][0]
-	#print baseSpecies
 	lineage = ncbi.get_lineage(baseSpecies)
 	names = ncbi.get_taxid_translator(lineage)
 	chain =  [names[taxid] for taxid in lineage]
@@ -57,5 +56,12 @@ if __name__ == '__main__':
 	#print getTaxonomy('mycoplasma pneumoniae')
 	#print getTaxonomy('mycoplasma')
 	#print getTaxonomicDistance('Streptococcus canis', 'animalia')
-	print getTaxonomicDistance('mycoplasma pneumoniae', 'Streptococcus bovis')
-	print getTaxonomicDistance('mycoplasma pneumoniae', 'afasf bovdis')
+	print(getTaxonomicDistance('mycoplasma pneumoniae', 'Streptococcus bovis'))
+	lineage = (getTaxonomicLineage('mycoplasma pneumoniae'))
+
+	i = 1
+	for node in lineage:
+		print "{}: {}".format(i, node)
+		i = i+1
+
+

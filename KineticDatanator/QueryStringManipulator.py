@@ -112,4 +112,4 @@ if __name__ == '__main__':
 
 
 	string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m --> h2o_m + nadp_m + 1a2425thvitd2_m'
-	print getParsedReaction(string)
+	print(getParsedReaction(string))

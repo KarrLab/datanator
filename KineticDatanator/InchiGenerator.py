@@ -62,7 +62,7 @@ def getSabioNameToInchiDict():
 				inchiCompoundTranslator[values[2][:-1]] = trimInchi(values[1][9:])
 				#print values[1][9:]
 			else:
-				print "blue"
+				pass
 	return inchiCompoundTranslator
 
 
@@ -81,6 +81,6 @@ if __name__ == '__main__':
 	answer = generateGenericInchi("InChI=1S/C10H14N5O7P/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(22-10)1-21-23(18,19)20")
 	#print getSabioNameToInchiDict()
 
-	print getSabioNameToInchiDict()
+	print(getSabioNameToInchiDict())
 
 

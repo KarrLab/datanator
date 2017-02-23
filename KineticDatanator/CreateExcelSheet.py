@@ -1,6 +1,7 @@
 #import openpyxl
 from openpyxl import Workbook
 import os
+import TaxonFinder
 
 
 #takes in FormattedData as an input. Saves a file 
@@ -42,6 +43,28 @@ def createExcelSheet(outputFilename, FormattedDataList, species):
 			col = col+1
 		row = row+1
 
+	ws2 = wb.create_sheet(title="Taxnomic Information")
+	#ws2.title = "Taxnomic Information"
+
+	columns = []
+	leftColumn = []
+	leftColumn.append("Taxonomy")
+	leftColumn = leftColumn+TaxonFinder.getTaxonomicLineage(species)
+	rightColumn = []
+	rightColumn.append("Proximity")
+	rightColumn = rightColumn + range(1, len(leftColumn))
+	columns.append(rightColumn)
+	columns.append(leftColumn)
+	
+	row = 1
+	while row < len(columns[0])+1:
+		col = 1
+		while col < len(columns)+1:
+			_ = ws2.cell(column=col, row=row, value=columns[col-1][row-1])
+			col = col+1
+		row = row+1
+
+
 	wb.save(os.path.join('.', dest_filename))
 
 def formatValue(outerField, innerField = ""):
@@ -74,4 +97,4 @@ def toCSV(array):
 
 if __name__ == '__main__':
 	blue = None
-	print blue
+	print(blue)

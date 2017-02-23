@@ -3,6 +3,7 @@ from cement.core.controller import CementBaseController, expose
 import os.path
 import openpyxl
 from KineticDatanator import Datanator
+from KineticDatanator import TaxonFinder
 class BaseController(CementBaseController):
 	class Meta:
 		label = 'base'
@@ -76,16 +77,6 @@ class GenerateTemplateController(CementBaseController):
 		stacked_on = 'base'
 		stacked_type = 'nested'
 		arguments = []
-		#arguments = [(['input_data_file'],dict(metavar='input-data-file', 
-		#	type=str, help="path to the input data spreadsheet (xlsx)"))]
-
-		#path = "/home/yosef/Desktop/messingWithCement/blue"
-		#filename = "TemplateForDatanator2.xlsx"
-		#if not os.path.exists(path):
-		#	os.makedirs(path)
-		#if not os.path.isfile('SmilesStuff23.xlsx'):
-		#wb = openpyxl.load_workbook(filename='./KineticDatanator/TemplateDocument.xlsx') 
-		#wb.save(".TheTemplateDocument.xlsx")#, as_template=False)
 
 
 	@expose(help="This command generates a template", hide=True)
@@ -95,11 +86,35 @@ class GenerateTemplateController(CementBaseController):
 		wb = openpyxl.load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'TemplateDocument.xlsx'))
 		wb.save(os.path.join(".", "TheTemplateDocument.xlsx"))#, as_template=False)
 
+
+
+class GetTaxonomicLineage(CementBaseController):
+	class Meta:
+		label = 'get-taxonomic-lineage'
+		description = "This command prints out the taxonomic lineage of a species by number, corresponing to increasing nodes on the NCBI taxonomic tree"
+		stacked_on = 'base'
+		stacked_type = 'nested'
+		arguments = [
+		(['species_name'],dict(metavar='species_name', 
+			type=str, help="name of the species whose lineage you are searching (example: 'homo sapiens')"))
+		]
+
+
+	@expose(help="This command prints out the taxonomic lineage of a species by number, corresponing to increasing nodes on the NCBI taxonomic tree", hide=True)
+	def default(self):
+
+		lineage = (TaxonFinder.getTaxonomicLineage(self.app.pargs.species_name))
+		i = 1
+		for node in lineage:
+			print "{}: {}".format(i, node)
+			i = i+1
+
+
 class FindKineticsApp(CementApp):
 	class Meta:
 		label = "find-kinetics"
 		base_controller = "base"
-		handlers = [BaseController, GetKineticsController, GenerateTemplateController]
+		handlers = [BaseController, GetKineticsController, GenerateTemplateController, GetTaxonomicLineage]
 
 
 with FindKineticsApp() as app:
