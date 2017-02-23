@@ -1,19 +1,23 @@
-#################
-  Title
-#################
+.. Better documentation documentation master file, created by
+   sphinx-quickstart on Mon Jun 29 11:00:21 2015.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-Animals
-=======
+Welcome to Better documentation's documentation!
+================================================
 
-.. toctree::
-   :maxdepth: 2
-
-    animals/index
-
-Flowers
-=======
+Contents:
 
 .. toctree::
    :maxdepth: 2
 
-    flowers/index
+   intro
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
