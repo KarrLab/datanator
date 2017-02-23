@@ -11,23 +11,23 @@ Welcome to KineticDatanator's documentation!
    :maxdepth: 2
    :caption: Contents:
    Introduction
-   Installation
+
 
 
 Introduction
-------------
-
-Motivation
-==========
-
-How it Works
 ============
 
+Motivation
+----------
+
+How it Works
+-----------
+
 Databases Used
-==============
+------------
 
 Installation
-------------
+============
 
 *Dependencies*
 
@@ -45,10 +45,11 @@ Install Openbabel from <https://packages.debian.org/wheezy/amd64/python-openbabe
 
 
 Tutorial - Getting Familiar With KineticDatanator's Command Line Interface
----------------------------------------------------------------------------------
+========================================================================
 
 Generate Template Doc
-===================================
+--------------------
+
 KineticDatanator can be used run directly from the command line.
 
 There are three required arguments necesssary to run the data collection method "find-kinetics"
@@ -85,18 +86,17 @@ $ python -mKineticDatanator get-taxonomic-lineage 'homo sapiens'
 
 
 Set Maximum Proximity Limit
-===========================
+--------------------------
 
 
 
 Formatting The Reaction Entries
------------------------------
+==============================
 
 
 
 Understanding The Output
-------------------------
-
+========================
 
 
 
