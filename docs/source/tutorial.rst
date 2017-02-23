@@ -55,6 +55,7 @@ This document has two worksheets: Reactions, and Metabolites.
    :file: ../../KineticDatanator/TemplateDocument.xlsx
    :header: 1
    :selection: A1:B2
+   :sheet: 1
 
 Look at the Reactions worksheet. There are two columns. The first is an identifier for the reaction. You can name this whatever you
 like as long as it is unique. A good suggestion is just to use the reaction string (in the template document, we did not follow this practice in order to illustrate that the name can be anything). The second column is a 
