@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    intro
+   intro2
    installation
    code_example
    tutorial
