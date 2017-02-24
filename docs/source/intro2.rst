@@ -6,7 +6,7 @@ What Is KineticDatanator
 
 **Target Audience**
 
-Scietists who would like to aggregate kinetic data (Vmax and Km) for a particular species. KineticDatanator is especially useful 
+Scientists who would like to aggregate kinetic data (Vmax and Km) for a particular species. KineticDatanator is especially useful 
 for dynamical modelers as it allows for large-scale data collection tailored to the species being modelled. 
 
 **What Does KineticDatanator Do?**

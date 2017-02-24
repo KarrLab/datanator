@@ -16,6 +16,7 @@ Contents:
    installation
    code_example
    tutorial
+   contribute
 
 
 

@@ -51,6 +51,8 @@ Open up the template document TheTemplateDocument.xlsx
 This document has two worksheets: Reactions, and Metabolites.
 *Reactions Worksheet*
 
+thing
+
 .. exceltable:: Table caption
    :file: TheTemplateDocument.xlsx
    :header: 1
