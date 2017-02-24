@@ -15,7 +15,7 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-
+extensions = ['sphinxcontrib.exceltable']
 #
 # import os
 # import sys
@@ -27,7 +27,7 @@ import sphinx_rtd_theme
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '1.3.6'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -35,8 +35,8 @@ import sphinx_rtd_theme
 extensions = ['sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-'sphinx.ext.exceltable']
+    'sphinx.ext.viewcode']
+extensions.append('sphinxcontrib.exceltable')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
