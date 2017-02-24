@@ -11,11 +11,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   intro
    intro2
    installation
    tutorial
-   code_example
    contribute
 
 

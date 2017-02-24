@@ -1,4 +1,4 @@
-Introduction2
+Introduction
 ================
 
 What Is KineticDatanator
@@ -63,9 +63,9 @@ KineticDatanator searches for kinetic data using the structural information (inc
 
 For example, here are two potential Inchi strings for ATP::
 
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)**/t4-,6-,7-,10-/m1/s1**
+    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1
     
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)**/p-4/t4-,6-,7-,10-/m1/s1**
+    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1
 
 Notice how the end of the strings vary. 
 
@@ -87,14 +87,6 @@ KineticDatanator uses the NCBI taxonomic tree to judge proximity of species. Whe
 
 Step 3 - Finding Most Relevant Values Among Entries
 -----------------------------------------------------
-
-*Why This Is Hard*
-
-Again, this is simply time consuming
-
-*How Kinetic Datanator Solves This*
-
-For both Vmax and Km, Kinetic Datanator finds the median value among the entries, and records it in the excel output.
 
 
 

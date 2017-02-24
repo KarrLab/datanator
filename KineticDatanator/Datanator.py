@@ -67,7 +67,7 @@ class KineticInfo:
 	#because if the data is not useful, then the use can try a more general search
 	def hasRelevantData(self, proximLimit = 1000):
 		hasRelevantData = False
-		if len(self.closestEntries)>0 and self.closestEntries[0].proximity <= proximLimit:
+		if len(self.closestEntries)>0 and (self.closestEntries[0].proximity <= proximLimit):
 			hasRelevantData = True
 		return hasRelevantData
 
@@ -144,6 +144,7 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 
 
 def getKineticData(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+
 
 	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 	
