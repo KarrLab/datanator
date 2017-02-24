@@ -186,5 +186,3 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
-Contact GitHub API Training Shop Blog About
-© 2017 GitHub, Inc. Terms Privacy Security Status Help
