@@ -34,12 +34,12 @@ The second argument is a name for the output file. We will use ExampleResults.xl
 
 The third argument is the name of the species we are searching for. We will use 'homo sapiens'
 
-Run "find-kinetics"::
+Run "get-kinetics"::
 
     $ python -mKineticDatanator get-kinetics TheTemplateDocument.xlsx ExampleResults.xlsx 'homo sapiens'
 
 
-$ python -mKineticDatanator get-taxonomic-lineage 'homo sapiens'
+$ python -mKineticDatanator get-taxonomic-lineage 'Escherichia coli'
 
 
 Entering Reactions Into KineticDatanator
@@ -91,12 +91,12 @@ Let's try adding a reaction:
 
 Lets say we wanted to add the reaction::
 
-   Adenosine 3',5'-bisphosphate + H2O = phosphate + AMP 
+   Adenosine 3',5'-bisphosphate + H2O ==> phosphate + AMP 
 
 The first step is to give each metabolite in the stoichiometric string and ID without spaces. So let's 
 change it to::
 
-    A-3-5-bisphosphate + H2O = phosphate + AMP
+    A-3-5-bisphosphate + H2O ==> phosphate + AMP
 
 The second step is to add this reaction string to the second column in "Reactions" worksheet. 
 In the first column, give the reaction some distinct name.
@@ -109,7 +109,7 @@ In the first column, give the reaction some distinct name.
 +------------------------------------------------+-----------------------------------------------------+
 |A Reaction Name #2 (GMP + ATP <==> ADP + GDP)   |GMP + ATP ==> ADP + GDP                              |
 +------------------------------------------------+-----------------------------------------------------+
-|A distinct name of your choosing                |A-3-5-bisphosphate + H2O = phosphate + AMP           |
+|A distinct name of your choosing                |A-3-5-bisphosphate + H2O ==> phosphate + AMP         |
 +------------------------------------------------+-----------------------------------------------------+
 
 
@@ -143,29 +143,62 @@ Open up the "Metabolites" worksheet. Add the name of the compound used in the st
 +-------------------+----------------------------------------------------------------------------+
 |GDP                |NC1=NC2=C(N=CN2C2OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C2O)C(=O)N1           | 
 +-------------------+----------------------------------------------------------------------------+
-|A-3-5-bisphosphate |NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(OP([O-])([O-])=O)C3O)=N1                | 
+|A-3-5-bisphosphate |NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(OP([O-])([O-])=O)C3O)C2=NC=N1           | 
 +-------------------+----------------------------------------------------------------------------+
 |H2O                |O                                                                           |  
 +-------------------+----------------------------------------------------------------------------+
-|phosphate          |phosphate - OP([O-])([O-])=O                                                | 
+|phosphate          |OP([O-])([O-])=O                                                            | 
 +-------------------+----------------------------------------------------------------------------+
 
 
-Once again, run "find-kinetics"::
+Once again, run "get-kinetics"::
 
-    $ python -mKineticDatanator get-kinetics TheTemplateDocument.xlsx ExampleResults.xlsx 'homo sapiens'
+    $ python -mKineticDatanator get-kinetics TheTemplateDocument.xlsx ExampleResults.xlsx 'Escherichia coli'
 
 
 You should see results for the new reaction you inputted. 
 
 
-
-
-
-
-
-
-
-
 Set Maximum Proximity Limit
---------------------------
+------------------------------
+
+The ideal kinetic data is information about the reaction being studied, collected from an expirement done in the species you are studying. However, often you will have to rely on kinetic data from different species. At a certain taxonomic distance, you might decide it's better to collect data from similar reactions taken from expirements in more closely related organisms. 
+
+There are two dimensions of granularity - reaction variation and species variation - and the user can decide which data is preferred. 
+
+The user can do this by setting the "proximLimit"
+
+Let's try an example:
+
+First, you want to get taxonomic infomation about the organism you are stuyding. Run::
+
+    $ python -mKineticDatanator get-taxonomic-lineage 'Escherichia coli'
+
+You should see::
+
+    1: Escherichia coli
+    2: Escherichia
+    3: Enterobacteriaceae
+    4: Enterobacterales
+    5: Gammaproteobacteria
+    6: Proteobacteria
+    7: Bacteria
+    8: cellular organisms
+    9: root
+
+This is the number of nodes as you start from your organism, and climb up to the top of the taxonomic tree. Each number corresponds to a node. 
+
+So let's say you are studying Escherichia coli. Maybe you think that anything outside the phylum protobacteria 
+is too distantly related to be useful. In that case, you will want to run the "get-kinetics" argument, with an 
+optional argument --proximit-limit. The number given after --proxim-limit is the highest node that will be considered useful. Since we have chosen Protobacteria, that number is 6
+
+So, run::
+
+    python -mKineticDatanator get-kinetics TheTemplateDocument.xlsx ExampleResults.xlsx 'Escherichia coli' --proxim-limit 6
+
+
+
+
+
+
+
