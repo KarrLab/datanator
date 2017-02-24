@@ -35,8 +35,9 @@ import sphinx_rtd_theme
 extensions = ['sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-'sphinxcontrib.exceltable']
+    'sphinx.ext.viewcode']
+
+extensions = ['sphinxcontrib.exceltable']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
