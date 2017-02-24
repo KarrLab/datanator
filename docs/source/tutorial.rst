@@ -49,18 +49,40 @@ Open up the template document TheTemplateDocument.xlsx
 
 
 This document has two worksheets: Reactions, and Metabolites.
+
 *Reactions Worksheet*
 
-thing
++------------------------------------------------+-------------------------+
+|Reaction ID                                     |Stoichimetry             |
++================================================+=========================+
+|A Reacion Name #1 (ATP + UMP <==> UDP + ADP)    |ATP + UMP <==> UDP + ADP |
++------------------------------------------------+-------------------------+
+|A Reaction Name #2 (GMP + ATP <==> ADP + GDP)   |GMP + ATP ==> ADP + GDP  |
++------------------------------------------------+-------------------------+
 
-.. exceltable:: Table caption
-   :file: TheTemplateDocument.xlsx
-   :header: 1
-   :selection: A1:B2
-   :sheet: 1
 
 Look at the Reactions worksheet. There are two columns. The first is an identifier for the reaction. You can name this whatever you
-like as long as it is unique. A good suggestion is just to use the reaction string (in the template document, we did not follow this practice in order to illustrate that the name can be anything). The second column is a 
+like as long as it is unique. A good suggestion is just to use the reaction string (in the template document, we did not follow this practice in order to illustrate that the name can be anything). The second column is a the stoichiometric string. 
+
+Each metabolite used in the stoichiometric string needs to be structurally defined in the "Metabolites" worksheet. Open up 
+the "Metabolites" worksheet
+
+
++-----------------------------------------------------------------------------------------+
+|Compound ID |Structure                                                    |
++=========================================================================================+
+|ATP         |NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1
++-----------------------------------------------------------------------------------------+
+|UMP         |OC1C(O)C(OC1COP([O-])([O-])=O)N1C=CC(=O)NC1=O
++-----------------------------------------------------------------------------------------+
+|UDP         |OC1C(O)C(OC1COP([O-])(=O)OP([O-])([O-])=O)N1C=CC(=O)NC1=O
++-----------------------------------------------------------------------------------------+
+|AMP         |NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(O)C3O)C2=NC=N1
++-----------------------------------------------------------------------------------------+
+|GMP         |NC1=NC2=C(N=CN2C2OC(COP([O-])([O-])=O)C(O)C2O)C(=O)N1
++-----------------------------------------------------------------------------------------+
+|GDP         |NC1=NC2=C(N=CN2C2OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C2O)C(=O)N1
++-----------------------------------------------------------------------------------------+
 
 
 
