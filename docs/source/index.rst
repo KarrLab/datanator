@@ -14,6 +14,7 @@ Contents:
    intro
    intro2
    installation
+   tutorial
    code_example
    contribute
 
