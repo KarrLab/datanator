@@ -1,21 +1,4 @@
-Skip to content
-This repository
-Search
-Pull requests
-Issues
-Gist
- @yosefdroth
- Sign out
- Watch 7
-  Star 0
- Fork 0 KarrLab/Kinetic-Datanator
- Code  Issues 0  Pull requests 0  Projects 0  Wiki  Pulse  Graphs  Settings
-Tree: 86608717fc Find file Copy pathKinetic-Datanator/docs/source/conf.py
-8660871  an hour ago
-@yosefdroth yosefdroth adding docs
-1 contributor
-RawBlameHistory     
-189 lines (142 sloc)  5.5 KB
+
 # -*- coding: utf-8 -*-
 #
 # KineticDatanator documentation build configuration file, created by
