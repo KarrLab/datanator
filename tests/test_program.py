@@ -2,16 +2,16 @@ import sys
 sys.path.insert(0, '/home/yosef/Desktop/KineticDatanator/mypackage')
 
 import unittest
-import TaxonFinder
+from KineticDatanator import TaxonFinder
 #import ReactionQueries
-import QueryStringManipulator
-import InchiGenerator
-import ECNumberFinder
+from KineticDatanator import QueryStringManipulator
+from KineticDatanator import InchiGenerator
+from KineticDatanator import ECNumberFinder
 
-import ReactionQueries
-import TranslatorForSabio
+from KineticDatanator import ReactionQueries
+from KineticDatanator import TranslatorForSabio
 
-import SabioInterface
+from KineticDatanator import SabioInterface
 
 
 class TestProgram(unittest.TestCase):
@@ -362,20 +362,20 @@ class TestProgram(unittest.TestCase):
 		baseSpecies = 'mycoplasma pneumoniae'
 		searchString = """Product:ADP AND Substrate:AMP AND ADP"""
 		results =  SabioInterface.getSabioData(searchString, baseSpecies)
-		self.assertEqual(len(results.entryList), 76)
+		self.assertEqual(len(results.entryList), 77)
 		self.assertFalse(len(results.entryList)==75)
 
 
 
 	#there is a bug here, I need to fix this
-"""
+
 if __name__ == '__main__':
 	#main()
+	#unittest.main()
+	#test_getSabioData()
+	TestProgram().test_getSubstrateProductQueryString()
 
-	test_getSabioData()
-	#TestProgram.test_getSubstrateProductQueryString()
 
-"""
 
 
 

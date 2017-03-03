@@ -1,5 +1,6 @@
 import requests
 
+
 #Unlike this method, getECNumber requires a precise matchup of substrates to products
 #therefore, this method - easyFindECNumber - tries all the combinations in getECNumber
 #its basically an add-on to getECNumber that makes using it much easier
@@ -170,7 +171,7 @@ if __name__ == '__main__':
     subArray = subArray[-1:] + subArray[:-1]
     #print subArray
     prodArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
-    #print getECNumber(subArray, prodArray)
+    print getECNumber(subArray, prodArray)
 
 
     blue =  formatECForSabio("")

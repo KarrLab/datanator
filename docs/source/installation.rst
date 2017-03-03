@@ -3,7 +3,7 @@ Installation
 
 *Dependencies*
 
-Install Openbabel from <https://packages.debian.org/wheezy/amd64/python-openbabel/download>
+Install Openbabel from <http://openbabel.org/wiki/Category:Installation>
 
 *Install KineticDatanator*::
 

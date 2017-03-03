@@ -70,6 +70,8 @@ def getParsedReaction(reactionString):
 		bothSides = reactionString.split("<->")
 	elif "<=>" in reactionString:
 		bothSides = reactionString.split("<=>")
+	elif "=" in reactionString:
+		bothSides = reactionString.split("=")
 
 	substrates = bothSides[0]
 	products = bothSides[1]

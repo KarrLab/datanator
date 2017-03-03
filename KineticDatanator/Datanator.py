@@ -8,11 +8,20 @@ import TranslatorForSabio
 #add other search criteria
 #make sure to only use lift if smiles/inchi is present!!!!
 #also, what should median be?
-#make sure i update the inchi to sabio name dictionary
 #make sure i fix ecnumber in cases where we have (2)ADP or somethign like that
 
 
 #finish debugging the EC finder
+
+"""
+.. autoclass:: Noodle
+   :members: eat, slurp
+
+   .. method:: boil(time=10)
+
+      Boil the noodle *time* minutes
+"""
+
 
 class KineticInfo:
 	def __init__(self, sabioResults, name = ""):

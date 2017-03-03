@@ -65,7 +65,7 @@ class GetKineticsController(CementBaseController):
 		if self.app.pargs.include_mutants:
 			enzymeType = "(wildtype OR mutant)"
 		Datanator.getKineticData(self.app.pargs.input_data_file, self.app.pargs.output_data_file,
-		 self.app.pargs.species, tempRange=[self.app.pargs.min_temp, self.app.pargs.max_temp], phRange = [self.app.pargs.min_ph, self.app.pargs.max_ph],
+		 self.app.pargs.species, tempRange=[float(self.app.pargs.min_temp), float(self.app.pargs.max_temp)], phRange = [float(self.app.pargs.min_ph), float(self.app.pargs.max_ph)],
 		 enzymeType = enzymeType, proximLimit = float(self.app.pargs.proxim_limit))
 
 
