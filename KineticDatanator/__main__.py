@@ -26,7 +26,7 @@ class GetKineticsController(CementBaseController):
 			type=str, help="name of the species you are searching")),
 		#the following arguments are optional arguments, we connote this by adding "--" to the argument
 		(['--min-temp'], dict(action='store', 
-			metavar='FLOAT', help = "minimum temperature", default=30)),
+			metavar='FLOAT', help = "minimum temperature", default=15)),
 		(['--max-temp'], dict(action='store', 
 			metavar='FLOAT', help = "maximum temperature", default=40)),
 		(['--min-ph'], dict(action='store', 

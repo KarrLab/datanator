@@ -2,6 +2,7 @@ import openpyxl
 import InchiGenerator
 import QueryStringManipulator
 import ECNumberFinder
+import logging
 
 
 class Compound:
@@ -10,6 +11,11 @@ class Compound:
 		self.inchiSmiles = inchiSmiles
 		self.sabioNames = sabioNames
 
+		#if len(self.sabioNames) == 0:
+			#print self.id
+			#print self.inchiSmiles
+			#print self.sabioNames
+			#print "\n"
 
 class ReactionQuery:
 	def __init__(self, id):
@@ -35,13 +41,18 @@ def generateCompounds(wb):
 	i = 0
 	while i < len(ws.columns[0]):
 		id = ws.columns[0][i].value
-		smilesOrInchi = ws.columns[1][i].value
+
+		smilesOrInchi = ""
+		structure = ws.columns[1][i].value
 		sabioNames = []
-		if smilesOrInchi != None:
-			genericInchi = InchiGenerator.generateGenericInchi(smilesOrInchi)
+		if structure != None:
+			genericInchi = InchiGenerator.generateGenericInchi(structure)
 			for name in sabioNameToInchiDict:
 				if sabioNameToInchiDict[name] == genericInchi:
 					sabioNames.append(name)
+			if len(sabioNames)==0:
+				logging.info("ReactionQueries: No Sabio Names found for {}".format(id))
+			smilesOrInchi = structure
 
 		comp = Compound(id, smilesOrInchi, sabioNames)
 		compoundList.append(comp)
@@ -52,6 +63,8 @@ def generateCompounds(wb):
 #Input an excel sheet data object (from openpyxl)
 #It outputs a list of reactionQuery Objects
 def generateReactionQueries(excelSheetObject):
+
+	logging.info("ReactionQueries: Generating Reaction Queries")
 	reactionQueries = [] #this is the only output of this method. Its a list of reactionQueries
 	idToCompound = {} #this will be a dict used to find compound information about each metab id
 	wb = excelSheetObject
@@ -112,15 +125,22 @@ def generateReactionQueries(excelSheetObject):
 
 
 if __name__ == '__main__':
-	filename='SmilesStuff.xlsx'
+	filename='testKineticDatanator.xlsx'
 	excelSheetObject = openpyxl.load_workbook(filename=filename)
 	reactionQueries = generateReactionQueries(excelSheetObject)
+
+	"""
 	for reaction in reactionQueries:
 		print(reaction.__dict__)
 	for reaction in reactionQueries:
 		for comp in reaction.substrates:
+			print(comp.id)
+			print(comp.inchiSmiles)
 			print(comp.sabioNames)
 		for comp in reaction.products:
+			print(comp.id)
+			print(comp.inchiSmiles)
 			print(comp.sabioNames)
+	"""
 
 		#print reaction.getQueryString()

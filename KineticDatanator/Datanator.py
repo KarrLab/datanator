@@ -4,7 +4,8 @@ import numpy as np
 from CreateExcelSheet import createExcelSheet
 import openpyxl
 import TranslatorForSabio
-
+import logging
+import os
 #add other search criteria
 #make sure to only use lift if smiles/inchi is present!!!!
 #also, what should median be?
@@ -101,13 +102,19 @@ class FormattedData:
 
 
 def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 1000):
-	#print reactionQuery.id
-	#print reactionQuery.numParticipants
+	#print "new"
+	#for thing in reactionQuery.substrates:
+	#	print thing.sabioNames
+	#print (reactionQuery.id)
+	#print (reactionQuery.numParticipants)
 	searchString = TranslatorForSabio.getSubstrateProductQueryString(reactionQuery)
+	logging.info("Datanator: Search String Found - {}".format(searchString))
+	#print(searchString)
 	#print searchString
 
 	if len(searchString)>0:
 		searchString = defaultValues+searchString
+	logging.info("Datanator: About to check Sabio with regular search string")
 	sabioResults = getSabioData(searchString, species, reactionQuery.numParticipants)
 	#instantiate a formatted data object with the reactionID
 	formattedData = FormattedData(reactionQuery.id)
@@ -119,6 +126,7 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 	#proximLimit is the taxonomic limit (in nodes) after which the data is presumed to be irrelevant 
 	formattedData.KmData = KmInfo(sabioResults)
 	hasRelevantData = formattedData.KmData.hasRelevantData(proximLimit)
+	logging.info("Datanator: Has relevant data for km - {}".format(hasRelevantData))
 	if hasRelevantData == False:
 		#we are about to set the genericECNumber. However, first we need ot make sure
 		#the user didn't provide their own. If the user provided their own, that genericECNumber is used instead
@@ -127,14 +135,18 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 		queryString = TranslatorForSabio.getGenericECQueryString(reactionQuery)
 		if len(queryString)>0:
 			queryString = defaultValues + queryString
+		else:
+			logging.error("Datanator: Tried to lift from EC, but did not work")
 		liftedSabioResults = getSabioData(queryString, species)
 		formattedData.KmData = KmInfo(liftedSabioResults)
 		if len(reactionQuery.genericECNumber)>0:
 			formattedData.KmData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
+			logging.info("Datanator: Lifted From {} for Km".format(reactionQuery.genericECNumber))
 
 
 	formattedData.VmaxData = VmaxInfo(sabioResults)
 	hasRelevantData = formattedData.VmaxData.hasRelevantData(proximLimit)
+	logging.info("Datanator: Has relevant data for vmax - {}".format(hasRelevantData))
 	if hasRelevantData == False:
 		#check if liftesSabioResults has already been searched. If it has, no need to search again
 		if liftedSabioResults == None:
@@ -147,17 +159,20 @@ def createFormattedData(reactionQuery, species, defaultValues, proximLimit = 100
 		formattedData.VmaxData = VmaxInfo(liftedSabioResults)
 		if len(reactionQuery.genericECNumber)>0:
 			formattedData.VmaxData.liftInfo = "Lifted From {}".format(reactionQuery.genericECNumber)
+			logging.info("Datanator: Lifted From {} for Vmax".format(reactionQuery.genericECNumber))
 
 	return formattedData
 
 
 
-def getKineticData(inputFilename, outputFilename, species, tempRange = [30, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+def getKineticData(inputFilename, outputFilename, species, tempRange = [15, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
 
+	logging.basicConfig(filename=os.path.join('.', 'logging.log'), filemode='w', level=logging.INFO)
+	logging.info('Datanator: Started')
 
 	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 	
-	file = open("ErrorsTryAgain.txt", "w")
+	file = open("Errors.txt", "w")
 	file.write("")
 	file.close()
 
@@ -169,13 +184,16 @@ def getKineticData(inputFilename, outputFilename, species, tempRange = [30, 40],
 	reactionQueries = ReactionQueries.generateReactionQueries(excelSheetObject)
 	for reactionQuery in reactionQueries:
 		try:
+			logging.info('\n')
+			logging.info('Datanator: Started analyzing {}'.format(reactionQuery.id))
 			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
 			formattedDataList.append(formattedData)
 		except:
-			file = open("ErrorsTryAgain.txt", "a")
+			file = open("Errors.txt", "a")
 			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
+			logging.error("Datanator: {} caused an error and did not work".format(reactionQuery.id))
 	createExcelSheet(outputFilename, formattedDataList, species)
-	
+	logging.info('Datanator: Finished')
 	
 	
 if __name__ == '__main__':

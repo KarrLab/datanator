@@ -1,5 +1,6 @@
 from ete3 import NCBITaxa
 import argparse
+import logging
 
 
 #Input a base species and comparedSpecies. Outputs an int of how many nodes apart they are on the NCBI tree
@@ -16,6 +17,7 @@ def getTaxonomicDistance(baseSpecies, comparedSpecies):
 				comparedSpecies = ncbi.get_name_translator([genus])[genus][0]
 			except:
 				print("Unrecognized Species: " + comparedSpecies)
+				logging.error("Unrecognized Species: ".format(comparedSpecies))
 				return ""
 
 	tree = ncbi.get_topology([baseSpecies, comparedSpecies],intermediate_nodes=True)

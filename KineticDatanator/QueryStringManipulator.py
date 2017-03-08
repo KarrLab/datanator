@@ -81,13 +81,13 @@ def getParsedReaction(reactionString):
 
 	#IMPORTANT!!!!! we are getting rid of hydrogens here. 
 	for entry in substrates.split(" "):
-		if entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "H[e]" and entry != "[m]:" and entry !=  "[e]:"and entry != "(2)" and entry !=  "+" and entry !=  "==>" and entry !=  "":
+		if not (is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry !=  "[e]:"and entry != "(2)" and entry !=  "+" and entry !=  "==>" and entry !=  "":
 			#get rid of the [c] tag on some molecules
 			if entry.find("[") != -1:
 				entry = entry[:entry.find("[")]
 			parsedSubstrates.append(entry)
 	for entry in products.split(" "):
-		if entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "H[e]" and entry != "[m]:" and entry !=  "[e]:"and entry != "(2)" and entry !=  "+" and entry !=  "==>" and entry !=  "":
+		if not (is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry !=  "[e]:"and entry != "(2)" and entry !=  "+" and entry !=  "==>" and entry !=  "":
 			#get rid of the [c] tag on some molecules
 			if entry.find("[") != -1:
 				entry = entry[:entry.find("[")]
@@ -96,8 +96,17 @@ def getParsedReaction(reactionString):
 
 	balancedMetab.append(parsedSubstrates)
 	balancedMetab.append(parsedProducts)
+
 	return balancedMetab
 
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == '__main__':

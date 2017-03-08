@@ -1,31 +1,46 @@
 import requests
+import logging
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 #Unlike this method, getECNumber requires a precise matchup of substrates to products
 #therefore, this method - easyFindECNumber - tries all the combinations in getECNumber
 #its basically an add-on to getECNumber that makes using it much easier
 def easyFindECNumber(substrates, products):
-    
+    logging.info("ECNumberFinder: Attempting to find EC number")
+
     ECNum = ""
 
     #first check to make sure that each compound has a smiles or an inchi
     #if they do not, return an empty string
     everyCompoundHasStructuralInfo = True
+
     for compound in substrates:
         if len(compound.inchiSmiles)==0:
             everyCompoundHasStructuralInfo = False
     for compound in products:
         if len(compound.inchiSmiles)==0:
             everyCompoundHasStructuralInfo = False
+    #print ("Every Compound Has Stuctural Info: {}".format(everyCompoundHasStructuralInfo))
+
+    if everyCompoundHasStructuralInfo==False:
+        logging.info("ECNumberFinder: Not every compound has structural information, and therefore no EC number was found")
 
     if everyCompoundHasStructuralInfo==True:
+        logging.info("ECNumberFinder: Every compound has structural information, so an EC number should be found")
         subInchiSmiles = []
         prodInchiSmiles = []
 
         for compound in substrates:
             subInchiSmiles.append(compound.inchiSmiles)
+            #print("Substrate: {}".format(compound.id))
+            logging.info("ECNumberFinder: Substrate: {}".format(compound.inchiSmiles))
         for compound in products:
             prodInchiSmiles.append(compound.inchiSmiles)
+            logging.info("ECNumberFinder: Product: {}".format(compound.inchiSmiles))
+            #print("Product: {}".format(compound.id))
+
 
         i = 0
         while i<len(subInchiSmiles) and len(ECNum) == 0:
@@ -38,6 +53,11 @@ def easyFindECNumber(substrates, products):
             ECNum = getECNumber(subInchiSmiles, prodInchiSmiles)
             i += 1
 
+        if len(ECNum)==0:
+            logging.error("ECNumberFinder: No EC Found, but all structural information is present. This is troubling. Look into this")
+        else:
+            logging.info("ECNumberFinder: EC Number Found - {}".format(ECNum))
+    #print("ECNum: {}".format(ECNum))
     return ECNum
 
 #input an array of substrates and an array of products
@@ -118,13 +138,15 @@ def formatECForSabio(ECNumber):
         string = string[4:]
         string = "ECNumber: (" + string + ")"
 
+    #print string
     return string
+
 
 
 
 def getMolfile(smilesOrInchi):
     if smilesOrInchi[:5].lower() == "inchi":
-        request = requests.get("https://cactus.ncifcrf.gov/chemical/structure/{}/molfile".format(smiles), verify=False).text
+        request = requests.get("https://cactus.ncifcrf.gov/chemical/structure/{}/molfile".format(smilesOrInchi), verify=False).text
     else:
         request = requests.get("https://cactus.ncifcrf.gov/chemical/structure/{}/molfile".format(smilesOrInchi), verify=False).text
     if len(request)>0:

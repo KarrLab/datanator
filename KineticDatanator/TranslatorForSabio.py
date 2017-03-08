@@ -18,13 +18,16 @@ def getSubstrateProductQueryString(reactionQuery):
 	numTotalParticipants = len(reactionQueryCopy.substrates) + len(reactionQueryCopy.products)
 
 	for compound in reactionQueryCopy.substrates:
+		#print compound.sabioNames
 		if len(compound.sabioNames)>0:
 			subNames.append(compound.sabioNames)
 	for compound in reactionQueryCopy.products:
+		#print compound.sabioNames
 		if len(compound.sabioNames)>0:
 			prodNames.append(compound.sabioNames)
 
 	numSabioFound = len(subNames)+len(prodNames)
+	#print numSabioFound
 	if numSabioFound >= numTotalParticipants - 1:
 		subAndProd.append(subNames)
 		subAndProd.append(prodNames)

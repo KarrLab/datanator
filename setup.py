@@ -12,7 +12,7 @@ import os
 setup(
     name='KineticDatanator',
     packages = ['KineticDatanator'],
-    version = '0.1.16',
+    version = '0.1.18',
     description="finds most relevant kinetic data",
     url="https://github.com/KarrLab/Kinetic-Datanator",
     download_url='https://github.com/KarrLab/Kinetic-Datanator/tarball/0.1',
