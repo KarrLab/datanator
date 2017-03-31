@@ -26,6 +26,8 @@ import os
 
 class KineticInfo:
 	def __init__(self, sabioResults, name = ""):
+
+
 		self.name = name
 		self.closestEntryIDs = []
 		self.closestEntries = []
