@@ -196,6 +196,10 @@ def getKineticData(inputFilename, outputFilename, species, tempRange = [15, 40],
 			logging.error("Datanator: {} caused an error and did not work".format(reactionQuery.id))
 	createExcelSheet(outputFilename, formattedDataList, species)
 	logging.info('Datanator: Finished')
+	return formattedDataList
+
+
+
 
 def getKineticDataFromDjango(inputFile, species, tempRange = [15, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
 
