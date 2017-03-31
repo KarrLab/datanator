@@ -194,7 +194,37 @@ def getKineticData(inputFilename, outputFilename, species, tempRange = [15, 40],
 			logging.error("Datanator: {} caused an error and did not work".format(reactionQuery.id))
 	createExcelSheet(outputFilename, formattedDataList, species)
 	logging.info('Datanator: Finished')
+
+def getKineticDataFromDjango(inputFile, species, tempRange = [15, 40], enzymeType = "wildtype", phRange = [5,9], proximLimit=1000):
+
+	logging.basicConfig(filename=os.path.join('.', 'logging.log'), filemode='w', level=logging.INFO)
+	logging.info('Datanator: Started')
+
+	defaultValues = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzymeType, tempRange[0], tempRange[1], phRange[0], phRange[1])
 	
+	file = open("Errors.txt", "w")
+	file.write("")
+	file.close()
+
+	
+	#this is the endgame
+	formattedDataList = []
+
+	excelSheetObject = inputFile
+	reactionQueries = ReactionQueries.generateReactionQueries(excelSheetObject)
+	for reactionQuery in reactionQueries:
+		try:
+			logging.info('\n')
+			logging.info('Datanator: Started analyzing {}'.format(reactionQuery.id))
+			formattedData = createFormattedData(reactionQuery, species, defaultValues, proximLimit)
+			formattedDataList.append(formattedData)
+		except:
+			file = open("Errors.txt", "a")
+			file.write("{}	{}".format(reactionQuery.id, reactionQuery.__dict__) + "\n")
+			logging.error("Datanator: {} caused an error and did not work".format(reactionQuery.id))
+	#createExcelSheet(outputFilename, formattedDataList, species)
+	logging.info('Datanator: Finished')
+	return formattedDataList
 	
 if __name__ == '__main__':
 
