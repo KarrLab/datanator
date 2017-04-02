@@ -380,26 +380,72 @@ class TestProgram(unittest.TestCase):
 		#formatted data list 
 		FormattedDataList = Datanator.getKineticData(inputFileName, outputFilename, species)
 
+		found = False
 		for formattedData in FormattedDataList:
-			if formattedData.id == "ATP + UMP <==> UDP + ADP":
-				self.assertEqual(formattedData.reacionIDs, [77])
-				#medianKmEntry is an object of the Entry class found in the SabioInterface module
-				medianKmEnry = formattedData.KmData.medianKmEnry
-				self.assertFalse(medianKmEnry==None)
-				medianKm = medianKmEnry.km
-				self.assertEqual(medianKmEnry.entryID, 42062)
-				self.assertEqual(medianKmEnry.vmax, "")
-				self.assertEqual(medianKmEnry.proximity, 6)
+			if formattedData.id == "A Reacion Name #1 (ATP + UMP <==> UDP + ADP)":
+				found = True
+
+				#test the FormattedData fields
+
+				#the reaction IDs for this reaction should just be 201
+				self.assertEqual(formattedData.reactionIDs, ['201'])
+				#both km and vmax should have KineticInfo objects in their fields
+				self.assertFalse(formattedData.KmData==None)
+				self.assertFalse(formattedData.VmaxData==None)
+
+				#Now the KineticInfo fields will be tested
+				#First is some summaries of the expiremental data. 
+				kmData = formattedData.KmData
+				self.assertEqual(kmData.ECNumbers, ['2.7.4.14', '2.7.4.22']) #it has two EC numbers for the same reaction. EC numbers are not a perfect system
+				self.assertEqual(kmData.SabioReactionIDs, ['201'])
+				self.assertEqual(kmData.liftInfo, "Lift Not Used")
+				self.assertEqual(kmData.reactionList, ['ATP + UMP = UDP + ADP'])
+
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntries = kmData.closestEntries #this is a list of the most closely related expiremental entries
+				self.assertTrue(len(closestEntries)>12 and len(closestEntries) < 25) #when I made this test, there were 13 entries. If there are more than 25 entries, something probably went wrong 
+
+				#from the set of closestEntries, the entry with median km value is the medianEntry
+				#the medianEntry is an Entry object defined in SabioInterface
+				medianEntry = kmData.medianEntry
+				self.assertEqual(medianEntry.ECNumber, '2.7.4.22')
+				self.assertEqual(medianEntry.entryID, '17927') #this is the specific Entry Number sabio assigns to each expiremental entry
+				self.assertEqual(medianEntry.km, '1.0E-4') #this is the km value for this expiremental entry
+				self.assertEqual(medianEntry.vmax, '0.00665') #this is the vmax for this expiremental entry
+				self.assertEqual(medianEntry.numParticipants, [2,2]) #this is a list to record the number of substrates and products
+				self.assertEqual(medianEntry.species, 'Streptococcus pneumoniae') #this is the species the expirement was done in
+				self.assertEqual(medianEntry.proximity, 6) #this is closely related the expiremental species is to the modeler's species
+				self.assertEqual(medianEntry.reactionID, '201') #this is the Sabio assigned ID for this reaction in general
+			
+		self.assertTrue(found)
 
 
 
-			print formattedData.__dict__
+
+
+
+
+
+		#medianKmEntry is an object of the Entry class found in the SabioInterface module
+		#the following are a series of tests that make sure that the entry fields are
+		#filled in properly
+		"""
+		medianKmEnry = formattedData.KmData.medianKmEnry
+		self.assertFalse(medianKmEnry==None)
+		medianKm = medianKmEnry.km
+		self.assertEqual(medianKmEnry.entryID, 42062)
+		self.assertEqual(medianKmEnry.vmax, "")
+		self.assertEqual(medianKmEnry.proximity, 6)
+		"""
+
+
+
+			#print formattedData.__dict__
 				
 		print FormattedDataList
 		self.assertEqual(1,1)
-
-
-
 
 
 
