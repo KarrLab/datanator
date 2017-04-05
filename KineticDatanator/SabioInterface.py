@@ -15,6 +15,7 @@ class Entry:
 		self.entryID = ""
 		self.vmax = ""
 		self.km = ""
+		self.kmSubstrate = ""
 		self.species = ""
 		self.ECNumber = ""
 		self.reactionID = ""
@@ -47,6 +48,8 @@ class Entry:
 				#print self.entryID
 				#if parsed[5] == "M":
 				self.km = parsed[2]
+				self.kmSubstrate = parsed[1]
+
 
 	def parseSabioReactionString(self, reactionString):
 
@@ -98,6 +101,8 @@ class TotalResult:
 			entryTextArrays.append(textArray)
 
 			for entryData in entryTextArrays:
+				#print entryData
+				#print""
 				entry = Entry(entryData)
 				self.entryList.append(entry)
 
@@ -212,12 +217,15 @@ if __name__ == '__main__':
 
 	searchString = """ECNumber: ("1.2.7.0" OR "1.2.7.1" OR "1.2.7.2" OR "1.2.7.3" OR "1.2.7.4" OR "1.2.7.5" OR "1.2.7.6" OR "1.2.7.7" OR "1.2.7.8" OR "1.2.7.9" OR "1.2.7.10" OR "1.2.7.11" OR "1.2.7.12" OR "1.2.7.13" OR "1.2.7.14" OR "1.2.7.15" OR "1.2.7.16" OR "1.2.7.17" OR "1.2.7.18" OR "1.2.7.19" OR "1.2.7.20" OR "1.2.7.21" OR "1.2.7.22" OR "1.2.7.23" OR "1.2.7.24" OR "1.2.7.25" OR "1.2.7.26" OR "1.2.7.27" OR "1.2.7.28" OR "1.2.7.29" OR "1.2.7.30" OR "1.2.7.31" OR "1.2.7.32" OR "1.2.7.33" OR "1.2.7.34" OR "1.2.7.35" OR "1.2.7.36" OR "1.2.7.37" OR "1.2.7.38" OR "1.2.7.39" OR "1.2.7.40" OR "1.2.7.41" OR "1.2.7.42" OR "1.2.7.43" OR "1.2.7.44" OR "1.2.7.45" OR "1.2.7.46" OR "1.2.7.47" OR "1.2.7.48" OR "1.2.7.49" OR "1.2.7.50" OR "1.2.7.51" OR "1.2.7.52" OR "1.2.7.53" OR "1.2.7.54" OR "1.2.7.55" OR "1.2.7.56" OR "1.2.7.57" OR "1.2.7.58" OR "1.2.7.59" OR "1.2.7.60" OR "1.2.7.61" OR "1.2.7.62" OR "1.2.7.63" OR "1.2.7.64" OR "1.2.7.65" OR "1.2.7.66" OR "1.2.7.67" OR "1.2.7.68" OR "1.2.7.69" OR "1.2.7.70" OR "1.2.7.71" OR "1.2.7.72" OR "1.2.7.73" OR "1.2.7.74" OR "1.2.7.75" OR "1.2.7.76" OR "1.2.7.77" OR "1.2.7.78" OR "1.2.7.79" OR "1.2.7.80" OR "1.2.7.81" OR "1.2.7.82" OR "1.2.7.83" OR "1.2.7.84" OR "1.2.7.85" OR "1.2.7.86" OR "1.2.7.87" OR "1.2.7.88" OR "1.2.7.89" OR "1.2.7.90" OR "1.2.7.91" OR "1.2.7.92" OR "1.2.7.93" OR "1.2.7.94" OR "1.2.7.95" OR "1.2.7.96" OR "1.2.7.97" OR "1.2.7.98" OR "1.2.7.99" OR "1.2.7.100")"""
 	baseSpecies = 'mycoplasma pneumoniae'
+	searchString = """((Substrate:"ATP") AND (Substrate:"UMP" OR Substrate:"Uridine 5'-phosphate")) AND ((Product:"UDP"))"""
 	results =  getSabioData(searchString, baseSpecies)
 	print(len(results.entryList))
 	
+	"""
 	for entry in results.entryList:
 		print(entry.entryID)
 		print(entry.km)
+	"""
 	
 	"""
 	array = [1,2,3]

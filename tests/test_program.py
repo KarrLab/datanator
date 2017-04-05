@@ -378,6 +378,12 @@ class TestProgram(unittest.TestCase):
 		species = 'mycoplasma pneumoniae'
 
 		#formatted data list 
+		#The formatted data list is a list of FormattedData objects
+		#FormattedData objects store and organize the final relevant expiremental data
+		#FormattedData is the central Class that should contain all the data needed to respond to a query
+		#Ideally, a FormattedData objective should be comprehensive enough to pass to a user, and the user should be able 
+		#to derive all the information he wants from that object
+
 		FormattedDataList = Datanator.getKineticData(inputFileName, outputFilename, species)
 
 		found = False
@@ -387,6 +393,10 @@ class TestProgram(unittest.TestCase):
 
 				#test the FormattedData fields
 
+				#reactionIDs is there to classify how many distinct sabio-RK Ids reference the desired reaction
+				#there are two reasons a reaction ID list may contain more than a single entry. Either if there is an error
+				#or if there are two reactions that differ only in stereochemistry (the inchi strings and smiles cannot detect
+				#stereochemical distinctions).
 				#the reaction IDs for this reaction should just be 201
 				self.assertEqual(formattedData.reactionIDs, ['201'])
 				#both km and vmax should have KineticInfo objects in their fields
@@ -404,6 +414,8 @@ class TestProgram(unittest.TestCase):
 				#Each kinetic info class contains Entry objects from the SabioInterface module. 
 				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
 				
+				closestEntryIDs = kmData.closestEntryIDs
+				self.assertTrue(len(closestEntryIDs)>12 and len(closestEntryIDs)<25)
 				closestEntries = kmData.closestEntries #this is a list of the most closely related expiremental entries
 				self.assertTrue(len(closestEntries)>12 and len(closestEntries) < 25) #when I made this test, there were 13 entries. If there are more than 25 entries, something probably went wrong 
 
@@ -418,11 +430,190 @@ class TestProgram(unittest.TestCase):
 				self.assertEqual(medianEntry.species, 'Streptococcus pneumoniae') #this is the species the expirement was done in
 				self.assertEqual(medianEntry.proximity, 6) #this is closely related the expiremental species is to the modeler's species
 				self.assertEqual(medianEntry.reactionID, '201') #this is the Sabio assigned ID for this reaction in general
-			
+				
+				#check the entryID of the min and the max within kmData
+				self.assertEqual(kmData.minEntry.entryID, '51904')
+				self.assertEqual(kmData.maxEntry.entryID, '51903')
+
+
+				#now the vmax infor fields will  be tested
+				vmaxData = formattedData.VmaxData
+				self.assertEqual(vmaxData.ECNumbers, ['2.7.4.14', '2.7.4.22']) #it has two EC numbers for the same reaction. EC numbers are not a perfect system
+				self.assertEqual(vmaxData.SabioReactionIDs, ['201'])
+				self.assertEqual(vmaxData.liftInfo, "Lift Not Used")
+				self.assertEqual(vmaxData.reactionList, ['ATP + UMP = UDP + ADP'])
+
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntryIDs = vmaxData.closestEntryIDs
+				self.assertTrue(len(closestEntryIDs)>44 and len(closestEntryIDs)<50)
+				closestEntries = vmaxData.closestEntries #this is a list of the most closely related expiremental entries
+				self.assertTrue(len(closestEntries)>44 and len(closestEntries) < 50) #when I made this test, there were 45 entries. If there are more than 50 entries, something probably went wrong 
+
+				#from the set of closestEntries, the entry with median km value is the medianEntry
+				#the medianEntry is an Entry object defined in SabioInterface
+				medianEntry = vmaxData.medianEntry
+				self.assertEqual(medianEntry.ECNumber, '2.7.4.22')
+				self.assertEqual(medianEntry.entryID, '17907') #this is the specific Entry Number sabio assigns to each expiremental entry
+				self.assertEqual(medianEntry.km, '') #this is the km value for this expiremental entry
+				self.assertEqual(medianEntry.vmax, '0.00456666667') #this is the vmax for this expiremental entry
+				self.assertEqual(medianEntry.numParticipants, [2,2]) #this is a list to record the number of substrates and products
+				self.assertEqual(medianEntry.species, 'Streptococcus pneumoniae') #this is the species the expirement was done in
+				self.assertEqual(medianEntry.proximity, 6) #this is closely related the expiremental species is to the modeler's species
+				self.assertEqual(medianEntry.reactionID, '201') #this is the Sabio assigned ID for this reaction in general
+				
+				#check the entryID of the min and the max within kmData
+				self.assertEqual(vmaxData.minEntry.entryID, '40434')
+				self.assertEqual(vmaxData.maxEntry.entryID, '17934')
 		self.assertTrue(found)
 
 
 
+
+		#the next entry to test is one that has both the km and vmax lifted from other reactions
+		found = False
+		for formattedData in FormattedDataList:
+			if formattedData.id == '[c]: dCMP64dTMP + (2) H2O ==> dC64dT + (2) PI':
+				found = True
+
+				#test the FormattedData fields
+
+				#the reaction IDs for this reaction should just be empty becuase no exact mathches were found in the Sabio Database
+				self.assertEqual(formattedData.reactionIDs, [])
+				#both km and vmax should have KineticInfo objects in their fields
+				self.assertFalse(formattedData.KmData==None)
+				self.assertFalse(formattedData.VmaxData==None)
+
+				#Now the KineticInfo fields will be tested
+				#First is some summaries of the expiremental data. 
+				kmData = formattedData.KmData
+				#No Sabio reaction should match the query, and therefore Sabio will gather data from any reaction in 
+				#the same EC classification subclass (the first three digits of the four digit EC number)
+				self.assertEqual(kmData.liftInfo, 'Lifted From 3.1.3')
+				#The query gathers data from many different reactions, and therefore many the reactions will have different EC numbers. 
+				self.assertEqual(kmData.ECNumbers, [u'3.1.3.1', u'3.1.3.11', u'3.1.3.13', u'3.1.3.16', u'3.1.3.17', u'3.1.3.18', u'3.1.3.2', u'3.1.3.22', u'3.1.3.23', u'3.1.3.24', u'3.1.3.25', u'3.1.3.29', u'3.1.3.3', u'3.1.3.31', u'3.1.3.33', u'3.1.3.34', u'3.1.3.36', u'3.1.3.37', u'3.1.3.4', u'3.1.3.43', u'3.1.3.46', u'3.1.3.48', u'3.1.3.5', u'3.1.3.56', u'3.1.3.57', u'3.1.3.6', u'3.1.3.64', u'3.1.3.7', u'3.1.3.74', u'3.1.3.76', u'3.1.3.8', u'3.1.3.9', u'3.1.3.91', u'3.1.3.93', u'3.1.3.95']) #it has two EC numbers for the same reaction. EC numbers are not a perfect system
+				#Similarly, the reactions gatheres will have different Sabio reaction IDs
+				self.assertEqual(kmData.SabioReactionIDs, [u'10261', u'10263', u'10269', u'10270', u'10271', u'10330', u'10377', u'10378', u'10388', u'10394', u'10399', u'10400', u'10401', u'10631', u'10700', u'10707', u'10711', u'10726', u'10734', u'1117', u'1118', u'11265', u'11266', u'11267', u'11288', u'11318', u'1150', u'1182', u'12091', u'12166', u'124', u'12404', u'12405', u'129', u'13054', u'13055', u'1325', u'13296', u'13453', u'13635', u'13655', u'13970', u'14184', u'14198', u'14219', u'1422', u'1423', u'1424', u'1683', u'1686', u'1851', u'186', u'1891', u'1923', u'1965', u'200', u'207', u'2084', u'209', u'210', u'211', u'2219', u'2424', u'246', u'2493', u'2503', u'27', u'2717', u'2730', u'282', u'2874', u'295', u'304', u'305', u'309', u'3140', u'3170', u'3177', u'3197', u'3198', u'3224', u'3227', u'339', u'4095', u'433', u'444', u'479', u'480', u'487', u'501', u'508', u'581', u'6096', u'6098', u'6445', u'6446', u'664', u'6734', u'6769', u'697', u'7185', u'7186', u'7187', u'7188', u'7189', u'7190', u'7191', u'7192', u'7193', u'7194', u'7195', u'7196', u'7278', u'728', u'736', u'742', u'75', u'76', u'7712', u'7713', u'7952', u'7953', u'7954', u'796', u'797', u'7970', u'7971', u'7972', u'7973', u'7974', u'7975', u'7976', u'7977', u'8072', u'8082', u'816', u'8203', u'8204', u'8205', u'8206', u'8749', u'8902', u'8953', u'9216', u'937', u'9556', u'9571', u'9583', u'9586', u'9599', u'9603', u'964', u'983', u'9864', u'9910', u'9945', u'9953', u'9954', u'9955', u'9956', u'9957', u'9958', u'9959', u'9960', u'9963'])
+				self.assertEqual(kmData.reactionList, [u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',4',5'-trisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',4'-bisphosphate) + Phosphate", u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',5'-bisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3'-phosphate) + Phosphate", u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 4',5'-bisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 4'-phosphate) + Phosphate", u'1-Phosphatidyl-D-myo-inositol 4,5-bisphosphate + H2O = Phosphate + 1-Phosphatidyl-1D-myo-inositol 4-phosphate', u'1D-myo-Inositol 1,4,5,6-tetrakisphosphate + H2O = Inositol 1,4,6-trisphosphate + Phosphate', u'1D-myo-Inositol 2-phosphate + H2O = myo-Inositol + Phosphate', u"2'-Deoxyadenosine 3'-phosphate + H2O = Deoxyadenosine + Phosphate", u"2'-Deoxycytidine 3'-phosphate + H2O = 2'-Deoxycytidine + Phosphate", u"2'-Deoxyguanosine 3'-phosphate + H2O = Deoxyguanosine + Phosphate", u"2'-Deoxyuridine 3'-phosphate + H2O = 2'-Deoxyuridine + Phosphate", u'2,3-Diphosphoglycerate + H2O = Unknown + Phosphate', u'2-Deoxy-D-glucose 6-phosphate + H2O = 2-Deoxy-D-glucose + Phosphate', u'2-Deoxyglucose 6-phosphate + H2O = 2-Deoxyglucose + Phosphate', u"3'-Phosphoadenylyl sulfate + H2O = Phosphate + Adenylylsulfate", u'4-Pyridoxic acid 5-phosphate + H2O = 4-Pyridoxate + Phosphate', u"5'-Ribonucleotide + H2O = Nucleoside + Phosphate", u'ADP + H2O = Diphosphate + Adenosine', u'ADP + H2O = Phosphate + AMP', u'ATP + H2O = Adenosine + Triphosphate', u'ATP + H2O = Phosphate + ADP', u"Adenosine 3',5'-bisphosphate + H2O = Phosphate + AMP", u'Arabinose 5-phosphate + H2O = Arabinose + Phosphate', u'CDP + H2O = CMP + Phosphate', u"Cytidine 3'-phosphate + H2O = Cytidine + Phosphate", u'D-Fructose 1,6-bisphosphate + H2O = D-Fructose monophosphate + Phosphate', u'D-Glucose 1-phosphate + H2O = D-Glucose + Phosphate', u'D-Glucose 6-phosphate + H2O = D-Glucose + Phosphate', u'D-Mannitol 1-phosphate + H2O = Phosphate + D-Mannitol', u'D-myo-Inositol 1,2,4,5,6-pentakisphosphate + H2O = Inositol 1,2,4,6-tetrakisphosphate + Phosphate', u'Diphosphate + H2O = Phosphate', u'Fructose 1,6-bisphosphate + H2O = Unknown + Phosphate', u'Fructose 1-phosphate + H2O = Fructose + Phosphate', u'Fructose 6-phosphate + H2O = Fructose + Phosphate', u'GDP + H2O = Phosphate + GMP', u'Galactose 1-phosphate + H2O = Galactose + Phosphate', u'Glucose + 3-Phospho-D-glyceroyl phosphate = Glucose 6-phosphate + 3-Phospho-D-glycerate', u'Glucose 1-phosphate + H2O = Glucose + Phosphate', u'Glycerate 3-phosphate + H2O = Glycerate + Phosphate', u'Glycerate 3-phosphate + H2O = Phosphate + D-Glycerate', u'Glycerol 3-phosphate + H2O = Glycerol + Phosphate', u'H2O + 1-Phosphatidyl-1D-myo-inositol 3,5-bisphosphate = Phosphate + 1-Phosphatidyl-1D-myo-inositol 5-phosphate', u'H2O + 1-Phosphatidyl-1D-myo-inositol 3-phosphate = Phosphate + 1-Phosphatidyl-D-myo-inositol', u'H2O + 1-Phospho-D-glycerate = D-Glycerate + Phosphate', u'H2O + 1D-myo-Inositol 1,3,4,5-tetrakisphosphate = Phosphate + 1D-myo-Inositol 1,3,4-trisphosphate', u'H2O + 1D-myo-Inositol 1,3,4-trisphosphate = Phosphate + D-myo-Inositol 3,4-bisphosphate', u'H2O + 1D-myo-Inositol 1,4-bisphosphate = Phosphate + myo-Inositol 4-phosphate', u'H2O + 1D-myo-Inositol 1-phosphate = Phosphate + myo-Inositol', u'H2O + 1D-myo-Inositol 3-phosphate = Phosphate + myo-Inositol', u'H2O + 2-Chloro-4-nitrophenyl phosphate = Phosphate + 2-Chloro-4-nitrophenol', u'H2O + 2-Phospho-D-glycerate = Phosphate + D-Glycerate', u'H2O + 2-Phosphoglycolate = Phosphate + Glycolate', u'H2O + 3-O-Methylfluorescein phosphate = Phosphate + 3-O-Methylfluorescein', u'H2O + 4-Chlorophenyl phosphate = Phosphate + 4-Chlorophenol', u'H2O + 4-Cyanophenyl phosphate = Phosphate + 4-Cyanophenol', u'H2O + 4-Methylumbelliferyl phosphate = Phosphate + 4-Methylumbelliferone', u'H2O + 4-Nitrophenyl phenyl phosphonate = p-Nitrophenol + Phenyl phosphonate', u'H2O + 4-Nitrophenyl phosphate = Phosphate + p-Nitrophenol', u'H2O + 4-Trifluoromethylphenyl phosphate = Phosphate + 4-Trifluoromethylphenol', u"H2O + 5'-Phosphopolynucleotide = Phosphate + Polynucleotide", u'H2O + 5-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 5-Fluoro-4-methylumbelliferone', u'H2O + 6,8-Difluoro-4-methylumbelliferyl phosphate = Phosphate + 6,8-Difluoro-4-methylumbelliferone', u'H2O + 6-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 6-Fluoro-4-methylumbelliferone', u'H2O + 6-Phosphogluconate = Phosphate + Gluconate', u"H2O + 7-Methylguanosine 5'-phosphate = Phosphate + 7-Methylguanosine", u'H2O + 8-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 8-Fluoro-4-methylumbelliferone', u'H2O + AMP = Phosphate + Adenosine', u"H2O + Adenosine 2'-phosphate = Adenosine + Phosphate", u"H2O + Adenosine 3'-phosphate = Phosphate + Adenosine", u'H2O + Bis-4-nitrophenyl phosphate = p-Nitrophenol + 4-Nitrophenyl phosphate', u'H2O + CMP = Cytidine + Phosphate', u'H2O + CTP = CDP + Phosphate', u'H2O + Casein kinase I epsilon phosphorylated = Phosphate + Casein kinase I epsilon', u'H2O + Ceramide 1-phosphate = Phosphate + N-Acylsphingosine', u'H2O + Choline phosphate = Phosphate + Choline', u'H2O + D-Fructose 1,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + D-Fructose 1,6-bisphosphate = Phosphate + beta-D-Fructose 6-phosphate', u'H2O + D-Fructose 2,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + D-Fructose 2,6-bisphosphate = Phosphate + beta-D-Fructose 6-phosphate', u'H2O + D-Galactose 1-phosphate = Phosphate + D-Galactose', u'H2O + D-Mannose 6-phosphate = D-Mannose + Phosphate', u'H2O + D-O-Phosphoserine = Phosphate + D-Serine', u'H2O + D-myo-Inositol 1,3-bisphosphate = Phosphate + 1D-myo-Inositol 1-phosphate', u'H2O + D-myo-Inositol 1,4,5-trisphosphate = Phosphate + 1D-myo-Inositol 1,4-bisphosphate', u"H2O + Deoxythymidine 3',5'-diphosphate = Phosphate + dTMP", u"H2O + Deoxythymidine 3'-phosphate = Phosphate + Thymidine", u'H2O + Ethanolamine phosphate = Phosphate + Ethanolamine', u'H2O + Fructose 1,6-bisphosphate = Phosphate + Fructose 6-phosphate', u'H2O + GMP = Phosphate + Guanosine', u'H2O + GTP = GDP + Phosphate', u'H2O + Glucosamine 6-phosphate = Phosphate + Glucosamine', u'H2O + Glucose 6-phosphate = Glucose + Phosphate', u'H2O + Glycerate 2,3-bisphosphate = Glycerate 3-phosphate + Phosphate', u'H2O + Glycerate 2,3-bisphosphate = Phosphate + 3-Phospho-D-glycerate', u'H2O + Glycerol 2-phosphate = Phosphate + Glycerol', u"H2O + Guanosine 3'-phosphate = Phosphate + Guanosine", u'H2O + IMP = Phosphate + Inosine', u'H2O + Inositol 1,2,3,4,5-pentakisphosphate = Phosphate + Inositol 1,2,3,4-tetrakisphosphate', u'H2O + Inositol 1,2,4,5-tetrakisphosphate = Inositol 1,2,4-trisphosphate + Phosphate', u'H2O + Inositol 4,5-bisphosphate = Phosphate + myo-Inositol 4-phosphate', u'H2O + L-Galactose 1-phosphate = Phosphate + L-Galactose', u'H2O + L-Phosphotyrosine = Phosphate + L-Tyrosine', u'H2O + L-Threonine O-3-phosphate = L-Threonine + Phosphate', u'H2O + N-(5-Phospho-4-pyridoxyl)glycine = 4-Pyridoxylglycine + Phosphate', u'H2O + N-Acetylneuraminate 9-phosphate = Phosphate + N-Acetylneuraminate', u'H2O + N-Acylneuraminate 9-phosphate = Phosphate + N-Acylneuraminate', u'H2O + NADP+ = Phosphate + NAD+', u'H2O + NADPH = NADH + Phosphate', u'H2O + O-Phospho-L-serine = L-Serine + Phosphate', u'H2O + O-Phospho-L-serine = Serine + Phosphate', u'H2O + O-Phospho-tau-protein = Phosphate + tau-Protein', u'H2O + Phenolic phosphate = Phosphate + Phenol', u'H2O + Phenolphthalein diphosphate = Phosphate + Phenolphthalein', u'H2O + Phosphoenolpyruvate = Phosphate + Pyruvate', u'H2O + Phosphotyrosine = Phosphate + Tyrosine', u'H2O + Propan-1-ol 2-phosphate = Phosphate + 1-Propanol', u'H2O + Pyridoxal phosphate = Phosphate + Pyridoxal', u'H2O + Ribulose 5-phosphate = Ribulose + Phosphate', u'H2O + Sorbitol 6-phosphate = Phosphate + Sorbitol', u'H2O + Sphinganine 1-phosphate = Phosphate + Sphinganine', u'H2O + SpoIIAA-phosphorylated = Phosphate + SpoIIAA', u'H2O + Sucrose 6-phosphate = Sucrose + Phosphate', u'H2O + TDP = Phosphate + Thiamine monophosphate', u'H2O + Tetrapolyphosphate = Phosphate + Triphosphate', u'H2O + UDP = UMP + Phosphate', u"H2O + Uridine 3'-phosphate = Uridine + Phosphate", u'H2O + XMP = Phosphate + Xanthosine', u'H2O + beta-D-Fructose 2,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + beta-Naphthyl phosphate = Phosphate + beta-Naphthol', u'H2O + dGDP = Phosphate + dGMP', u'H2O + dIMP = Phosphate + Deoxyinosine', u'H2O + dTMP = Phosphate + Thymidine', u'H2O + dTTP = Phosphate + TDP', u'H2O + myo-Inositol 4-phosphate = Phosphate + myo-Inositol', u'H2O + myo-Inositol hexakisphosphate = Phosphate + D-myo-Inositol 1,2,4,5,6-pentakisphosphate', u'H2O + myo-Inositol phosphate = myo-Inositol + Phosphate', u'H2O + o-Carboxyphenyl phosphate = Phosphate + Salicylate', u'H2O + p-Nitrophenylthymidine phosphate = p-Nitrophenol + dTMP', u'Inositol 2,4,5,6-tetrakisphosphate + H2O = Phosphate + Inositol 2,4,6-trisphosphate', u'Inositol 2,4,5-trisphosphate + H2O = Phosphate + Inositol 2,4-bisphosphate', u'Inositol 4,5,6-trisphosphate + H2O = Inositol 4,6-bisphosphate + Phosphate', u'Mannitol 1-phosphate + H2O = Mannitol + Phosphate', u'Mannose 6-phosphate + H2O = D-Mannose + Phosphate', u'N-(5-Phospho-4-pyridoxyl)benzylamine + H2O = 4-Pyridoxylbenzylamine + Phosphate', u'N-(5-Phospho-4-pyridoxyl)ethanolamine + H2O = 4-Pyridoxylethanolamine + Phosphate', u'N-(5-Phospho-4-pyridoxyl)phenylalanine + H2O = 4-Pyridoxylphenylalanine + Phosphate', u'N-Acetyl-D-mannosamine 6-phosphate + H2O = N-Acetylmannosamine + Phosphate', u'N-Acetylglucosamine 6-phosphate + H2O = N-Acetylglucosamine + Phosphate', u'Phosphate + Pyridoxamine = H2O + Pyridoxamine phosphate', u'Phosphate + Pyridoxine = H2O + Pyridoxine phosphate', u'Phosphorylase a + H2O = Phosphorylase b + Phosphate', u'Proteine tyrosine phosphate + H2O = Phosphate + Protein tyrosine', u'Riboflavin-5-phosphate + H2O = Phosphate + Riboflavin', u'Ribose 5-phosphate + H2O = Phosphate + beta-D-Ribopyranose', u'Sedoheptulose 1,7-bisphosphate + H2O = Phosphate + Sedoheptulose 7-phosphate', u'Thymolphthalein monophosphate + H2O = Thymolphthalein + Phosphate', u'UMP + H2O = Uridine + Phosphate', u'UTP + H2O = Phosphate + UDP', u'alpha-Naphthyl phosphate + H2O = alpha-Naphthol + Phosphate', u'beta-D-Thiogalactopyranoside 6-phosphate + H2O = beta-D-Thiogalactopyranoside + Phosphate', u'dAMP + H2O = Phosphate + Deoxyadenosine', u"dCMP + H2O = Phosphate + 2'-Deoxycytidine", u'dGMP + H2O = Phosphate + Deoxyguanosine', u"dUMP + H2O = Phosphate + 2'-Deoxyuridine", u'sn-Glycerol 1-phosphate + H2O = Phosphate + Glycerol', u'sn-Glycerol 3-phosphate + H2O = Phosphate + Glycerol'])
+
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntryIDs = kmData.closestEntryIDs
+				self.assertTrue(len(closestEntryIDs)>9 and len(closestEntryIDs)<15)
+				closestEntries = kmData.closestEntries #this is a list of the most closely related expiremental entries
+				self.assertTrue(len(closestEntries)>9 and len(closestEntries) < 15) #when I made this test, there were 13 entries. If there are more than 25 entries, something probably went wrong 
+
+				#from the set of closestEntries, the entry with median km value is the medianEntry
+				#the medianEntry is an Entry object defined in SabioInterface
+				medianEntry = kmData.medianEntry
+				self.assertEqual(medianEntry.ECNumber, '3.1.3.5')
+				self.assertEqual(medianEntry.entryID, '30219') #this is the specific Entry Number sabio assigns to each expiremental entry
+				self.assertEqual(medianEntry.km, '2.6E-6') #this is the km value for this expiremental entry
+				self.assertEqual(medianEntry.vmax, '') #this is the vmax for this expiremental entry
+				self.assertEqual(medianEntry.numParticipants, [2,2]) #this is a list to record the number of substrates and products
+				self.assertEqual(medianEntry.species, 'Mycoplasma fermentans') #this is the species the expirement was done in
+				self.assertEqual(medianEntry.proximity, 1) #this is closely related the expiremental species is to the modeler's species
+				self.assertEqual(medianEntry.reactionID, '295') #this is the Sabio assigned ID for this reaction in general
+				
+				#check the entryID of the min and the max within kmData
+				self.assertEqual(kmData.minEntry.entryID, '30226')
+				self.assertEqual(kmData.maxEntry.entryID, '30224')
+
+
+				#now the vmax info fields will  be tested
+				vmaxData = formattedData.VmaxData
+				self.assertEqual(vmaxData.ECNumbers, [u'3.1.3.1', u'3.1.3.11', u'3.1.3.13', u'3.1.3.16', u'3.1.3.17', u'3.1.3.18', u'3.1.3.2', u'3.1.3.22', u'3.1.3.23', u'3.1.3.24', u'3.1.3.25', u'3.1.3.29', u'3.1.3.3', u'3.1.3.31', u'3.1.3.33', u'3.1.3.34', u'3.1.3.36', u'3.1.3.37', u'3.1.3.4', u'3.1.3.43', u'3.1.3.46', u'3.1.3.48', u'3.1.3.5', u'3.1.3.56', u'3.1.3.57', u'3.1.3.6', u'3.1.3.64', u'3.1.3.7', u'3.1.3.74', u'3.1.3.76', u'3.1.3.8', u'3.1.3.9', u'3.1.3.91', u'3.1.3.93', u'3.1.3.95']) #it has two EC numbers for the same reaction. EC numbers are not a perfect system
+				self.assertEqual(vmaxData.SabioReactionIDs, [u'10261', u'10263', u'10269', u'10270', u'10271', u'10330', u'10377', u'10378', u'10388', u'10394', u'10399', u'10400', u'10401', u'10631', u'10700', u'10707', u'10711', u'10726', u'10734', u'1117', u'1118', u'11265', u'11266', u'11267', u'11288', u'11318', u'1150', u'1182', u'12091', u'12166', u'124', u'12404', u'12405', u'129', u'13054', u'13055', u'1325', u'13296', u'13453', u'13635', u'13655', u'13970', u'14184', u'14198', u'14219', u'1422', u'1423', u'1424', u'1683', u'1686', u'1851', u'186', u'1891', u'1923', u'1965', u'200', u'207', u'2084', u'209', u'210', u'211', u'2219', u'2424', u'246', u'2493', u'2503', u'27', u'2717', u'2730', u'282', u'2874', u'295', u'304', u'305', u'309', u'3140', u'3170', u'3177', u'3197', u'3198', u'3224', u'3227', u'339', u'4095', u'433', u'444', u'479', u'480', u'487', u'501', u'508', u'581', u'6096', u'6098', u'6445', u'6446', u'664', u'6734', u'6769', u'697', u'7185', u'7186', u'7187', u'7188', u'7189', u'7190', u'7191', u'7192', u'7193', u'7194', u'7195', u'7196', u'7278', u'728', u'736', u'742', u'75', u'76', u'7712', u'7713', u'7952', u'7953', u'7954', u'796', u'797', u'7970', u'7971', u'7972', u'7973', u'7974', u'7975', u'7976', u'7977', u'8072', u'8082', u'816', u'8203', u'8204', u'8205', u'8206', u'8749', u'8902', u'8953', u'9216', u'937', u'9556', u'9571', u'9583', u'9586', u'9599', u'9603', u'964', u'983', u'9864', u'9910', u'9945', u'9953', u'9954', u'9955', u'9956', u'9957', u'9958', u'9959', u'9960', u'9963'])
+				self.assertEqual(vmaxData.liftInfo, 'Lifted From 3.1.3')
+				self.assertEqual(vmaxData.reactionList, [u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',4',5'-trisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',4'-bisphosphate) + Phosphate", u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3',5'-bisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 3'-phosphate) + Phosphate", u"1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 4',5'-bisphosphate) + H2O = 1,2-Dibutanoyl-sn-glycero-3-phospho-(1'-inositol 4'-phosphate) + Phosphate", u'1-Phosphatidyl-D-myo-inositol 4,5-bisphosphate + H2O = Phosphate + 1-Phosphatidyl-1D-myo-inositol 4-phosphate', u'1D-myo-Inositol 1,4,5,6-tetrakisphosphate + H2O = Inositol 1,4,6-trisphosphate + Phosphate', u'1D-myo-Inositol 2-phosphate + H2O = myo-Inositol + Phosphate', u"2'-Deoxyadenosine 3'-phosphate + H2O = Deoxyadenosine + Phosphate", u"2'-Deoxycytidine 3'-phosphate + H2O = 2'-Deoxycytidine + Phosphate", u"2'-Deoxyguanosine 3'-phosphate + H2O = Deoxyguanosine + Phosphate", u"2'-Deoxyuridine 3'-phosphate + H2O = 2'-Deoxyuridine + Phosphate", u'2,3-Diphosphoglycerate + H2O = Unknown + Phosphate', u'2-Deoxy-D-glucose 6-phosphate + H2O = 2-Deoxy-D-glucose + Phosphate', u'2-Deoxyglucose 6-phosphate + H2O = 2-Deoxyglucose + Phosphate', u"3'-Phosphoadenylyl sulfate + H2O = Phosphate + Adenylylsulfate", u'4-Pyridoxic acid 5-phosphate + H2O = 4-Pyridoxate + Phosphate', u"5'-Ribonucleotide + H2O = Nucleoside + Phosphate", u'ADP + H2O = Diphosphate + Adenosine', u'ADP + H2O = Phosphate + AMP', u'ATP + H2O = Adenosine + Triphosphate', u'ATP + H2O = Phosphate + ADP', u"Adenosine 3',5'-bisphosphate + H2O = Phosphate + AMP", u'Arabinose 5-phosphate + H2O = Arabinose + Phosphate', u'CDP + H2O = CMP + Phosphate', u"Cytidine 3'-phosphate + H2O = Cytidine + Phosphate", u'D-Fructose 1,6-bisphosphate + H2O = D-Fructose monophosphate + Phosphate', u'D-Glucose 1-phosphate + H2O = D-Glucose + Phosphate', u'D-Glucose 6-phosphate + H2O = D-Glucose + Phosphate', u'D-Mannitol 1-phosphate + H2O = Phosphate + D-Mannitol', u'D-myo-Inositol 1,2,4,5,6-pentakisphosphate + H2O = Inositol 1,2,4,6-tetrakisphosphate + Phosphate', u'Diphosphate + H2O = Phosphate', u'Fructose 1,6-bisphosphate + H2O = Unknown + Phosphate', u'Fructose 1-phosphate + H2O = Fructose + Phosphate', u'Fructose 6-phosphate + H2O = Fructose + Phosphate', u'GDP + H2O = Phosphate + GMP', u'Galactose 1-phosphate + H2O = Galactose + Phosphate', u'Glucose + 3-Phospho-D-glyceroyl phosphate = Glucose 6-phosphate + 3-Phospho-D-glycerate', u'Glucose 1-phosphate + H2O = Glucose + Phosphate', u'Glycerate 3-phosphate + H2O = Glycerate + Phosphate', u'Glycerate 3-phosphate + H2O = Phosphate + D-Glycerate', u'Glycerol 3-phosphate + H2O = Glycerol + Phosphate', u'H2O + 1-Phosphatidyl-1D-myo-inositol 3,5-bisphosphate = Phosphate + 1-Phosphatidyl-1D-myo-inositol 5-phosphate', u'H2O + 1-Phosphatidyl-1D-myo-inositol 3-phosphate = Phosphate + 1-Phosphatidyl-D-myo-inositol', u'H2O + 1-Phospho-D-glycerate = D-Glycerate + Phosphate', u'H2O + 1D-myo-Inositol 1,3,4,5-tetrakisphosphate = Phosphate + 1D-myo-Inositol 1,3,4-trisphosphate', u'H2O + 1D-myo-Inositol 1,3,4-trisphosphate = Phosphate + D-myo-Inositol 3,4-bisphosphate', u'H2O + 1D-myo-Inositol 1,4-bisphosphate = Phosphate + myo-Inositol 4-phosphate', u'H2O + 1D-myo-Inositol 1-phosphate = Phosphate + myo-Inositol', u'H2O + 1D-myo-Inositol 3-phosphate = Phosphate + myo-Inositol', u'H2O + 2-Chloro-4-nitrophenyl phosphate = Phosphate + 2-Chloro-4-nitrophenol', u'H2O + 2-Phospho-D-glycerate = Phosphate + D-Glycerate', u'H2O + 2-Phosphoglycolate = Phosphate + Glycolate', u'H2O + 3-O-Methylfluorescein phosphate = Phosphate + 3-O-Methylfluorescein', u'H2O + 4-Chlorophenyl phosphate = Phosphate + 4-Chlorophenol', u'H2O + 4-Cyanophenyl phosphate = Phosphate + 4-Cyanophenol', u'H2O + 4-Methylumbelliferyl phosphate = Phosphate + 4-Methylumbelliferone', u'H2O + 4-Nitrophenyl phenyl phosphonate = p-Nitrophenol + Phenyl phosphonate', u'H2O + 4-Nitrophenyl phosphate = Phosphate + p-Nitrophenol', u'H2O + 4-Trifluoromethylphenyl phosphate = Phosphate + 4-Trifluoromethylphenol', u"H2O + 5'-Phosphopolynucleotide = Phosphate + Polynucleotide", u'H2O + 5-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 5-Fluoro-4-methylumbelliferone', u'H2O + 6,8-Difluoro-4-methylumbelliferyl phosphate = Phosphate + 6,8-Difluoro-4-methylumbelliferone', u'H2O + 6-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 6-Fluoro-4-methylumbelliferone', u'H2O + 6-Phosphogluconate = Phosphate + Gluconate', u"H2O + 7-Methylguanosine 5'-phosphate = Phosphate + 7-Methylguanosine", u'H2O + 8-Fluoro-4-methylumbelliferyl phosphate = Phosphate + 8-Fluoro-4-methylumbelliferone', u'H2O + AMP = Phosphate + Adenosine', u"H2O + Adenosine 2'-phosphate = Adenosine + Phosphate", u"H2O + Adenosine 3'-phosphate = Phosphate + Adenosine", u'H2O + Bis-4-nitrophenyl phosphate = p-Nitrophenol + 4-Nitrophenyl phosphate', u'H2O + CMP = Cytidine + Phosphate', u'H2O + CTP = CDP + Phosphate', u'H2O + Casein kinase I epsilon phosphorylated = Phosphate + Casein kinase I epsilon', u'H2O + Ceramide 1-phosphate = Phosphate + N-Acylsphingosine', u'H2O + Choline phosphate = Phosphate + Choline', u'H2O + D-Fructose 1,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + D-Fructose 1,6-bisphosphate = Phosphate + beta-D-Fructose 6-phosphate', u'H2O + D-Fructose 2,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + D-Fructose 2,6-bisphosphate = Phosphate + beta-D-Fructose 6-phosphate', u'H2O + D-Galactose 1-phosphate = Phosphate + D-Galactose', u'H2O + D-Mannose 6-phosphate = D-Mannose + Phosphate', u'H2O + D-O-Phosphoserine = Phosphate + D-Serine', u'H2O + D-myo-Inositol 1,3-bisphosphate = Phosphate + 1D-myo-Inositol 1-phosphate', u'H2O + D-myo-Inositol 1,4,5-trisphosphate = Phosphate + 1D-myo-Inositol 1,4-bisphosphate', u"H2O + Deoxythymidine 3',5'-diphosphate = Phosphate + dTMP", u"H2O + Deoxythymidine 3'-phosphate = Phosphate + Thymidine", u'H2O + Ethanolamine phosphate = Phosphate + Ethanolamine', u'H2O + Fructose 1,6-bisphosphate = Phosphate + Fructose 6-phosphate', u'H2O + GMP = Phosphate + Guanosine', u'H2O + GTP = GDP + Phosphate', u'H2O + Glucosamine 6-phosphate = Phosphate + Glucosamine', u'H2O + Glucose 6-phosphate = Glucose + Phosphate', u'H2O + Glycerate 2,3-bisphosphate = Glycerate 3-phosphate + Phosphate', u'H2O + Glycerate 2,3-bisphosphate = Phosphate + 3-Phospho-D-glycerate', u'H2O + Glycerol 2-phosphate = Phosphate + Glycerol', u"H2O + Guanosine 3'-phosphate = Phosphate + Guanosine", u'H2O + IMP = Phosphate + Inosine', u'H2O + Inositol 1,2,3,4,5-pentakisphosphate = Phosphate + Inositol 1,2,3,4-tetrakisphosphate', u'H2O + Inositol 1,2,4,5-tetrakisphosphate = Inositol 1,2,4-trisphosphate + Phosphate', u'H2O + Inositol 4,5-bisphosphate = Phosphate + myo-Inositol 4-phosphate', u'H2O + L-Galactose 1-phosphate = Phosphate + L-Galactose', u'H2O + L-Phosphotyrosine = Phosphate + L-Tyrosine', u'H2O + L-Threonine O-3-phosphate = L-Threonine + Phosphate', u'H2O + N-(5-Phospho-4-pyridoxyl)glycine = 4-Pyridoxylglycine + Phosphate', u'H2O + N-Acetylneuraminate 9-phosphate = Phosphate + N-Acetylneuraminate', u'H2O + N-Acylneuraminate 9-phosphate = Phosphate + N-Acylneuraminate', u'H2O + NADP+ = Phosphate + NAD+', u'H2O + NADPH = NADH + Phosphate', u'H2O + O-Phospho-L-serine = L-Serine + Phosphate', u'H2O + O-Phospho-L-serine = Serine + Phosphate', u'H2O + O-Phospho-tau-protein = Phosphate + tau-Protein', u'H2O + Phenolic phosphate = Phosphate + Phenol', u'H2O + Phenolphthalein diphosphate = Phosphate + Phenolphthalein', u'H2O + Phosphoenolpyruvate = Phosphate + Pyruvate', u'H2O + Phosphotyrosine = Phosphate + Tyrosine', u'H2O + Propan-1-ol 2-phosphate = Phosphate + 1-Propanol', u'H2O + Pyridoxal phosphate = Phosphate + Pyridoxal', u'H2O + Ribulose 5-phosphate = Ribulose + Phosphate', u'H2O + Sorbitol 6-phosphate = Phosphate + Sorbitol', u'H2O + Sphinganine 1-phosphate = Phosphate + Sphinganine', u'H2O + SpoIIAA-phosphorylated = Phosphate + SpoIIAA', u'H2O + Sucrose 6-phosphate = Sucrose + Phosphate', u'H2O + TDP = Phosphate + Thiamine monophosphate', u'H2O + Tetrapolyphosphate = Phosphate + Triphosphate', u'H2O + UDP = UMP + Phosphate', u"H2O + Uridine 3'-phosphate = Uridine + Phosphate", u'H2O + XMP = Phosphate + Xanthosine', u'H2O + beta-D-Fructose 2,6-bisphosphate = Phosphate + D-Fructose 6-phosphate', u'H2O + beta-Naphthyl phosphate = Phosphate + beta-Naphthol', u'H2O + dGDP = Phosphate + dGMP', u'H2O + dIMP = Phosphate + Deoxyinosine', u'H2O + dTMP = Phosphate + Thymidine', u'H2O + dTTP = Phosphate + TDP', u'H2O + myo-Inositol 4-phosphate = Phosphate + myo-Inositol', u'H2O + myo-Inositol hexakisphosphate = Phosphate + D-myo-Inositol 1,2,4,5,6-pentakisphosphate', u'H2O + myo-Inositol phosphate = myo-Inositol + Phosphate', u'H2O + o-Carboxyphenyl phosphate = Phosphate + Salicylate', u'H2O + p-Nitrophenylthymidine phosphate = p-Nitrophenol + dTMP', u'Inositol 2,4,5,6-tetrakisphosphate + H2O = Phosphate + Inositol 2,4,6-trisphosphate', u'Inositol 2,4,5-trisphosphate + H2O = Phosphate + Inositol 2,4-bisphosphate', u'Inositol 4,5,6-trisphosphate + H2O = Inositol 4,6-bisphosphate + Phosphate', u'Mannitol 1-phosphate + H2O = Mannitol + Phosphate', u'Mannose 6-phosphate + H2O = D-Mannose + Phosphate', u'N-(5-Phospho-4-pyridoxyl)benzylamine + H2O = 4-Pyridoxylbenzylamine + Phosphate', u'N-(5-Phospho-4-pyridoxyl)ethanolamine + H2O = 4-Pyridoxylethanolamine + Phosphate', u'N-(5-Phospho-4-pyridoxyl)phenylalanine + H2O = 4-Pyridoxylphenylalanine + Phosphate', u'N-Acetyl-D-mannosamine 6-phosphate + H2O = N-Acetylmannosamine + Phosphate', u'N-Acetylglucosamine 6-phosphate + H2O = N-Acetylglucosamine + Phosphate', u'Phosphate + Pyridoxamine = H2O + Pyridoxamine phosphate', u'Phosphate + Pyridoxine = H2O + Pyridoxine phosphate', u'Phosphorylase a + H2O = Phosphorylase b + Phosphate', u'Proteine tyrosine phosphate + H2O = Phosphate + Protein tyrosine', u'Riboflavin-5-phosphate + H2O = Phosphate + Riboflavin', u'Ribose 5-phosphate + H2O = Phosphate + beta-D-Ribopyranose', u'Sedoheptulose 1,7-bisphosphate + H2O = Phosphate + Sedoheptulose 7-phosphate', u'Thymolphthalein monophosphate + H2O = Thymolphthalein + Phosphate', u'UMP + H2O = Uridine + Phosphate', u'UTP + H2O = Phosphate + UDP', u'alpha-Naphthyl phosphate + H2O = alpha-Naphthol + Phosphate', u'beta-D-Thiogalactopyranoside 6-phosphate + H2O = beta-D-Thiogalactopyranoside + Phosphate', u'dAMP + H2O = Phosphate + Deoxyadenosine', u"dCMP + H2O = Phosphate + 2'-Deoxycytidine", u'dGMP + H2O = Phosphate + Deoxyguanosine', u"dUMP + H2O = Phosphate + 2'-Deoxyuridine", u'sn-Glycerol 1-phosphate + H2O = Phosphate + Glycerol', u'sn-Glycerol 3-phosphate + H2O = Phosphate + Glycerol'])
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntryIDs = vmaxData.closestEntryIDs
+				self.assertTrue(len(closestEntryIDs)>6 and len(closestEntryIDs)<10)
+				closestEntries = vmaxData.closestEntries #this is a list of the most closely related expiremental entries
+				self.assertTrue(len(closestEntries)>6 and len(closestEntries) < 10) #when I made this test, there were 45 entries. If there are more than 50 entries, something probably went wrong 
+
+				#from the set of closestEntries, the entry with median km value is the medianEntry
+				#the medianEntry is an Entry object defined in SabioInterface
+				medianEntry = vmaxData.medianEntry
+				self.assertEqual(medianEntry.ECNumber, '3.1.3.22')
+				self.assertEqual(medianEntry.entryID, '22920') #this is the specific Entry Number sabio assigns to each expiremental entry
+				self.assertEqual(medianEntry.km, '9.0E-6') #this is the km value for this expiremental entry
+				self.assertEqual(medianEntry.vmax, '4.33333333E-5') #this is the vmax for this expiremental entry
+				self.assertEqual(medianEntry.numParticipants, [2,2]) #this is a list to record the number of substrates and products
+				self.assertEqual(medianEntry.species, 'Streptococcus bovis') #this is the species the expirement was done in
+				self.assertEqual(medianEntry.proximity, 6) #this is closely related the expiremental species is to the modeler's species
+				self.assertEqual(medianEntry.reactionID, '581') #this is the Sabio assigned ID for this reaction in general
+				
+				#check the entryID of the min and the max within kmData
+				self.assertEqual(vmaxData.minEntry.entryID, '22921')
+				self.assertEqual(vmaxData.maxEntry.entryID, '16039')
+		self.assertTrue(found)
+
+
+		#this Entry is an example of where less than 3 relevant entries are found
+		#If two relevant entries are found the min and max are filled in but the median is blank
+		#if one relevant entry is found, the median is filled in, but the in and max are blank
+		found = False
+		for formattedData in FormattedDataList:
+			if formattedData.id == '[c]: FMN + H + NADH ==> FMNH2 + NAD':
+				found = True
+
+				#test the FormattedData fields
+
+				self.assertEqual(formattedData.reactionIDs, ['5301'])
+				#both km and vmax should have KineticInfo objects in their fields
+				self.assertFalse(formattedData.KmData==None)
+				self.assertFalse(formattedData.VmaxData==None)
+
+				#Now the KineticInfo fields will be tested
+				#First is some summaries of the expiremental data. 
+				kmData = formattedData.KmData
+				
+				self.assertEqual(kmData.liftInfo, 'Lift Not Used')
+
+				#Even though all the reactions are the same, the reaction has many EC numbers (because EC numbers are an imperfect system)
+				self.assertEqual(kmData.ECNumbers, [u'1.14.13', u'1.14.13.7', u'1.5.1', u'1.5.1.30', u'1.5.1.39'])
+				#only one reaction ID should be present
+				self.assertEqual(kmData.SabioReactionIDs, ['5301'])
+				self.assertEqual(kmData.reactionList, [u'NAD+ + Reduced FMN = NADH + H+ + Riboflavin-5-phosphate'])
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntries = kmData.closestEntries
+				self.assertEqual(len(closestEntries), 2)
+				#make sure that median is blank but min and max are filled in
+				self.assertTrue(kmData.medianEntry==None)
+				self.assertFalse(kmData.minEntry==None or kmData.maxEntry==None)
+				
+				vmaxData = formattedData.VmaxData
+				
+				self.assertEqual(vmaxData.liftInfo, 'Lift Not Used')
+
+				#Even though all the reactions are the same, the reaction has many EC numbers (because EC numbers are an imperfect system)
+				self.assertEqual(vmaxData.ECNumbers, [u'1.14.13', u'1.14.13.7', u'1.5.1', u'1.5.1.30', u'1.5.1.39'])
+				#only one reaction ID should be present
+				self.assertEqual(vmaxData.SabioReactionIDs, ['5301'])
+				self.assertEqual(vmaxData.reactionList, [u'NAD+ + Reduced FMN = NADH + H+ + Riboflavin-5-phosphate'])
+				#Each kinetic info class contains Entry objects from the SabioInterface module. 
+				#The following tests will tests ensure the KineticInfo fields contains the right Entry objects
+				
+				closestEntries = vmaxData.closestEntries
+				self.assertEqual(len(closestEntries), 1)
+				#make sure that median is blank but min and max are filled in
+				self.assertFalse(vmaxData.medianEntry==None)
+				self.assertTrue(vmaxData.minEntry==None or vmaxData.maxEntry==None)
+				
+		self.assertTrue(found)
+
+
+
+
+		#the next entry is a case where Sabio did find the queried reaction, however it did not find any vmax infromation
+		#it only found km
 
 
 
