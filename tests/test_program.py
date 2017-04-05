@@ -635,7 +635,7 @@ class TestProgram(unittest.TestCase):
 
 			#print formattedData.__dict__
 				
-		print FormattedDataList
+		#print FormattedDataList
 		self.assertEqual(1,1)
 
 
