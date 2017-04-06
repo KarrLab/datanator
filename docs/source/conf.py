@@ -1,5 +1,4 @@
 
-
 # -*- coding: utf-8 -*-
 #
 # KineticDatanator documentation build configuration file, created by
