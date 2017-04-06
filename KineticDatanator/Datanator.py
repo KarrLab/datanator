@@ -14,17 +14,17 @@ import os
 
 #finish debugging the EC finder
 
-"""
-.. autoclass:: Noodle
-   :members: eat, slurp
-
-   .. method:: boil(time=10)
-
-      Boil the noodle *time* minutes
-"""
 
 
 class KineticInfo:
+	"""
+	.. autoclass:: Noodle
+	   :members: eat, slurp
+
+	   .. method:: boil(time=10)
+
+	      Boil the noodle *time* minutes
+	"""
 	def __init__(self, sabioResults, name = ""):
 
 
