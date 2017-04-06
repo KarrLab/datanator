@@ -10,7 +10,7 @@ Welcome to KineticDatanator's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   Introduction
+
 
 
 
@@ -21,10 +21,10 @@ Motivation
 ----------
 
 How it Works
------------
+--------------
 
 Databases Used
-------------
+---------------
 
 Installation
 ============
@@ -45,10 +45,10 @@ Install Openbabel from <https://packages.debian.org/wheezy/amd64/python-openbabe
 
 
 Tutorial - Getting Familiar With KineticDatanator's Command Line Interface
-========================================================================
+============================================================================
 
 Generate Template Doc
---------------------
+------------------------
 
 KineticDatanator can be used run directly from the command line.
 
@@ -86,17 +86,17 @@ $ python -mKineticDatanator get-taxonomic-lineage 'homo sapiens'
 
 
 Set Maximum Proximity Limit
---------------------------
+-----------------------------
 
 
 
 Formatting The Reaction Entries
-==============================
+=================================
 
 
 
 Understanding The Output
-========================
+===========================
 
 
 
