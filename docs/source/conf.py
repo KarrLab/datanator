@@ -1,21 +1,4 @@
-Skip to content
-This repository
-Search
-Pull requests
-Issues
-Gist
- @yosefdroth
- Sign out
- Watch 5
-  Star 0
- Fork 0 KarrLab/Kinetic-Datanator Private
- Code  Issues 0  Pull requests 0  Projects 0  Wiki  Pulse  Graphs  Settings
-Tree: 30ef2f098a Find file Copy pathKinetic-Datanator/docs/source/conf.py
-91bd735  on Feb 24
-@yosefdroth yosefdroth adding docs
-1 contributor
-RawBlameHistory    
-189 lines (140 sloc)  5.43 KB
+
 
 # -*- coding: utf-8 -*-
 #
@@ -204,5 +187,3 @@ epub_exclude_files = ['search.html']
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
-Contact GitHub API Training Shop Blog About
-© 2017 GitHub, Inc. Terms Privacy Security Status Help
