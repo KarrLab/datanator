@@ -21,18 +21,36 @@ import os
 
 #finish debugging the EC finder
 
-"""
-.. autoclass:: Noodle
-   :members: eat, slurp
-
-   .. method:: boil(time=10)
-
-      Boil the noodle *time* minutes
-"""
-
 
 class KineticInfo:
+	""" Description
+
+	Attributes:
+		name (:obj:`str`): name
+		closest_entry_ids
+		closest_entries
+		closest_values
+		median_entry
+		min_entry
+		max_entry
+		lift_info
+		reaction_list 
+		sabio_reaction_ids
+		ec_numbers
+		closest_entries 
+		closest_entry_ids
+		closest_values
+		min_entry
+		max_entry
+		median_entry 
+	"""
+
 	def __init__(self, sabio_results, name = ""):
+		"""
+		Args:
+			sabio_results
+			name (:obj:`str`, optional): name
+		"""
 
 		self.name = name
 		self.closest_entry_ids = []

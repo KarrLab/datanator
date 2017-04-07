@@ -14,7 +14,6 @@ Contents:
    intro
    installation
    tutorial
-   contribute
    source/modules
 
 
