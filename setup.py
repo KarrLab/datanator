@@ -48,3 +48,7 @@ setup(
     tests_require=tests_require,
     dependency_links=dependency_links,
 )
+
+# download NCBI taxonomy database
+from kinetic_datanator import taxon_finder
+taxon_finder.download_ncbi_database()

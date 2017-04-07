@@ -53,4 +53,8 @@ def get_taxonomic_lineage(base_species):
 
 def download_ncbi_database():
 	ncbi = NCBITaxa()
+	ncbi.get_descendant_taxa('Homo')
+
+def update_ncbi_database():
+	ncbi = NCBITaxa()
 	ncbi.update_taxonomy_database()

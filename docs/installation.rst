@@ -26,7 +26,3 @@ Install Openbabel from <http://openbabel.org/wiki/Category:Installation>::
 *Install kinetic_datanator*::
 
     $ pip install kinetic_datanator
-
-*Install the NCBI taxonomic database*::
-
-    $ python -c 'from kinetic_datanator import taxon_finder; taxon_finder.downloadNCBIDatabase()'
