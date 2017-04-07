@@ -34,6 +34,9 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# test output
+tests/output/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -60,8 +63,9 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
+# Sphinx generated documentation
 docs/_build/
+docs/source/
 
 # PyBuilder
 target/
@@ -87,3 +91,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# temporary Excel files
+.~lock.*

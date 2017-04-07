@@ -1,4 +1,0 @@
-find-kinetics --help
-find-kinetics generate-template input-data.xlsx
-find-kinetics get-kinetics input-datax.xlsx output-data.xlsx --min-temperature 37 --max-temperature 40 --min-ph 5 --max-ph 9 --only-wild-type
-fnnd-kinetics get-taxonomic-distance "species name 1" "species name 2"

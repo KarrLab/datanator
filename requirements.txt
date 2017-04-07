@@ -1,6 +1,5 @@
-requests
 ete3
-argparse
-openpyxl
-jxmlease
 numpy
+openbabel
+openpyxl
+requests
