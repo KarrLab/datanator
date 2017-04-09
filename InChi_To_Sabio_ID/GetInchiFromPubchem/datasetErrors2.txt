@@ -1,0 +1,505 @@
+8083 - No Inchi Found - N-Hydroxy-amino acid
+8085 - No Inchi Found - Cyanohydrin
+8086 - No Inchi Found - Cyanoglycoside
+8090 - No Inchi Found - 2-Oxoacid oxime
+8092 - No Inchi Found - Reduced methylene blue
+8093 - No Inchi Found - D-Pyrrolidone-5-carboxylate
+8096 - No Inchi Found - Mercapturonate
+8097 - No Inchi Found - R-S-Alanylglycine
+8101 - No Inchi Found - Glycogen amylopectin chain(n)
+8102 - No Inchi Found - Glycogen amylose chain(n)-1,6-amylose chain(4)
+8105 - No Inchi Found - Butyryl-[acp]
+8106 - No Inchi Found - 3-Oxohexanoyl-[acp]
+8108 - No Inchi Found - trans-Hex-2-enoyl-[acp]
+8111 - No Inchi Found - trans-Oct-2-enoyl-[acp]
+8113 - No Inchi Found - 3-Oxodecanoyl-[acp]
+8114 - No Inchi Found - trans-Dec-2-enoyl-[acp]
+8116 - No Inchi Found - 3-Oxododecanoyl-[acp]
+8117 - No Inchi Found - (R)-3-Hydroxydodecanoyl-[acp]
+8118 - No Inchi Found - trans-Dodec-2-enoyl-[acp]
+8119 - No Inchi Found - 3-Oxotetradecanoyl-[acp]
+8135 - No Inchi Found - Vitamin B12
+8139 - No Inchi Found - Apotransferrin
+8143 - No Inchi Found - Peroxidase
+8154 - No Inchi Found - Galactan
+8157 - No Inchi Found - Bacterio-chlorophylls
+8201 - No Inchi Found - (Phosphoglyceryl)3-N-acetyl-beta-D-mannosaminyl-1,4-N-acetyl-D- glucosaminyldiphosphoundecaprenol
+8205 - No Inchi Found - Reduced vitamin K
+8224 - No Inchi Found - (alpha-D-Mannosyl)9-beta-D-mannosyl- diacetylchitobiosyldiphosphodolichol
+8263 - No Inchi Found - Bathorhodopsin
+8264 - No Inchi Found - Lumirhodopsin
+8265 - No Inchi Found - Metarhodopsin
+8269 - No Inchi Found - Porphyropsin
+8310 - No Inchi Found - L-Lysophosphatidylethanolamine
+8312 - No Inchi Found - 2-Acyl-sn-glycero-3-phosphoserine
+8321 - No Inchi Found - Pentosans
+8324 - No Inchi Found - Corrinoid
+8339 - No Inchi Found - Trigalactosyl-diacylglycerol
+8340 - No Inchi Found - Digalactosyl-diacylglycerol
+8341 - No Inchi Found - Acyl1-monogalactosyl-diacylglycerol
+8342 - No Inchi Found - Diglucosyl-diacylglycerol
+8343 - No Inchi Found - Glycerophosphoglycoglycerolipid
+8345 - No Inchi Found - D-Alanyl-lipoteichoic acid
+8351 - No Inchi Found - N-Formylderivatives
+8361 - No Inchi Found - Amidines
+8362 - No Inchi Found - Nitrogenous compounds
+8370 - No Inchi Found - Indole alkaloid
+8373 - No Inchi Found - Comphene
+8374 - No Inchi Found - Pinene
+8381 - No Inchi Found - Hopanoid
+8382 - No Inchi Found - Triterpenoid
+8397 - No Inchi Found - L-Glutamyl-tRNA(Gln)
+8398 - No Inchi Found - L-Aspartyl-tRNA(Asn)
+8403 - No Inchi Found - Sulfatide
+8404 - No Inchi Found - Digalactosylceramide
+8405 - No Inchi Found - Digalactosylceramidesulfate
+8406 - No Inchi Found - N-Acetylneuraminyl-galactosylceramide
+8407 - No Inchi Found - Ceramidepentasaccharide
+8408 - No Inchi Found - Type B glycolipid
+8409 - No Inchi Found - Type H1 glycolipid
+8410 - No Inchi Found - Type A glycolipid
+8411 - No Inchi Found - GD3
+8412 - No Inchi Found - GD2
+8413 - No Inchi Found - GA2
+8414 - No Inchi Found - GA1
+8415 - No Inchi Found - GT1a
+8416 - No Inchi Found - GQ1
+8418 - No Inchi Found - GD1b
+8421 - No Inchi Found - D-Inositol
+8422 - No Inchi Found - L-Inositol
+8425 - No Inchi Found - D-myo-Inositol 5-phosphate
+8427 - No Inchi Found - S-Glutaryldihydrolipoamide
+8471 - No Inchi Found - Alkylphosphonate
+8472 - No Inchi Found - (R)-3-Hydroxy-3-methyl-2-oxobutanoate
+8474 - No Inchi Found - Phylloquinol
+8475 - No Inchi Found - Gla protein
+8476 - No Inchi Found - Gla protein precursor
+8477 - No Inchi Found - Apo-[carboxylase]
+8478 - No Inchi Found - Holo-[carboxylase]
+8482 - No Inchi Found - Lysophospholipid
+8483 - No Inchi Found - Globin
+8484 - No Inchi Found - Phosphorus
+8485 - No Inchi Found - Silicon
+8486 - No Inchi Found - Aluminium
+8487 - No Inchi Found - Carbon
+8488 - No Inchi Found - Boron
+8489 - No Inchi Found - Vanadium
+8490 - No Inchi Found - Chromium
+8491 - No Inchi Found - Arsenic
+8494 - No Inchi Found - Gal-beta1->3GlcNAc-beta1->3Gal-beta1->4Glc-beta1->1'Cer
+8495 - No Inchi Found - Gal-beta1->4GlcNAc-beta1->3Gal-beta1->4Glc-beta1->1'Cer
+8518 - No Inchi Found - NeuGc-alpha2->8NeuGc2->3Gal-beta1->4Glc-beta1->1'Cer
+8520 - No Inchi Found - NeuAc-alpha2->8NeuAc-alpha2->8NeuAc2->3LacCer
+8521 - No Inchi Found - NeuGc-alpha2->8NeuGc-alpha2->8NeuGc2->3LacCer
+8523 - No Inchi Found - GalNAc-beta1->4(NeuGc-alpha2->8NeuGc2->3)LacCer
+8558 - No Inchi Found - 27-Hydroxycholesterol
+8575 - No Inchi Found - Alkyl cinnamate
+8579 - No Inchi Found - Anthocyanidin-3,5-diglucoside
+8580 - No Inchi Found - Hydroxycinnamoyl-CoA
+8581 - No Inchi Found - Anthocyanidin 3-glucoside-5-hydroxycinnamoylglucoside
+8582 - No Inchi Found - 1,2-Diacyl-3-O-(alpha-D-glucopyranosyl)-sn-glycerol
+8583 - No Inchi Found - Glc-alpha1->2Glc-alpha1->3acyl2Gro
+8587 - No Inchi Found - alpha-D-Glucuronoside
+8591 - No Inchi Found - Phthalylamide
+8592 - No Inchi Found - Substituted amine
+8593 - No Inchi Found - N-Acyl-D-amino acid
+8594 - No Inchi Found - N-Acyl-D-glutamate
+8595 - No Inchi Found - N-Acyl-D-aspartate
+8603 - No Inchi Found - 2-Aryl-2-methylmalonate
+8604 - No Inchi Found - 2-Arylpropionate
+8610 - No Inchi Found - [Protein]-L-serine
+8611 - No Inchi Found - [Protein]-D-serine
+8616 - No Inchi Found - [Ribulose-1,5-bisphosphate-carboxylase]-lysine
+8617 - No Inchi Found - [Ribulose-1,5-bisphosphate-carboxylase]-N6-methyl-L-lysine
+8621 - No Inchi Found - [Methionine synthase]-cob(II)alamin
+8622 - No Inchi Found - [Methionine synthase]-methylcob(I)alamin
+8623 - No Inchi Found - Palmitoyl-protein
+8630 - No Inchi Found - 1,3-Diacylglycerol
+8634 - No Inchi Found - Hydroxamate
+8657 - No Inchi Found - Ketosteroid
+8658 - No Inchi Found - L-Seryl-tRNA
+8659 - No Inchi Found - L-Selenocysteinyl-tRNA
+8660 - No Inchi Found - Glycoprotein-N-Acetyl-alpha-D-galactosaminyl-(1,3)-[alpha-L-fucosyl- (1,2)]-D-galactose
+8662 - No Inchi Found - (6R)-6-(L-erythro-1,2-Dihydroxypropyl)-5,6,7,8-tetrahydro-4a- hydroxypterin
+8663 - No Inchi Found - (6R)-6-(L-erythro-1,2-Dihydroxypropyl)-7,8-dihydro-6H-pterin
+8676 - No Inchi Found - 4,6-Diamino-5-formamidopyrimidine
+8735 - No Inchi Found - Penicilloic acid
+8757 - No Inchi Found - NDP-N-methyl-L-glucosamine
+8821 - No Inchi Found - Olivanic acid
+8824 - No Inchi Found - Meropenem trihydrate
+8855 - No Inchi Found - Quaternary amine
+8856 - No Inchi Found - Capsular polysaccharide
+8857 - No Inchi Found - Lipo-oligosaccharide
+8858 - No Inchi Found - Teichoic acid
+8859 - No Inchi Found - Xenobiotic
+8883 - No Inchi Found - Glucosyl-limonin
+8884 - No Inchi Found - Feruloyl-polysaccharide
+8886 - No Inchi Found - Poly(ADPribose)
+8887 - No Inchi Found - 3-Deoxyoctulosonyl-lipopolysaccharide
+8891 - No Inchi Found - (1,4)-beta-D-Glucuronan
+8895 - No Inchi Found - alpha-Factor
+8897 - No Inchi Found - Tetrasaccharide
+8946 - No Inchi Found - Aminophylline
+8950 - No Inchi Found - Amoxapine
+8952 - No Inchi Found - Amoxicillin-potassium clavulanate combination
+8953 - No Inchi Found - Amrinone
+8957 - No Inchi Found - Atenolol
+8960 - No Inchi Found - Auranofin
+8965 - No Inchi Found - Baclofen
+8968 - No Inchi Found - Benzonatate
+8969 - No Inchi Found - Benzquinamide
+8975 - No Inchi Found - Bisacodyl
+8982 - No Inchi Found - Budesonide
+8983 - No Inchi Found - Bumetanide
+8986 - No Inchi Found - Busulfan
+8996 - No Inchi Found - Carmustine
+9021 - No Inchi Found - Chenodiol
+9023 - No Inchi Found - Chlorambucil
+9024 - No Inchi Found - Chlordiazepoxide
+9026 - No Inchi Found - Chlormezanone
+9027 - No Inchi Found - Chlorotrianisene
+9030 - No Inchi Found - Chlorpropamide
+9031 - No Inchi Found - Chlorthalidone
+9042 - No Inchi Found - Clonazepam
+9043 - No Inchi Found - Clonidine
+9050 - No Inchi Found - Co-Trimoxazole
+9052 - No Inchi Found - Cyclandelate
+9056 - No Inchi Found - Cyclophosphamide
+9058 - No Inchi Found - Dacarbazine
+9059 - No Inchi Found - Danazol
+9082 - No Inchi Found - Lomotil
+9086 - No Inchi Found - Divalproex
+9088 - No Inchi Found - Docusate Sodium
+9094 - No Inchi Found - Droperidol
+9101 - No Inchi Found - Estazolam
+9102 - No Inchi Found - Premarin
+9105 - No Inchi Found - Etidronate Disodium
+9193 - No Inchi Found - Liotrix
+9374 - No Inchi Found - Silver sulfadiazine
+9395 - No Inchi Found - [eIF5A-precursor]-lysine
+9396 - No Inchi Found - [eIF5A-precursor]-deoxyhypusine
+9400 - No Inchi Found - [Arabino-galacto-(1->6)]-(1->3)-beta-D-galactans
+9405 - No Inchi Found - Dihydrofurano derivative
+9410 - No Inchi Found - Cutin
+9411 - No Inchi Found - Cutin monomer
+9416 - No Inchi Found - Products of ATP breakdown
+9425 - No Inchi Found - Sucralfate
+9447 - No Inchi Found - Quetiapine fumarate
+9461 - No Inchi Found - Phlorisobutyrophenone
+9472 - No Inchi Found - Pralidoxime chloride
+9481 - No Inchi Found - Procainamide hydrochloride
+9483 - No Inchi Found - Procarbazine hydrochloride
+9484 - No Inchi Found - Prochlorperazine maleate
+9487 - No Inchi Found - Promethazine hydrochloride
+9489 - No Inchi Found - Propantheline bromide
+9492 - No Inchi Found - Propoxyphene hydrochloride
+9493 - No Inchi Found - Propranolol hydrochloride
+9494 - No Inchi Found - Protriptyline hydrochloride
+9495 - No Inchi Found - Pseudoephedrine hydrochloride
+9496 - No Inchi Found - Pyrantel pamoate
+9497 - No Inchi Found - Pyridostigmine bromide
+9499 - No Inchi Found - Pyrvinium pamoate
+9503 - No Inchi Found - Pancuronium bromide
+9525 - No Inchi Found - Penicillin V potassium
+9532 - No Inchi Found - Pergolide mesylate
+9537 - No Inchi Found - Phenelzine sulfate
+9542 - No Inchi Found - Phenoxybenzamine hydrochloride
+9545 - No Inchi Found - Phentolamine mesylate
+9548 - No Inchi Found - Phenylephrine hydrochloride
+9567 - No Inchi Found - Dimenhydrinate
+9577 - No Inchi Found - Carbachol
+9581 - No Inchi Found - Cromolyn sodium
+9582 - No Inchi Found - Nedocromil sodium
+9588 - No Inchi Found - Montelukast sodium
+9612 - No Inchi Found - Glycopyrrolate
+9637 - No Inchi Found - Ropivacaine hydrochloride
+9668 - No Inchi Found - Pramipexole hydrochloride hydrate
+9687 - No Inchi Found - Warfarin sodium
+9699 - No Inchi Found - Edetate calcium disodium
+9718 - No Inchi Found - Goserelin
+9727 - No Inchi Found - Foscarnet sodium
+9742 - No Inchi Found - Sodium stibogluconate
+9780 - No Inchi Found - Rosiglitazone maleate
+9782 - No Inchi Found - Betaxolol hydrochloride
+9783 - No Inchi Found - Carteolol hydrochloride
+9784 - No Inchi Found - Labetalol hydrochloride
+9785 - No Inchi Found - Metoprolol tartrate
+9786 - No Inchi Found - Penbutolol sulfate
+9787 - No Inchi Found - Timolol maleate
+9788 - No Inchi Found - Clonidine hydrochloride
+9789 - No Inchi Found - Guanabenz acetate
+9790 - No Inchi Found - Guanfacine hydrochloride
+9791 - No Inchi Found - Guanadrel sulfate
+9792 - No Inchi Found - Doxazosin mesylate
+9793 - No Inchi Found - Prazosin hydrochloride
+9794 - No Inchi Found - Terazosin hydrochloride dihydrate
+9795 - No Inchi Found - Mecamylamine hydrochloride
+9796 - No Inchi Found - Trimethaphan camsylate
+9798 - No Inchi Found - Fenoldopam mesylate
+9800 - No Inchi Found - Amlodipine besylate
+9801 - No Inchi Found - Diltiazem hydrochloride
+9802 - No Inchi Found - Nicardipine hydrochloride
+9804 - No Inchi Found - Verapamil hydrochloride
+9805 - No Inchi Found - Benazepril hydrochloride
+9806 - No Inchi Found - Enalapril maleate
+9807 - No Inchi Found - Fosinopril sodium
+9809 - No Inchi Found - Moexipril hydrochloride
+9820 - No Inchi Found - Bepridil hydrochloride monohydrate
+9834 - No Inchi Found - Dobutamine hydrochloride
+9839 - No Inchi Found - Dopamine hydrochloride
+9841 - No Inchi Found - Bisoprolol fumarate
+9842 - No Inchi Found - Metoprolol succinate
+9843 - No Inchi Found - Amiodarone hydrochloride
+9845 - No Inchi Found - Flecainide acetate
+9846 - No Inchi Found - Mexiletine hydrochloride
+9848 - No Inchi Found - Propafenone hydrochloride
+9849 - No Inchi Found - Quinidine sulfate
+9850 - No Inchi Found - Quinidine gluconate
+9851 - No Inchi Found - Quinidine polygalacturonate
+9852 - No Inchi Found - Esmolol hydrochloride
+9853 - No Inchi Found - Bretylium tosylate
+9858 - No Inchi Found - Ibutilide fumarate
+9861 - No Inchi Found - Amiloride hydrochloride
+9866 - No Inchi Found - Dorzolamide hydrochloride
+9873 - No Inchi Found - Azelastine hydrochloride
+9876 - No Inchi Found - Cevimeline hydrochloride hydrate
+9879 - No Inchi Found - Azatadine maleate
+9880 - No Inchi Found - Brompheniramine maleate
+9883 - No Inchi Found - Cetirizine hydrochloride
+9884 - No Inchi Found - Chlorpheniramine maleate
+9885 - No Inchi Found - Clemastine fumarate
+9886 - No Inchi Found - Demecarium bromide
+9887 - No Inchi Found - Dexchlorpheniramine maleate
+9888 - No Inchi Found - Diphenhydramine hydrochloride
+9890 - No Inchi Found - Donepezil hydrochloride
+9891 - No Inchi Found - Fexofenadine hydrochloride
+9892 - No Inchi Found - Hydroxyzine hydrochloride
+9895 - No Inchi Found - Ranitidine hydrochloride
+9897 - No Inchi Found - Naratriptan hydrochloride
+9898 - No Inchi Found - Rizatriptan benzoate
+9899 - No Inchi Found - Sumatriptan succinate
+9900 - No Inchi Found - Granisetron hydrochloride
+9901 - No Inchi Found - Ondansetron hydrochloride
+9903 - No Inchi Found - Ergotamine tartrate
+9904 - No Inchi Found - Methylergometrine maleate
+9905 - No Inchi Found - Methysergide maleate
+9906 - No Inchi Found - Carboprost tromethamine
+9907 - No Inchi Found - Albuterol sulfate
+9908 - No Inchi Found - Bitolterol mesylate
+9910 - No Inchi Found - Metaproterenol sulfate
+9912 - No Inchi Found - Pirbuterol acetate
+9914 - No Inchi Found - Salmeterol xinafoate
+9916 - No Inchi Found - Terbutaline sulfate
+9924 - No Inchi Found - Ipratropium bromide hydrate
+9925 - No Inchi Found - Chlordiazepoxide hydrochloride
+9926 - No Inchi Found - Clorazepate dipotassium
+9927 - No Inchi Found - Flurazepam hydrochloride
+9928 - No Inchi Found - Midazolam hydrochloride
+9932 - No Inchi Found - Butabarbital sodium
+9934 - No Inchi Found - Phenobarbital sodium
+9935 - No Inchi Found - Buspirone hydrochloride
+9939 - No Inchi Found - Zolpidem tartrate
+9947 - No Inchi Found - Ketamine hydrochloride
+9949 - No Inchi Found - Methohexital sodium
+9951 - No Inchi Found - Thiamylal sodium
+9952 - No Inchi Found - Thiopental sodium
+9954 - No Inchi Found - Methscopolamine bromide
+9958 - No Inchi Found - Clidinium bromide
+9959 - No Inchi Found - Dicyclomine hydrochloride
+9960 - No Inchi Found - Flavoxate hydrochloride
+9961 - No Inchi Found - Hyoscyamine sulfate dihydrate
+9962 - No Inchi Found - Mepenzolate bromide
+9963 - No Inchi Found - Methantheline bromide
+9964 - No Inchi Found - Oxybutynin chloride
+9967 - No Inchi Found - Tridihexethyl chloride
+9973 - No Inchi Found - Olsalazine sodium
+9977 - No Inchi Found - Loperamide hydrochloride
+9982 - No Inchi Found - Chloroprocaine hydrochloride
+9986 - No Inchi Found - Dyclonine hydrochloride
+9987 - No Inchi Found - Trientine hydrochloride
+9989 - No Inchi Found - Etidocaine hydrochloride
+9995 - No Inchi Found - Mepivacaine hydrochloride
+9997 - No Inchi Found - Pramoxine hydrochloride
+9998 - No Inchi Found - Procaine hydrochloride
+10000 - No Inchi Found - Tetracaine hydrochloride
+10001 - No Inchi Found - Etanercept
+10004 - No Inchi Found - Interferon alfa-2a
+10005 - No Inchi Found - Interferon beta-1b
+10006 - No Inchi Found - Interferon gamma-1b
+10007 - No Inchi Found - Interleukin-2
+10010 - No Inchi Found - Levamisole hydrochloride
+10011 - No Inchi Found - Methylprednisolone sodium succinate
+10020 - No Inchi Found - Atracurium besylate
+10021 - No Inchi Found - Cisatracurium besylate
+10022 - No Inchi Found - Doxacurium chloride
+10024 - No Inchi Found - Metocurine iodide
+10026 - No Inchi Found - Mivacurium chloride
+10027 - No Inchi Found - Pipecuronium bromide
+10028 - No Inchi Found - Rocuronium bromide
+10029 - No Inchi Found - Succinylcholine chloride
+10030 - No Inchi Found - Vecuronium bromide
+10033 - No Inchi Found - Clopidogrel bisulfate
+10036 - No Inchi Found - Cyclobenzaprine hydrochloride
+10040 - No Inchi Found - Orphenadrine citrate
+10042 - No Inchi Found - Tizanidine hydrochloride
+10044 - No Inchi Found - Benztropine mesylate
+10046 - No Inchi Found - Bromocriptine mesylate
+10048 - No Inchi Found - Procyclidine hydrochloride
+10049 - No Inchi Found - Botulinum toxin type A
+10050 - No Inchi Found - Ropinirole hydrochloride
+10051 - No Inchi Found - Selegiline hydrochloride
+10053 - No Inchi Found - Trihexyphenidyl hydrochloride
+10054 - No Inchi Found - Acetophenazine maleate
+10060 - No Inchi Found - Loxapine succinate
+10061 - No Inchi Found - Mesoridazine besylate
+10062 - No Inchi Found - Molindone hydrochloride
+10065 - No Inchi Found - Trifluoperazine hydrochloride
+10066 - No Inchi Found - Triflupromazine hydrochloride
+10072 - No Inchi Found - Diethylcarbamazine citrate
+10075 - No Inchi Found - Oxantel pamoate
+10078 - No Inchi Found - Suramin sodium
+10081 - No Inchi Found - Clomipramine hydrochloride
+10084 - No Inchi Found - Doxepin Hydrochloride
+10086 - No Inchi Found - Nortriptyline hydrochloride
+10088 - No Inchi Found - Maprotiline hydrochloride
+10089 - No Inchi Found - Nefazodone hydrochloride
+10092 - No Inchi Found - Citalopram hydrobromide
+10093 - No Inchi Found - Fluoxetine hydrochloride
+10097 - No Inchi Found - Tranylcypromine sulfa
+10101 - No Inchi Found - Eflornithine hydrochloride
+10103 - No Inchi Found - Mefloquine hydrochloride
+10106 - No Inchi Found - Pentamidine isethionate
+10108 - No Inchi Found - Alfentanil hydrochloride anhydrous
+10110 - No Inchi Found - Buprenorphine hydrochloride
+10111 - No Inchi Found - Butorphanol tartrate
+10113 - No Inchi Found - Hydromorphone hydrochloride
+10115 - No Inchi Found - Levomethadyl acetate hydrochloride
+10117 - No Inchi Found - Levorphanol tartrate
+10118 - No Inchi Found - Morphine sulfate anhydrous
+10119 - No Inchi Found - Nalbuphine hydrochloride
+10122 - No Inchi Found - Oxymorphone hydrochloride
+10125 - No Inchi Found - Sufentanil citrate
+10130 - No Inchi Found - Dextromethorphan hydrobromide
+10137 - No Inchi Found - Methenamine hippurate
+10138 - No Inchi Found - Methenamine mandelate
+10139 - No Inchi Found - Benzalkonium chloride
+10140 - No Inchi Found - Chlorhexidine gluconate
+10146 - No Inchi Found - Thimerosal
+10150 - No Inchi Found - Paromomycin sulfate
+10151 - No Inchi Found - Spectinomycin hydrochloride
+10158 - No Inchi Found - Capreomycin sulfate
+10160 - No Inchi Found - Ethambutol hydrochloride
+10185 - No Inchi Found - Abacavir sulfate
+10186 - No Inchi Found - Fluvastatin sodium
+10187 - No Inchi Found - Pravastatin sodium
+10198 - No Inchi Found - Diclofenac potassium
+10199 - No Inchi Found - Diclofenac sodium
+10200 - No Inchi Found - Cefazolin sodium
+10218 - No Inchi Found - Ceftazidime Pentahydrate
+10221 - No Inchi Found - Ceftriaxone disodium salt hemiheptahydrate
+10222 - No Inchi Found - Fosfomycin tromethamine
+10227 - No Inchi Found - Oxacillin sodium
+10230 - No Inchi Found - Calcium acetate
+10233 - No Inchi Found - Calcium citrate
+10234 - No Inchi Found - Calcium gluceptate
+10236 - No Inchi Found - Calcium lactate
+10237 - No Inchi Found - Dibasic calcium phosphate dihydrate
+10239 - No Inchi Found - Alendronate sodium
+10240 - No Inchi Found - Gallium nitrate anhydrous
+10241 - No Inchi Found - Pamidronate disodium
+10242 - No Inchi Found - Risedronate sodium
+10263 - No Inchi Found - Clomiphene citrate
+10270 - No Inchi Found - Fenoprofen calcium
+10274 - No Inchi Found - Betamethasone Sodium Phosphate
+10279 - No Inchi Found - Hydrocortisone Sodium Phosphate
+10291 - No Inchi Found - Leuprolide acetate
+10292 - No Inchi Found - Nafarelin acetate hydrate
+10295 - No Inchi Found - Gold sodium thiomalate
+10299 - No Inchi Found - L-Epinephrine hydrochloride
+10314 - No Inchi Found - Levothyroxine sodium hydrate
+10319 - No Inchi Found - Ipodate Sodium
+10321 - No Inchi Found - Dipivefrin hydrochloride
+10325 - No Inchi Found - Naphazoline nitrate
+10353 - No Inchi Found - Fucoidan
+10356 - No Inchi Found - Pinitol
+10456 - No Inchi Found - O-alpha-L-Arabinopyranosyl-(1-6)-beta-D-glucopyranose
+10592 - No Inchi Found - Lysopine
+10813 - No Inchi Found - Polysialic acid acetylated at O-9
+10910 - No Inchi Found - Carrageenan
+10912 - No Inchi Found - Cholla gum
+10916 - No Inchi Found - Gum ghatti
+10918 - No Inchi Found - Gum karaya
+10919 - No Inchi Found - Gum tragacanth
+10920 - No Inchi Found - Mesquite gum
+12181 - No Inchi Found - Isoscoparin
+12986 - No Inchi Found - Activated methyl group
+13161 - No Inchi Found - Assert
+13177 - No Inchi Found - Fipronil
+13215 - No Inchi Found - [Dihydroxymethylglutaryl-CoA reductase (NADPH)]
+13216 - No Inchi Found - 3,5,3'-Triiodophenylpyruvate
+13217 - No Inchi Found - [Dihydroxymethylglutaryl-CoA reductase (NADPH)] phosphate
+13234 - No Inchi Found - Flupentixol dihydrochloride
+13244 - No Inchi Found - Crystal violet
+13259 - No Inchi Found - Panipenem
+13263 - No Inchi Found - Nimesulide
+13268 - No Inchi Found - Prenylamine
+13273 - No Inchi Found - Spiperone
+13280 - No Inchi Found - Penicillin G potassium
+13286 - No Inchi Found - Cefluprenam
+13339 - No Inchi Found - Benzbromarone
+13342 - No Inchi Found - BO 2727
+13404 - No Inchi Found - Gentamicin sulfate
+13446 - No Inchi Found - alpha-N-Acetylneuraminyl-2,6-beta-D-galactosyl-1,4-N-acetyl-D- glucosaminyl-glycoprotein
+13454 - No Inchi Found - Globotetraosylceramide
+13506 - No Inchi Found - Formyl-L-methionyl peptide
+13507 - No Inchi Found - Methionyl peptide
+13518 - No Inchi Found - dTDP-alpha-D-glucose
+13519 - No Inchi Found - dTDP-4-oxo-alpha-L-rhamnose
+13529 - No Inchi Found - 3,4-Dihydroxy-L-phenylalanyl-[pcp]
+13530 - No Inchi Found - 5-Chloro-3,4-dihydroxy-L-phenylalanyl-[pcp]
+13540 - No Inchi Found - DNA containing guanine
+13543 - No Inchi Found - tRNA containing 5-aminomethyl-2-thiouridine
+13547 - No Inchi Found - Holo-Lys2
+13588 - No Inchi Found - myo-Inositol polyphosphate
+13592 - No Inchi Found - N4-{N-Acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,3)-[N-acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,6)]-beta-D-mannosyl-(1,4)-N-acetyl-beta-D-glucosaminyl-(1,4)-N-cetyl-beta-D-glucosaminyl}asparagine
+13593 - No Inchi Found - 6-O-(beta-D-Xylopyranosyl)-beta-D-glucopyranoside
+13594 - No Inchi Found - N4-{N-Acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,3)-[N-acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,6)]-[beta-D-xylosyl-(1,2)]-beta-D-mannosyl-(1,4)-N-acetyl-beta--glucosaminyl-(1,4)-N-acetyl-beta-D-glucosaminyl}asparagine
+13595 - No Inchi Found - N4-{N-Acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,3)-[N-acetyl-beta-D-glucosaminyl-(1,2)-alpha-D-mannosyl-(1,6)]-beta-D-mannosyl-(1,4)-N-acetyl-beta-D-glucosaminyl-(1,4)-alpha-L-fucosyl-(1,6)]-N-acetyl-beta-D-glucosaminyl}asparagine
+13609 - No Inchi Found - 3-(Acyloxy)acyl group of bacterial toxin
+13610 - No Inchi Found - 3-Hydroxyacyl group of bacterial toxin
+13611 - No Inchi Found - Poly[(R)-3-hydroxyoctanoate]n
+13613 - No Inchi Found - Poly[(R)-3-hydroxybutanoate]n-x
+13614 - No Inchi Found - Poly[(R)-3-hydroxybutanoate]x
+13619 - No Inchi Found - 1-Phosphatidyl-1D-myo-inositol 5-phosphate
+13673 - No Inchi Found - Polymyxin B sulfate
+13753 - No Inchi Found - Cilazapril
+13782 - No Inchi Found - Candoxatril
+13816 - No Inchi Found - Acyl-D-Ala-D-Ala
+13818 - No Inchi Found - Atropine methonitrate
+13881 - No Inchi Found - 2,3-Ene acid
+13882 - No Inchi Found - Cyclic amide
+13884 - No Inchi Found - [GlcNAc-(1->4)-Mur2Ac(oyl-L-Ala-g-D-Glu-L-Lys-D-Ala-D-Ala)]n- diphosphoundecaprenol
+13885 - No Inchi Found - [GlcNAc-(1->4)-Mur2Ac(oyl-L-Ala-g-D-Glu-A2pm-D-Ala-D-Ala)]n- diphosphoundecaprenol
+13886 - No Inchi Found - Sugar 1-phosphate
+13908 - No Inchi Found - Zinc gluconate
+14162 - No Inchi Found - Dihydroceramide
+14181 - No Inchi Found - Phytoceramide
+14182 - No Inchi Found - C26-CoA
+14300 - No Inchi Found - Iturin A
+14301 - No Inchi Found - Bacillomycin D
+14302 - No Inchi Found - Syringomycin
+14307 - No Inchi Found - Ferrous gluconate
+14316 - No Inchi Found - Saccharin
+14380 - No Inchi Found - 3,5,7,9,11,13,15-Heptaoxo-hexadecanoyl-[acp]
+14381 - No Inchi Found - 3,5,7,9,11,13,15-Heptaoxo-heptadecanoyl-[acp]
+14383 - No Inchi Found - 3,5,7,9,11,13,15,17-Octaoxo-octadecanoyl-[acp]
+14384 - No Inchi Found - 3,5,7,9,11,13,15,17-Octaoxo-nonadecanoyl-[acp]
+14385 - No Inchi Found - 3,5,7,9,11,13,15,17-Octaoxo-eicosanoyl-[acp]
+14386 - No Inchi Found - 3,5,7,9,11,13,15,17,19-Nonaoxo-eicosanoyl-[acp]
+14387 - No Inchi Found - 3,5,7,9,11,13,15,17,19-Nonaoxo-henicosanoyl-[acp]
+14388 - No Inchi Found - 3,5,7,9,11,13,15,17,19-Nonaoxo-docosanoyl-[acp]
+14389 - No Inchi Found - 3,5,7,11,13,15-Heptaoxo-9-hydroxy-hexadecanoyl-[acp]
+14391 - No Inchi Found - 3,5,7,11,13,15-Heptaoxo-9-hydroxy-octadecanoyl-[acp]
+14392 - No Inchi Found - 9-Hydroxy-3,5,7,11,13,15,17-octaoxo-octadecanoyl-[acp]
+14394 - No Inchi Found - 9-Hydroxy-3,5,7,11,13,15,17-octaoxo-eicosanoyl-[acp]
+14395 - No Inchi Found - 9-Hydroxy-3,5,7,11,13,15,17,19
