@@ -389,6 +389,20 @@ class TestProgram(unittest.TestCase):
 						#UMP has two generic inchi structure in the Sabio Database that match the structural information we  provided.
 						#Therefore UMP has two sabio names
 						self.assertEqual(comp.sabioNames, ['UMP', "Uridine 5'-phosphate"])
+				for comp in rxn.products:
+					if comp.id == 'ADP':
+						self.assertEqual(comp.inchi_smiles, 'C1=NC2=C(C(=N1)N)N=CN2C3C(C(C(O3)COP(=O)(O)OP(=O)(O)O)O)O')
+						self.assertEqual(comp.sabioNames, ['ADP'])
+					if comp.id == 'UDP':
+						self.assertEqual(comp.inchi_smiles, 'OC1C(O)C(OC1COP([O-])(=O)OP([O-])([O-])=O)N1C=CC(=O)NC1=O')
+						#UMP has two generic inchi structure in the Sabio Database that match the structural information we  provided.
+						#Therefore UMP has two sabio names
+						self.assertEqual(comp.sabioNames, ['UDP'])
+
+
+	def test_generateCompounds(self):
+		pass
+
 
 
 
