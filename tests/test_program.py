@@ -331,7 +331,101 @@ class TestProgram(unittest.TestCase):
 		expectedString ="""((Substrate:"Adenosine 3',5'-bisphosphate") AND (Substrate:"H2O" OR Substrate:"OH-")) AND ((Product:"AMP" OR Product:"Adenine-9-beta-D-arabinofuranoside 5'-monophosphate") AND (Product:"Dihydrogen phosphate" OR Product:"Phosphate"))"""
 		self.assertEqual(searchString, expectedString)
 
+
+
+	#####################################
+	#Tesst the reaction_queries module
+	def test_reaction_queries(self):
+
+		inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
+		#turn Excel sheet into openpyxl workbook
+		if not path.isdir(path.join(path.dirname(__file__), "output")):
+			os.makedirs(path.join(path.dirname(__file__), "output"))
+		outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
+		species = 'mycoplasma pneumoniae'
+
+
+	def test_generate_reaction_queries(self):
+		inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
+		#turn Excel sheet into openpyxl workbook
+		if not path.isdir(path.join(path.dirname(__file__), "output")):
+			os.makedirs(path.join(path.dirname(__file__), "output"))
+		outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
+		species = 'mycoplasma pneumoniae'
+		print inputFileName
+		wb = openpyxl.load_workbook(filename=inputFileName)
+		#generate_reaction_queries is given an openpyxl workbook as an arg. It outputs a list
+		
+		rxn_queries = reaction_queries.generate_reaction_queries(wb)
+
+		self.assertEqual(set([rxn.id for rxn in rxn_queries]), set([
+			'ump_kinase',
+			'gmp_kinase',
+			'oligonucleotidase_dcmp_dtmp',
+			'fmn_reductase',
+			'nucleotidase_7gmp',
+			]))
+		for rxn in rxn_queries:
+			if rxn.id == 'ump_kinase':
+				self.assertEqual(rxn.ec_number, ""),
+				self.assertEqual(rxn.keggID, ""),
+				self.assertEqual(rxn.num_participants, [2,2]),
+				self.assertEqual(rxn.reaction_string, '[c]: ATP + UMP <==> UDP + ADP')
+				self.assertEqual(set([comp.id for comp in rxn.substrates]), set([
+					'ATP',
+					'UMP'
+					]))
+				self.assertEqual(set([comp.id for comp in rxn.products]), set([
+					'ADP',
+					'UDP'
+					]))
+
+				for comp in rxn.substrates:
+					if comp.id == 'ATP':
+						self.assertEqual(comp.inchi_smiles, 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1')
+						self.assertEqual(comp.sabioNames, ['ATP'])
+					if comp.id == 'UMP':
+						self.assertEqual(comp.inchi_smiles, 'OC1C(O)C(OC1COP([O-])([O-])=O)N1C=CC(=O)NC1=O')
+						#UMP has two generic inchi structure in the Sabio Database that match the structural information we  provided.
+						#Therefore UMP has two sabio names
+						self.assertEqual(comp.sabioNames, ['UMP', "Uridine 5'-phosphate"])
+
+
+
+
+
+		
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	def test_get_sabio_data(self):
 		#test sabio_interface
 
@@ -359,6 +453,12 @@ class TestProgram(unittest.TestCase):
 		searchString = """Product:ADP AND Substrate:AMP AND ADP"""
 		results =  sabio_interface.get_sabio_data(searchString, base_species)
 		self.assertEqual(len(results.entry_list), 77)
+
+
+
+
+
+
 	
 	def test_datanator(self):
 		#Find Excel sheet with reaction data
@@ -599,6 +699,8 @@ class TestProgram(unittest.TestCase):
 		##################################################
 		#todo the next entry is a case where Sabio did find the queried reaction, however it did not find any vmax infromation
 		#it only found km
+
+
 
 
 class TestsCollectedFromMain(unittest.TestCase):

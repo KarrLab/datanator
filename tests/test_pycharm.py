@@ -49,3 +49,19 @@ class TestProgram(unittest.TestCase):
 		self.assertEqual(median_entry.entry_id, '17927')
 		self.assertEqual(median_entry.vmax, '0.00665')
 		self.assertEqual(median_entry.proximity, 6)
+
+
+from kinetic_datanator import reaction_queries
+def test_generate_reaction_queries():
+	inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
+	#turn Excel sheet into openpyxl workbook
+	if not path.isdir(path.join(path.dirname(__file__), "output")):
+		os.makedirs(path.join(path.dirname(__file__), "output"))
+	outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
+	species = 'mycoplasma pneumoniae'
+	print inputFileName
+	wb = openpyxl.load_workbook(filename=inputFileName)
+
+	queries =  reaction_queries.generate_reaction_queries(wb)
+	print queries
+test_generate_reaction_queries()
