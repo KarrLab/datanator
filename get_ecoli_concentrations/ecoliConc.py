@@ -24,25 +24,25 @@ with open('ecmdb.json') as data_file:
 
 for entry in data:
 	if trimInchi(entry["moldb_inchi"]) == trimInchi(inchi):
-		print entry['name']
+		print(entry['name'])
 		compId = entry["m2m_id"]
-		print compId
+		print(compId)
 
 		response = requests.get("""http://ecmdb.ca/compounds/{}.xml""".format(compId)).text
 
-		#print response
+		#print(response)
 		data = myparser(response)
-		print data["compound"]["concentrations"]
+		print(data["compound"]["concentrations"])
 
-#print data[0]
-#print data[1]["moldb_inchi"]
+#print(data[0])
+#print(data[1]["moldb_inchi"])
 
 """
 i = 0
 for thing in data:
 	answer = thing["moldb_inchi"]
 	if answer[:5] != "InChI":
-		print answer
+		print(answer)
 	i = i+1
-print i
+print(i)
 """

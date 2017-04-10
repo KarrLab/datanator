@@ -164,7 +164,7 @@ class TestProgram(unittest.TestCase):
 		self.assertTrue(testWorked)
 	
 	def test_get_ec_number(self):
-		#test ec_number
+		#test get_ec_number
 
 		#[c]: T3P1 + S7P <==> X5P + R5P
 		sub_array = [u'OC(COP([O-])([O-])=O)C=O', u'OCC(=O)C(O)C(O)C(O)C(O)COP([O-])([O-])=O']
@@ -352,7 +352,6 @@ class TestProgram(unittest.TestCase):
 			os.makedirs(path.join(path.dirname(__file__), "output"))
 		outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
 		species = 'mycoplasma pneumoniae'
-		print inputFileName
 		wb = openpyxl.load_workbook(filename=inputFileName)
 		#generate_reaction_queries is given an openpyxl workbook as an arg. It outputs a list
 		

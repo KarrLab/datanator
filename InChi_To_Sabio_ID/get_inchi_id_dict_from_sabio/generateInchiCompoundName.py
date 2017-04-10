@@ -17,17 +17,17 @@ while i < 30000:
 
 		answer = requests.get("http://sabio.villa-bosch.de/compdetails.jsp?cid={}".format(i)).text
 		if len(answer) > 1600:
-		#print answer
+		#print(answer)
 		#xmldata = '<root>' + answer.text + '</root>'
-		#print xmldata
+		#print(xmldata)
 		#tree = ElementTree.fromstring(xmldata)
-		#print answer.text
+		#print(answer.text)
 			start =  answer.index("common")
 			string =  answer[start+12:start+400]
 			name = string[:string.find("<")]
 
 
-		#print parse(tree)
+		#print(parse(tree))
 			try:
 				start =  answer.index("Inchi")
 				string =  answer[start:start+400]
@@ -46,7 +46,7 @@ while i < 30000:
 
 """
 answer = requests.get("http://sabio.villa-bosch.de/compdetails.jsp?cid=35")
-print answer.text
+print(answer.text)
 parsed = parse(answer.text)
-print parsed
+print(parsed)
 """

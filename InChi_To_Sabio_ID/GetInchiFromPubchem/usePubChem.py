@@ -28,10 +28,10 @@ with open(os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 			if values[1] == "No Inchi Found":
 				compName = values[2][:-1]
 				response = requests.get("https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{}/property/InChI/TXT".format(compName)).text[:-1]
-				#print request.text
+				#print(request.text)
 				if response[0:5].lower() == "inchi":
-					#print compName
-					#print response
+					#print(compName)
+					#print(response)
 					if response.count("InChI") == 1:
 						foundInchi = response
 
@@ -50,7 +50,7 @@ with open(os.path.join(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 			if len(foundInchi)>0:
 				newLine = values[0] + " - " + """Inchi_0">""" + foundInchi + " - " + values[2]
 				i = i+1
-				print i
+				print(i)
 		except:
 			errorFile.write(line)
 
