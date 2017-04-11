@@ -1,15 +1,40 @@
 from setuptools import setup, find_packages
 import kinetic_datanator
+import pip
+import re
 
 # parse dependencies and their links from requirements.txt files
-install_requires = [line.rstrip() for line in open('requirements.txt')]
-tests_require = [line.rstrip() for line in open('tests/requirements.txt')]
+install_requires = []
+tests_require = []
 dependency_links = []
+
+for line in open('requirements.txt'):
+    pkg_src = line.rstrip()
+    match = re.match('^.+#egg=(.*?)$', pkg_src)
+    if match:
+        pkg_id = match.group(1)
+        dependency_links.append(pkg_src)
+    else:
+        pkg_id = pkg_src
+    install_requires.append(pkg_id)
+    pip.main(['install', line])
+
+for line in open('tests/requirements.txt'):
+    pkg_src = line.rstrip()
+    match = re.match('^.+#egg=(.*?)$', pkg_src)
+    if match:
+        pkg_id = match.group(1)
+        dependency_links.append(pkg_src)
+    else:
+        pkg_id = pkg_src
+    tests_require.append(pkg_id)
+
+dependency_links = list(set(dependency_links))
 
 # install package
 setup(
     name='kinetic_datanator',
-    version = kinetic_datanator.__version__,
+    version=kinetic_datanator.__version__,
     description='Finds relevant kinetic data for biochemical models',
 
     url='https://github.com/KarrLab/kinetic_datanator',
@@ -18,7 +43,7 @@ setup(
 
     author='Yosef Roth',
     author_email='yosefdroth@gmail.com',
-    
+
     keywords=['kinetic data', 'systems biology', 'computational biology', ],
     classifiers=[
         'Development Status :: 3 - Alpha',
