@@ -1,5 +1,9 @@
+enum34
 ete3
 numpy
+git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
 openpyxl
 requests
+scipy
+six
