@@ -17,6 +17,7 @@
 :License: MIT
 """
 
+from . import observation
 from abc import ABCMeta, abstractmethod
 from scipy.stats import norm
 from six import with_metaclass
@@ -24,9 +25,22 @@ import numpy as np
 
 
 class FilterRunner(object):
-    """ Filter and order a list of observations according to a list of filters. """
+    """ Filter and order a list of observations according to a list of filters.
 
-    def run(self, observations, filters, return_info=False):
+    Attributes:
+        filters (:obj:`list` of :obj:`Filter`): list of filters
+    """
+
+    def __init__(self, filters):
+        """
+        Args:
+            filters (:obj:`Filter` or :obj:`list` of :obj:`Filter`): filter or list of filters
+        """
+        if not isinstance(filters, list):
+            filters = [filters]
+        self.filters = filters
+
+    def run(self, observations, return_info=False):
         """ Filter and order a list of observations according to a list of filters. Optionally, return additional
         information about the filtering including the scores of the observations and the indices of the prioritized
         observations in the input list of observations.
@@ -40,54 +54,109 @@ class FilterRunner(object):
         3. Order the observations by their mean score
 
         Args:
-            observations (:obj:`list` of :obj:`Observation`): list of experimental and/or computational observations
-            filters (:obj:`list` of :obj:`Filter`): list of filters
+            observations (:obj:`list` of :obj:`observation.Observation`): list of experimental and/or computational observations            
             return_info (:obj:`bool`, optional): if `True`, also return the scores and indices of the ordered observations in the input list
 
         Returns:
-            :obj:`list` of :obj:`Observation` or :obj:`FilterResult`:
+            :obj:`list` of :obj:`observation.Observation` or :obj:`FilterResult`:
 
                 * If `return_info` is `False`: return a list of the observations which matches the filters, ordered by their mean score
                 * If `return_info` is `True`: return a list of the observations which matches the filters, ordered by their mean score plus additional diagnostic information
         """
-        n_obs = len(observations)
-        n_filt = len(filters)
 
         # score observations against the filters
-        all_scores = np.fill((n_obs, n_filt, ), np.nan)
-        for i_filter, filter in enumerate(filters):
-            for i_obs, obs in enumerate(observations):
-                all_scores[i_obs, i_filter] = filter.score(obs)
+        all_scores = self.score(observations)
 
         # filter out observations that must be discarded (observations with score = -1)
-        i_obs = np.nonzero(np.all(all_scores >= 0, 1))
-        obs = np.extract(np.all(all_scores >= 0, 1), observations)
-        scores = np.extract(np.all(all_scores >= 0, 1), all_scores)
+        obs, scores, i_obs = self.filter(observations, all_scores)
 
         # order remaining observations by their mean score
-        order = np.argsort(np.mean(scores, 1))
-
-        i_obs = [i_obs[i] for i in order]
-        obs = [obs[i] for i in order]
-        scores = [scores[i, :] in order]
+        obs, scores, i_obs = self.order(obs, scores, i_obs)
 
         # return
         if return_info:
             # return ordered list of observations and additional information
-            return FilterResult(observations, filters, all_scores, obs, scores, i_obs)
+            return FilterResult(observations, self.filters, all_scores, obs, scores, i_obs)
         else:
             # return ordered list of observations
             return obs
+
+    def score(self, observations):
+        """ Score observations against the filters
+
+        Args:
+            observations (:obj:`list` of :obj:`observation.Observation`): list of experimental and/or computational observations
+
+        Returns:
+            :obj:`list` of :obj:`float`: list of scores
+        """
+
+        n_obs = len(observations)
+        n_filt = len(self.filters)
+        scores = np.full((n_obs, n_filt, ), np.nan)
+        for i_filter, filter in enumerate(self.filters):
+            for i_obs, obs in enumerate(observations):
+                scores[i_obs, i_filter] = filter.score(obs)
+
+        return scores
+
+    def filter(self, observations, scores):
+        """ Filter out observations that must be discarded (observations with score = -1)
+
+        Args:
+            observations (:obj:`list` of :obj:`observation.Observation`): list of experimental and/or computational observations
+            scores (:obj:`list` of :obj:`float`): list of scores
+
+        Returns:
+            :obj:`tuple`: 
+
+                * :obj:`list` of :obj:`observation.Observation`: list of acceptable observations (observations without scores = -1)
+                * :obj:`list` of :obj:`float`: list of scores of the acceptable observations
+                * :obj:`list` of :obj:`int`: list of indices of the ordered observations within the original list of observations
+
+        """
+        ok_observations = np.extract(np.all(scores >= 0, 1).transpose(), observations).tolist()
+        i_ok_observations = np.flatnonzero(np.all(scores >= 0, 1)).tolist()
+        ok_scores = scores[i_ok_observations, :]
+
+        return (ok_observations, ok_scores, i_ok_observations, )
+
+    def order(self, observations, scores, i_observations=None):
+        """ Order observations by their mean score
+
+        Args:
+            observations (:obj:`list` of :obj:`observation.Observation`): list of observations
+            scores (:obj:`list` of :obj:`float`): list of scores
+            i_observations (:obj:`list` of :obj:`int`, optional): list of indices within the original list of observations
+
+        Returns:
+            :obj:`tuple`: 
+
+                * :obj:`list` of :obj:`observation.Observation`: ordered list of observations
+                * :obj:`list` of :obj:`float`: list of scores of the ordered observations
+                * :obj:`list` of :obj:`int`: list of indices of the ordered observations within the original list of observations
+        """
+
+        if not i_observations:
+            i_observations = range(len(observations))
+
+        order = np.argsort(np.mean(scores, 1))[::-1]
+
+        ordered_observations = [observations[i] for i in order]
+        ordered_scores = scores[order, :]
+        i_ordered_observations = [i_observations[i] for i in order]
+
+        return (ordered_observations, ordered_scores, i_ordered_observations, )
 
 
 class FilterResult(object):
     """ Represents the results of applying a list of filters to a dataset
 
     Attributes:
-        observations (:obj:`list` of `Observation`): input list of observations
+        observations (:obj:`list` of `observation.Observation`): input list of observations
         filters (:obj:`list` of `Filter`): list of filters applied to observations
         scores (:obj:`np.ndarray`): matrix of scores (rows: observations in same order as in `observations`; columns: filters, in same orders as in `filters`)
-        ordered_observations (:obj:`list` of `Observation`): prioritized list of observations
+        ordered_observations (:obj:`list` of `observation.Observation`): prioritized list of observations
         ordered_scores (:obj:`np.ndarray`): matrix of scores (rows: observations in same order as in `ordered_observations`; columns: filters, in same orders as in `filters`)
         ordered_observation_indices (:obj:`list` of :obj:`int`): indices of the ordered observations in the input list of observations
     """
@@ -95,10 +164,10 @@ class FilterResult(object):
     def __init__(self, observations, filters, scores, ordered_observations, ordered_scores, ordered_observation_indices):
         """
         Args:
-            observations (:obj:`list` of `Observation`): input list of observations
+            observations (:obj:`list` of `observation.Observation`): input list of observations
             filters (:obj:`list` of `Filter`): list of filters applied to observations
             scores (:obj:`np.ndarray`): matrix of scores (rows: observations in same order as in `observations`; columns: filters, in same orders as in `filters`)
-            ordered_observations (:obj:`list` of `Observation`): prioritized list of observations
+            ordered_observations (:obj:`list` of `observation.Observation`): prioritized list of observations
             ordered_scores (:obj:`np.ndarray`): matrix of scores (rows: observations in same order as in `ordered_observations`; columns: filters, in same orders as in `filters`)
             ordered_observation_indices (:obj:`list` of :obj:`int`): indices of the ordered observations in the input list of observations
         """
@@ -113,7 +182,47 @@ class FilterResult(object):
 class Filter(with_metaclass(ABCMeta, object)):
     """ Calculate a numeric score which indicates how well an observation matches one or more criteria.
     Please see :obj:`FilterRunner` to see how these scores are used to filter and order observations.
+
+    Attributes:
+        attribute (:obj:`tuple`): list of nested attribute names to score on
     """
+
+    def __init__(self, attribute):
+        """
+        Args:
+            attribute (:obj:`str`): name of attribute to score
+
+        Raises:
+            :obj:`ValueError`: if attribute is not defined
+        """
+        # check that attribute exists
+        cls = observation.Observation
+        for attr in attribute[0:-1]:
+            if attr in cls.Meta.attributes:
+                cls = cls.Meta.attributes[attr].related_class
+            elif attr in cls.Meta.related_attributes:
+                cls = cls.Meta.related_attributes[attr].primary_class
+            else:
+                raise ValueError('Cannot filter on attribute "{}": Attribute is not defined'.format(attribute))
+        if attribute[-1] not in cls.Meta.attributes:
+            raise ValueError('Cannot filter on attribute "{}": Attribute is not defined'.format(attribute))
+
+        # store attribute
+        self.attribute = attribute
+
+    def get_attribute_value(self, obs):
+        """ Get the value of the attribute of observation :obj:`obs`
+
+        Args:
+            obs (:obj:`observation.Observation`): observation
+
+        Returns:
+            :obj:`object`: value of the attribute of the observation
+        """
+        val = obs
+        for attr in self.attribute:
+            val = getattr(val, attr)
+        return val
 
     @abstractmethod
     def score(self, observation):
@@ -121,7 +230,7 @@ class Filter(with_metaclass(ABCMeta, object)):
         Please see :obj:`FilterRunner` to see how these scores are used to filter and order observations.
 
         Args:
-            observation (:obj:`Observation`): experimental and/or computational observation
+            observation (:obj:`observation.Observation`): experimental and/or computational observation
 
         Returns:
             :obj:`float`: score which indicates how well the observation matches the criteria
@@ -139,25 +248,23 @@ class OptionsFilter(Filter):
 
     def __init__(self, attribute, options):
         """
-        Attributes:
+        Args:
             attribute (:obj:`str`): name of attribute to score
             options (:obj:`list` of :obj:`object`): list of acceptable values
         """
-        self.attribute = attribute
+        super(OptionsFilter, self).__init__(attribute)
         self.options = options
 
     def score(self, obs):
         """ Calculate a numeric score which indicates if the attribute of the observation is one of the acceptable values.
 
         Args:
-            obs (:obj:`Observation`): experimental and/or computational observation
+            obs (:obj:`observation.Observation`): experimental and/or computational observation
 
         Returns:
             :obj:`float`: score which indicates if the value of the attribute is one of the acceptable values.
         """
-        val = obs
-        for attr in self.attribute.split('.'):
-            val = getattr(val, attr)
+        val = self.get_attribute_value(obs)
 
         if val in self.options:
             return 1
@@ -169,38 +276,36 @@ class RangeFilter(Filter):
 
     Attributes:
         attribute (:obj:`str`): name of attribute to score
-        min_val (:obj:`float`): minimum value
-        max_val (:obj:`float`): maximum value
+        min (:obj:`float`): minimum value
+        max (:obj:`float`): maximum value
     """
 
-    def __init__(self, attribute, min_val=float('nan'), max_val=float('nan')):
+    def __init__(self, attribute, min=float('nan'), max=float('nan')):
         """
-        Attributes:
+        Args:
             attribute (:obj:`str`): name of attribute to score
-            min_val (:obj:`float`, optional): minimum value
-            max_val (:obj:`float`, optional): maximum value
+            min (:obj:`float`, optional): minimum value
+            max (:obj:`float`, optional): maximum value
         """
-        self.attribute = attribute
-        self.min_val = float(min_val)
-        self.max_val = float(max_val)
+        super(RangeFilter, self).__init__(attribute)
+        self.min = float(min)
+        self.max = float(max)
 
     def score(self, obs):
         """ Calculate a numeric score which indicates if the attribute of the observation falls within the specified range.
 
         Args:
-            obs (:obj:`Observation`): experimental and/or computational observation
+            obs (:obj:`observation.Observation`): experimental and/or computational observation
 
         Returns:
             :obj:`float`: score which indicates if the value of the attribute is inside or outside the specified range
         """
 
-        val = obs
-        for attr in self.attribute.split('.'):
-            val = getattr(val, attr)
+        val = self.get_attribute_value(obs)
 
-        if not np.isnan(self.min_val) and (np.isnan(val) or val < self.min_val):
+        if not np.isnan(self.min) and (np.isnan(val) or val < self.min):
             return -1
-        if not np.isnan(self.max_val) and (np.isnan(val) or val > self.max_val):
+        if not np.isnan(self.max) and (np.isnan(val) or val > self.max):
             return -1
         return 1
 
@@ -221,23 +326,22 @@ class NormalFilter(Filter):
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score falls to zero away from the mean.
         """
-        self.attribute = attribute
+        super(NormalFilter, self).__init__(attribute)
         self.mean = mean
         self.std = std
 
     def score(self, obs):
-        """ Calculate a numeric score which indicates how well the attribute of the observation matches the specified normal distribution (mean, std).
+        """ Calculate a numeric score which indicates how well the attribute of the observation matches the specified
+        normal distribution (mean, std).
 
         Args:
-            obs (:obj:`Observation`): experimental and/or computational observation
+            obs (:obj:`observation.Observation`): experimental and/or computational observation
 
         Returns:
             :obj:`float`: score which indicates how well the observation matches the normal distribution (mean, std)
         """
 
-        val = obs
-        for attr in self.attribute.split('.'):
-            val = getattr(val, attr)
+        val = self.get_attribute_value(obs)
 
         return 1 - 2 * abs(norm.cdf(val, loc=self.mean, scale=self.std) - 0.5)
 
@@ -247,7 +351,8 @@ class TaxonomicDistanceFilter(Filter):
 
     Attributes:
         species (:obj:`str`): name of the species to find data for
-        max_dist (:obj:`int`): maximum acceptable number of taxonomic ranks to the latest common ancestor between the target and observed species
+        max_dist (:obj:`int`): maximum acceptable number of taxonomic ranks to the latest common ancestor between the 
+            target and observed species
     """
 
     def __init__(self, species, max_dist=8):
@@ -256,6 +361,7 @@ class TaxonomicDistanceFilter(Filter):
             species (:obj:`str`): name of the species to find data for
             max_dist (:obj:`int`, optional): maximum acceptable number of taxonomic ranks to the latest common ancestor between the target and observed species
         """
+        super(TaxonomicDistanceFilter, self).__init__(('strain', 'name', ), )
         self.species = species
         self.max_dist = max_dist
 
@@ -280,7 +386,7 @@ class WildtypeFilter(OptionsFilter):
     """ Filter out observations which were observed for strains with genetic perturbations """
 
     def __init__(self):
-        super(WildtypeFilter, self).__init__('strain.perturbations', [''])
+        super(WildtypeFilter, self).__init__(('strain', 'perturbations', ), [''])
 
 
 class ChemicalSimilarityFilter(Filter):
@@ -294,13 +400,13 @@ class ReactionSimilarityFilter(Filter):
 class TemperatureRangeFilter(RangeFilter):
     """ Filters out observations with temperatures that fall outside a specified range. """
 
-    def __init__(self, min_val=float('nan'), max_val=float('nan')):
+    def __init__(self, min=float('nan'), max=float('nan')):
         """
-        Attributes:
-            min_val (:obj:`float`, optional): minimum value
-            max_val (:obj:`float`, optional): maximum value
+        Args:
+            min (:obj:`float`, optional): minimum value
+            max (:obj:`float`, optional): maximum value
         """
-        super(TemperatureRangeFilter, self).__init__('environment.temperature', min_val=min_val, max_val=max_val)
+        super(TemperatureRangeFilter, self).__init__(('environment', 'temperature', ), min=min, max=max)
 
 
 class TemperatureNormalFilter(NormalFilter):
@@ -312,19 +418,19 @@ class TemperatureNormalFilter(NormalFilter):
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score falls to zero away from the mean.
         """
-        super(TemperatureNormalFilter, self).__init__('environment.temperature', mean, std)
+        super(TemperatureNormalFilter, self).__init__(('environment', 'temperature', ), mean, std)
 
 
 class PhRangeFilter(RangeFilter):
     """ Filters out observations with pHs that fall outside a specified range. """
 
-    def __init__(self, min_val=float('nan'), max_val=float('nan')):
+    def __init__(self, min=float('nan'), max=float('nan')):
         """
-        Attributes:
-            min_val (:obj:`float`, optional): minimum value
-            max_val (:obj:`float`, optional): maximum value
+        Args:
+            min (:obj:`float`, optional): minimum value
+            max (:obj:`float`, optional): maximum value
         """
-        super(PhRangeFilter, self).__init__('environment.ph', min_val=min_val, max_val=max_val)
+        super(PhRangeFilter, self).__init__(('environment', 'ph', ), min=min, max=max)
 
 
 class PhNormalFilter(NormalFilter):
@@ -336,4 +442,4 @@ class PhNormalFilter(NormalFilter):
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score falls to zero away from the mean.
         """
-        super(PhNormalFilter, self).__init__('environment.ph', mean, std)
+        super(PhNormalFilter, self).__init__(('environment', 'ph', ), mean, std)
