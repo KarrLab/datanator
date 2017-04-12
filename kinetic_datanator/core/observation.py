@@ -18,7 +18,7 @@ class Observation(core.Model):
         value (:obj:`float`): observed value
         error (:obj:`float`): uncertainty of the observed value
         units (:obj:`units`): SI units of the observed value
-        strain (:obj:`Strain`): the strain (and any genetic perturbations) that the component was observed in
+        taxon (:obj:`Taxon`): the taxon (and any genetic perturbations) that the component was observed in
         environment (:obj:`Environment`): environment that the component was observed in
         method (:obj:`Method`): method that was used to make the observation
         reference (:obj:`Reference`): reference to the reference
@@ -30,18 +30,18 @@ class Observation(core.Model):
     value = core.FloatAttribute()
     error = core.FloatAttribute()
     units = core.StringAttribute()
-    strain = core.ManyToOneAttribute('Strain', related_name='observations')
+    taxon = core.ManyToOneAttribute('Taxon', related_name='observations')
     environment = core.ManyToOneAttribute('Environment', related_name='observations')
     method = core.ManyToOneAttribute('Method', related_name='observations')
     reference = core.ManyToOneAttribute('Reference', related_name='observations')
 
 
-class Strain(core.Model):
-    """ Represents a strain
+class Taxon(core.Model):
+    """ Represents a taxon
 
     Attributes:
         name (obj:`str`): name
-        perturbations (:obj:`str`): the genetic perturbations to the wildtype strain
+        perturbations (:obj:`str`): the genetic perturbations to the wildtype taxon
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
@@ -50,18 +50,18 @@ class Strain(core.Model):
     perturbations = core.StringAttribute()
 
     def is_wildtype(self):
-        """ Determine if the strain is the wildtype strain
+        """ Determine if the taxon is the wildtype taxon
 
         Returns:
-            obj:`bool`: `True` if the strain doesn't have any genetic perturbation(s)
+            obj:`bool`: `True` if the taxon doesn't have any genetic perturbation(s)
         """
         return not self.perturbations
 
     def is_mutant(self):
-        """ Determine if the strain is the wildtype stain
+        """ Determine if the taxon is the wildtype stain
 
         Returns:
-            :obj:`bool`: `True` if the strain has at least one genetic perturbation
+            :obj:`bool`: `True` if the taxon has at least one genetic perturbation
         """
         return not self.is_wildtype()
 

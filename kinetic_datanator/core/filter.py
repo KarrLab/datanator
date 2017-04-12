@@ -18,6 +18,7 @@
 """
 
 from . import observation
+from kinetic_datanator.util import taxonomy_util
 from abc import ABCMeta, abstractmethod
 from scipy.stats import norm
 from six import with_metaclass
@@ -347,46 +348,54 @@ class NormalFilter(Filter):
 
 
 class TaxonomicDistanceFilter(Filter):
-    """ Prioritizes observations that are from taxonomically close strains
+    """ Prioritizes observations that are from taxonomically close taxa
 
     Attributes:
-        species (:obj:`str`): name of the species to find data for
+        taxon (:obj:`str`): name of the taxon to find data for
         max_dist (:obj:`int`): maximum acceptable number of taxonomic ranks to the latest common ancestor between the 
-            target and observed species
+            target and observed taxa
     """
 
-    def __init__(self, species, max_dist=8):
+    def __init__(self, taxon, max_dist=None):
         """
         Args:
-            species (:obj:`str`): name of the species to find data for
-            max_dist (:obj:`int`, optional): maximum acceptable number of taxonomic ranks to the latest common ancestor between the target and observed species
+            taxon (:obj:`str`): name of the taxon to find data for
+            max_dist (:obj:`int`, optional): maximum acceptable number of taxonomic ranks to the latest common ancestor between the target and observed taxa
         """
-        super(TaxonomicDistanceFilter, self).__init__(('strain', 'name', ), )
-        self.species = species
+        super(TaxonomicDistanceFilter, self).__init__(('taxon', 'name', ), )
+        self.taxon = taxon
+
+        if max_dist is None:
+            taxon = taxonomy_util.Taxon(self.taxon)
+            max_dist = taxon.get_max_distance_to_common_ancestor()
+
         self.max_dist = max_dist
 
     def score(self, observation):
-        """ Score the taxonomic distance from the target species to its least common ancestor with the observed species.
+        """ Score the taxonomic distance from the target taxon to its least common ancestor with the observed taxon.
 
         Returns:
             :obj:`float`:
 
                 * If the distance to the least common ancestor is greater than `max_dist`, return -1
-                * Else, return 1 - {the distance to the least common ancestor} / 8
+                * Else, return 1 - {the distance to the least common ancestor} / `max_dist`
         """
-        tax_ranks_to_lca = 0.  # todo: calculate
+        self_taxon = taxonomy_util.Taxon(self.taxon)
+        other_taxon = taxonomy_util.Taxon(self.get_attribute_value(observation))
 
-        if tax_ranks_to_lca > max_dist:
+        dist = self_taxon.get_distance_to_common_ancestor(other_taxon)        
+
+        if dist > self.max_dist:
             return -1
 
-        return 1 - tax_ranks_to_lca / 8
+        return 1 - dist / self.max_dist
 
 
 class WildtypeFilter(OptionsFilter):
-    """ Filter out observations which were observed for strains with genetic perturbations """
+    """ Filter out observations which were observed for taxa with genetic perturbations """
 
     def __init__(self):
-        super(WildtypeFilter, self).__init__(('strain', 'perturbations', ), [''])
+        super(WildtypeFilter, self).__init__(('taxon', 'perturbations', ), [''])
 
 
 class ChemicalSimilarityFilter(Filter):

@@ -18,35 +18,79 @@ import unittest
 
 class TestFilter(unittest.TestCase):
 
-    @unittest.skip('write me')
     def test_TaxonomicDistanceFilter(self):
-        pass  # todo
+        # example 1
+        f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129')
+        self.assertEqual(f.max_dist, 10.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
+        self.assertEqual(f.score(o), 1.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
+        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
+        self.assertEqual(f.score(o), 1. - 8./f.max_dist)
+
+        # example 2
+        f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max_dist=5)
+        self.assertEqual(f.max_dist, 5.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
+        self.assertEqual(f.score(o), 1.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
+        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
+        self.assertEqual(f.score(o), -1)
+
+        # example 3
+        f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
+        self.assertEqual(f.max_dist, 9.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium G37'))
+        self.assertEqual(f.score(o), 1.)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium'))
+        self.assertEqual(f.score(o), 1)
+
+        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma'))
+        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
 
     def test_OptionsFilter(self):
-        f = filter.OptionsFilter(('strain', 'perturbations', ), [''])
-        o = observation.Observation(strain=observation.Strain(perturbations=''))
+        f = filter.OptionsFilter(('taxon', 'perturbations', ), [''])
+        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
         self.assertEqual(f.score(o), 1)
-        o = observation.Observation(strain=observation.Strain(perturbations='wildtype'))
+        o = observation.Observation(taxon=observation.Taxon(perturbations='wildtype'))
         self.assertEqual(f.score(o), -1)
-        o = observation.Observation(strain=observation.Strain(perturbations='Delta gene-01'))
+        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
         self.assertEqual(f.score(o), -1)
 
-        f = filter.OptionsFilter(('strain', 'perturbations', ), ['wildtype'])
-        o = observation.Observation(strain=observation.Strain(perturbations=''))
+        f = filter.OptionsFilter(('taxon', 'perturbations', ), ['wildtype'])
+        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
         self.assertEqual(f.score(o), -1)
-        o = observation.Observation(strain=observation.Strain(perturbations='wildtype'))
+        o = observation.Observation(taxon=observation.Taxon(perturbations='wildtype'))
         self.assertEqual(f.score(o), 1)
-        o = observation.Observation(strain=observation.Strain(perturbations='Delta gene-01'))
+        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
         self.assertEqual(f.score(o), -1)
 
     def test_WildtypeFilter(self):
         f = filter.WildtypeFilter()
 
-        o = observation.Observation(strain=observation.Strain(perturbations=''))
+        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
         self.assertEqual(f.score(o), 1)
 
-        o = observation.Observation(strain=observation.Strain(perturbations='Delta gene-01'))
+        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
         self.assertEqual(f.score(o), -1)
+
+    @unittest.skip('implement me')
+    def test_chemical_similarity_filter(self):
+        pass
+
+    @unittest.skip('implement me')
+    def test_reaction_similarity_filter(self):
+        pass
 
     def test_RangeFilter(self):
         def obs(temperature):

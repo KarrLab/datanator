@@ -75,5 +75,5 @@ setup(
 )
 
 # download NCBI taxonomy database
-from kinetic_datanator import taxon_finder
-taxon_finder.download_ncbi_database()
+from kinetic_datanator.util import taxonomy_util
+taxonomy_util.setup_database()

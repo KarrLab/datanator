@@ -18,7 +18,7 @@ class TestObservation(unittest.TestCase):
 
     def test_Observation(self):
         o = observation.Observation(component='AtpSynthase', attribute='v_max', value=1.0, units='U/mg')
-        o.strain = observation.Strain(name='Mycoplasma pneumoniae', perturbations='ΔMPN001')
+        o.taxon = observation.Taxon(name='Mycoplasma pneumoniae', perturbations='ΔMPN001')
         o.environment = observation.Environment(temperature=37, ph=7., media='Hayflick')
         o.method = observation.ExperimentalMethod(name='assay', description='description of assay')
         o.reference = observation.Reference(title='title', author='author', year=2017, volume=1, number=1, pages='1-10')
@@ -31,8 +31,8 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(o.value, 1.0)
         self.assertEqual(o.units, 'U/mg')
 
-        self.assertEqual(o.strain.name, 'Mycoplasma pneumoniae')
-        self.assertEqual(o.strain.perturbations, 'ΔMPN001')
+        self.assertEqual(o.taxon.name, 'Mycoplasma pneumoniae')
+        self.assertEqual(o.taxon.perturbations, 'ΔMPN001')
 
         self.assertEqual(o.environment.temperature, 37.)
         self.assertEqual(o.environment.ph, 7.)
@@ -57,11 +57,11 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(p.evidence, [o])
         self.assertEqual(p.consensus_method, 'mean')
 
-    def test_Strain(self):
-        strain = observation.Strain(name='Mycoplasma pneumoniae', perturbations='ΔMPN001')
-        self.assertFalse(strain.is_wildtype())
-        self.assertTrue(strain.is_mutant())
+    def test_Taxon(self):
+        taxon = observation.Taxon(name='Mycoplasma pneumoniae', perturbations='ΔMPN001')
+        self.assertFalse(taxon.is_wildtype())
+        self.assertTrue(taxon.is_mutant())
 
-        strain = observation.Strain(name='Mycoplasma pneumoniae', perturbations='')
-        self.assertTrue(strain.is_wildtype())
-        self.assertFalse(strain.is_mutant())
+        taxon = observation.Taxon(name='Mycoplasma pneumoniae', perturbations='')
+        self.assertTrue(taxon.is_wildtype())
+        self.assertFalse(taxon.is_mutant())
