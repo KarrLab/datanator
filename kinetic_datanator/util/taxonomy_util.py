@@ -1,4 +1,5 @@
-"""
+""" Utilities for dealing with taxa
+
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan <jonrkarr@gmail.com>
 :Date: 2017-04-11
@@ -8,9 +9,6 @@
 
 from ete3 import NCBITaxa
 import six
-
-TAXON_RANKS = ('root', 'superkingdom', 'pylum', 'class', 'order', 'family', 'genus', 'species', 'strain')
-# :obj:`tuple` of `str`: oredered list of taxonomic ranks
 
 
 def setup_database(force_update=False):
