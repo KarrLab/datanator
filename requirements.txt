@@ -1,5 +1,7 @@
+cement
 enum34
 ete3
+jxmlease
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel

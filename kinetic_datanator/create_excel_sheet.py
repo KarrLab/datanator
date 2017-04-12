@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from . import taxon_finder
+from .util import taxonomy_util
 from openpyxl import Workbook
 import os
 
@@ -62,7 +62,7 @@ def create_excel_sheet(species, reactions, output_filename):
     ws = wb.create_sheet(title="Taxonomic information")
     ws.cell(row=1, column=1, value='Taxonomy')
     ws.cell(row=1, column=2, value='Proximity')
-    for i_row, value in enumerate(taxon_finder.get_taxonomic_lineage(species)):
+    for i_row, value in enumerate(taxonomy_util.get_parents(species)):
         ws.cell(row=i_row+2, column=1, value=value)
         ws.cell(row=i_row+2, column=2, value=i_row + 1)
 

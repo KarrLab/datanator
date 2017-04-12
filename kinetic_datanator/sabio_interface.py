@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from .taxon_finder import get_taxonomic_distance
+from .util import taxonomy_util
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import logging
 import requests 
@@ -127,7 +127,7 @@ class TotalResult:
 
 			#get the proximity for each entry
 			#for entry in self.entry_list:
-			#	entry.proximity = get_taxonomic_distance('mycoplasma pneumoniae', entry.species)
+			#	entry.proximity = taxonomy_util.Taxon('mycoplasma pneumoniae').get_distance(entry.species)
 
 
 def get_sabio_data(query, base_species, num_participants = []):
@@ -173,7 +173,7 @@ def get_sabio_data(query, base_species, num_participants = []):
 	result = TotalResult(text_file)
 
 	for entry in result.entry_list:
-		entry.proximity = get_taxonomic_distance(base_species, entry.species)
+		entry.proximity = taxonomy_util.Taxon(base_species).get_distance(entry.species)
 
 	if len(num_participants)>0:
 		result.narrow_by_nums(num_participants)

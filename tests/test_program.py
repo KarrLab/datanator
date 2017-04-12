@@ -13,7 +13,6 @@ from kinetic_datanator import inchi_generator
 from kinetic_datanator import query_string_manipulator
 from kinetic_datanator import reaction_queries
 from kinetic_datanator import sabio_interface
-from kinetic_datanator import taxon_finder
 from kinetic_datanator import translator_for_sabio
 import openpyxl
 import os
@@ -22,29 +21,6 @@ import unittest
 
 
 class TestProgram(unittest.TestCase):
-	def test_get_taxonomic_distance(self):
-		#test taxon_finder
-
-		distance = taxon_finder.get_taxonomic_distance('Mycoplasma pneumoniae', 'homo sapiens')
-		self.assertEqual(distance, 8)
-
-		distance = taxon_finder.get_taxonomic_distance('homo sapiens', 'Mycoplasma pneumoniae')
-		self.assertEqual(distance, 30)
-
-		distance = taxon_finder.get_taxonomic_distance('Saccharomyces cerevisiae Fleischmanns baking yeast', 'Mycoplasma pneumoniae')
-		self.assertEqual(distance, 13)
-
-		distance = taxon_finder.get_taxonomic_distance('Escherichia coli', 'Bacillus algicola')
-		self.assertEqual(distance, 6)
-
-		#try what happens if it doesn't recognize the species
-		distance = taxon_finder.get_taxonomic_distance('mycoplasma pneumoniae', 'Streptococcus SomeLatinusNamus')
-		self.assertEqual(distance, 6)
-
-		#if it doesn't recognize the genus, it should return an empty string
-		distance = taxon_finder.get_taxonomic_distance('mycoplasma pneumoniae', 'SomeLatinusNamus speciesus')
-		self.assertEqual(distance, "")
-	
 	def test_get_query_search_string(self):
 		#test query_string_manipulator
 
@@ -747,19 +723,7 @@ class TestsCollectedFromMain(unittest.TestCase):
 				print(comp.id)
 				print(comp.inchi_smiles)
 				print(comp.sabioNames)
-
-	def test_taxon_finder(self):
-		#print(taxon_finder.getTaxonomy('mycoplasma pneumoniae'))
-		#print(taxon_finder.getTaxonomy('mycoplasma'))
-		#print(taxon_finder.get_taxonomic_distance('Streptococcus canis', 'animalia'))
-		print(taxon_finder.get_taxonomic_distance('mycoplasma pneumoniae', 'Streptococcus bovis'))
-		lineage = (taxon_finder.get_taxonomic_lineage('mycoplasma pneumoniae'))
-
-		i = 1
-		for node in lineage:
-			print("{}: {}".format(i, node))
-			i = i+1
-
+				
 	def test_sabio_interface(self):
 		query_dict = {
 					#"Organism":'"Homo sapiens"',

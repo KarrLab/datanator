@@ -62,7 +62,20 @@ class Taxon(object):
 
         ncbi_taxa = NCBITaxa()
 
-        if isinstance(id_or_name, six.string_types):
+        try:
+            id_or_name = float(id_or_name)
+        except ValueError:
+            pass
+
+        if isinstance(id_or_name, float):
+            id = id_or_name
+            self.id_of_nearest_ncbi_taxon = id
+            self.distance_from_nearest_ncbi_taxon = 0
+            self.additional_name_beyond_nearest_ncbi_taxon = ''
+            self.name = ncbi_taxa.translate_to_names([id])[0]
+            if self.name == id:
+                raise ValueError('The NCBI taxonomy database does not contain a taxon with id {}'.format(id))
+        else:
             name = id_or_name
             rank_names = name.split(' ')
             for i_rank in range(len(rank_names)):
@@ -77,15 +90,6 @@ class Taxon(object):
                     return
 
             self.name = name
-
-        else:
-            id = id_or_name
-            self.id_of_nearest_ncbi_taxon = id
-            self.distance_from_nearest_ncbi_taxon = 0
-            self.additional_name_beyond_nearest_ncbi_taxon = ''
-            self.name = ncbi_taxa.translate_to_names([id])[0]
-            if self.name == id:
-                raise ValueError('The NCBI taxonomy database does not contain a taxon with id {}'.format(id))
 
     def get_ncbi_id(self):
         """ Get the ID of the taxon within the NCBI database
