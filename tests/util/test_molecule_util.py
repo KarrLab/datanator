@@ -33,9 +33,8 @@ class TestMoleculeUtil(unittest.TestCase):
     def test_Molecule(self):
         c = molecule_util.Molecule(self.h2o['inchi'], name='h2o')
         self.assertEqual(c.name, 'h2o')
-        self.assertEqual(c.input_structure, self.h2o['inchi'])
-        self.assertEqual(c.input_structure_format, 'inchi')
         self.assertEqual(c.structure, self.h2o['inchi'])
+        self.assertEqual(c.get_format(), 'inchi')
 
         self.assertEqual(c.to_openbabel().GetFormula(), 'H2O')
         self.assertEqual(c.to_pybel().formula, 'H2O')
@@ -44,22 +43,16 @@ class TestMoleculeUtil(unittest.TestCase):
         self.assertEqual(c.to_mol().split('\n')[2:], self.h2o['mol'].split('\n')[2:])
         self.assertEqual(c.to_smiles(), self.h2o['smiles'])
 
-        self.assertRaises(ValueError, molecule_util.Molecule, self.h2o['inchi'][6:])
+        self.assertEqual(molecule_util.Molecule(self.h2o['inchi'][6:]).get_format(), None)
 
         c = molecule_util.Molecule(self.h2o['inchi'] + '\n')
-        self.assertEqual(c.input_structure, self.h2o['inchi'] + '\n')
-        self.assertEqual(c.input_structure_format, 'inchi')
-        self.assertEqual(c.structure, self.h2o['inchi'])
+        self.assertEqual(c.structure, self.h2o['inchi'] + '\n')
 
         c = molecule_util.Molecule(self.h2o['smiles'])
-        self.assertEqual(c.input_structure, self.h2o['smiles'])
-        self.assertEqual(c.input_structure_format, 'can')
-        self.assertEqual(c.structure, self.h2o['inchi'])
+        self.assertEqual(c.structure, self.h2o['smiles'])
 
         c = molecule_util.Molecule(self.h2o['mol'])
-        self.assertEqual(c.input_structure, self.h2o['mol'])
-        self.assertEqual(c.input_structure_format, 'mol')
-        self.assertEqual(c.structure, self.h2o['inchi'])
+        self.assertEqual(c.structure, self.h2o['mol'])
 
     def test_Molecule_get_fingerprint_types(self):
         self.assertIsInstance(molecule_util.Molecule.get_fingerprint_types(), list)

@@ -17,9 +17,7 @@ class Molecule(object):
 
     Attributes:
         name (:obj:`str`): name
-        structure (:obj:`str`): structure in InChI format
-        input_structure (:obj:`str`): structure in input format
-        input_structure_format (:obj:`str`): format of the input structure
+        structure (:obj:`str`): structure in InChI, MOL, or canonical SMILES format
     """
 
     def __init__(self, structure, name=''):
@@ -31,36 +29,32 @@ class Molecule(object):
         Raises:
             :obj:`ValueError`: if the structure is not valid
         """
-
-        # identifier
+        self.structure = structure
         self.name = name
 
-        # read structure
+    def get_format(self):
+        """ Get the format of the structure
+
+        Returns:
+            :obj:`str`: format
+        """
         mol = openbabel.OBMol()
         obConversion = openbabel.OBConversion()
-        if len(structure) >= 7 and structure[0:6] == 'InChI=' and \
+        if len(self.structure) >= 7 and self.structure[0:6] == 'InChI=' and \
                 obConversion.SetInFormat('inchi') and \
-                obConversion.ReadString(mol, structure):
-            format = 'inchi'
+                obConversion.ReadString(mol, self.structure):
+            return 'inchi'
         elif obConversion.SetInFormat('can') and \
-                obConversion.ReadString(mol, structure):
-            format = 'can'
+                obConversion.ReadString(mol, self.structure):
+            return 'can'
         elif obConversion.SetInFormat('smiles') and \
-                obConversion.ReadString(mol, structure):
-            format = 'smiles'
+                obConversion.ReadString(mol, self.structure):
+            return 'smiles'
         elif obConversion.SetInFormat('mol') and \
-                obConversion.ReadString(mol, structure):
-            format = 'mol'
+                obConversion.ReadString(mol, self.structure):
+            return 'mol'
         else:
-            raise ValueError('Invalid structure: {}'.format(structure))
-
-        # store input structure and its format
-        self.input_structure = structure
-        self.input_structure_format = format
-
-        # convert structure to InChI format
-        obConversion.SetOutFormat('inchi')
-        self.structure = obConversion.WriteString(mol).rstrip()
+            return None
 
     def get_fingerprint(self, type='fp2'):
         """ Calculate a fingerprint
@@ -102,9 +96,13 @@ class Molecule(object):
         Returns:
             :obj:`openbabel.OBMol`: Open Babel molecule
         """
+        format = self.get_format()
+        if format is None:
+            raise ValueError('Invalid structure: {}'.format(self.structure))
+
         mol = openbabel.OBMol()
         obConversion = openbabel.OBConversion()
-        obConversion.SetInFormat('inchi')
+        obConversion.SetInFormat(format)
         obConversion.ReadString(mol, self.structure)
         return mol
 
@@ -114,7 +112,7 @@ class Molecule(object):
         Returns:
             :obj:`pybel.Molecule`: pybel molecule
         """
-        return pybel.readstring('inchi', self.structure)
+        return pybel.readstring(self.get_format(), self.structure)
 
     def to_rdkit(self):
         """ Create an RDKit molecule for the molecule
@@ -135,8 +133,7 @@ class Molecule(object):
         """
         mol = self.to_openbabel()
         obConversion = openbabel.OBConversion()
-        obConversion.SetInAndOutFormats('inchi', format)
-        obConversion.ReadString(mol, self.structure)
+        obConversion.SetOutFormat(format)
         return obConversion.WriteString(mol).rstrip()
 
     def to_inchi(self):
@@ -145,7 +142,7 @@ class Molecule(object):
         Returns:
             :obj:`str`: structure in InChi format
         """
-        return self.structure
+        return self.to_format('inchi')
 
     def to_mol(self):
         """ Get the structure in MOL format
