@@ -260,14 +260,14 @@ class TestProgram(unittest.TestCase):
 		#by returing a string that searches for N.N.N.01, N.N.N.02, etc
 
 		# four digit EC numbers
-		self.assertEqual(ec_number_finder.format_ec_number_for_sabio('3.1.3.4'), 'ECNumber: "3.1.3.4"')
+		self.assertEqual(translator_for_sabio.format_ec_number_for_sabio('3.1.3.4'), 'ECNumber: "3.1.3.4"')
 
 		# three digit EC numbers should be expanded into a family of four digit EC numbers
 		expectedString = 'ECNumber: ("3.1.3.1" OR "3.1.3.2" OR "3.1.3.3" OR "3.1.3.4" OR "3.1.3.5")'
-		self.assertEqual(ec_number_finder.format_ec_number_for_sabio("3.1.3", number_four_digit_ec_numbers=5), expectedString)
+		self.assertEqual(translator_for_sabio.format_ec_number_for_sabio("3.1.3", number_four_digit_ec_numbers=5), expectedString)
 
 		#if an empty string is sent, it should return an empty string
-		self.assertEqual(ec_number_finder.format_ec_number_for_sabio(""), "")
+		self.assertEqual(translator_for_sabio.format_ec_number_for_sabio(""), "")
 
 
 	#testingtranslator_for_sabio
@@ -799,48 +799,4 @@ class TestsCollectedFromMain(unittest.TestCase):
 		#print(getSabioNameToInchiDict())
 
 		print(inchi_generator.getSabioNameToInchiDict())
-
-	def test_ec_number_finder(self):
-	    AMP = "NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(O)C3O)C2=NC=N1"
-	    ATP = "NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1"
-	    m8dg = "CC1NC2=C(NC(N)=NC2=O)N1C1CC(O)C(CO)O1"
-	    mgdGMP = "CC1NC2=C(NC(N)=NC2=O)N1C1CC(O)C(COP([O-])([O-])=O)O1"
-	    e3dCMP = "CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1"
-	    PI = "OP([O-])([O-])=O"
-	    H2O = "O"
-	    METHF = "NC1=NC(=O)C2=C(NCC3CN(C=[N+]23)C2=CC=C(C=C2)C(=O)NC(CCC([O-])=O)C([O-])=O)N1"
-	    #H20 = 
-	    FTHF10 = "NC1=NC(=O)C2=C(NCC(CN(C=O)C3=CC=C(C=C3)C(=O)NC(CCC([O-])=O)C([O-])=O)N2)N1"
-	    H = "[H+]"
-
-
-
-	    #print(predict_ec_number([u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O'],[u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O'])#, H))
-	    #print(format_ec_number_for_sabio("2.7.4"))
-
-	    sub_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
-	    prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-	    #print(predict_ec_number(sub_array, prod_array))
-
-	    sub_array = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
-	    prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-	    #print(predict_ec_number(sub_array, prod_array))
-
-
-	    sub_array = [u'OP([O-])([O-])=O', u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12']
-	    prod_array = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
-	    #print(predict_ec_number(sub_array, prod_array))
-
-	    sub_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
-	    prod_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
-	    
-
-	    sub_array =[u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'O', u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O']
-	    sub_array = sub_array[-1:] + sub_array[:-1]
-	    #print(sub_array)
-	    prod_array = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
-	    print(ec_number_finder.predict_ec_number(sub_array, prod_array))
-
-
-	    blue = ec_number_finder.format_ec_number_for_sabio("")
-	    print(blue)
+		

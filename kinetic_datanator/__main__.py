@@ -56,7 +56,7 @@ class GetKineticsController(CementBaseController):
                                       metavar='FLOAT', help="the maximum acceptable taxonomic distance", default=1000))
         ]
 
-        # print(ec_number_finder.format_ec_number_for_sabio("a"))
+        # print(translator_for_sabio.format_ec_number_for_sabio("a"))
 
     @expose(hide=True)
     def default(self):

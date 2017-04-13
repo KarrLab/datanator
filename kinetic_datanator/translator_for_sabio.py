@@ -43,4 +43,23 @@ def getSubstrateProductQueryString(reaction_query):
 
 def getGenericECQueryString(reaction_query):
 	reaction_queryCopy = copy.deepcopy(reaction_query)
-	return ec_number_finder.format_ec_number_for_sabio(reaction_queryCopy.generic_ec_number)
+	return format_ec_number_for_sabio(reaction_queryCopy.generic_ec_number)
+
+def format_ec_number_for_sabio(ec_number, number_four_digit_ec_numbers=100):
+    """
+    Args:
+        ec_number (:obj:`str`): EC number
+        number_four_digit_ec_numbers (:obj:`int`): number of four digit EC numbers to generate
+    """
+
+    if not ec_number:
+        return ''
+
+    if ec_number[-2:] == '.-':
+        ec_number = ec_number[0:-2]
+
+    if ec_number.count('.') == 2:
+        four_digit_ec_numbers = ['"{}.{}"'.format(ec_number, i) for i in range(1, number_four_digit_ec_numbers + 1)]
+        return 'ECNumber: ({})'.format(' OR '.join(four_digit_ec_numbers))
+
+    return 'ECNumber: "{}"'.format(ec_number)
