@@ -18,6 +18,7 @@
 """
 
 from . import observation
+from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from abc import ABCMeta, abstractmethod
 from scipy.stats import norm
@@ -196,19 +197,6 @@ class Filter(with_metaclass(ABCMeta, object)):
         Raises:
             :obj:`ValueError`: if attribute is not defined
         """
-        # check that attribute exists
-        cls = observation.Observation
-        for attr in attribute[0:-1]:
-            if attr in cls.Meta.attributes:
-                cls = cls.Meta.attributes[attr].related_class
-            elif attr in cls.Meta.related_attributes:
-                cls = cls.Meta.related_attributes[attr].primary_class
-            else:
-                raise ValueError('Cannot filter on attribute "{}": Attribute is not defined'.format(attribute))
-        if attribute[-1] not in cls.Meta.attributes:
-            raise ValueError('Cannot filter on attribute "{}": Attribute is not defined'.format(attribute))
-
-        # store attribute
         self.attribute = attribute
 
     def get_attribute_value(self, obs):
@@ -374,6 +362,9 @@ class TaxonomicDistanceFilter(Filter):
     def score(self, observation):
         """ Score the taxonomic distance from the target taxon to its least common ancestor with the observed taxon.
 
+        Args:
+            obs (:obj:`observation.Observation`): experimental and/or computational observation
+
         Returns:
             :obj:`float`:
 
@@ -381,9 +372,9 @@ class TaxonomicDistanceFilter(Filter):
                 * Else, return 1 - {the distance to the least common ancestor} / `max_dist`
         """
         self_taxon = taxonomy_util.Taxon(self.taxon)
-        other_taxon = taxonomy_util.Taxon(self.get_attribute_value(observation))
+        obs_taxon = taxonomy_util.Taxon(self.get_attribute_value(observation))
 
-        dist = self_taxon.get_distance_to_common_ancestor(other_taxon)        
+        dist = self_taxon.get_distance_to_common_ancestor(obs_taxon)
 
         if dist > self.max_dist:
             return -1
@@ -398,11 +389,40 @@ class WildtypeFilter(OptionsFilter):
         super(WildtypeFilter, self).__init__(('taxon', 'perturbations', ), [''])
 
 
-class ChemicalSimilarityFilter(Filter):
+class ComponentMolecularSimilarityFilter(Filter):
+    """ Score similarity with observed molecules
+
+    Attributes:
+        structure (:obj:`str`): 
+    """
+
+    def __init__(self, structure):
+        """
+        Args:
+            structure (:obj:`str`): structure
+        """
+        super(ComponentMolecularSimilarityFilter, self).__init__(('component', 'structure', ), )
+        self.structure = structure
+
+    def score(self, observation):
+        """ Calculate the similarity with the observed molecule
+
+        Args:
+            obs (:obj:`observation.Observation`): experimental and/or computational observation
+
+        Returns:
+            :obj:`float`: similarity with the observed molecule
+        """
+        self_mol = molecule_util.Molecule(self.structure)
+        obs_mol = molecule_util.Molecule(self.get_attribute_value(observation))
+        return self_mol.get_similarity(obs_mol)
+
+
+class MolecularSimilarityFilter(Filter):
     pass  # todo
 
 
-class ReactionSimilarityFilter(Filter):
+class ComponentReactionSimilarityFilter(Filter):
     pass  # todo
 
 

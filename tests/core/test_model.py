@@ -14,11 +14,11 @@ import unittest
 class TestModel(unittest.TestCase):
 
     def test_Parameter(self):
-        p = model.Parameter(component='AtpSynthase', attribute='v_max', value=1.0, units='U/mg', consensus_method='mean')
+        p = model.Parameter(component=model.Component(id='AtpSynthase'), attribute='v_max', value=1.0, units='U/mg', consensus_method='mean')
 
         p.validate()
 
-        self.assertEqual(p.component, 'AtpSynthase')
+        self.assertEqual(p.component.id, 'AtpSynthase')
         self.assertEqual(p.attribute, 'v_max')
         self.assertEqual(p.value, 1.0)
         self.assertEqual(p.units, 'U/mg')

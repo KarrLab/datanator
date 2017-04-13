@@ -7,6 +7,7 @@
 """
 
 from obj_model import core
+import kinetic_datanator.core.model
 
 
 class Observation(core.Model):
@@ -25,7 +26,7 @@ class Observation(core.Model):
 
         parameters (:obj:`list` of :obj:`Parameter`): list of parameters
     """
-    component = core.StringAttribute()
+    component = core.ManyToOneAttribute('Component', related_name='observations')
     attribute = core.StringAttribute()
     value = core.FloatAttribute()
     error = core.FloatAttribute()
@@ -34,6 +35,25 @@ class Observation(core.Model):
     environment = core.ManyToOneAttribute('Environment', related_name='observations')
     method = core.ManyToOneAttribute('Method', related_name='observations')
     reference = core.ManyToOneAttribute('Reference', related_name='observations')
+
+class Component(core.Model):
+    """ Represents a component of a biological system
+
+    Attributes:
+        id (:obj:`str`): identifier
+        namespace (:obj:`str`): namespace of the identifier
+    """
+    id = core.StringAttribute()
+    namespace = core.StringAttribute()
+
+
+class MoleculeComponent(Component):
+    """ Represents a molecule component of a biological system
+
+    Attributes:
+        structure (:obj:`str`): structure
+    """
+    structure = core.LongStringAttribute()
 
 
 class Taxon(core.Model):
@@ -45,7 +65,6 @@ class Taxon(core.Model):
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
-
     name = core.StringAttribute()
     perturbations = core.StringAttribute()
 

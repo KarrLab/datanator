@@ -7,7 +7,7 @@
 """
 
 from obj_model import core
-from kinetic_datanator.core import observation
+import kinetic_datanator.core.observation
 
 
 class Parameter(core.Model):
@@ -22,10 +22,30 @@ class Parameter(core.Model):
         evidence (:obj:`list` of :obj:`Observation`): list of observations
         consensus_method (obj:`str`): method used to determine the consensus (e.g. mean, median, mode) value from the individual observations
     """
-    component = core.StringAttribute()
+    component = core.ManyToOneAttribute('Component', related_name='parameters')
     attribute = core.StringAttribute()
     value = core.FloatAttribute()
     error = core.FloatAttribute()
     units = core.StringAttribute()
     evidence = core.ManyToManyAttribute('kinetic_datanator.core.observation.Observation', related_name='parameters')
     consensus_method = core.StringAttribute()
+
+
+class Component(core.Model):
+    """ Represents a component of a biological system
+
+    Attributes:
+        id (:obj:`str`): identifier
+        namespace (:obj:`str`): namespace of the identifier
+    """
+    id = core.StringAttribute()
+    namespace = core.StringAttribute()
+
+
+class MoleculeComponent(Component):
+    """ Represents a molecule component of a biological system
+
+    Attributes:
+        structure (:obj:`str`): structure
+    """
+    structure = core.LongStringAttribute()

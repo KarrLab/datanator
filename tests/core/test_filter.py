@@ -84,12 +84,21 @@ class TestFilter(unittest.TestCase):
         o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
         self.assertEqual(f.score(o), -1)
 
-    @unittest.skip('implement me')
-    def test_chemical_similarity_filter(self):
-        pass
+    def test_ComponentMolecularSimilarityFilter(self):        
+        adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
+        atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
+        h2o = 'O'
+
+        f = filter.ComponentMolecularSimilarityFilter(atp)
+
+        o = observation.Observation(component=observation.MoleculeComponent(structure=adp))
+        npt.assert_almost_equal(f.score(o), 0.955, decimal=3)
+
+        o = observation.Observation(component=observation.MoleculeComponent(structure=h2o))
+        npt.assert_almost_equal(f.score(o), 0, decimal=3)
 
     @unittest.skip('implement me')
-    def test_reaction_similarity_filter(self):
+    def test_ComponentReactionSimilarityFilter(self):
         pass
 
     def test_RangeFilter(self):

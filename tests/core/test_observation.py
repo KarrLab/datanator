@@ -17,16 +17,16 @@ import unittest
 class TestObservation(unittest.TestCase):
 
     def test_Observation(self):
-        o = observation.Observation(component='AtpSynthase', attribute='v_max', value=1.0, units='U/mg')
+        o = observation.Observation(component=observation.Component(id='AtpSynthase'), attribute='v_max', value=1.0, units='U/mg')
         o.taxon = observation.Taxon(name='Mycoplasma pneumoniae', perturbations='ΔMPN001')
         o.environment = observation.Environment(temperature=37, ph=7., media='Hayflick')
         o.method = observation.ExperimentalMethod(name='assay', description='description of assay')
         o.reference = observation.Reference(title='title', author='author', year=2017, volume=1, number=1, pages='1-10')
-        o.parameters.create(component='AtpSynthase', attribute='k_cat', value=2.0, units='1/s', consensus_method='mean')
+        o.parameters.create(component=model.Component(id='AtpSynthase'), attribute='k_cat', value=2.0, units='1/s', consensus_method='mean')
 
         o.validate()
 
-        self.assertEqual(o.component, 'AtpSynthase')
+        self.assertEqual(o.component.id, 'AtpSynthase')
         self.assertEqual(o.attribute, 'v_max')
         self.assertEqual(o.value, 1.0)
         self.assertEqual(o.units, 'U/mg')
@@ -50,7 +50,7 @@ class TestObservation(unittest.TestCase):
 
         self.assertEqual(len(o.parameters), 1)
         p = o.parameters[0]
-        self.assertEqual(p.component, 'AtpSynthase')
+        self.assertEqual(p.component.id, 'AtpSynthase')
         self.assertEqual(p.attribute, 'k_cat')
         self.assertEqual(p.value, 2.0)
         self.assertEqual(p.units, '1/s')
