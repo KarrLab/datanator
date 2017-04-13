@@ -239,6 +239,9 @@ class TaxonomyGetDistanceToRoot(CementBaseController):
         print(taxon.get_distance_to_root())
 
 
+#todo: add convert chemical structure
+#todo: add find_ec
+
 class App(CementApp):
 
     class Meta:
