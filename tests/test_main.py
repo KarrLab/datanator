@@ -9,6 +9,7 @@
 
 from capturer import CaptureOutput
 from kinetic_datanator.__main__ import App
+import time
 import unittest
 
 
@@ -26,11 +27,13 @@ class TestCli(unittest.TestCase):
         with App(argv=['taxonomy', 'get-rank', '2097']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "species")
 
         with App(argv=['taxonomy', 'get-rank', 'Mycoplasma genitalium']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "species")
 
         with App(argv=['taxonomy', 'get-rank', 'Mycoplasma genitalium XXX']) as app:
@@ -40,6 +43,7 @@ class TestCli(unittest.TestCase):
         with App(argv=['taxonomy', 'get-parents', 'bacteria']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "root\ncellular organisms")
 
         with App(argv=['taxonomy', 'get-parents', 'XXX']) as app:
@@ -49,6 +53,7 @@ class TestCli(unittest.TestCase):
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), 'Mycoplasma')
 
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
@@ -59,6 +64,7 @@ class TestCli(unittest.TestCase):
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(float(capturer.get_text()), 1.)
 
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
@@ -68,14 +74,16 @@ class TestCli(unittest.TestCase):
         with App(argv=['taxonomy', 'get-distance-to-root', 'bacteria']) as app:
             with CaptureOutput() as capturer:
                 app.run()
+                time.sleep(0.1)
                 self.assertEqual(float(capturer.get_text()), 2.)
 
         with App(argv=['taxonomy', 'get-distance-to-root', 'XXX']) as app:
             self.assertRaises(ValueError, lambda: app.run())
 
-    def test_compound_convert_structure(self):
-        with App(argv=['compound', 'convert-structure', 'O', 'can']) as app:
+    def test_molecule_convert_structure(self):
+        with App(argv=['molecule', 'convert-structure', 'O', 'can']) as app:
             with CaptureOutput() as capturer:
-                app.run()
+                app.run()                
+                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), 'O')
 

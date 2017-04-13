@@ -1,4 +1,4 @@
-""" Tests of the compound utilities
+""" Tests of the molecule utilities
 
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-04-12
@@ -6,14 +6,14 @@
 :License: MIT
 """
 
-from kinetic_datanator.util import compound_util
+from kinetic_datanator.util import molecule_util
 #from rdkit.Chem import rdMolDescriptors
 import numpy
 import pybel
 import unittest
 
 
-class TestCompoundUtil(unittest.TestCase):
+class TestMoleculeUtil(unittest.TestCase):
     adp = {'smiles': 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'}
     atp = {'smiles': 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'}
     h = {'smiles': '[H+]'}
@@ -30,8 +30,8 @@ class TestCompoundUtil(unittest.TestCase):
         ),
     }
 
-    def test_Compound(self):
-        c = compound_util.Compound(self.h2o['inchi'])
+    def test_Molecule(self):
+        c = molecule_util.Molecule(self.h2o['inchi'])
         self.assertEqual(c.input_structure, self.h2o['inchi'])
         self.assertEqual(c.input_structure_format, 'inchi')
         self.assertEqual(c.structure, self.h2o['inchi'])
@@ -43,33 +43,33 @@ class TestCompoundUtil(unittest.TestCase):
         self.assertEqual(c.to_mol().split('\n')[2:], self.h2o['mol'].split('\n')[2:])
         self.assertEqual(c.to_smiles(), self.h2o['smiles'])
 
-        self.assertRaises(ValueError, compound_util.Compound, self.h2o['inchi'][6:])
+        self.assertRaises(ValueError, molecule_util.Molecule, self.h2o['inchi'][6:])
 
-        c = compound_util.Compound(self.h2o['inchi'] + '\n')
+        c = molecule_util.Molecule(self.h2o['inchi'] + '\n')
         self.assertEqual(c.input_structure, self.h2o['inchi'] + '\n')
         self.assertEqual(c.input_structure_format, 'inchi')
         self.assertEqual(c.structure, self.h2o['inchi'])
 
-        c = compound_util.Compound(self.h2o['smiles'])
+        c = molecule_util.Molecule(self.h2o['smiles'])
         self.assertEqual(c.input_structure, self.h2o['smiles'])
         self.assertEqual(c.input_structure_format, 'can')
         self.assertEqual(c.structure, self.h2o['inchi'])
 
-        c = compound_util.Compound(self.h2o['mol'])
+        c = molecule_util.Molecule(self.h2o['mol'])
         self.assertEqual(c.input_structure, self.h2o['mol'])
         self.assertEqual(c.input_structure_format, 'mol')
         self.assertEqual(c.structure, self.h2o['inchi'])
 
-    def test_Compound_get_fingerprint_types(self):
-        self.assertIsInstance(compound_util.Compound.get_fingerprint_types(), list)
+    def test_Molecule_get_fingerprint_types(self):
+        self.assertIsInstance(molecule_util.Molecule.get_fingerprint_types(), list)
 
-    def test_Compound_get_fingerprint(self):
-        c = compound_util.Compound(self.h2o['inchi'])
+    def test_Molecule_get_fingerprint(self):
+        c = molecule_util.Molecule(self.h2o['inchi'])
         self.assertIsInstance(c.get_fingerprint('fp2'), pybel.Fingerprint)
 
-    def test_Compound_get_fingerprint(self):
-        adp = compound_util.Compound(self.adp['smiles'])
-        atp = compound_util.Compound(self.atp['smiles'])
+    def test_Molecule_get_fingerprint(self):
+        adp = molecule_util.Molecule(self.adp['smiles'])
+        atp = molecule_util.Molecule(self.atp['smiles'])
 
         self.assertEqual(adp.get_similarity(adp), 1.)
 

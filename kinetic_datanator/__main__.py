@@ -8,7 +8,7 @@
 """
 
 from . import datanator
-from .util import compound_util
+from .util import molecule_util
 from .util import taxonomy_util
 from cement.core.foundation import CementApp
 from cement.core.controller import CementBaseController, expose
@@ -240,11 +240,11 @@ class TaxonomyGetDistanceToRoot(CementBaseController):
         print(taxon.get_distance_to_root())
 
 
-class CompoundController(CementBaseController):
+class MoleculeController(CementBaseController):
 
     class Meta:
-        label = 'compound'
-        description = 'Compound utilities'
+        label = 'molecule'
+        description = 'Molecule utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -254,11 +254,11 @@ class CompoundController(CementBaseController):
                               type=str, help="Output format: inchi (InChI), mol (MOL), or can (canonical SMILES)")),
         ]
 
-    @expose(help='Convert compound structure')
+    @expose(help='Convert molecule structure')
     def convert_structure(self):
         structure = self.app.pargs.structure
         format = self.app.pargs.format
-        print(compound_util.Compound(structure).to_format(format))
+        print(molecule_util.Molecule(structure).to_format(format))
 
 
 class ReactionController(CementBaseController):
@@ -292,7 +292,7 @@ class App(CementApp):
             TaxonomyGetDistanceToCommonAncestorController,
             TaxonomyGetDistanceToRoot,
 
-            CompoundController,
+            MoleculeController,
 
             ReactionController,
         ]

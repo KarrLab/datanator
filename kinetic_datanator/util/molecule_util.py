@@ -1,4 +1,4 @@
-""" Utilities for dealing with compounds
+""" Utilities for dealing with molecules
 
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan <jonrkarr@gmail.com>
@@ -12,8 +12,8 @@ import pybel
 #import rdkit.Chem
 
 
-class Compound(object):
-    """ Represents a compound
+class Molecule(object):
+    """ Represents a molecule
 
     Attributes:
         structure (:obj:`str`): structure in InChI format
@@ -70,14 +70,14 @@ class Compound(object):
         return self.to_pybel().calcfp(type)
 
     def get_similarity(self, other, fingerprint_type='fp2'):
-        """ Calculate the similarity with another compound
+        """ Calculate the similarity with another molecule
 
         Args:
-            other (:obj:`Compound`): a second compound
+            other (:obj:`Molecule`): a second molecule
             fingerprint_type (:obj:`str`, optional): fingerprint type to use to calculate similarity
 
         Returns:
-            :obj:`float`: the similarity with the other compound
+            :obj:`float`: the similarity with the other molecule
         """
         self_fp = self.get_fingerprint(fingerprint_type)
         other_fp = other.get_fingerprint(fingerprint_type)
@@ -93,7 +93,7 @@ class Compound(object):
         return pybel.fps
 
     def to_openbabel(self):
-        """ Create an Open Babel molecule for the compound
+        """ Create an Open Babel molecule for the molecule
 
         Returns:
             :obj:`openbabel.OBMol`: Open Babel molecule
@@ -105,7 +105,7 @@ class Compound(object):
         return mol
 
     def to_pybel(self):
-        """ Create a pybel molecule for the compound
+        """ Create a pybel molecule for the molecule
 
         Returns:
             :obj:`pybel.Molecule`: pybel molecule
@@ -113,7 +113,7 @@ class Compound(object):
         return pybel.readstring('inchi', self.structure)
 
     def to_rdkit(self):
-        """ Create an RDKit molecule for the compound
+        """ Create an RDKit molecule for the molecule
 
         Returns:
             :obj:`rdkit.Chem.rdchem.Mol`: rdkit molecule
