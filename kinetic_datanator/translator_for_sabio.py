@@ -43,4 +43,4 @@ def getSubstrateProductQueryString(reaction_query):
 
 def getGenericECQueryString(reaction_query):
 	reaction_queryCopy = copy.deepcopy(reaction_query)
-	return ec_number_finder.format_ec_for_sabio(reaction_queryCopy.generic_ec_number)
+	return ec_number_finder.format_ec_number_for_sabio(reaction_queryCopy.generic_ec_number)

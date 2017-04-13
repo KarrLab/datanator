@@ -139,14 +139,12 @@ class TestProgram(unittest.TestCase):
 				testWorked = False
 		self.assertTrue(testWorked)
 	
-	def test_get_ec_number(self):
-		#test get_ec_number
-
+	def test_predict_ec_number(self):
 		#[c]: T3P1 + S7P <==> X5P + R5P
 		sub_array = [u'OC(COP([O-])([O-])=O)C=O', u'OCC(=O)C(O)C(O)C(O)C(O)COP([O-])([O-])=O']
 		prod_array = [u'OCC(=O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C(O)C(O)C=O']
 		expectedec_num = "4.1.2"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#becuase the substrates and proucts have to be correctly matched, the EC number search
 		#should only find results for one pairing of sub_array and prod_array. Therefore if the items
@@ -154,19 +152,19 @@ class TestProgram(unittest.TestCase):
 		sub_array = [u'OCC(=O)C(O)C(O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C=O']
 		prod_array = [u'OCC(=O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C(O)C(O)C=O']
 		expectedec_num = ""
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#[c]: PI + INS <==> R1P + HYXN
 		sub_array = [u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12', u'OP([O-])([O-])=O']
 		prod_array = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
 		expectedec_num = "2.4.2"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#[c]: H2O + ho5hydantoin_dRiboseMP ==> ho5hydantoin_dRibose + PI
 		sub_array = [u'O', u'OC1CC(OC1COP([O-])([O-])=O)N1C(O)C(=O)NC1=O']
 		prod_array = [u'OCC1OC(CC1O)N1C(O)C(=O)NC1=O', u'OP([O-])([O-])=O']
 		expectedec_num = "3.1.4"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#THE FOLLOWING IS A BIG PROBLEM. TWO REACTIONS CAN GET DIFFERENT EC NUMBERS 
 		#JUST BY CHANGING THE ORDER OF THE ITEMS IN THE ARRAY
@@ -174,12 +172,12 @@ class TestProgram(unittest.TestCase):
 		sub_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
 		prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
 		expectedec_num = "3.1.3"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		sub_array = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
 		prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
 		expectedec_num = "3.1.4"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#[c]: e3dCMP + H2O ==> e3dC + PI
 		#at the moment, kegg's algorithm doens't recognize this reaction. 
@@ -189,14 +187,14 @@ class TestProgram(unittest.TestCase):
 		sub_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
 		prod_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
 		expectedec_num = "3.1.3"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#try it with three
 		#IleIle[e] + ATP[c] + H2O[c] ==> IleIle[c] + PI[c] + H[c] + ADP[c]
 		sub_array = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'O']
 		prod_array = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
 		expectedec_num = "3.6.1"
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		#things to test further:
 		#1) cases where the reaction is 3 and 2, or 2 and 3. 
@@ -209,19 +207,19 @@ class TestProgram(unittest.TestCase):
 		[u'OCC1OC(CC1O)OP([O-])([O-])=O']
 		[u'OC1CC(O)C(COP([O-])([O-])=O)O1']
 		2.7.1
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		ATP[c] + SerSer[e] + H2O[c] ==> SerSer[c] + PI[c] + H[c] + ADP[c]
 		[u'[NH3+]C(CO)C(=O)NC(CO)C([O-])=O', u'O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
 		[u'[NH3+]C(CO)C(=O)NC(CO)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
 		3.6.1
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		[c]: ATP + GDP ==> AMP + H + PPGPP
 		[u'NC1=NC2=C(N=CN2C2OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C2O)C(=O)N1', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
 		[u'NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'NC1=NC2=C(N=CN2C2OC(COP([O-])(=O)OP([O-])([O-])=O)C(OP([O-])(=O)OP([O-])([O-])=O)C2O)C(=O)N1']
 		2.7.1
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		Why is this the same as two above it?
 
@@ -229,7 +227,7 @@ class TestProgram(unittest.TestCase):
 		[u'O', u'NC1=C2N=CN(C3OC(CSCCC([NH3+])C([O-])=O)C(O)C3O)C2=NC=N1']
 		[u'[NH3+]C(CCS)C([O-])=O', u'NC1=C2N=CN(C3OC(CO)C(O)C3O)C2=NC=N1']
 		4.4.1
-		self.assertEqual(ec_number_finder.get_ec_number(sub_array, prod_array), expectedec_num)
+		self.assertEqual(ec_number_finder.predict_ec_number(sub_array, prod_array), expectedec_num)
 
 		[c]: METHF + H2O <==> FTHF10 + H
 		[u'O', u'NC1=NC(=O)C2=C(NCC3CN(C=[N+]23)C2=CC=C(C=C2)C(=O)NC(CCC([O-])=O)C([O-])=O)N1']
@@ -257,16 +255,19 @@ class TestProgram(unittest.TestCase):
 		2.7.1
 		"""
 
-	def test_format_ec_for_sabio(self):
+	def test_format_ec_number_for_sabio(self):
 		#this simply takes an EC number as string input, and makes a generic search string
 		#by returing a string that searches for N.N.N.01, N.N.N.02, etc
 
-		expectedString = """ECNumber: ("3.1.3.0" OR "3.1.3.1" OR "3.1.3.2" OR "3.1.3.3" OR "3.1.3.4" OR "3.1.3.5" OR "3.1.3.6" OR "3.1.3.7" OR "3.1.3.8" OR "3.1.3.9" OR "3.1.3.10" OR "3.1.3.11" OR "3.1.3.12" OR "3.1.3.13" OR "3.1.3.14" OR "3.1.3.15" OR "3.1.3.16" OR "3.1.3.17" OR "3.1.3.18" OR "3.1.3.19" OR "3.1.3.20" OR "3.1.3.21" OR "3.1.3.22" OR "3.1.3.23" OR "3.1.3.24" OR "3.1.3.25" OR "3.1.3.26" OR "3.1.3.27" OR "3.1.3.28" OR "3.1.3.29" OR "3.1.3.30" OR "3.1.3.31" OR "3.1.3.32" OR "3.1.3.33" OR "3.1.3.34" OR "3.1.3.35" OR "3.1.3.36" OR "3.1.3.37" OR "3.1.3.38" OR "3.1.3.39" OR "3.1.3.40" OR "3.1.3.41" OR "3.1.3.42" OR "3.1.3.43" OR "3.1.3.44" OR "3.1.3.45" OR "3.1.3.46" OR "3.1.3.47" OR "3.1.3.48" OR "3.1.3.49" OR "3.1.3.50" OR "3.1.3.51" OR "3.1.3.52" OR "3.1.3.53" OR "3.1.3.54" OR "3.1.3.55" OR "3.1.3.56" OR "3.1.3.57" OR "3.1.3.58" OR "3.1.3.59" OR "3.1.3.60" OR "3.1.3.61" OR "3.1.3.62" OR "3.1.3.63" OR "3.1.3.64" OR "3.1.3.65" OR "3.1.3.66" OR "3.1.3.67" OR "3.1.3.68" OR "3.1.3.69" OR "3.1.3.70" OR "3.1.3.71" OR "3.1.3.72" OR "3.1.3.73" OR "3.1.3.74" OR "3.1.3.75" OR "3.1.3.76" OR "3.1.3.77" OR "3.1.3.78" OR "3.1.3.79" OR "3.1.3.80" OR "3.1.3.81" OR "3.1.3.82" OR "3.1.3.83" OR "3.1.3.84" OR "3.1.3.85" OR "3.1.3.86" OR "3.1.3.87" OR "3.1.3.88" OR "3.1.3.89" OR "3.1.3.90" OR "3.1.3.91" OR "3.1.3.92" OR "3.1.3.93" OR "3.1.3.94" OR "3.1.3.95" OR "3.1.3.96" OR "3.1.3.97" OR "3.1.3.98" OR "3.1.3.99" OR "3.1.3.100")"""
-		self.assertEqual(ec_number_finder.format_ec_for_sabio("3.1.3"), expectedString)
+		# four digit EC numbers
+		self.assertEqual(ec_number_finder.format_ec_number_for_sabio('3.1.3.4'), 'ECNumber: "3.1.3.4"')
+
+		# three digit EC numbers should be expanded into a family of four digit EC numbers
+		expectedString = 'ECNumber: ("3.1.3.1" OR "3.1.3.2" OR "3.1.3.3" OR "3.1.3.4" OR "3.1.3.5")'
+		self.assertEqual(ec_number_finder.format_ec_number_for_sabio("3.1.3", number_four_digit_ec_numbers=5), expectedString)
 
 		#if an empty string is sent, it should return an empty string
-		expectedString = ""
-		self.assertEqual(ec_number_finder.format_ec_for_sabio(""), expectedString)
+		self.assertEqual(ec_number_finder.format_ec_number_for_sabio(""), "")
 
 
 	#testingtranslator_for_sabio
@@ -814,21 +815,21 @@ class TestsCollectedFromMain(unittest.TestCase):
 
 
 
-	    #print(get_ec_number([u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O'],[u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O'])#, H))
-	    #print(format_ec_for_sabio("2.7.4"))
+	    #print(predict_ec_number([u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O'],[u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O'])#, H))
+	    #print(format_ec_number_for_sabio("2.7.4"))
 
 	    sub_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
 	    prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-	    #print(get_ec_number(sub_array, prod_array))
+	    #print(predict_ec_number(sub_array, prod_array))
 
 	    sub_array = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
 	    prod_array = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
-	    #print(get_ec_number(sub_array, prod_array))
+	    #print(predict_ec_number(sub_array, prod_array))
 
 
 	    sub_array = [u'OP([O-])([O-])=O', u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12']
 	    prod_array = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
-	    #print(get_ec_number(sub_array, prod_array))
+	    #print(predict_ec_number(sub_array, prod_array))
 
 	    sub_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
 	    prod_array = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
@@ -838,8 +839,8 @@ class TestsCollectedFromMain(unittest.TestCase):
 	    sub_array = sub_array[-1:] + sub_array[:-1]
 	    #print(sub_array)
 	    prod_array = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
-	    print(ec_number_finder.get_ec_number(sub_array, prod_array))
+	    print(ec_number_finder.predict_ec_number(sub_array, prod_array))
 
 
-	    blue = ec_number_finder.format_ec_for_sabio("")
+	    blue = ec_number_finder.format_ec_number_for_sabio("")
 	    print(blue)
