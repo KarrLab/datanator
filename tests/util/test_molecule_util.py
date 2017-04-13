@@ -31,7 +31,8 @@ class TestMoleculeUtil(unittest.TestCase):
     }
 
     def test_Molecule(self):
-        c = molecule_util.Molecule(self.h2o['inchi'])
+        c = molecule_util.Molecule(self.h2o['inchi'], name='h2o')
+        self.assertEqual(c.name, 'h2o')
         self.assertEqual(c.input_structure, self.h2o['inchi'])
         self.assertEqual(c.input_structure_format, 'inchi')
         self.assertEqual(c.structure, self.h2o['inchi'])

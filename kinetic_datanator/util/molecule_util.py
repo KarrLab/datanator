@@ -16,24 +16,28 @@ class Molecule(object):
     """ Represents a molecule
 
     Attributes:
+        name (:obj:`str`): name
         structure (:obj:`str`): structure in InChI format
         input_structure (:obj:`str`): structure in input format
         input_structure_format (:obj:`str`): format of the input structure
     """
 
-    def __init__(self, structure):
+    def __init__(self, structure, name=''):
         """
         Args:
             structure (:obj:`str`): structure in InChI, MOL, or canonical SMILES format
+            name (:obj:`str`, optional): name
 
         Raises:
             :obj:`ValueError`: if the structure is not valid
         """
 
-        mol = openbabel.OBMol()
-        obConversion = openbabel.OBConversion()
+        # identifier
+        self.name = name
 
         # read structure
+        mol = openbabel.OBMol()
+        obConversion = openbabel.OBConversion()
         if len(structure) >= 7 and structure[0:6] == 'InChI=' and \
                 obConversion.SetInFormat('inchi') and \
                 obConversion.ReadString(mol, structure):
