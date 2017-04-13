@@ -8,13 +8,15 @@
 """
 
 import openbabel
+import pybel
+#import rdkit.Chem
 
 
 class Compound(object):
     """ Represents a compound
 
     Attributes:
-        structure (:obj:`str`): structure in InChI format77
+        structure (:obj:`str`): structure in InChI format
         input_structure (:obj:`str`): structure in input format
         input_structure_format (:obj:`str`): format of the input structure
     """
@@ -56,6 +58,40 @@ class Compound(object):
         obConversion.SetOutFormat('inchi')
         self.structure = obConversion.WriteString(mol).rstrip()
 
+    def get_fingerprint(self, type='fp2'):
+        """ Calculate a fingerprint
+
+        Args:
+            type (:obj:`str`, optional): fingerprint type to calculate
+
+        Returns:
+            :obj:`pybel.Fingerprint`: fingerprint
+        """
+        return self.to_pybel().calcfp(type)
+
+    def get_similarity(self, other, fingerprint_type='fp2'):
+        """ Calculate the similarity with another compound
+
+        Args:
+            other (:obj:`Compound`): a second compound
+            fingerprint_type (:obj:`str`, optional): fingerprint type to use to calculate similarity
+
+        Returns:
+            :obj:`float`: the similarity with the other compound
+        """
+        self_fp = self.get_fingerprint(fingerprint_type)
+        other_fp = other.get_fingerprint(fingerprint_type)
+        return self_fp | other_fp
+
+    @staticmethod
+    def get_fingerprint_types():
+        """ Get list of fingerprint types
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of fingerprint types
+        """
+        return pybel.fps
+
     def to_openbabel(self):
         """ Create an Open Babel molecule for the compound
 
@@ -67,6 +103,22 @@ class Compound(object):
         obConversion.SetInFormat('inchi')
         obConversion.ReadString(mol, self.structure)
         return mol
+
+    def to_pybel(self):
+        """ Create a pybel molecule for the compound
+
+        Returns:
+            :obj:`pybel.Molecule`: pybel molecule
+        """
+        return pybel.readstring('inchi', self.structure)
+
+    def to_rdkit(self):
+        """ Create an RDKit molecule for the compound
+
+        Returns:
+            :obj:`rdkit.Chem.rdchem.Mol`: rdkit molecule
+        """
+        return rdkit.Chem.MolFromSmiles(self.to_smiles())
 
     def to_format(self, format):
         """ Get the structure in a format
