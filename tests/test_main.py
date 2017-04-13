@@ -72,3 +72,10 @@ class TestCli(unittest.TestCase):
 
         with App(argv=['taxonomy', 'get-distance-to-root', 'XXX']) as app:
             self.assertRaises(ValueError, lambda: app.run())
+
+    def test_compound_convert_structure(self):
+        with App(argv=['compound', 'convert-structure', 'O', 'can']) as app:
+            with CaptureOutput() as capturer:
+                app.run()
+                self.assertEqual(capturer.get_text(), 'O')
+

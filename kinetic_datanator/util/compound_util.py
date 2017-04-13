@@ -32,7 +32,8 @@ class Compound(object):
         obConversion = openbabel.OBConversion()
 
         # read structure
-        if obConversion.SetInFormat('inchi') and \
+        if len(structure) >= 7 and structure[0:6] == 'InChI=' and \
+                obConversion.SetInFormat('inchi') and \
                 obConversion.ReadString(mol, structure):
             format = 'inchi'
         elif obConversion.SetInFormat('can') and \

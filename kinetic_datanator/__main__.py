@@ -8,6 +8,7 @@
 """
 
 from . import datanator
+from .util import compound_util
 from .util import taxonomy_util
 from cement.core.foundation import CementApp
 from cement.core.controller import CementBaseController, expose
@@ -107,7 +108,7 @@ class TaxonomyController(CementBaseController):
 
     class Meta:
         label = 'taxonomy'
-        description = 'Get taxonomic information'
+        description = 'Taxonomy utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -239,8 +240,39 @@ class TaxonomyGetDistanceToRoot(CementBaseController):
         print(taxon.get_distance_to_root())
 
 
-#todo: add convert chemical structure
-#todo: add find_ec
+class CompoundController(CementBaseController):
+
+    class Meta:
+        label = 'compound'
+        description = 'Compound utilities'
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = [
+            (['structure'], dict(metavar='structure',
+                                 type=str, help="Structure in InChI, MOL, or canonical SMILES format")),
+            (['format'], dict(metavar='format',
+                              type=str, help="Output format: inchi (InChI), mol (MOL), or can (canonical SMILES)")),
+        ]
+
+    @expose(help='Convert compound structure')
+    def convert_structure(self):
+        structure = self.app.pargs.structure
+        format = self.app.pargs.format
+        print(compound_util.Compound(structure).to_format(format))
+
+
+class ReactionController(CementBaseController):
+
+    class Meta:
+        label = 'reaction'
+        description = 'Reaction utilities'
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = [
+        ]
+
+        # todo: add find_ec
+
 
 class App(CementApp):
 
@@ -259,6 +291,10 @@ class App(CementApp):
             TaxonomyGetCommonAncestorController,
             TaxonomyGetDistanceToCommonAncestorController,
             TaxonomyGetDistanceToRoot,
+
+            CompoundController,
+
+            ReactionController,
         ]
 
 
