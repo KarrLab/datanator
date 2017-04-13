@@ -1,6 +1,7 @@
 """ Tests of the command line utility
 
-:Author: Yosef Roth <jonrkarr@gmail.com>
+:Author: Yosef Roth <yosefdroth@gmail.com>
+:Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-04-12
 :Copyright: 2017, Karr Lab
 :License: MIT
