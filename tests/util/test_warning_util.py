@@ -14,22 +14,22 @@ import unittest
 
 
 class TestWarningUtil(unittest.TestCase):
+    adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
 
-    def test_warnings_openbabel(self):
-        adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
-
+    def test_enable_warnings_openbabel(self):
         warning_util.enable_warnings()
         with CaptureOutput() as capturer:
-            molecule_util.Molecule(adp).to_inchi()
+            molecule_util.Molecule(self.adp).to_inchi()
             time.sleep(0.1)
             self.assertNotEqual(capturer.get_text(), '')
 
+    def test_disable_warnings_openbabel(self):
         warning_util.disable_warnings()
         with CaptureOutput() as capturer:
-            molecule_util.Molecule(adp).to_inchi()
+            molecule_util.Molecule(self.adp).to_inchi()
             time.sleep(0.1)
             self.assertEqual(capturer.get_text(), '')
 
     @unittest.skip('todo: implement')
-    def test_set_warnings_urllib3(self):
+    def test_disable_warnings_urllib3(self):
         pass
