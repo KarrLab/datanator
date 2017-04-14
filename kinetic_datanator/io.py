@@ -7,13 +7,102 @@
 :License: MIT
 """
 
+from . import data_structs
+from . import inchi_generator
 from .util import taxonomy_util
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
 
 
 class InputReader(object):
-    pass
+
+    @classmethod
+    def read_compounds(cls, wb):
+        """
+        Args:
+            wb (obj:`openpyxl.Workbook`): Takes an workbook that sheet with the name "Metabolites"
+
+        Returns:
+            :obj:`list` of `Compound`: list of compounds
+        """
+
+        sabio_name_to_inchi_dict = inchi_generator.getSabioNameToInchiDict()
+        ws = wb.get_sheet_by_name('Metabolites')
+
+        # instantiate a compound object for each metabolite in the excel sheet
+        compound_list = []
+        for i in range(2, ws.max_row + 1):
+            id = ws.cell(row=i, column=1).value
+
+            smiles_or_inchi = ""
+            structure = ws.cell(row=i, column=2).value
+            sabio_names = []
+            if structure != None:
+                generic_inchi = inchi_generator.generateGenericInchi(structure)
+                for name in sabio_name_to_inchi_dict:
+                    if sabio_name_to_inchi_dict[name] == generic_inchi:
+                        sabio_names.append(name)
+                smiles_or_inchi = structure
+
+            comp = data_structs.Compound(id, smiles_or_inchi, sabio_names)
+            compound_list.append(comp)
+
+        return compound_list
+
+    @classmethod
+    def parse_reaction_stoichiometry(cls, reaction_string):
+        # takes in a search string and parses it into two arrays.
+        # one array for substrate IDs, and one array for product IDs
+
+        balancedMetab = []
+        substrates = []
+        products = []
+
+        if "<==>" in reaction_string:
+            bothSides = reaction_string.split("<==>")
+        elif "==>" in reaction_string:
+            bothSides = reaction_string.split("==>")
+        elif "-->" in reaction_string:
+            bothSides = reaction_string.split("-->")
+        elif "<->" in reaction_string:
+            bothSides = reaction_string.split("<->")
+        elif "<=>" in reaction_string:
+            bothSides = reaction_string.split("<=>")
+        elif "=" in reaction_string:
+            bothSides = reaction_string.split("=")
+
+        substrates = bothSides[0]
+        products = bothSides[1]
+
+        parsedSubstrates = []
+        parsedProducts = []
+
+        # IMPORTANT!!!!! we are getting rid of hydrogens here.
+        for entry in substrates.split(" "):
+            if not (cls.is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry != "[e]:"and entry != "(2)" and entry != "+" and entry != "==>" and entry != "":
+                # get rid of the [c] tag on some molecules
+                if entry.find("[") != -1:
+                    entry = entry[:entry.find("[")]
+                parsedSubstrates.append(entry)
+        for entry in products.split(" "):
+            if not (cls.is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry != "[e]:"and entry != "(2)" and entry != "+" and entry != "==>" and entry != "":
+                # get rid of the [c] tag on some molecules
+                if entry.find("[") != -1:
+                    entry = entry[:entry.find("[")]
+                parsedProducts.append(entry)
+
+        balancedMetab.append(parsedSubstrates)
+        balancedMetab.append(parsedProducts)
+
+        return balancedMetab
+
+    @classmethod
+    def is_number(cls, s):
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
 
 
 class ResultsWriter(object):

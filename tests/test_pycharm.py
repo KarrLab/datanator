@@ -52,23 +52,6 @@ class TestProgram(unittest.TestCase):
 		self.assertEqual(median_entry.proximity, 6)
 
 	def test_generate_reaction_queries(self):
-		#turn Excel sheet into openpyxl workbook
-		input_filename = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")	
-		if not path.isdir(path.join(path.dirname(__file__), "output")):
-			os.makedirs(path.join(path.dirname(__file__), "output"))
-		species = 'mycoplasma pneumoniae'
-		wb = openpyxl.load_workbook(filename=input_filename)
-
-		queries = reaction_queries.generate_reaction_queries(wb)
-		# todo: check the correctness
-
-	def test_generate_compounds(self):
-		#turn Excel sheet into openpyxl workbook
-		input_filename = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")	
-		if not path.isdir(path.join(path.dirname(__file__), "output")):
-			os.makedirs(path.join(path.dirname(__file__), "output"))
-		species = 'mycoplasma pneumoniae'
-		wb = openpyxl.load_workbook(filename=input_filename)
-
-		compounds = reaction_queries.generate_reaction_queries(wb)
+		filename = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")	
+		queries = reaction_queries.generate_reaction_queries(filename)
 		# todo: check the correctness

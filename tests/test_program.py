@@ -7,8 +7,10 @@
 """
 
 from os import path
+from kinetic_datanator import data_structs
 from kinetic_datanator import datanator
 from kinetic_datanator import inchi_generator
+from kinetic_datanator import io
 from kinetic_datanator import query_string_manipulator
 from kinetic_datanator import reaction_queries
 from kinetic_datanator import sabio_interface
@@ -53,48 +55,6 @@ class TestProgram(unittest.TestCase):
         participants.append([b, d])
         response = query_string_manipulator.getQuerySearchString(participants)
         expectedAnswer = """((Product:"dGMP" OR Product:"GMP" OR Product:"Lactose 6-phosphate" OR Product:"dGDP" OR Product:"Orotidine 5'-phosphate" OR Product:"Guanosine 3'-phosphate" OR Product:"2',3'-Cyclic GMP" OR Product:"L-Arogenate" OR Product:"N-Acylneuraminate 9-phosphate" OR Product:"Maltose 6'-phosphate" OR Product:"5-Amino-6-(5'-phosphoribitylamino)uracil" OR Product:"6-Phospho-beta-D-glucosyl-(1,4)-D-glucose" OR Product:"2-Amino-4-hydroxy-6-(D-erythro-1,2,3-trihydroxypropyl)-7,8- dihydropteridine" OR Product:"2-Amino-4-hydroxy-6-(erythro-1,2,3-trihydroxypropyl)dihydropteridine triphosphate" OR Product:"Dihydroneopterin phosphate" OR Product:"Ganciclovir" OR Product:"8-Br-cGMP" OR Product:"2'-Deoxyguanosine 3'-phosphate" OR Product:"8-Azaguanosine-5'-monophosphate" OR Product:"8-oxo-dGMP" OR Product:"Dihydroneopterin triphosphate" OR Product:"8-oxo-dGTP" OR Product:"2'-Deoxy-8-hydroxyguanosine") AND (Product:"phosphate"))"""
-        self.assertEqual(response, expectedAnswer)
-
-    def test_get_parsed_reaction(self):
-        reaction_string = "[c]: Complex_Acp + ATP + HDCA ==> PPI + AMP + Complex_Acp_hdc"
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['Complex_Acp', 'ATP', 'HDCA'], ['PPI', 'AMP', 'Complex_Acp_hdc']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = "A + B + C ==> D + E + F"
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['A', 'B', 'C'], ['D', 'E', 'F']]
-        self.assertEqual(response, expectedAnswer)
-
-        #make sure it removes hyrdrogens
-        reaction_string = "[c]: Complex_Acp + H2O ==> ProtMon_MPN406 + H + Pantetheine4Phosphate"
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['Complex_Acp', 'H2O'], ['ProtMon_MPN406', 'Pantetheine4Phosphate']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = "cyclobutane_dTdC[c] ==> cyclobutane_dTdC[e]"
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['cyclobutane_dTdC'], ['cyclobutane_dTdC']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = "UDPG[c] + DAG161[m] ==> UDP[c] + H[c] + GlcDAG161[m]"
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['UDPG', 'DAG161'], ['UDP', 'GlcDAG161']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m --> h2o_m + nadp_m + 1a2425thvitd2_m'
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['1a25dhvitd2_m', 'o2_m', 'nadph_m'], ['h2o_m', 'nadp_m', '1a2425thvitd2_m']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m <-> h2o_m + nadp_m + 1a2425thvitd2_m'
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['1a25dhvitd2_m', 'o2_m', 'nadph_m'], ['h2o_m', 'nadp_m', '1a2425thvitd2_m']]
-        self.assertEqual(response, expectedAnswer)
-
-        reaction_string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m <=> h2o_m + nadp_m + 1a2425thvitd2_m'
-        response = query_string_manipulator.getParsedReaction(reaction_string)
-        expectedAnswer = [['1a25dhvitd2_m', 'o2_m', 'nadph_m'], ['h2o_m', 'nadp_m', '1a2425thvitd2_m']]
         self.assertEqual(response, expectedAnswer)
 
     def test_generate_generic_inchi(self):
@@ -162,63 +122,51 @@ class TestProgram(unittest.TestCase):
         id = "Example Reaction 1"
         #[c]: ATP + Pantetheine4Phosphate ==> DPCOA + PPI
         reaction = reaction_queries.ReactionQuery(id)
-        reaction.substrates = [reaction_queries.Compound("ATP", sabioNames = ['ATP']), reaction_queries.Compound("Pantetheine4Phosphate", sabioNames = ["4'-Phosphopantetheine"])]
-        reaction.products = [reaction_queries.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), reaction_queries.Compound("PPI", sabioNames = ['Diphosphate'])]
+        reaction.substrates = [data_structs.Compound("ATP", sabioNames = ['ATP']), data_structs.Compound("Pantetheine4Phosphate", sabioNames = ["4'-Phosphopantetheine"])]
+        reaction.products = [data_structs.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), data_structs.Compound("PPI", sabioNames = ['Diphosphate'])]
         searchString = translator_for_sabio.getSubstrateProductQueryString(reaction)
         expectedString = """((Substrate:"ATP") AND (Substrate:"4'-Phosphopantetheine")) AND ((Product:"Dephospho-CoA" OR Product:"3'-Dephospho-CoA") AND (Product:"Diphosphate"))"""
         self.assertEqual(searchString, expectedString)
 
         #if sabio recognizes all of the participants except for one, it should still return a string
         reaction = reaction_queries.ReactionQuery(id)
-        reaction.substrates = [reaction_queries.Compound("ATP", sabioNames = ['ATP']), reaction_queries.Compound("Pantetheine4Phosphate", sabioNames = [])]
-        reaction.products = [reaction_queries.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), reaction_queries.Compound("PPI", sabioNames = ['Diphosphate'])]
+        reaction.substrates = [data_structs.Compound("ATP", sabioNames = ['ATP']), data_structs.Compound("Pantetheine4Phosphate", sabioNames = [])]
+        reaction.products = [data_structs.Compound("DPCOA", sabioNames = ['Dephospho-CoA', "3'-Dephospho-CoA"]), data_structs.Compound("PPI", sabioNames = ['Diphosphate'])]
         searchString = translator_for_sabio.getSubstrateProductQueryString(reaction)
         expectedString = """((Substrate:"ATP")) AND ((Product:"Dephospho-CoA" OR Product:"3'-Dephospho-CoA") AND (Product:"Diphosphate"))"""
         self.assertEqual(searchString, expectedString)
 
         #if sabio does not recognize two or more, the code should return an empty string
         reaction = reaction_queries.ReactionQuery(id)
-        reaction.substrates = [reaction_queries.Compound("ATP", sabioNames = ['ATP']), reaction_queries.Compound("Pantetheine4Phosphate", sabioNames = [])]
-        reaction.products = [reaction_queries.Compound("DPCOA", sabioNames = []), reaction_queries.Compound("PPI", sabioNames = ['Diphosphate'])]
+        reaction.substrates = [data_structs.Compound("ATP", sabioNames = ['ATP']), data_structs.Compound("Pantetheine4Phosphate", sabioNames = [])]
+        reaction.products = [data_structs.Compound("DPCOA", sabioNames = []), data_structs.Compound("PPI", sabioNames = ['Diphosphate'])]
         searchString = translator_for_sabio.getSubstrateProductQueryString(reaction)
         expectedString = ""
         self.assertEqual(searchString, expectedString)
 
-
         id = "Example Reaction 2"
         #[c]: PAP + H2O ==> AMP + PI
         reaction = reaction_queries.ReactionQuery(id)
-        reaction.substrates = [reaction_queries.Compound("PAP", sabioNames = ["Adenosine 3',5'-bisphosphate"]), reaction_queries.Compound("H2O", sabioNames = ['H2O', 'OH-'])]
-        reaction.products = [reaction_queries.Compound("AMP", sabioNames = ['AMP', "Adenine-9-beta-D-arabinofuranoside 5'-monophosphate"]), reaction_queries.Compound("PI", sabioNames = ['Dihydrogen phosphate', 'Phosphate'])]
+        reaction.substrates = [data_structs.Compound("PAP", sabioNames = ["Adenosine 3',5'-bisphosphate"]), data_structs.Compound("H2O", sabioNames = ['H2O', 'OH-'])]
+        reaction.products = [data_structs.Compound("AMP", sabioNames = ['AMP', "Adenine-9-beta-D-arabinofuranoside 5'-monophosphate"]), data_structs.Compound("PI", sabioNames = ['Dihydrogen phosphate', 'Phosphate'])]
         searchString = translator_for_sabio.getSubstrateProductQueryString(reaction)
         expectedString ="""((Substrate:"Adenosine 3',5'-bisphosphate") AND (Substrate:"H2O" OR Substrate:"OH-")) AND ((Product:"AMP" OR Product:"Adenine-9-beta-D-arabinofuranoside 5'-monophosphate") AND (Product:"Dihydrogen phosphate" OR Product:"Phosphate"))"""
         self.assertEqual(searchString, expectedString)
 
 
-
     #####################################
-    #Tesst the reaction_queries module
+    #Test the reaction_queries module
     def test_reaction_queries(self):
-
-        inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
-        #turn Excel sheet into openpyxl workbook
-        if not path.isdir(path.join(path.dirname(__file__), "output")):
-            os.makedirs(path.join(path.dirname(__file__), "output"))
-        outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
-        species = 'mycoplasma pneumoniae'
-
+        pass
 
     def test_generate_reaction_queries(self):
         inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
-        #turn Excel sheet into openpyxl workbook
         if not path.isdir(path.join(path.dirname(__file__), "output")):
             os.makedirs(path.join(path.dirname(__file__), "output"))
         outputFilename = path.join(path.dirname(__file__), "output", "five_reactions.xlsx")
-        species = 'mycoplasma pneumoniae'
-        wb = openpyxl.load_workbook(filename=inputFileName)
         #generate_reaction_queries is given an openpyxl workbook as an arg. It outputs a list
         
-        rxn_queries = reaction_queries.generate_reaction_queries(wb)
+        rxn_queries = reaction_queries.generate_reaction_queries(inputFileName)
 
         self.assertEqual(set([rxn.id for rxn in rxn_queries]), set([
             'ump_kinase',
@@ -229,10 +177,10 @@ class TestProgram(unittest.TestCase):
             ]))
         for rxn in rxn_queries:
             if rxn.id == 'ump_kinase':
+                self.assertEqual(rxn.id, "ump_kinase"),
                 self.assertEqual(rxn.ec_number, ""),
                 self.assertEqual(rxn.keggID, ""),
                 self.assertEqual(rxn.num_participants, [2,2]),
-                self.assertEqual(rxn.reaction_string, '[c]: ATP + UMP <==> UDP + ADP')
                 self.assertEqual(set([comp.id for comp in rxn.substrates]), set([
                     'ATP',
                     'UMP'
@@ -260,7 +208,6 @@ class TestProgram(unittest.TestCase):
                         #UMP has two generic inchi structure in the Sabio Database that match the structural information we  provided.
                         #Therefore UMP has two sabio names
                         self.assertEqual(comp.sabioNames, ['UDP'])
-
 
     def test_generateCompounds(self):
         pass
@@ -575,9 +522,7 @@ class TestProgram(unittest.TestCase):
         ##################################################
         #todo the next entry is a case where Sabio did find the queried reaction, however it did not find any vmax infromation
         #it only found km
-
-
-
+        
 
 class TestsCollectedFromMain(unittest.TestCase):
     @unittest.skip('Too long for typical testing')
@@ -592,25 +537,7 @@ class TestsCollectedFromMain(unittest.TestCase):
         output_filename = path.join(out_dir, 'Mycoplasma_pneumoniae.xlsx')
         
         datanator.get_kinetic_data(input_filename, output_filename, species, proxim_limit = 8)
-
-    def test_reaction_queries(self):
-        filename = path.join(path.dirname(__file__), 'fixtures', 'twenty_reactions.xlsx')
-        wb = openpyxl.load_workbook(filename=filename)
-        rxns = reaction_queries.generate_reaction_queries(wb)
-
-        for rxn in rxns:
-            print(rxn.__dict__)
-
-            for comp in rxn.substrates:
-                print(comp.id)
-                print(comp.inchi_smiles)
-                print(comp.sabioNames)
-
-            for comp in rxn.products:
-                print(comp.id)
-                print(comp.inchi_smiles)
-                print(comp.sabioNames)
-                
+        
     def test_sabio_interface(self):
         query_dict = {
                     #"Organism":'"Homo sapiens"',
@@ -667,7 +594,7 @@ class TestsCollectedFromMain(unittest.TestCase):
 
 
         string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m --> h2o_m + nadp_m + 1a2425thvitd2_m'
-        print(query_string_manipulator.getParsedReaction(string))
+        print(io.InputReader.parse_reaction_stoichiometry(string))
 
     def test_inchi_generator(self):
         ourAMP = "NC1=C2N=CN(C3OC(COP([O-])([O-])=O)C(O)C3O)C2=NC=N1"

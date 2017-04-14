@@ -193,9 +193,10 @@ def create_formatted_data(reaction_query, species, defaultValues, proxim_limit =
 def get_kinetic_data(input_filename, output_filename, species, temp_range = [15, 40], enzyme_type = "wildtype", ph_range = [5,9], proxim_limit=1000):
 	default_values = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzyme_type, temp_range[0], temp_range[1], ph_range[0], ph_range[1])
 	
+	#rxns = io.InputReader.run(input_filename)
+
+	rxn_qs = reaction_queries.generate_reaction_queries(input_filename)
 	rxns = []
-	wb = openpyxl.load_workbook(filename=input_filename)
-	rxn_qs = reaction_queries.generate_reaction_queries(wb)
 	for rxn_q in rxn_qs:
 		rxn = create_formatted_data(rxn_q, species, default_values, proxim_limit)
 		rxns.append(rxn)
