@@ -7,10 +7,13 @@
 """
 
 from kinetic_datanator.util import molecule_util
+from kinetic_datanator.util import warning_util
 #from rdkit.Chem import rdMolDescriptors
 import numpy
 import pybel
 import unittest
+
+warning_util.set_warnings()
 
 
 class TestMoleculeUtil(unittest.TestCase):

@@ -14,10 +14,13 @@ from kinetic_datanator import query_string_manipulator
 from kinetic_datanator import reaction_queries
 from kinetic_datanator import sabio_interface
 from kinetic_datanator import translator_for_sabio
+from kinetic_datanator.util import warning_util
 import openpyxl
 import os
 import sys
 import unittest
+
+warning_util.set_warnings()
 
 
 class TestProgram(unittest.TestCase):

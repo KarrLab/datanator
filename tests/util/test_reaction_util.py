@@ -10,7 +10,11 @@ from attrdict import AttrDict
 from kinetic_datanator.util import compartment_util
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import reaction_util
+from kinetic_datanator.util import warning_util
 import unittest
+
+warning_util.set_warnings()
+
 
 
 class TestReaction(unittest.TestCase):

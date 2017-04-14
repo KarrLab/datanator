@@ -7,8 +7,8 @@
 :License: MIT
 """
 
-from . import molecule_util
 from . import compartment_util
+from . import molecule_util
 import itertools
 import numpy
 import re
