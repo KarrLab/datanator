@@ -13,7 +13,7 @@ import numpy
 import pybel
 import unittest
 
-warning_util.set_warnings()
+warning_util.disable_warnings()
 
 
 class TestMoleculeUtil(unittest.TestCase):
