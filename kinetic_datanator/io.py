@@ -12,21 +12,23 @@ from . import inchi_generator
 from .util import taxonomy_util
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
+import openpyxl
 
 
 class InputReader(object):
 
     @classmethod
-    def read_compounds(cls, wb):
+    def read_compounds(cls, filename):
         """
         Args:
-            wb (obj:`openpyxl.Workbook`): Takes an workbook that sheet with the name "Metabolites"
+            filename
 
         Returns:
             :obj:`list` of `Compound`: list of compounds
         """
 
         sabio_name_to_inchi_dict = inchi_generator.getSabioNameToInchiDict()
+        wb = openpyxl.load_workbook(filename=filename)
         ws = wb.get_sheet_by_name('Metabolites')
 
         # instantiate a compound object for each metabolite in the excel sheet
@@ -48,6 +50,18 @@ class InputReader(object):
             compound_list.append(comp)
 
         return compound_list
+    
+    @classmethod
+    def read_reactions(cls, filename):
+        wb = openpyxl.load_workbook(filename=filename)
+        ws = wb.get_sheet_by_name('Reactions')
+        reactions = []
+        for i in range(2, ws.max_row + 1):
+            reactions.append({
+                'id': ws.cell(row=i, column=1).value, 
+                'stoichiometry': cls.parse_reaction_stoichiometry(ws.cell(row=i, column=2).value),
+                })
+        return reactions
 
     @classmethod
     def parse_reaction_stoichiometry(cls, reaction_string):

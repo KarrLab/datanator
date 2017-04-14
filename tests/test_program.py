@@ -156,9 +156,6 @@ class TestProgram(unittest.TestCase):
 
     #####################################
     #Test the reaction_queries module
-    def test_reaction_queries(self):
-        pass
-
     def test_generate_reaction_queries(self):
         inputFileName = path.join(path.dirname(__file__), "fixtures", "five_reactions.xlsx")
         if not path.isdir(path.join(path.dirname(__file__), "output")):
@@ -208,9 +205,6 @@ class TestProgram(unittest.TestCase):
                         #UMP has two generic inchi structure in the Sabio Database that match the structural information we  provided.
                         #Therefore UMP has two sabio names
                         self.assertEqual(comp.sabioNames, ['UDP'])
-
-    def test_generateCompounds(self):
-        pass
 
     def test_get_sabio_data(self):
         #test sabio_interface
