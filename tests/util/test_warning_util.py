@@ -9,7 +9,7 @@
 from capturer import CaptureOutput
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import warning_util
-import requests
+import time
 import unittest
 
 
@@ -20,12 +20,14 @@ class TestWarningUtil(unittest.TestCase):
 
         with CaptureOutput() as capturer:
             molecule_util.Molecule(adp).to_inchi()
+            time.sleep(0.1)
             self.assertNotEqual(capturer.get_text(), '')
 
         warning_util.set_warnings()
 
         with CaptureOutput() as capturer:
             molecule_util.Molecule(adp).to_inchi()
+            time.sleep(0.1)
             self.assertEqual(capturer.get_text(), '')
 
     @unittest.skip('todo: implement')
