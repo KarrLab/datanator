@@ -212,43 +212,6 @@ class TestProgram(unittest.TestCase):
     def test_generateCompounds(self):
         pass
 
-
-
-
-
-
-        
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def test_get_sabio_data(self):
         #test sabio_interface
 
@@ -276,12 +239,6 @@ class TestProgram(unittest.TestCase):
         searchString = """Product:ADP AND Substrate:AMP AND ADP"""
         results =  sabio_interface.get_sabio_data(searchString, base_species)
         self.assertEqual(len(results.entry_list), 77)
-
-
-
-
-
-
     
     def test_datanator(self):
         #Find Excel sheet with reaction data
@@ -522,7 +479,7 @@ class TestProgram(unittest.TestCase):
         ##################################################
         #todo the next entry is a case where Sabio did find the queried reaction, however it did not find any vmax infromation
         #it only found km
-        
+
 
 class TestsCollectedFromMain(unittest.TestCase):
     @unittest.skip('Too long for typical testing')
@@ -553,10 +510,8 @@ class TestsCollectedFromMain(unittest.TestCase):
                     #"Enzymename":"Adk",
                     #"enzymeType":"wildtype",
                     }
-        #answer =  get_sabio_data(query_dict)
-
+        #answer = get_sabio_data(query_dict)
         #print(answer)
-        #blue = TotalResult(answer)
         
         searchString = """((Substrate:"Adenosine 3',5'-bisphosphate") AND (Substrate:"H2O" OR Substrate:"OH-")) AND ((Product:"AMP" OR Product:"Adenine-9-beta-D-arabinofuranoside 5'-monophosphate") AND (Product:"Dihydrogen phosphate" OR Product:"Phosphate"))"""
         searchString = """enzymeType:wildtype AND TemperatureRange:[30 TO 40] AND pHValueRange:[5 TO 9] AND ((Substrate:"Glyceraldehyde 3-phosphate" OR Substrate:"L-Glyceraldehyde 3-phosphate" OR Substrate:"Glycerone phosphate" OR Substrate:"D-Glyceraldehyde 3-phosphate") AND (Substrate:"D-Sedoheptulose 7-phosphate" OR Substrate:"Sedoheptulose 1-phosphate" OR Substrate:"Sedoheptulose 7-phosphate")) AND ((Product:"L-Xylulose 1-phosphate" OR Product:"D-Ribulose 5-phosphate" OR Product:"D-Xylose 5-phosphate" OR Product:"Ribose 5-phosphate" OR Product:"D-Arabinose 5-phosphate" OR Product:"D-Ribose 5-phosphate" OR Product:"D-Xylulose 1-phosphate" OR Product:"L-Xylulose 5-phosphate" OR Product:"Ribulose 5-phosphate" OR Product:"L-Ribulose 5-phosphate" OR Product:"Arabinose 5-phosphate" OR Product:"D-Xylulose 5-phosphate") AND (Product:"L-Xylulose 1-phosphate" OR Product:"D-Ribulose 5-phosphate" OR Product:"D-Xylose 5-phosphate" OR Product:"Ribose 5-phosphate" OR Product:"D-Arabinose 5-phosphate" OR Product:"D-Ribose 5-phosphate" OR Product:"D-Xylulose 1-phosphate" OR Product:"L-Xylulose 5-phosphate" OR Product:"Ribulose 5-phosphate" OR Product:"L-Ribulose 5-phosphate" OR Product:"Arabinose 5-phosphate" OR Product:"D-Xylulose 5-phosphate"))"""
@@ -565,33 +520,12 @@ class TestsCollectedFromMain(unittest.TestCase):
         base_species = 'mycoplasma pneumoniae'
         searchString = """((Substrate:"ATP") AND (Substrate:"UMP" OR Substrate:"Uridine 5'-phosphate")) AND ((Product:"UDP"))"""
         results =  sabio_interface.get_sabio_data(searchString, base_species)
-        print(len(results.entry_list))
-        
-        """
-        for entry in results.entry_list:
-            print(entry.entry_id)
-            print(entry.km)
-        """
-        
-        """
-        array = [1,2,3]
-        blue = []
-        blue.append(array)
-        print(blue)
-        """
 
     def test_query_string_manipulator(self):
         a = []#['dGMP', 'GMP', 'Lactose 6-phosphate', 'dGDP', "Orotidine 5'-phosphate", "Guanosine 3'-phosphate", "2',3'-Cyclic GMP", 'L-Arogenate', 'N-Acylneuraminate 9-phosphate', "Maltose 6'-phosphate", "5-Amino-6-(5'-phosphoribitylamino)uracil", '6-Phospho-beta-D-glucosyl-(1,4)-D-glucose', '2-Amino-4-hydroxy-6-(D-erythro-1,2,3-trihydroxypropyl)-7,8- dihydropteridine', '2-Amino-4-hydroxy-6-(erythro-1,2,3-trihydroxypropyl)dihydropteridine triphosphate', 'Dihydroneopterin phosphate', 'Ganciclovir', '8-Br-cGMP', "2'-Deoxyguanosine 3'-phosphate", "8-Azaguanosine-5'-monophosphate", '8-oxo-dGMP', 'Dihydroneopterin triphosphate', '8-oxo-dGTP', "2'-Deoxy-8-hydroxyguanosine"]
         b = ['dGMP', 'GMP', 'Lactose 6-phosphate', 'dGDP', "Orotidine 5'-phosphate", "Guanosine 3'-phosphate", "2',3'-Cyclic GMP", 'L-Arogenate', 'N-Acylneuraminate 9-phosphate', "Maltose 6'-phosphate", "5-Amino-6-(5'-phosphoribitylamino)uracil", '6-Phospho-beta-D-glucosyl-(1,4)-D-glucose', '2-Amino-4-hydroxy-6-(D-erythro-1,2,3-trihydroxypropyl)-7,8- dihydropteridine', '2-Amino-4-hydroxy-6-(erythro-1,2,3-trihydroxypropyl)dihydropteridine triphosphate', 'Dihydroneopterin phosphate', 'Ganciclovir', '8-Br-cGMP', "2'-Deoxyguanosine 3'-phosphate", "8-Azaguanosine-5'-monophosphate", '8-oxo-dGMP', 'Dihydroneopterin triphosphate', '8-oxo-dGTP', "2'-Deoxy-8-hydroxyguanosine"]
         c = []#["H2O"]
         d = ["phosphate"]
-        stuff = []
-        stuff.append([a, c])
-        stuff.append([b, d])
-
-        blank = [[], []]
-        #print(stuff)
-
 
         string = 'h_m + 1a25dhvitd2_m + o2_m + nadph_m --> h2o_m + nadp_m + 1a2425thvitd2_m'
         print(io.InputReader.parse_reaction_stoichiometry(string))
