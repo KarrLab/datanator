@@ -10,4 +10,5 @@ from requests.packages import urllib3
 
 
 def set_warnings():
+    # todo: disable openbabel warnings
     requests.packages.urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

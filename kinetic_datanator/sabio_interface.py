@@ -127,7 +127,7 @@ class TotalResult:
 
 			#get the proximity for each entry
 			#for entry in self.entry_list:
-			#	entry.proximity = taxonomy_util.Taxon('mycoplasma pneumoniae').get_distance(entry.species)
+			#	entry.proximity = taxonomy_util.Taxon('mycoplasma pneumoniae').get_distance_to_common_ancestor(entry.species)
 
 
 def get_sabio_data(query, base_species, num_participants = []):
@@ -172,8 +172,10 @@ def get_sabio_data(query, base_species, num_participants = []):
 	#print(text_file)
 	result = TotalResult(text_file)
 
+	base_taxon = taxonomy_util.Taxon(base_species)
 	for entry in result.entry_list:
-		entry.proximity = taxonomy_util.Taxon(base_species).get_distance(entry.species)
+		entry_taxon = taxonomy_util.Taxon(entry.species)
+		entry.proximity = base_taxon.get_distance_to_common_ancestor(entry_taxon)
 
 	if len(num_participants)>0:
 		result.narrow_by_nums(num_participants)

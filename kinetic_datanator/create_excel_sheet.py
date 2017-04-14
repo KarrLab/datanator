@@ -62,8 +62,8 @@ def create_excel_sheet(species, reactions, output_filename):
     ws = wb.create_sheet(title="Taxonomic information")
     ws.cell(row=1, column=1, value='Taxonomy')
     ws.cell(row=1, column=2, value='Proximity')
-    for i_row, value in enumerate(taxonomy_util.get_parents(species)):
-        ws.cell(row=i_row+2, column=1, value=value)
+    for i_row, value in enumerate(taxonomy_util.Taxon(species).get_parent_taxa()):
+        ws.cell(row=i_row+2, column=1, value=value.name)
         ws.cell(row=i_row+2, column=2, value=i_row + 1)
 
     # save workbook to a file

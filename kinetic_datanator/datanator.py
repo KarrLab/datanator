@@ -152,10 +152,10 @@ def create_formatted_data(reaction_query, species, defaultValues, proxim_limit =
 	has_relevant_data = rxn.km_data.has_relevant_data(proxim_limit)
 	logging.info("Datanator: Has relevant data for km - {}".format(has_relevant_data))
 	if has_relevant_data == False:
-		#we are about to set the generic_ec_number. However, first we need ot make sure
-		#the user didn't provide their own. If the user provided their own, that generic_ec_number is used instead
-		if len(reaction_query.generic_ec_number)==0:
-			reaction_query.set_generic_ec_number_from_ezyme_algorithm()
+		#we are about to set the predicted_ec_number. However, first we need ot make sure
+		#the user didn't provide their own. If the user provided their own, that predicted_ec_number is used instead
+		if len(reaction_query.predicted_ec_number)==0:
+			reaction_query.set_predicted_ec_number_from_ezyme_algorithm()
 		queryString = translator_for_sabio.getGenericECQueryString(reaction_query)
 		if len(queryString)>0:
 			queryString = defaultValues + queryString
@@ -163,9 +163,9 @@ def create_formatted_data(reaction_query, species, defaultValues, proxim_limit =
 			logging.error("Datanator: Tried to lift from EC, but did not work")
 		lifted_sabio_results = get_sabio_data(queryString, species)
 		rxn.km_data = KmInfo(lifted_sabio_results)
-		if len(reaction_query.generic_ec_number)>0:
-			rxn.km_data.lift_info = "Lifted From {}".format(reaction_query.generic_ec_number)
-			logging.info("Datanator: Lifted From {} for Km".format(reaction_query.generic_ec_number))
+		if len(reaction_query.predicted_ec_number)>0:
+			rxn.km_data.lift_info = "Lifted From {}".format(reaction_query.predicted_ec_number)
+			logging.info("Datanator: Lifted From {} for Km".format(reaction_query.predicted_ec_number))
 
 
 	rxn.vmax_data = VmaxInfo(sabio_results)
@@ -174,16 +174,16 @@ def create_formatted_data(reaction_query, species, defaultValues, proxim_limit =
 	if has_relevant_data == False:
 		#check if liftessabio_results has already been searched. If it has, no need to search again
 		if lifted_sabio_results == None:
-			if len(reaction_query.generic_ec_number)==0:
-				reaction_query.set_generic_ec_number_from_ezyme_algorithm()
+			if len(reaction_query.predicted_ec_number)==0:
+				reaction_query.set_predicted_ec_number_from_ezyme_algorithm()
 			queryString = translator_for_sabio.getGenericECQueryString(reaction_query)
 			if len(queryString)>0:
 				queryString = defaultValues + queryString
 			lifted_sabio_results = get_sabio_data(queryString, species)
 		rxn.vmax_data = VmaxInfo(lifted_sabio_results)
-		if len(reaction_query.generic_ec_number)>0:
-			rxn.vmax_data.lift_info = "Lifted From {}".format(reaction_query.generic_ec_number)
-			logging.info("Datanator: Lifted From {} for Vmax".format(reaction_query.generic_ec_number))
+		if len(reaction_query.predicted_ec_number)>0:
+			rxn.vmax_data.lift_info = "Lifted From {}".format(reaction_query.predicted_ec_number)
+			logging.info("Datanator: Lifted From {} for Vmax".format(reaction_query.predicted_ec_number))
 
 	return rxn
 

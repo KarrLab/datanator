@@ -18,12 +18,6 @@ class Compound:
 		self.inchi_smiles = inchi_smiles
 		self.sabioNames = sabioNames
 
-		#if len(self.sabioNames) == 0:
-			#print(self.id)
-			#print(self.inchi_smiles)
-			#print(self.sabioNames)
-			#print("\n")
-
 class ReactionQuery:
 	def __init__(self, id):
 		self.id = id
@@ -33,10 +27,11 @@ class ReactionQuery:
 		self.num_participants = [] #this is an array of two numbers, first number for substrates, second for products
 		self.keggID = ""
 		self.ec_number = ""
-		self.generic_ec_number = ""
+		self.predicted_ec_number = ""
 
-	def set_generic_ec_number_from_ezyme_algorithm(self):
-		self.generic_ec_number = ec_number_finder.easy_find_ec_number(self.substrates, self.products)
+	def set_predicted_ec_number_from_ezyme_algorithm(self):
+		print('====\n' + self.id)
+		self.predicted_ec_number = ec_number_finder.predict_ec_number(self.substrates, self.products)
 
 
 def generateCompounds(wb):

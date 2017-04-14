@@ -43,7 +43,7 @@ def getSubstrateProductQueryString(reaction_query):
 
 def getGenericECQueryString(reaction_query):
 	reaction_queryCopy = copy.deepcopy(reaction_query)
-	return format_ec_number_for_sabio(reaction_queryCopy.generic_ec_number)
+	return format_ec_number_for_sabio(reaction_queryCopy.predicted_ec_number)
 
 def format_ec_number_for_sabio(ec_number, number_four_digit_ec_numbers=100):
     """
