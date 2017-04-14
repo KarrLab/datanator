@@ -13,7 +13,7 @@ from kinetic_datanator.util import reaction_util
 from kinetic_datanator.util import warning_util
 import unittest
 
-warning_util.set_warnings()
+warning_util.disable_warnings()
 
 
 

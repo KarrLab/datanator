@@ -15,16 +15,16 @@ import unittest
 
 class TestWarningUtil(unittest.TestCase):
 
-    def test_set_warnings_openbabel(self):
+    def test_warnings_openbabel(self):
         adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
 
+        warning_util.enable_warnings()
         with CaptureOutput() as capturer:
             molecule_util.Molecule(adp).to_inchi()
             time.sleep(0.1)
             self.assertNotEqual(capturer.get_text(), '')
 
-        warning_util.set_warnings()
-
+        warning_util.disable_warnings()
         with CaptureOutput() as capturer:
             molecule_util.Molecule(adp).to_inchi()
             time.sleep(0.1)

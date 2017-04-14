@@ -19,7 +19,7 @@ import os
 import sys
 import unittest
 
-warning_util.set_warnings()
+warning_util.disable_warnings()
 
 
 class TestProgram(unittest.TestCase):

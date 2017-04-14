@@ -11,7 +11,13 @@ from requests.packages import urllib3
 import openbabel
 
 
-def set_warnings():
-    """ Suppress warning messages from openbabel and urllib"""
+def disable_warnings():
+    """ Disable warning messages from openbabel and urllib """
     openbabel.obErrorLog.SetOutputLevel(openbabel.obError)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+def enable_warnings():
+    """ Enable warning messages from openbabel and urllib """
+    openbabel.obErrorLog.SetOutputLevel(openbabel.obWarning)
+    urllib3.warnings.resetwarnings()
