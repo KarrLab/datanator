@@ -5,7 +5,6 @@
 :License: MIT
 """
 
-from . import ec_number_finder
 from . import query_string_manipulator
 import copy
 

@@ -8,7 +8,6 @@
 
 from os import path
 from kinetic_datanator import datanator
-from kinetic_datanator import ec_number_finder
 from kinetic_datanator import inchi_generator
 from kinetic_datanator import query_string_manipulator
 from kinetic_datanator import reaction_queries
