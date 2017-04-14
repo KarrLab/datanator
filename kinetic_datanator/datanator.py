@@ -5,9 +5,9 @@
 :License: MIT
 """
 
+from . import io
 from . import reaction_queries
 from . import translator_for_sabio
-from .create_excel_sheet import create_excel_sheet
 from .sabio_interface import get_sabio_data
 import logging
 import numpy as np
@@ -119,8 +119,11 @@ class KmInfo(KineticInfo):
 
 
 class FormattedData:
+	""" Represents kinetic data obtained from SABIO """
 	def __init__(self, id):#, sabio_results):
 		self.id = id
+		self.ec_number = ''
+		self.predicted_ec_numbers = []
 		self.reaction_ids = []
 		self.km_data = None
 		self.vmax_data = None
@@ -196,7 +199,7 @@ def get_kinetic_data(input_filename, output_filename, species, temp_range = [15,
 	for rxn_q in rxn_qs:
 		rxn = create_formatted_data(rxn_q, species, default_values, proxim_limit)
 		rxns.append(rxn)
-	create_excel_sheet(species, rxns, output_filename)
+	io.ResultsWriter.run(species, rxns, output_filename)
 	return rxns
 
 def get_kinetic_data_from_django(input_file, species, temp_range = [15, 40], enzyme_type = "wildtype", ph_range = [5,9], proxim_limit=1000):
@@ -207,5 +210,4 @@ def get_kinetic_data_from_django(input_file, species, temp_range = [15, 40], enz
 	for rxn_q in rxn_qs:
 		rxn = create_formatted_data(rxn_q, species, default_values, proxim_limit)
 		rxns.append(rxn)
-	#create_excel_sheet(species, rxns, outputFilename)
 	return rxns
