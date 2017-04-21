@@ -13,6 +13,7 @@ from kinetic_datanator import query_string_manipulator
 from kinetic_datanator import reaction_queries
 from kinetic_datanator import sabio_interface
 from kinetic_datanator import translator_for_sabio
+from kinetic_datanator import ec_number_finder
 from kinetic_datanator.util import warning_util
 import openpyxl
 import os
@@ -23,6 +24,31 @@ warning_util.disable_warnings()
 
 
 class TestProgram(unittest.TestCase):
+
+
+    def test_getTaxonomicDistance(self):
+        distance = TaxonFinder.getTaxonomicDistance('Mycoplasma pneumoniae', 'homo sapiens')
+        self.assertTrue(distance == 8)
+
+        distance = TaxonFinder.getTaxonomicDistance('homo sapiens', 'Mycoplasma pneumoniae')
+        self.assertTrue(distance == 30)
+
+        distance = TaxonFinder.getTaxonomicDistance('Saccharomyces cerevisiae Fleischmanns baking yeast', 'Mycoplasma pneumoniae')
+        self.assertTrue(distance == 13)
+
+        distance = TaxonFinder.getTaxonomicDistance('Escherichia coli', 'Bacillus algicola')
+        self.assertTrue(distance == 6)
+
+        #try what happens if it doesn't recognize the species
+        distance = TaxonFinder.getTaxonomicDistance('mycoplasma pneumoniae', 'Streptococcus SomeLatinusNamus')
+        self.assertTrue(distance == 6)
+
+        #if it doesn't recognize the genus, it should return an empty string
+        distance = TaxonFinder.getTaxonomicDistance('mycoplasma pneumoniae', 'SomeLatinusNamus speciesus')
+        self.assertTrue(distance == "")
+
+
+
     def test_get_query_search_string(self):
         #test query_string_manipulator
 
@@ -279,29 +305,6 @@ class TestProgram(unittest.TestCase):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def test_get_sabio_data(self):
         #test sabio_interface
 
@@ -332,7 +335,71 @@ class TestProgram(unittest.TestCase):
 
 
 
+    def test_get_EC_number(self):
 
+
+        #[c]: T3P1 + S7P <==> X5P + R5P
+        subArray = [u'OC(COP([O-])([O-])=O)C=O', u'OCC(=O)C(O)C(O)C(O)C(O)COP([O-])([O-])=O']
+        prodArray = [u'OCC(=O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C(O)C(O)C=O']
+        expectedECNum = "4.1.2"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        #becuase the substrates and proucts have to be correctly matched, the EC number search
+        #should only find results for one pairing of subArray and prodArray. Therefore if the items
+        #in subArray are swapped, the result should be an empty string
+        subArray = [u'OCC(=O)C(O)C(O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C=O']
+        prodArray = [u'OCC(=O)C(O)C(O)COP([O-])([O-])=O', u'OC(COP([O-])([O-])=O)C(O)C(O)C=O']
+        expectedECNum = ""
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        #[c]: PI + INS <==> R1P + HYXN
+        subArray = [u'OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=NC2=C(O)N=CN=C12', u'OP([O-])([O-])=O']
+        prodArray = [u'OCC1OC(OP([O-])([O-])=O)C(O)C1O', u'O=C1NC=NC2=C1NC=N2']
+        expectedECNum = "2.4.2"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+
+        #[c]: H2O + ho5hydantoin_dRiboseMP ==> ho5hydantoin_dRibose + PI
+        subArray = [u'O', u'OC1CC(OC1COP([O-])([O-])=O)N1C(O)C(=O)NC1=O']
+        prodArray = [u'OCC1OC(CC1O)N1C(O)C(=O)NC1=O', u'OP([O-])([O-])=O']
+        expectedECNum = "3.1.4"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+
+        #THE FOLLOWING IS A BIG PROBLEM. TWO REACTIONS CAN GET DIFFERENT EC NUMBERS 
+        #JUST BY CHANGING THE ORDER OF THE ITEMS IN THE ARRAY
+        #[c]: e1dGMP + H2O ==> e1dG + PI
+        subArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O', u'O']
+        prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
+        expectedECNum = "3.1.3"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        subArray = [u'O', u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(COP([O-])([O-])=O)O2)C1=O']
+        prodArray = [u'CCN1C(N)=NC2=C(N=CN2C2CC(O)C(CO)O2)C1=O', u'OP([O-])([O-])=O']
+        expectedECNum = "3.1.4"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        #[c]: e3dCMP + H2O ==> e3dC + PI
+        #at the moment, kegg's algorithm doens't recognize this reaction. 
+        #It is probably because it doens't actually have an official EC number
+        #The official EC database itself doesn't have it
+        #(it should be in 3.1.3)
+        subArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(COP([O-])([O-])=O)O1', u'O']
+        prodArray = [u'CCNC1=NC(=O)N(C=C1)C1CC(O)C(CO)O1', u'OP([O-])([O-])=O']
+        expectedECNum = "3.1.3"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        #try it with three
+        #IleIle[e] + ATP[c] + H2O[c] ==> IleIle[c] + PI[c] + H[c] + ADP[c]
+        subArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1', u'O']
+        prodArray = [u'CCC(C)C([NH3+])C(=O)NC(C(C)CC)C([O-])=O', u'OP([O-])([O-])=O', u'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1']
+        expectedECNum = "3.6.1"
+        self.assertEqual(ec_number_finder.getECNumber(subArray, prodArray), expectedECNum)
+
+        #things to test further:
+        #1) cases where the reaction is 3 and 2, or 2 and 3. 
+        #2) cases where the reaction is 3 and 3, but simply looping through each three with subInchiSmiles = subInchiSmiles[-1:] + subInchiSmiles[:-1]
+        #becuase the position of the 3 is wrong, and I would have to change the position of the middle, so teh side, or soemthign
 
 
     
