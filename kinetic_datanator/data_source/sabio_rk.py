@@ -463,7 +463,7 @@ class SabioRkDownloader(object):
     DEFAULT_WEBSERVICE_BATCH_SIZE = 250
     DEFAULT_EXCEL_BATCH_SIZE = 100
     DEFAULT_COMPOUND_BATCH_SIZE = 100
-    SKIP_KINETIC_LAW_IDS = (51286, 54732, 54733, 54734, 54735, 56834)
+    SKIP_KINETIC_LAW_IDS = (51286,)
 
     def __init__(self, session, max_laws=float('inf'),
                  index_batch_size=DEFAULT_INDEX_BATCH_SIZE,
