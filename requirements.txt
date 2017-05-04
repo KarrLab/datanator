@@ -1,11 +1,16 @@
+bs4
 cement
 enum34
 ete3
 jxmlease
+libsbml
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
 openpyxl
 requests
+requests-cache
 scipy
 six
+sqlalchemy
+git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils

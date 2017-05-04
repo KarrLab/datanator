@@ -96,3 +96,15 @@ ENV/
 
 # temporary Excel files
 .~lock.*
+
+# scratch
+scratch/
+
+# passwords
+tests/fixtures/secret/
+
+# IDE configuration
+.idea/
+
+# cache files
+kinetic_datanator/source/cache/
