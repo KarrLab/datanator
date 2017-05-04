@@ -176,3 +176,6 @@ class TestInchiMolecule(unittest.TestCase):
 
         self.assertEqual(glc6p.get_formula_and_connectivity(hydrogen=True), 'C6H13O9P/c7-3-2(1-14-16(11,12)13)15-6(10)5(9)4(3)8')
         self.assertEqual(glc6p.get_formula_and_connectivity(), 'C6H13O9P/c7-3-2(1-14-16(11,12)13)15-6(10)5(9)4(3)8')
+
+        water = molecule_util.InchiMolecule('InChI=1S/H2O/h1H2')
+        self.assertEqual(water.get_formula_and_connectivity(hydrogen=False), 'O')

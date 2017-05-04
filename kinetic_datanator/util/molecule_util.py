@@ -347,4 +347,7 @@ class InchiMolecule(object):
         else:
             formula = re.sub('H[0-9]*', '', self.formula)
 
-        return '{}/c{}'.format(formula, self.connections)
+        val = formula
+        if self.connections:
+            val += '/c' + self.connections
+        return val
