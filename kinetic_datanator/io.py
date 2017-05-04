@@ -7,116 +7,190 @@
 :License: MIT
 """
 
-from . import data_structs
-from . import inchi_generator
+from .core import data_structs
+from .util import compartment_util
+from .util import molecule_util
+from .util import reaction_util
 from .util import taxonomy_util
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
+import re
 import openpyxl
 
 
 class InputReader(object):
 
     @classmethod
-    def read_compounds(cls, filename):
-        """
+    def run(cls, filename):
+        """ Read input data from an Excel workbook
+
         Args:
-            filename
+            filename (:obj:`str`): filename of Excel workbook
 
         Returns:
-            :obj:`list` of `Compound`: list of compounds
+            :obj:`tuple`: 
+
+                * :obj:`taxonomy_util.Taxon`: taxon
+                * :obj:`list` of :obj:`compartment_util.Compartment`: list of compartments
+                * :obj:`list` of :obj:`molecule_util.Molecule`: list of molecules
+                * :obj:`list` of :obj:`reaction_util.Reaction`: list of reactions
         """
-
-        sabio_name_to_inchi_dict = inchi_generator.getSabioNameToInchiDict()
         wb = openpyxl.load_workbook(filename=filename)
-        ws = wb.get_sheet_by_name('Metabolites')
+        taxon = cls._read_taxon(wb.get_sheet_by_name('Taxon'))
+        compartments = []
+        molecules = cls._read_molecules(wb.get_sheet_by_name('Molecules'))
+        reactions = cls._read_reactions(wb.get_sheet_by_name('Reactions'))
+        
+        cls.link_objects(compartments, molecules, reactions)
 
-        # instantiate a compound object for each metabolite in the excel sheet
-        compound_list = []
-        for i in range(2, ws.max_row + 1):
-            id = ws.cell(row=i, column=1).value
+        return (taxon, compartments, molecules, reactions)
 
-            smiles_or_inchi = ""
-            structure = ws.cell(row=i, column=2).value
-            sabio_names = []
-            if structure != None:
-                generic_inchi = inchi_generator.generateGenericInchi(structure)
-                for name in sabio_name_to_inchi_dict:
-                    if sabio_name_to_inchi_dict[name] == generic_inchi:
-                        sabio_names.append(name)
-                smiles_or_inchi = structure
-
-            comp = data_structs.Compound(id, smiles_or_inchi, sabio_names)
-            compound_list.append(comp)
-
-        return compound_list
-    
     @classmethod
-    def read_reactions(cls, filename):
-        wb = openpyxl.load_workbook(filename=filename)
-        ws = wb.get_sheet_by_name('Reactions')
+    def _read_taxon(cls, ws):
+        """ Read taxon from an Excel worksheet
+
+        Args:
+            ws (:obj:`openpyxl.Worksheet`): worksheet
+
+        Returns:
+            :obj:`taxonomy_util.Taxon`: taxon
+        """
+        return taxonomy_util.Taxon(name=ws.cell(row=2, column=1).value)
+
+    @classmethod
+    def _read_molecules(cls, ws):
+        """ Read molecules from an Excel worksheet
+
+        Args:
+            ws (:obj:`openpyxl.Worksheet`): worksheet
+
+        Returns:
+            :obj:`list` of `molecule_util.Molecule`: list of molecules
+        """
+        molecules = []
+        for i in range(2, ws.max_row + 1):
+            molecules.append(molecule_util.Molecule(
+                id=ws.cell(row=i, column=1).value,
+                structure=ws.cell(row=i, column=2).value,
+            ))
+
+        return molecules
+
+    @classmethod
+    def _read_reactions(cls, ws):
+        """ Read reactions from an Excel worksheet
+
+        Args:
+            ws (:obj:`openpyxl.Worksheet`): worksheet
+
+        Returns:
+            :obj:`list` of `reaction_util.Reaction`: list of reactions
+        """
         reactions = []
         for i in range(2, ws.max_row + 1):
-            reactions.append({
-                'id': ws.cell(row=i, column=1).value, 
-                'stoichiometry': cls.parse_reaction_stoichiometry(ws.cell(row=i, column=2).value),
-                })
+            rxn = cls.parse_reaction_equation(ws.cell(row=i, column=2).value)
+            rxn.id = ws.cell(row=i, column=1).value
+            reactions.append(rxn)
         return reactions
 
     @classmethod
-    def parse_reaction_stoichiometry(cls, reaction_string):
-        # takes in a search string and parses it into two arrays.
-        # one array for substrate IDs, and one array for product IDs
+    def parse_reaction_equation(cls, equation):
+        """ Parse a reaction equation, e.g.
 
-        balancedMetab = []
-        substrates = []
-        products = []
+        * [c]: ATP + H2O ==> ADP + PI + H
+        * GLC[e] + ATP[c] + H2O[c] ==> GLC[c] + ADP[c] + PI[c] + H[c]
 
-        if "<==>" in reaction_string:
-            bothSides = reaction_string.split("<==>")
-        elif "==>" in reaction_string:
-            bothSides = reaction_string.split("==>")
-        elif "-->" in reaction_string:
-            bothSides = reaction_string.split("-->")
-        elif "<->" in reaction_string:
-            bothSides = reaction_string.split("<->")
-        elif "<=>" in reaction_string:
-            bothSides = reaction_string.split("<=>")
-        elif "=" in reaction_string:
-            bothSides = reaction_string.split("=")
+        Args:
+            equation (:obj:`str`): reaction equation
 
-        substrates = bothSides[0]
-        products = bothSides[1]
+        Returns:
+            :obj:`reaction_util.Reaction': reaction
+        """
+        global_comp = '\[(?P<comp>[a-z0-9_]+)\]: *'
+        global_part = ' *(([0-9\.]+) )?([a-z0-9_]+)'
+        global_lhs = '(?P<lhs>{}( *\+ *{})*)'.format(global_part, global_part)
+        global_rhs = '(?P<rhs>{}( *\+ *{})*)'.format(global_part, global_part)
+        local_part = ' *(([0-9\.]+) )?([a-z0-9_]+)\[([a-z0-9_]+)\]'
+        local_lhs = '(?P<lhs>{}( *\+ *{})*)'.format(local_part, local_part)
+        local_rhs = '(?P<rhs>{}( *\+ *{})*)'.format(local_part, local_part)
+        sep = ' *(?P<sep><{0,1})[-=]{1,2}> *'
 
-        parsedSubstrates = []
-        parsedProducts = []
+        global_pattern = global_comp + global_lhs + sep + global_rhs
+        local_pattern = local_lhs + sep + local_rhs
 
-        # IMPORTANT!!!!! we are getting rid of hydrogens here.
-        for entry in substrates.split(" "):
-            if not (cls.is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry != "[e]:"and entry != "(2)" and entry != "+" and entry != "==>" and entry != "":
-                # get rid of the [c] tag on some molecules
-                if entry.find("[") != -1:
-                    entry = entry[:entry.find("[")]
-                parsedSubstrates.append(entry)
-        for entry in products.split(" "):
-            if not (cls.is_number(entry)) and entry != "[c]:" and entry != "H" and entry != "H[c]" and entry != "h_m" and entry != "h_x" and entry != "h_c" and entry != "H[e]" and entry != "[m]:" and entry != "[e]:"and entry != "(2)" and entry != "+" and entry != "==>" and entry != "":
-                # get rid of the [c] tag on some molecules
-                if entry.find("[") != -1:
-                    entry = entry[:entry.find("[")]
-                parsedProducts.append(entry)
+        global_match = re.match(global_pattern, equation.rstrip(), re.IGNORECASE)
+        local_match = re.match(local_pattern, equation.rstrip(), re.IGNORECASE)
 
-        balancedMetab.append(parsedSubstrates)
-        balancedMetab.append(parsedProducts)
+        if global_match:
+            global_comp = global_match.groupdict()['comp']
+            sep = global_match.groupdict()['sep']
+            lhs = global_match.groupdict()['lhs']
+            rhs = global_match.groupdict()['rhs']
 
-        return balancedMetab
+            participants = []
+            for part in re.findall(global_part, lhs, re.IGNORECASE):
+                participants.append(reaction_util.ReactionParticipant(
+                    molecule=part[2],
+                    compartment=global_comp,
+                    coefficient=-float(part[0][0:-1] or 1.),
+                ))
+            for part in re.findall(global_part, rhs, re.IGNORECASE):
+                participants.append(reaction_util.ReactionParticipant(
+                    molecule=part[2],
+                    compartment=global_comp,
+                    coefficient=float(part[0][0:-1] or 1.),
+                ))
+
+        elif local_match:
+            sep = local_match.groupdict()['sep']
+            lhs = local_match.groupdict()['lhs']
+            rhs = local_match.groupdict()['rhs']
+
+            participants = []
+            for part in re.findall(local_part, lhs, re.IGNORECASE):
+                participants.append(reaction_util.ReactionParticipant(
+                    molecule=part[2],
+                    compartment=part[3],
+                    coefficient=-float(part[0][0:-1] or 1.),
+                ))
+            for part in re.findall(local_part, rhs, re.IGNORECASE):
+                participants.append(reaction_util.ReactionParticipant(
+                    molecule=part[2],
+                    compartment=part[3],
+                    coefficient=float(part[0][0:-1] or 1.),
+                ))
+        else:
+            raise ValueError('Reaction is not parseable: {}'.format(equation))
+
+        # save specified participant order
+        for i_part, part in enumerate(participants):
+            part.order = i_part
+
+        return reaction_util.Reaction(participants=participants, reversible=sep == '<')
 
     @classmethod
-    def is_number(cls, s):
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
+    def link_objects(cls, compartments, molecules, reactions):
+        """ Link objects to build object graph
+
+        Args:
+            compartments (:obj:`list` of :obj:`compartment_util.Compartment`): list of compartments
+            molecules (:obj:`list` of :obj:`molecule_util.Molecule`): list of molecules
+            reactions (:obj:`list` of :obj:`reaction_util.Reaction`): list of reactions
+        """
+        for rxn in reactions:
+            for part in rxn.participants:
+                m_str = part.molecule
+                m_obj = next((m for m in molecules if m.id == m_str), None)
+                if not m_obj:
+                    raise ValueError('Participant {} of reaction {} is not defined'.format(m_str, rxn.id))
+                part.molecule = m_obj
+
+                c_str = part.compartment
+                c_obj = next((c for c in compartments if c.id == c_str), None)
+                if not c_obj:
+                    c_obj = compartment_util.Compartment(id=c_str)
+                    compartments.append(c_obj)
+                part.compartment = c_obj
 
 
 class ResultsWriter(object):
@@ -128,7 +202,7 @@ class ResultsWriter(object):
 
         Args:
             taxon (:obj:`str`): taxon
-            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.FormattedData`): list of reactions and their kinetic data
+            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.SabioResult`): list of reactions and their kinetic data
             filename (:obj:`str`): filename to store the list reaction kinetic data
         """
         wb = Workbook()
@@ -187,7 +261,7 @@ class ResultsWriter(object):
 
         Args:
             taxon (:obj:`str`): taxon name
-            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.FormattedData`): list of reactions and their kinetic data
+            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.SabioResult`): list of reactions and their kinetic data
             filename (:obj:`str`): filename to store the list reaction kinetic data
         """
         # kinetics
@@ -264,7 +338,7 @@ class ResultsWriter(object):
         """ Generate a string representation of the proximity of the first of a list of entry
 
         Args:
-            entries (:obj:`list of :obj:`kinetic_datanator.sabio_interface.Entry`): list of entries
+            entries (:obj:`list of :obj:`kinetic_datanator.sabio_rk.Entry`): list of entries
 
         Returns:
             :obj:`str`: string representation of the proximity of the first of a list of entry
