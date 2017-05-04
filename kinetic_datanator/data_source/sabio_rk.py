@@ -8,6 +8,7 @@
 :License: MIT
 """
 
+from kinetic_datanator.util import molecule_util
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from wc_utils.backup import BackupManager
 import bs4
@@ -348,16 +349,45 @@ class CompoundStructure(SqlalchemyBase):
         compounds (:obj:`list` of :obj:`Compound`): list of compounds
         value (:obj:`str`): the structure in InChI, SMILES, etc. format
         format (:obj:`str`): format (InChI, SMILES, etc.) of the structure
+        _value_inchi (:obj:`str`): structure in InChI format
+        _value_inchi_formula_connectivity (:obj:`str`): empiral formula (without hydrogen) and connectivity InChI layers; used to 
+            quickly search for compound structures
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
     compounds = sqlalchemy.orm.relationship('Compound', secondary=compound_compound_structure, back_populates='structures')
     value = sqlalchemy.Column(sqlalchemy.Text())
     format = sqlalchemy.Column(sqlalchemy.String())
+    _value_inchi = sqlalchemy.Column(sqlalchemy.Text(), index=True)
+    _value_inchi_formula_connectivity = sqlalchemy.Column(sqlalchemy.Text(), index=True)
 
     sqlalchemy.schema.UniqueConstraint(value, format)
 
     __tablename__ = 'compound_structure'
+
+    def calc_inchi_formula_connectivity(self):
+        """ Calculate a searchable structures
+
+        * InChI format
+        * Core InChI format
+
+            * Formula layer (without hydrogen)
+            * Connectivity layer
+        """
+
+        # if necessary, convert structure to InChI
+        if self.format == 'inchi':
+            self._value_inchi = self.value
+        else:
+            try:
+                self._value_inchi = molecule_util.Molecule(structure=self.value).to_inchi() or None
+            except ValueError:
+                self._value_inchi = None
+
+        # calculate formula (without hydrogen) and connectivity
+        if self._value_inchi:
+            self._value_inchi_formula_connectivity = molecule_util.InchiMolecule(self._value_inchi) \
+                .get_formula_and_connectivity(hydrogen=False)
 
 
 class Compound(Entry):
@@ -578,12 +608,29 @@ class Downloader(object):
             print('  done')
 
         # infer structures for compounds with no provided structure
-        compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
+        compounds = self.session.query(Compound).filter(~Compound.structures.any()).all()
 
         if self.verbose:
-            print('Imputing structures for {} compounds ...'.format(len(compounds)))
+            print('Inferring structures for {} compounds ...'.format(len(compounds)))
 
         self.infer_compound_structures_from_names(compounds)
+
+        if self.verbose:
+            print('  done')
+
+        # normalize compound structures to facilitate seaching. retain only
+        # - InChI formula layer (without hydrogen)
+        # - InChI connectivity layer
+        compound_structures = self.session.query(CompoundStructure).filter_by(_value_inchi_formula_connectivity=None).all()
+
+        if self.verbose:
+            print('Calculating searchable structures for {} structures ...'.format(len(compound_structures)))
+
+        for i_compound_structure, compound_structure in enumerate(compound_structures):
+            if self.verbose and (i_compound_structure % 100 == 0):
+                print('  Calculating searchable structure for compound {} of {}'.format(
+                    i_compound_structure + 1, len(compound_structures)))
+            compound_structure.calc_inchi_formula_connectivity()
 
         if self.verbose:
             print('  done')
@@ -1365,8 +1412,11 @@ class Downloader(object):
         Notes: we don't try look up structures from their cross references because SABIO has already gathered
         all structures from their cross references to ChEBI, KEGG, and PubChem
 
+        Args:
+            compounds (:obj:`list` of :obj:`Compound`): list of compounds
         """
         resource_query = self.session.query(Resource)
+        structure_query = self.session.query(CompoundStructure)
 
         for i_compound, compound in enumerate(compounds):
             if self.verbose and (i_compound % 100 == 0):
@@ -1386,4 +1436,9 @@ class Downloader(object):
 
                 compound.cross_references.append(resource)
 
-                compound.structures.append(CompoundStructure(value=p_compound.inchi, format='inchi'))
+                q = structure_query.filter_by(value=p_compound.inchi, format='inchi')
+                if q.count():
+                    structure = q.first()
+                else:
+                    structure = CompoundStructure(value=p_compound.inchi, format='inchi')
+                compound.structures.append(structure)

@@ -11,6 +11,7 @@
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme, Reaction,
                                                     ReactionParticipant, KineticLaw, Parameter, Resource, Downloader)
+from kinetic_datanator.util import warning_util
 import datetime
 import math
 import os
@@ -24,6 +25,9 @@ if six.PY3:
     from test.support import EnvironmentVarGuard
 else:
     from test.test_support import EnvironmentVarGuard
+
+
+warning_util.disable_warnings()
 
 
 class TestDownloader(unittest.TestCase):
@@ -275,6 +279,27 @@ class TestDownloader(unittest.TestCase):
             ('inchi', 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1'),
             ('inchi', 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/p-1'),
         ]))
+
+    def test_calc_inchi_formula_connectivity(self):
+        engine = sabio_rk.get_engine(filename=self.engine_filename)
+        session = sabio_rk.get_session(engine=engine, auto_download=False)
+        downloader = sabio_rk.Downloader(session, requests_cache_name=self.requests_cache_name)
+
+        s = sabio_rk.CompoundStructure(format='smiles', value='[H]O[H]')
+        s.calc_inchi_formula_connectivity()
+        self.assertEqual(s._value_inchi, 'InChI=1S/H2O/h1H2')
+        self.assertEqual(s._value_inchi_formula_connectivity, 'O')
+
+        s = sabio_rk.CompoundStructure(format='inchi', value='InChI=1S/H2O/h1H2')
+        s.calc_inchi_formula_connectivity()
+        self.assertEqual(s._value_inchi, 'InChI=1S/H2O/h1H2')
+        self.assertEqual(s._value_inchi_formula_connectivity, 'O')
+
+        s = sabio_rk.CompoundStructure(
+            format='inchi', value='InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
+        s.calc_inchi_formula_connectivity()
+        self.assertEqual(s._value_inchi, 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
+        self.assertEqual(s._value_inchi_formula_connectivity, 'C9O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')
 
     def test_download(self):
         # get some kinetic laws
