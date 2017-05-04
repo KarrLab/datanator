@@ -79,7 +79,6 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
     if not os.path.isfile(filename):
         if auto_download:
             force_download = True
-            force_update = True
         elif auto_update:
             force_update = True
 
@@ -506,11 +505,12 @@ class SabioRkDownloader(object):
 
     def init_requests_cache(self):
         """ Setup the cache for SABIO-RK HTTP requests """
-        requests_cache.install_cache(self.requests_cache_name, backend='sqlite', expire_after=None)
+        pass
 
     def clear_requests_cache(self):
         """ Clear the cahce for SABIO-RK HTTP requests """
-        requests_cache.clear()
+        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        session.cache.clear()
 
     def init_database(self):
         """ Initialize the local sqlite database to store the content of SABIO-RK """
@@ -642,9 +642,6 @@ class SabioRkDownloader(object):
             # get ids of kinetic laws
             more_ids = [int(float(node.get('kinlawentryid'))) for node in doc.find_all('img', attrs={'name': 'kinlawEntryId'})]
             if len(more_ids) != min(batch_size, min(n_laws, (i_batch + 1) * batch_size) - i_batch * batch_size):
-                cache = requests_cache.get_cache()
-                key = cache.create_key(response.request)
-                cache.delete(key)
                 raise ValueError('Batch {} failed to download the expected number of kinetic law ids'.format(i_batch))
             ids.extend(more_ids)
 
@@ -671,6 +668,8 @@ class SabioRkDownloader(object):
             :obj:`Error`: if an HTTP request fails
         """
         # todo: scrape strain, recombinant, experiment type information from web pages
+        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+
         batch_size = self.webservice_batch_size
         for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
             if self.verbose:
@@ -680,13 +679,13 @@ class SabioRkDownloader(object):
                     len(ids)))
 
             batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
-            response = requests.get(self.ENDPOINT_WEBSERVICE, params={
+            response = session.get(self.ENDPOINT_WEBSERVICE, params={
                 'kinlawids': ','.join(str(id) for id in batch_ids),
             })
 
             response.raise_for_status()
             if not response.text:
-                cache = requests_cache.get_cache()
+                cache = session.cache
                 key = cache.create_key(response.request)
                 cache.delete(key)
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
@@ -702,7 +701,7 @@ class SabioRkDownloader(object):
                     min(len(ids), (i_batch + 1) * batch_size),
                     len(ids)))
 
-            response = requests.get(self.ENDPOINT_EXCEL_EXPORT, params={
+            response = session.get(self.ENDPOINT_EXCEL_EXPORT, params={
                 'entryIDs[]': batch_ids,
                 'fields[]': [
                     'EntryID',
@@ -715,7 +714,7 @@ class SabioRkDownloader(object):
             })
             response.raise_for_status()
             if not response.text:
-                cache = requests_cache.get_cache()
+                cache = session.cache
                 key = cache.create_key(response.request)
                 cache.delete(key)
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
@@ -731,6 +730,8 @@ class SabioRkDownloader(object):
         Raises:
             :obj:`Error`: if an HTTP request fails
         """
+        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+
         batch_size = self.compound_batch_size
 
         if compounds is None:
@@ -743,7 +744,7 @@ class SabioRkDownloader(object):
                 print('  Downloading compound {} of {}'.format(i_compound + 1, n_compounds))
 
             # download info
-            response = requests.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c.id})
+            response = session.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c.id})
             response.raise_for_status()
 
             # parse info

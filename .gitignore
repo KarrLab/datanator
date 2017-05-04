@@ -107,4 +107,4 @@ tests/fixtures/secret/
 .idea/
 
 # cache files
-kinetic_datanator/source/cache/
+kinetic_datanator/data_source/cache/

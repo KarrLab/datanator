@@ -8,7 +8,7 @@
 """
 
 from attrdict import AttrDict
-from kinetic_datanator.source import ezyme
+from kinetic_datanator.data_source import ezyme
 from kinetic_datanator.util import compartment_util
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import reaction_util

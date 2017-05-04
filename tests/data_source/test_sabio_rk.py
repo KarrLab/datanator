@@ -8,9 +8,9 @@
 :License: MIT
 """
 
-from kinetic_datanator.source import sabio_rk
-from kinetic_datanator.source.sabio_rk import (Entry, Compartment, Compound, Enzyme, Reaction,
-                                               ReactionParticipant, KineticLaw, Parameter, Resource, SabioRkDownloader)
+from kinetic_datanator.data_source import sabio_rk
+from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme, Reaction,
+                                                    ReactionParticipant, KineticLaw, Parameter, Resource, SabioRkDownloader)
 import datetime
 import math
 import os
@@ -72,8 +72,8 @@ class TestSabioRkDownloader(unittest.TestCase):
 
         self.assertIsInstance(c.created, datetime.datetime)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 60)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 60)
+        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 120)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 120)
         h20_created = c.created
 
         c = session.query(Compound).filter_by(id=2562).first()
@@ -183,7 +183,7 @@ class TestSabioRkDownloader(unittest.TestCase):
 
         self.assertEqual(c.created, h20_created)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 60)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 120)
 
     def test_download_kinetic_laws_multiple(self):
         engine = sabio_rk.get_engine(filename=self.engine_filename)
@@ -270,21 +270,6 @@ class TestSabioRkDownloader(unittest.TestCase):
         session2 = sabio_rk.get_session(engine=engine2, auto_download=False)
         self.assertEqual(session2.query(KineticLaw).count(), downloader.max_laws)
 
-    @unittest.skip('Skip this test because it is long')
-    def test_download_all_and_backup(self):
-        session = sabio_rk.get_session(auto_download=False)
-        downloader = sabio_rk.SabioRkDownloader(session, verbose=True)
-
-        downloader.download(update_database=True, update_requests=True)
-        self.assertGreaterEqual(session.query(KineticLaw).count(), 55000)
-
-        env = EnvironmentVarGuard()
-        if not os.getenv('CODE_SERVER_TOKEN'):
-            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
-                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-
-        sabio_rk.backup()
-
 
 class TestBackupAndInstall(unittest.TestCase):
 
@@ -347,10 +332,45 @@ class TestBackupAndInstall(unittest.TestCase):
 
         # setup with download and update
         engine = sabio_rk.get_engine(filename=self.engine_filename_3)
-        session = sabio_rk.get_session(engine=engine, auto_download=True, arcname='test.sabio_rk.sqlite', max_laws=4)
+        session = sabio_rk.get_session(engine=engine, auto_download=True, force_update=True, arcname='test.sabio_rk.sqlite', max_laws=4)
         self.assertEqual(session.query(KineticLaw).count(), 4)
 
         # setup with update
         engine = sabio_rk.get_engine(filename=self.engine_filename_4)
         session = sabio_rk.get_session(engine=engine, auto_download=False, auto_update=True, max_laws=4)
         self.assertEqual(session.query(KineticLaw).count(), 4)
+
+
+class TestAll(unittest.TestCase):
+
+    @unittest.skip('Skip this test because it is long')
+    def test_update_all_and_backup(self):
+        session = sabio_rk.get_session(auto_download=False)
+        downloader = sabio_rk.SabioRkDownloader(session, verbose=True)
+
+        downloader.download(update_database=True, update_requests=True)
+        self.assertGreaterEqual(session.query(KineticLaw).count(), 55000)
+
+        env = EnvironmentVarGuard()
+        if not os.getenv('CODE_SERVER_TOKEN'):
+            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
+                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
+
+        sabio_rk.backup()
+
+    def test_download_full_database(self):
+        env = EnvironmentVarGuard()
+        if not os.getenv('CODE_SERVER_TOKEN'):
+            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
+                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
+
+        _, filename = tempfile.mkstemp()
+        os.remove(filename)
+
+        engine = sabio_rk.get_engine(filename=filename)
+        session = sabio_rk.get_session(engine=engine)
+        self.assertGreaterEqual(session.query(KineticLaw).count(), 55000)
+
+        session.close()
+        engine.dispose()
+        os.remove(filename)
