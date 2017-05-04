@@ -1,214 +1,156 @@
 """ 
 :Author: Yosef Roth <yosefdroth@gmail.com>
+:Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-04-06
 :Copyright: 2017, Karr Lab
 :License: MIT
 """
 
 from . import io
-from . import reaction_queries
-from . import translator_for_sabio
-from .sabio_interface import get_sabio_data
-import logging
-import numpy as np
-import openpyxl
-import os
-#add other search criteria
-#make sure to only use lift if smiles/inchi is present!!!!
-#also, what should median be?
-#make sure i fix ec_number in cases where we have (2)ADP or somethign like that
+from . import sabio_rk
+from .core import data_structs
+from .data_source import ezyme
+from .util import reaction_util
 
 
-#finish debugging the EC finder
+class Datanator(object):
+    """
+    Attributes:
+        max_taxon_dist (:obj:`float`, optional): maximum taxonomic distance from the target taxon to its latest common ancestor with the observed taxon
+        include_mutants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
+        min_temp (:obj:`float`, optional): minimum observed temperature
+        max_temp (:obj:`float`, optional): maximum observed temperature
+        min_ph (:obj:`float`, optional): minimum observed pH
+        max_ph (:obj:`float`, optional): maximum observed pH
+    """
 
+    def __init__(self, max_taxon_dist=None, include_mutants=False,
+                 min_temp=None, max_temp=None, min_ph=None, max_ph=None):
+        """
+        Args:
+            max_taxon_dist (:obj:`float`, optional): maximum taxonomic distance from the target taxon to its latest common ancestor with the observed taxon
+            include_mutants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
+            min_temp (:obj:`float`, optional): minimum observed temperature
+            max_temp (:obj:`float`, optional): maximum observed temperature
+            min_ph (:obj:`float`, optional): minimum observed pH
+            max_ph (:obj:`float`, optional): maximum observed pH        
+        """
+        self.max_taxon_dist = max_taxon_dist
+        self.include_mutants = include_mutants
+        self.min_temp = min_temp
+        self.max_temp = max_temp
+        self.min_ph = min_ph
+        self.max_ph = max_ph
 
-class KineticInfo:
-	""" Description
+    def run(self, input_filename, output_filename=''):
+        """
+        Args:
+            input_filename (:obj:`str`): path to an Excel workbook which contains a list of reactions to find kinetic data for
+            output_filename (:obj:`str`, optional): path to save the retrieved kinetic data as an Excel workbook
 
-	Attributes:
-		name (:obj:`str`): name
-		closest_entry_ids
-		closest_entries
-		closest_values
-		median_entry
-		min_entry
-		max_entry
-		lift_info
-		reaction_list 
-		sabio_reaction_ids
-		ec_numbers
-		closest_entries 
-		closest_entry_ids
-		closest_values
-		min_entry
-		max_entry
-		median_entry 
-	"""
+        Returns:
+            :obj:``
+        """
+        # read in preliminary model definition (compartments, molecules, reactions)
+        model = self.read_model(input_filename)
 
-	def __init__(self, sabio_results, name = ""):
-		"""
-		Args:
-			sabio_results
-			name (:obj:`str`, optional): name
-		"""
+        # annotate model
+        self.annotate_model(model)
 
-		self.name = name
-		self.closest_entry_ids = []
-		self.closest_entries = []
-		self.closest_values = []
-		self.median_entry = None
-		self.min_entry = None
-		self.max_entry = None
-		self.lift_info = "Lift Not Used"
-		self.reaction_list = sabio_results.get_field_list(sabio_results.entry_list, "reaction_stoichiometry")
+        # get relevant data for model
+        data = self.get_data(model)
 
-		#should maybe change these two to only include the values of of the reactions
-		#that are in the lowest species
-		self.sabio_reaction_ids = sabio_results.get_field_list(sabio_results.entry_list, "reaction_id")
-		self.ec_numbers = sabio_results.get_field_list(sabio_results.entry_list, "ec_number")
+        # save data to a file
+        if output_filename:
+            self.save_data(model, data, output_filename)
 
+        # return results
+        return data
 
-		proxim_nums = sabio_results.get_field_list(sabio_results.entry_list, "proximity")
+    def read_model(self, filename):
+        """
+        Args:
+            filename (:obj:`str`): path to an Excel workbook which contains a list of reactions to find kinetic data for
+        """
+        return io.InputReader.run(filename)
 
-		n = 0
-		narrowed_entries = []
-		while n < len(proxim_nums): 
-			for entry in sabio_results.entry_list:
-				if entry.proximity == proxim_nums[n] and len(entry.__dict__[name])>0:
-					narrowed_entries.append(entry)
-			if len(narrowed_entries)>0:
-				break
-			else:
-				n = n+1
-		self.closest_entries = narrowed_entries
+    def annotate_model(self, model):
+        """ Annotate a model
 
-		ordered_entries = sorted(narrowed_entries, key=lambda entry: float(entry.__dict__[name]))#, reverse=True)
-		#records closest entry Ids - this is currently not working
-		self.closest_entry_ids = sabio_results.get_field_list(ordered_entries, "entry_id")
-		self.closest_values = sabio_results.get_field_list(ordered_entries, self.name)
+        Args:
+            model
+        """
+        self.annotate_molecules(model)
+        self.annotate_reactions(model)
 
-		#to work on: if there are an even number, what should the median be?
-		if len(ordered_entries) >= 2:
-			self.min_entry = ordered_entries[0]
-			self.max_entry = ordered_entries[len(ordered_entries)-1]
+    def annotate_molecules(self, model):
+        """ Annotate the molecules of a model
 
-		#to work on: make sure this media is done right
-		if len(ordered_entries)>2 or len(ordered_entries)==1:
-			number = float(len(ordered_entries))
-			number = int(np.around(number/2+.1))
-			self.median_entry = ordered_entries[number-1]
+        * Cross-reference molecule to SABIO-RK compound IDs and names
 
+        Args:
+            model
+        """
+        taxon, compartments, molecules, reactions = model
 
-	#this checks whether the current kinetic information is biologically useful. This is helpful to know
-	#because if the data is not useful, then the use can try a more general search
-	def has_relevant_data(self, proxim_limit = 1000):
-		has_relevant_data = False
-		if len(self.closest_entries)>0 and (self.closest_entries[0].proximity <= proxim_limit):
-			has_relevant_data = True
-		return has_relevant_data
+        sabio_db = sabio_rk.SabioRkUtil()
+        for mol in molecules:
+            for sabio_compound in sabio_db.get_compounds_by_structure(mol.to_inchi()):
+                mol.cross_references.append(data_structs.CrossReference(source='sabio-id', id=sabio_compound.id))
+                mol.cross_references.append(data_structs.CrossReference(source='sabio-name', id=sabio_compound.name))
 
+    def annotate_reactions(self, model):
+        """ Annotate the reactions of a model
 
-class VmaxInfo(KineticInfo):
-	def __init__(self, sabio_results):
-		KineticInfo.__init__(self, sabio_results, "vmax")
+        * Predict missing EC numbers
 
+        Args:
+            model
+        """
+        taxon, compartments, molecules, reactions = model
 
-class KmInfo(KineticInfo):
-	def __init__(self, sabio_results):
-		KineticInfo.__init__(self, sabio_results, "km")
+        for rxn in reactions:
+            if not rxn.get_ec_number():
+                for result in ezyme.Ezyme.run(rxn):
+                    rxn.cross_references.append(
+                        data_structs.CrossReference(source='ec-code',
+                                                    id=result.ec_number,
+                                                    relevance=result.score,
+                                                    assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted))
 
+    def get_data(self, model):
+        """
+        Args:
+            model
 
-class FormattedData:
-	""" Represents kinetic data obtained from SABIO """
-	def __init__(self, id):#, sabio_results):
-		self.id = id
-		self.ec_number = ''
-		self.predicted_ec_numbers = []
-		self.reaction_ids = []
-		self.km_data = None
-		self.vmax_data = None
+        Returns:
+            :obj:``
+        """
+        return self.get_sabio_data()
 
+    def get_sabio_data(self, model):
+        """
+        Args:
+            model
 
-def create_formatted_data(reaction_query, species, defaultValues, proxim_limit = 1000):
-	#print("new")
-	#for thing in reaction_query.substrates:
-	#	print(thing.sabioNames)
-	#print(reaction_query.id)
-	#print(reaction_query.num_participants)
-	searchString = translator_for_sabio.getSubstrateProductQueryString(reaction_query)
-	logging.info("Datanator: Search String Found - {}".format(searchString))
-	#print(searchString)
+        Returns:
+            :obj:``
+        """
+        taxon, compartments, molecules, reactions = model
 
-	if len(searchString)>0:
-		searchString = defaultValues+searchString
-	logging.info("Datanator: About to check Sabio with regular search string")
-	sabio_results = get_sabio_data(searchString, species, reaction_query.num_participants)
-	#instantiate a formatted data object with the reaction_id
-	rxn = FormattedData(reaction_query.id)
-	rxn.reaction_ids = sabio_results.get_field_list(sabio_results.entry_list, "reaction_id")
+        results = []
+        for rxn in reactions:
+            results.append(sabio_rk.Query(rxn, taxon, self.max_taxon_dist, self.include_mutants,
+                                                 self.min_temp, self.max_temp, self.min_ph, self.max_ph).run())
+        return results
 
-	lifted_sabio_results = None
-	
-	#get the km data. If data is not present, then it searches for similar reactions. 
-	#proxim_limit is the taxonomic limit (in nodes) after which the data is presumed to be irrelevant 
-	rxn.km_data = KmInfo(sabio_results)
-	has_relevant_data = rxn.km_data.has_relevant_data(proxim_limit)
-	logging.info("Datanator: Has relevant data for km - {}".format(has_relevant_data))
-	if has_relevant_data == False:
-		#we are about to set the predicted_ec_number. However, first we need ot make sure
-		#the user didn't provide their own. If the user provided their own, that predicted_ec_number is used instead
-		if len(reaction_query.predicted_ec_number)==0:
-			reaction_query.set_predicted_ec_number_from_ezyme_algorithm()
-		queryString = translator_for_sabio.getGenericECQueryString(reaction_query)
-		if len(queryString)>0:
-			queryString = defaultValues + queryString
-		else:
-			logging.error("Datanator: Tried to lift from EC, but did not work")
-		lifted_sabio_results = get_sabio_data(queryString, species)
-		rxn.km_data = KmInfo(lifted_sabio_results)
-		if len(reaction_query.predicted_ec_number)>0:
-			rxn.km_data.lift_info = "Lifted From {}".format(reaction_query.predicted_ec_number)
-			logging.info("Datanator: Lifted From {} for Km".format(reaction_query.predicted_ec_number))
+    def save_data(self, model, data, filename):
+        """ Save 
 
-
-	rxn.vmax_data = VmaxInfo(sabio_results)
-	has_relevant_data = rxn.vmax_data.has_relevant_data(proxim_limit)
-	logging.info("Datanator: Has relevant data for vmax - {}".format(has_relevant_data))
-	if has_relevant_data == False:
-		#check if liftessabio_results has already been searched. If it has, no need to search again
-		if lifted_sabio_results == None:
-			if len(reaction_query.predicted_ec_number)==0:
-				reaction_query.set_predicted_ec_number_from_ezyme_algorithm()
-			queryString = translator_for_sabio.getGenericECQueryString(reaction_query)
-			if len(queryString)>0:
-				queryString = defaultValues + queryString
-			lifted_sabio_results = get_sabio_data(queryString, species)
-		rxn.vmax_data = VmaxInfo(lifted_sabio_results)
-		if len(reaction_query.predicted_ec_number)>0:
-			rxn.vmax_data.lift_info = "Lifted From {}".format(reaction_query.predicted_ec_number)
-			logging.info("Datanator: Lifted From {} for Vmax".format(reaction_query.predicted_ec_number))
-
-	return rxn
-
-def get_kinetic_data(input_filename, output_filename, species, temp_range = [15, 40], enzyme_type = "wildtype", ph_range = [5,9], proxim_limit=1000):
-	default_values = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzyme_type, temp_range[0], temp_range[1], ph_range[0], ph_range[1])
-	
-	#rxns = io.InputReader.run(input_filename)
-
-	rxn_qs = reaction_queries.generate_reaction_queries(input_filename)
-	rxns = []
-	for rxn_q in rxn_qs:
-		rxn = create_formatted_data(rxn_q, species, default_values, proxim_limit)
-		rxns.append(rxn)
-	io.ResultsWriter.run(species, rxns, output_filename)
-	return rxns
-
-def get_kinetic_data_from_django(input_file, species, temp_range = [15, 40], enzyme_type = "wildtype", ph_range = [5,9], proxim_limit=1000):
-	default_values = "enzymeType:{} AND TemperatureRange:[{} TO {}] AND pHValueRange:[{} TO {}] AND ".format(enzyme_type, temp_range[0], temp_range[1], ph_range[0], ph_range[1])
-	
-	rxns = []
-	rxn_qs = reaction_queries.generate_reaction_queries(input_file)
-	for rxn_q in rxn_qs:
-		rxn = create_formatted_data(rxn_q, species, default_values, proxim_limit)
-		rxns.append(rxn)
-	return rxns
+        Args:
+            model
+            data
+            filename (:obj:`str`): path to save the retrieved kinetic data as an Excel workbook
+        """
+        taxon, compartments, molecules, reactions = model
+        io.ResultsWriter.run(taxon, data, filename)
