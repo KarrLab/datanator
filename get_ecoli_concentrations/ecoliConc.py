@@ -7,10 +7,10 @@ myparser = Parser()
 
 
 def trimInchi(inchi):
-	if "/h" in inchi:
-		end = inchi.index("/h")
-		inchi = inchi[:end]
-	return inchi
+    if "/h" in inchi:
+        end = inchi.index("/h")
+        inchi = inchi[:end]
+    return inchi
 
 
 #def getMetabolomicInfo(inchi)
@@ -23,16 +23,16 @@ with open('ecmdb.json') as data_file:
 
 
 for entry in data:
-	if trimInchi(entry["moldb_inchi"]) == trimInchi(inchi):
-		print(entry['name'])
-		compId = entry["m2m_id"]
-		print(compId)
+    if trimInchi(entry["moldb_inchi"]) == trimInchi(inchi):
+        print(entry['name'])
+        compId = entry["m2m_id"]
+        print(compId)
 
-		response = requests.get("""http://ecmdb.ca/compounds/{}.xml""".format(compId)).text
+        response = requests.get("""http://ecmdb.ca/compounds/{}.xml""".format(compId)).text
 
-		#print(response)
-		data = myparser(response)
-		print(data["compound"]["concentrations"])
+        #print(response)
+        data = myparser(response)
+        print(data["compound"]["concentrations"])
 
 #print(data[0])
 #print(data[1]["moldb_inchi"])
@@ -40,9 +40,9 @@ for entry in data:
 """
 i = 0
 for thing in data:
-	answer = thing["moldb_inchi"]
-	if answer[:5] != "InChI":
-		print(answer)
-	i = i+1
+    answer = thing["moldb_inchi"]
+    if answer[:5] != "InChI":
+        print(answer)
+    i = i+1
 print(i)
 """
