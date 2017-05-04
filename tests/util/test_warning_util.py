@@ -19,14 +19,14 @@ class TestWarningUtil(unittest.TestCase):
     def test_enable_warnings_openbabel(self):
         warning_util.enable_warnings()
         with CaptureOutput() as capturer:
-            molecule_util.Molecule(self.adp).to_inchi()
+            molecule_util.Molecule(structure=self.adp).to_inchi()
             time.sleep(0.1)
             self.assertNotEqual(capturer.get_text(), '')
 
     def test_disable_warnings_openbabel(self):
         warning_util.disable_warnings()
         with CaptureOutput() as capturer:
-            molecule_util.Molecule(self.adp).to_inchi()
+            molecule_util.Molecule(structure=self.adp).to_inchi()
             time.sleep(0.1)
             self.assertEqual(capturer.get_text(), '')
 

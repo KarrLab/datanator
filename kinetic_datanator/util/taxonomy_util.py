@@ -39,42 +39,42 @@ class Taxon(object):
     """ Represents a taxon such as a genus, species, or strain
 
     Attributes:
+        id (:obj:`str`): identifier
         name (:obj:`str`): name of the taxon
         id_of_nearest_ncbi_taxon (:obj:`int`): ID of the nearest parent taxon which is in the NCBI database
         distance_from_nearest_ncbi_taxon (:obj:`int`): distance from the taxon to its nearest parent which
             is in the NCBI database
         additional_name_beyond_nearest_ncbi_taxon (:obj:`str`): additional part of the taxon's beyond that of
             its nearest parent in the NCBI database
+        cross_references (:obj:`list` of :obj:`CrossReference`): list of cross references
     """
 
-    def __init__(self, id_or_name):
+    def __init__(self, id='', name='', ncbi_id=None, cross_references=None):
         """
         Args:
-            id_or_name (:obj:`int` or :obj:`str`): id or name of the taxon
+            id (:obj:`str`, optional): identifier
+            name (:obj:`str`, optional): name
+            ncbi_id (:obj:`int`, optional): NCBI identifier
+            cross_references (:obj:`list` of :obj:`CrossReference`, optional): list of cross references
         """
 
-        self.name = None
+        self.id = id
+        self.name = name
         self.id_of_nearest_ncbi_taxon = None
         self.distance_from_nearest_ncbi_taxon = None
         self.additional_name_beyond_nearest_ncbi_taxon = None
+        self.cross_references = cross_references or []
 
         ncbi_taxa = NCBITaxa()
 
-        try:
-            id_or_name = float(id_or_name)
-        except ValueError:
-            pass
-
-        if isinstance(id_or_name, float):
-            id = id_or_name
-            self.id_of_nearest_ncbi_taxon = id
+        if ncbi_id:
+            self.id_of_nearest_ncbi_taxon = ncbi_id
             self.distance_from_nearest_ncbi_taxon = 0
             self.additional_name_beyond_nearest_ncbi_taxon = ''
-            self.name = ncbi_taxa.translate_to_names([id])[0]
-            if self.name == id:
-                raise ValueError('The NCBI taxonomy database does not contain a taxon with id {}'.format(id))
+            self.name = ncbi_taxa.translate_to_names([ncbi_id])[0]
+            if self.name == ncbi_id:
+                raise ValueError('The NCBI taxonomy database does not contain a taxon with id {}'.format(ncbi_id))
         else:
-            name = id_or_name
             rank_names = name.split(' ')
             for i_rank in range(len(rank_names)):
                 partial_name = ' '.join(rank_names[0:len(rank_names) - i_rank])
@@ -111,13 +111,13 @@ class Taxon(object):
 
         cls = self.__class__
         ncbi_taxa = NCBITaxa()
-        lineage = [cls(id) for id in ncbi_taxa.get_lineage(self.id_of_nearest_ncbi_taxon)]
+        lineage = [cls(ncbi_id=id) for id in ncbi_taxa.get_lineage(self.id_of_nearest_ncbi_taxon)]
 
         if self.additional_name_beyond_nearest_ncbi_taxon:
             base_name = ncbi_taxa.translate_to_names([self.id_of_nearest_ncbi_taxon])[0]
             names = self.additional_name_beyond_nearest_ncbi_taxon[1:].split(' ')
             for i_rank, name, in enumerate(names):
-                lineage.append(cls(base_name + ''.join(' ' + n for n in name[0:i_rank+1])))
+                lineage.append(cls(name=base_name + ''.join(' ' + n for n in name[0:i_rank+1])))
 
         return lineage[0:-1]
 
@@ -153,7 +153,7 @@ class Taxon(object):
         other_node = tree.search_nodes(name=str(other.id_of_nearest_ncbi_taxon))[0]
         ancestor = tree.get_common_ancestor(self_node, other_node)
         cls = self.__class__
-        return cls(float(ancestor.name))
+        return cls(ncbi_id=float(ancestor.name))
 
     def get_distance_to_common_ancestor(self, other):
         """ Calculate the number of links in the NCBI taxonomic tree between two taxa and their latest common ancestor

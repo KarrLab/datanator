@@ -11,12 +11,18 @@ class Compartment(object):
     """ Represents a compartment
 
     Attributes:
+        id (:obj:`str`): identifier
         name (:obj:`str`): name
+        cross_references (:obj:`list` of :obj:`CrossReference`): list of cross references
     """
 
-    def __init__(self, name):
+    def __init__(self, id='', name='', cross_references=None):
         """
         Args:
-            name (:obj:`str`): name
+            id (:obj:`str`, optional): identifier
+            name (:obj:`str`, optional): name
+            cross_references (:obj:`list` of :obj:`CrossReference`, optional): list of cross references
         """
+        self.id = id
         self.name = name
+        self.cross_references = cross_references = []
