@@ -9,7 +9,7 @@
 
 from . import compartment_util
 from . import molecule_util
-from kinetic_datanator import data_structs
+from kinetic_datanator.core import data_structs
 from six.moves import zip_longest
 import itertools
 import numpy

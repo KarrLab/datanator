@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator import data_structs
+from kinetic_datanator.core import data_structs
 from kinetic_datanator.util import compartment_util
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import reaction_util
