@@ -333,7 +333,7 @@ class InchiMolecule(object):
             and re.sub('H[0-9]*', '', self.formula) == re.sub('H[0-9]*', '', other.formula) \
             and self.connections == other.connections
 
-    def get_formula_and_connectivity(self, hydrogen=False):
+    def get_formula_and_connectivity(self, hydrogen=True):
         """ Get a string representation of the non-hydrogen formula and connectivity
 
         Args:
