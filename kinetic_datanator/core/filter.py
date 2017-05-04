@@ -354,7 +354,7 @@ class TaxonomicDistanceFilter(Filter):
         self.taxon = taxon
 
         if max_dist is None:
-            taxon = taxonomy_util.Taxon(self.taxon)
+            taxon = taxonomy_util.Taxon(name=self.taxon)
             max_dist = taxon.get_max_distance_to_common_ancestor()
 
         self.max_dist = max_dist
@@ -371,8 +371,8 @@ class TaxonomicDistanceFilter(Filter):
                 * If the distance to the least common ancestor is greater than `max_dist`, return -1
                 * Else, return 1 - {the distance to the least common ancestor} / `max_dist`
         """
-        self_taxon = taxonomy_util.Taxon(self.taxon)
-        obs_taxon = taxonomy_util.Taxon(self.get_attribute_value(observation))
+        self_taxon = taxonomy_util.Taxon(name=self.taxon)
+        obs_taxon = taxonomy_util.Taxon(name=self.get_attribute_value(observation))
 
         dist = self_taxon.get_distance_to_common_ancestor(obs_taxon)
 
@@ -413,8 +413,8 @@ class ComponentMolecularSimilarityFilter(Filter):
         Returns:
             :obj:`float`: similarity with the observed molecule
         """
-        self_mol = molecule_util.Molecule(self.structure)
-        obs_mol = molecule_util.Molecule(self.get_attribute_value(observation))
+        self_mol = molecule_util.Molecule(structure=self.structure)
+        obs_mol = molecule_util.Molecule(structure=self.get_attribute_value(observation))
         return self_mol.get_similarity(obs_mol)
 
 
