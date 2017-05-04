@@ -56,7 +56,7 @@ class GetKineticsController(CementBaseController):
                                       metavar='FLOAT', help="the maximum acceptable taxonomic distance", default=1000))
         ]
 
-        # print(translator_for_sabio.format_ec_number_for_sabio("a"))
+        # print(sabio_rk.format_ec_number_for_sabio("a"))
 
     @expose(hide=True)
     def default(self):
@@ -128,10 +128,9 @@ class TaxonomyGetRankController(CementBaseController):
 
     @expose(hide=True)
     def default(self):
-        taxon_id_or_name = self.app.pargs.taxon_id_or_name
-        taxon = taxonomy_util.Taxon(taxon_id_or_name)
+        taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.distance_from_nearest_ncbi_taxon != 0:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
         print(taxon.get_rank())
 
 
@@ -149,10 +148,9 @@ class TaxonomyGetParentsController(CementBaseController):
 
     @expose(hide=True)
     def default(self):
-        taxon_id_or_name = self.app.pargs.taxon_id_or_name
-        taxon = taxonomy_util.Taxon(taxon_id_or_name)
+        taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
 
         parents = taxon.get_parent_taxa()
         for i_parent, parent in enumerate(parents):
@@ -175,15 +173,13 @@ class TaxonomyGetCommonAncestorController(CementBaseController):
 
     @expose(hide=True)
     def default(self):
-        taxon_id_or_name_1 = self.app.pargs.taxon_id_or_name_1
-        taxon_id_or_name_2 = self.app.pargs.taxon_id_or_name_2
-        taxon_1 = taxonomy_util.Taxon(taxon_id_or_name_1)
-        taxon_2 = taxonomy_util.Taxon(taxon_id_or_name_2)
+        taxon_1 = create_taxon(self.app.pargs.taxon_id_or_name_1)
+        taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name_1))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name_2))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_common_ancestor(taxon_2).name)
 
@@ -204,15 +200,13 @@ class TaxonomyGetDistanceToCommonAncestorController(CementBaseController):
 
     @expose(hide=True)
     def default(self):
-        taxon_id_or_name_1 = self.app.pargs.taxon_id_or_name_1
-        taxon_id_or_name_2 = self.app.pargs.taxon_id_or_name_2
-        taxon_1 = taxonomy_util.Taxon(taxon_id_or_name_1)
-        taxon_2 = taxonomy_util.Taxon(taxon_id_or_name_2)
+        taxon_1 = create_taxon(self.app.pargs.taxon_id_or_name_1)
+        taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name_1))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name_2))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_distance_to_common_ancestor(taxon_2))
 
@@ -231,11 +225,10 @@ class TaxonomyGetDistanceToRoot(CementBaseController):
 
     @expose(hide=True)
     def default(self):
-        taxon_id_or_name = self.app.pargs.taxon_id_or_name
-        taxon = taxonomy_util.Taxon(taxon_id_or_name)
+        taxon = create_taxon(self.app.pargs.taxon_id_or_name)
 
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
 
         print(taxon.get_distance_to_root())
 
@@ -258,7 +251,7 @@ class MoleculeController(CementBaseController):
     def convert_structure(self):
         structure = self.app.pargs.structure
         format = self.app.pargs.format
-        print(molecule_util.Molecule(structure).to_format(format))
+        print(molecule_util.Molecule(structure=structure).to_format(format))
 
 
 class ReactionController(CementBaseController):
@@ -296,6 +289,25 @@ class App(CementApp):
 
             ReactionController,
         ]
+
+
+def create_taxon(id_or_name):
+    """ Create a taxon with NCBI id=:obj:`id_or_name` or name=:obj:`id_or_name`
+
+    Args:
+        id_or_name (:obj:`str`): NCBI id or name
+
+    Returns:
+        :obj:`taxonomy_util.Taxon`: taxon
+    """
+    ncbi_id = None
+    name = None
+    try:
+        ncbi_id = float(id_or_name)
+    except ValueError:
+        name = id_or_name
+
+    return taxonomy_util.Taxon(ncbi_id=ncbi_id, name=name)
 
 
 def main():
