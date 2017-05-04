@@ -16,6 +16,7 @@ import datetime
 import libsbml
 import math
 import os
+import pubchempy
 import re
 import requests
 import requests_cache
@@ -88,7 +89,7 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     if force_update:
-        SabioRkDownloader(session=session, max_laws=max_laws).download()
+        Downloader(session=session, max_laws=max_laws).download()
 
     return session
 
@@ -429,7 +430,7 @@ class Compartment(Entry):
     __mapper_args__ = {'polymorphic_identity': 'compartment'}
 
 
-class SabioRkDownloader(object):
+class Downloader(object):
     """ Downloads the content of the SABIO-RK database into a local sqlite database
 
     Attributes:
@@ -566,12 +567,23 @@ class SabioRkDownloader(object):
             print('  done')
 
         # download compounds
-        new_compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
+        compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
 
         if self.verbose:
-            print('Downloading {} compounds ...'.format(len(new_compounds)))
+            print('Downloading {} compounds ...'.format(len(compounds)))
 
-        self.download_compounds(new_compounds)
+        self.download_compounds(compounds)
+
+        if self.verbose:
+            print('  done')
+
+        # infer structures for compounds with no provided structure
+        compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
+
+        if self.verbose:
+            print('Imputing structures for {} compounds ...'.format(len(compounds)))
+
+        self.infer_compound_structures_from_names(compounds)
 
         if self.verbose:
             print('  done')
@@ -720,111 +732,6 @@ class SabioRkDownloader(object):
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
 
             self.update_kinetic_laws_from_tsv(response.text)
-
-    def download_compounds(self, compounds=None):
-        """ Download information from SABIO-RK about all of the compounds stored in the local sqlite copy of SABIO-RK
-
-        Args:
-            compounds (:obj:`list` of :obj:`Compound`): list of compounds to download
-
-        Raises:
-            :obj:`Error`: if an HTTP request fails
-        """
-        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
-
-        batch_size = self.compound_batch_size
-
-        if compounds is None:
-            compounds = self.session.query(Compound).order_by(Compound.id).all()
-        n_compounds = len(compounds)
-
-        for i_compound, c in enumerate(compounds):
-            # print status
-            if self.verbose and (i_compound % batch_size == 0):
-                print('  Downloading compound {} of {}'.format(i_compound + 1, n_compounds))
-
-            # download info
-            response = session.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c.id})
-            response.raise_for_status()
-
-            # parse info
-            doc = bs4.BeautifulSoup(response.text, 'html.parser')
-            table = doc.find('table')
-
-            # name
-            node = table.find('span', id='commonName')
-            if node:
-                c.name = node.get_text()
-
-            # synonyms
-            c.synonyms = []
-            synonym_label_node = table.find('b', text='Synonyms')
-            if synonym_label_node:
-                for node in list(synonym_label_node.parents)[1].find_all('span'):
-                    name = node.get_text()
-
-                    q = self.session.query(Synonym).filter_by(name=name)
-                    if q.count():
-                        synonym = q[0]
-                    else:
-                        synonym = Synonym(name=name)
-                        self.session.add(synonym)
-
-                    c.synonyms.append(synonym)
-
-            # structure
-            c.structures = []
-
-            inchi_label_node = table.find('b', text='InChI')
-            if inchi_label_node:
-                for node in list(inchi_label_node.parents)[1].find_all('span'):
-                    value = node.get_text()
-                    q = self.session.query(CompoundStructure).filter_by(format='inchi', value=value)
-                    if q.count():
-                        compound_structure = q.first()
-                    else:
-                        compound_structure = CompoundStructure(format='inchi', value=value)
-                    c.structures.append(compound_structure)
-
-            smiles_label_node = table.find('b', text='SMILES')
-            if smiles_label_node:
-                for node in list(smiles_label_node.parents)[1].find_all('span'):
-                    value = node.get_text()
-                    q = self.session.query(CompoundStructure).filter_by(format='smiles', value=value)
-                    if q.count():
-                        compound_structure = q.first()
-                    else:
-                        compound_structure = CompoundStructure(format='smiles', value=value)
-                    c.structures.append(compound_structure)
-
-            # cross references
-            c.cross_references = []
-            for node in table.find_all('a'):
-                url = node.get('href')
-
-                id = node.get_text()
-
-                if url.startswith('http://www.genome.jp/dbget-bin/www_bget?cpd:'):
-                    namespace = 'kegg.compound'
-                elif url.startswith('http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid='):
-                    namespace = 'pubchem.substance'
-                elif url.startswith('http://www.ebi.ac.uk/chebi/searchId.do?chebiId='):
-                    namespace = 'chebi'
-                    id = 'CHEBI:' + id
-                else:
-                    ValueError('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, url))
-
-                q = self.session.query(Resource).filter_by(namespace=namespace, id=id)
-                if q.count():
-                    resource = q[0]
-                else:
-                    resource = Resource(namespace=namespace, id=id)
-                    self.session.add(resource)
-
-                c.cross_references.append(resource)
-
-            # udated
-            c.modified = datetime.datetime.utcnow()
 
     def create_kinetic_laws_from_sbml(self, sbml):
         """ Add kinetic laws defined in an SBML file to the local sqlite database
@@ -1346,3 +1253,137 @@ class SabioRkDownloader(object):
 
             # updated
             l.modified = datetime.datetime.utcnow()
+
+    def download_compounds(self, compounds=None):
+        """ Download information from SABIO-RK about all of the compounds stored in the local sqlite copy of SABIO-RK
+
+        Args:
+            compounds (:obj:`list` of :obj:`Compound`): list of compounds to download
+
+        Raises:
+            :obj:`Error`: if an HTTP request fails
+        """
+        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+
+        batch_size = self.compound_batch_size
+
+        if compounds is None:
+            compounds = self.session.query(Compound).order_by(Compound.id).all()
+        n_compounds = len(compounds)
+
+        for i_compound, c in enumerate(compounds):
+            # print status
+            if self.verbose and (i_compound % batch_size == 0):
+                print('  Downloading compound {} of {}'.format(i_compound + 1, n_compounds))
+
+            # download info
+            response = session.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c.id})
+            response.raise_for_status()
+
+            # parse info
+            doc = bs4.BeautifulSoup(response.text, 'html.parser')
+            table = doc.find('table')
+
+            # name
+            node = table.find('span', id='commonName')
+            if node:
+                c.name = node.get_text()
+
+            # synonyms
+            c.synonyms = []
+            synonym_label_node = table.find('b', text='Synonyms')
+            if synonym_label_node:
+                for node in list(synonym_label_node.parents)[1].find_all('span'):
+                    name = node.get_text()
+
+                    q = self.session.query(Synonym).filter_by(name=name)
+                    if q.count():
+                        synonym = q[0]
+                    else:
+                        synonym = Synonym(name=name)
+                        self.session.add(synonym)
+
+                    c.synonyms.append(synonym)
+
+            # structure
+            c.structures = []
+
+            inchi_label_node = table.find('b', text='InChI')
+            if inchi_label_node:
+                for node in list(inchi_label_node.parents)[1].find_all('span'):
+                    value = node.get_text()
+                    q = self.session.query(CompoundStructure).filter_by(format='inchi', value=value)
+                    if q.count():
+                        compound_structure = q.first()
+                    else:
+                        compound_structure = CompoundStructure(format='inchi', value=value)
+                    c.structures.append(compound_structure)
+
+            smiles_label_node = table.find('b', text='SMILES')
+            if smiles_label_node:
+                for node in list(smiles_label_node.parents)[1].find_all('span'):
+                    value = node.get_text()
+                    q = self.session.query(CompoundStructure).filter_by(format='smiles', value=value)
+                    if q.count():
+                        compound_structure = q.first()
+                    else:
+                        compound_structure = CompoundStructure(format='smiles', value=value)
+                    c.structures.append(compound_structure)
+
+            # cross references
+            c.cross_references = []
+            for node in table.find_all('a'):
+                url = node.get('href')
+
+                id = node.get_text()
+
+                if url.startswith('http://www.genome.jp/dbget-bin/www_bget?cpd:'):
+                    namespace = 'kegg.compound'
+                elif url.startswith('http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid='):
+                    namespace = 'pubchem.substance'
+                elif url.startswith('http://www.ebi.ac.uk/chebi/searchId.do?chebiId='):
+                    namespace = 'chebi'
+                    id = 'CHEBI:' + id
+                else:
+                    ValueError('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, url))
+
+                q = self.session.query(Resource).filter_by(namespace=namespace, id=id)
+                if q.count():
+                    resource = q[0]
+                else:
+                    resource = Resource(namespace=namespace, id=id)
+                    self.session.add(resource)
+
+                c.cross_references.append(resource)
+
+            # udated
+            c.modified = datetime.datetime.utcnow()
+
+    def infer_compound_structures_from_names(self, compounds):
+        """ Try to use PubChem to infer the structure of compounds from their names
+
+        Notes: we don't try look up structures from their cross references because SABIO has already gathered
+        all structures from their cross references to ChEBI, KEGG, and PubChem
+
+        """
+        resource_query = self.session.query(Resource)
+
+        for i_compound, compound in enumerate(compounds):
+            if self.verbose and (i_compound % 100 == 0):
+                print('  Trying to infer the structure of compound {} of {}'.format(i_compound + 1, len(compounds)))
+
+            if compound.name == 'Unknown':
+                continue
+
+            p_compounds = pubchempy.get_compounds(compound.name, 'name')
+            for p_compound in p_compounds:
+                q = resource_query.filter_by(namespace='pubchem.compound', id=str(p_compound.cid))
+                if q.count():
+                    resource = q.first()
+                else:
+                    resource = Resource(namespace='pubchem.compound', id=str(p_compound.cid))
+                    self.session.add(resource)
+
+                compound.cross_references.append(resource)
+
+                compound.structures.append(CompoundStructure(value=p_compound.inchi, format='inchi'))
