@@ -332,3 +332,11 @@ class InchiMolecule(object):
         return isinstance(other, InchiMolecule) \
             and re.sub('H[0-9]*', '', self.formula) == re.sub('H[0-9]*', '', other.formula) \
             and self.connections == other.connections
+
+    def get_formula_and_connectivity(self):
+        """ Get a string representation of the non-hydrogen formula and connectivity
+
+        Returns:
+            :obj:`str`: string representation of the non-hydrogen formula and connectivity
+        """
+        return '{}/c{}'.format(re.sub('H[0-9]*', '', self.formula), self.connections)

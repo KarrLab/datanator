@@ -168,3 +168,8 @@ class TestInchiMolecule(unittest.TestCase):
         self.assertTrue(a.is_protonation_isomer(a))
         self.assertTrue(b.is_protonation_isomer(b))
         self.assertFalse(a.is_protonation_isomer(c))
+
+    def test_get_formula_and_connectivity(self):
+        glc6p = molecule_util.InchiMolecule(
+            'InChI=1S/C6H13O9P/c7-3-2(1-14-16(11,12)13)15-6(10)5(9)4(3)8/h2-10H,1H2,(H2,11,12,13)/t2-,3-,4+,5-,6-/m1/s1')
+        self.assertEqual(glc6p.get_formula_and_connectivity(), 'C6O9P/c7-3-2(1-14-16(11,12)13)15-6(10)5(9)4(3)8')
