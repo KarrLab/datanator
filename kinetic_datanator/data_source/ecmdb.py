@@ -10,6 +10,7 @@
 
 from io import BytesIO
 from kinetic_datanator.util import molecule_util
+from wc_utils.backup import BackupManager
 import datetime
 import dateutil.parser
 import json
@@ -82,8 +83,8 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
         elif auto_update:
             force_update = True
 
-    # if force_download and os.getenv('CODE_SERVER_TOKEN'):
-    #    download(filename=filename, arcname=arcname)
+    if force_download and os.getenv('CODE_SERVER_TOKEN'):
+        download(filename=filename, arcname=arcname)
 
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
@@ -92,6 +93,30 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
 
     return session
 
+def backup(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+    """ Backup the local sqlite database to the Karr Lab server
+
+    Args:
+        filename (:obj:`str`, optional): path to sqlite database
+        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+    """
+    BackupManager(filename, arcname=arcname) \
+        .create() \
+        .upload() \
+        .cleanup()
+
+
+def download(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+    """ Download the local sqlite database from the Karr Lab server
+
+    Args:
+        filename (:obj:`str`, optional): path to sqlite database
+        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+    """
+    BackupManager(filename, arcname=arcname) \
+        .download() \
+        .extract() \
+        .cleanup()
 
 compound_compartment = sqlalchemy.Table(
     'compound_compartment', SqlalchemyBase.metadata,
