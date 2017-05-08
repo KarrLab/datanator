@@ -20,7 +20,7 @@ class TestEcmdb(unittest.TestCase):
     def setUp(self):
         self.cache_dir = tempfile.mkdtemp()
         self.db_filename = os.path.join(self.cache_dir, 'db.sqlite')
-        self.req_name = os.path.join(self.cache_dir, 'req')
+        self.req_filename = os.path.join(self.cache_dir, 'req.sqlite')
 
     def tearDown(self):
         shutil.rmtree(self.cache_dir)
@@ -28,7 +28,7 @@ class TestEcmdb(unittest.TestCase):
     def test_download_from_remote(self):
         engine = ecmdb.get_engine(filename=self.db_filename)
         session = ecmdb.get_session(engine=engine, auto_download=False)
-        downloader = ecmdb.Downloader(session, requests_cache_name=self.req_name, max_entries=12, verbose=True)
+        downloader = ecmdb.Downloader(session, requests_cache_filename=self.req_filename, max_entries=12, verbose=True)
         downloader.download()
         session.close()
         engine.dispose()
@@ -116,6 +116,7 @@ class TestEcmdb(unittest.TestCase):
         # compound with comment
         # compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000734').first()
 
+    @unittest.skip('Skip because this is a long test')
     def test_download_all(self):
         engine = ecmdb.get_engine()
         session = ecmdb.get_session(engine=engine)
@@ -127,7 +128,6 @@ class TestEcmdb(unittest.TestCase):
         session = ecmdb.get_session()
         self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
 
-    @unittest.skip('Not implemented yet')
     def test_download_from_cache(self):
         engine = ecmdb.get_engine(filename=self.db_filename)
         session = ecmdb.get_session(engine=engine)

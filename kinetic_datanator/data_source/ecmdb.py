@@ -25,38 +25,38 @@ import sys
 import urllib
 import zipfile
 
+_, _, NAME = __name__.rpartition('.')
 
-DEFAULT_DATABASE_FILENAME = os.path.join(os.path.dirname(__file__), 'cache', 'ecmdb.sqlite')
+DEFAULT_CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'cache')
 # :obj:`str`: default path for the sqlite database
-
-DEFAULT_DATABASE_ARCNAME = 'ecmdb.sqlite'
-# :obj:`str`: default name for the sqlite database within a gzip backup
 
 SqlalchemyBase = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: SQL Alchemy base class for class definitions
 
 
-def get_engine(filename=DEFAULT_DATABASE_FILENAME):
+def get_engine(filename=None):
     """ Get an engine for the sqlite database
 
     Args:
-        filename (:obj:`str`): path to sqlite database
+        filename (:obj:`str`, optional): path to sqlite file
 
     Returns:
         :obj:`sqlalchemy.engine.Engine`: database engine
     """
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
+
     if not os.path.isdir(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
     return sqlalchemy.create_engine('sqlite:///' + filename)
 
 
 def get_session(engine=None, auto_download=True, auto_update=False, force_download=False, force_update=False,
-                arcname=DEFAULT_DATABASE_ARCNAME, max_laws=float('inf')):
+                max_laws=float('inf')):
     """ Get a session for the sqlite database
 
     Args:
         engine (:obj:`sqlalchemy.engine.Engine`, optional): database engine
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
         auto_download (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, download an archive of
             the database from the Karr Lab server and then update the local database from SABIO
         auto_update (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, update the local database 
@@ -67,7 +67,6 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
         force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
             Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download` 
             or :obj:`auto_update` is :obj:`True`
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
         max_laws (:obj:`int`, optional): maximum number of laws to download
 
     Returns:
@@ -84,7 +83,7 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
             force_update = True
 
     if force_download and os.getenv('CODE_SERVER_TOKEN'):
-        download(filename=filename, arcname=arcname)
+        download(filename=filename)
 
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
@@ -93,27 +92,32 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
 
     return session
 
-def backup(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+
+def backup(filename=None):
     """ Backup the local sqlite database to the Karr Lab server
 
     Args:
-        filename (:obj:`str`, optional): path to sqlite database
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+        filename (:obj:`str`, optional): path to sqlite file
     """
-    BackupManager(filename, arcname=arcname) \
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
+
+    BackupManager(filename, arcname=NAME + '.sqlite') \
         .create() \
         .upload() \
         .cleanup()
 
 
-def download(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+def download(filename=None):
     """ Download the local sqlite database from the Karr Lab server
 
     Args:
-        filename (:obj:`str`, optional): path to sqlite database
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+        filename (:obj:`str`, optional): path to sqlite file
     """
-    BackupManager(filename, arcname=arcname) \
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
+
+    BackupManager(filename, arcname=NAME + '.sqlite') \
         .download() \
         .extract() \
         .cleanup()
@@ -261,27 +265,37 @@ class Compound(SqlalchemyBase):
 
 
 class Downloader(object):
+    """
+    Attributes
+        session
+        requests_cache_filename
+        max_entries
+        verbose
+    """
+
     DOWNLOAD_INDEX_URL = 'http://ecmdb.ca/download/ecmdb.json.zip'
     # :obj:`str`: URL to download an index of ECMDB
 
     DOWNLOAD_COMPOUND_URL = 'http://ecmdb.ca/compounds/{}.xml'
     # :obj:`str`: URL pattern to download an ECMDB compound entry
 
-    def __init__(self, session, requests_cache_name=None, max_entries=float('inf'), verbose=False):
-        self.session = session
-        self.max_entries = max_entries
+    def __init__(self, session, requests_cache_filename=None, max_entries=float('inf'), verbose=False):
+        self.session = session        
 
-        if requests_cache_name is None:
-            requests_cache_dir = os.path.join(os.path.dirname(__file__), 'cache')
-            if not os.path.isdir(requests_cache_dir):
-                os.makedirs(requests_cache_dir)
-            requests_cache_name = os.path.join(requests_cache_dir, 'ecmdb.requests.py{}'.format(sys.version_info[0]))
-        self.requests_cache_name = requests_cache_name
+        if requests_cache_filename is None:
+            requests_cache_filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.requests.py{}.sqlite'.format(sys.version_info[0]))
+        elif not requests_cache_filename.endswith('.sqlite'):
+            raise ValueError('Request cache filename must have the extension .sqlite')
+        if not os.path.isdir(os.path.dirname(requests_cache_filename)):
+            os.makedirs(os.path.dirname(requests_cache_filename))
+        self.requests_cache_filename = requests_cache_filename        
+
+        self.max_entries = max_entries
         self.verbose = verbose
 
         # initialize cache, database
         self.init_requests_cache()
-        self.init_database()
+        self.init_database()        
 
     def init_requests_cache(self):
         """ Setup the cache for SABIO-RK HTTP requests """
@@ -289,7 +303,8 @@ class Downloader(object):
 
     def clear_requests_cache(self):
         """ Clear the cahce for SABIO-RK HTTP requests """
-        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        name, _, _  = self.requests_cache_filename.partition('.')
+        session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
         session.cache.clear()
 
     def init_database(self):
@@ -319,7 +334,8 @@ class Downloader(object):
             self.clear_requests_cache()
 
         db_session = self.session
-        req_session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        name, _, _ = self.requests_cache_filename.partition('.')
+        req_session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
 
         # download content from server
         if self.verbose:
