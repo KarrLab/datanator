@@ -27,49 +27,49 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import sys
 
-DEFAULT_DATABASE_FILENAME = os.path.join(os.path.dirname(__file__), 'cache', 'sabio_rk.sqlite')
-# :obj:`str`: default path for the sqlite database
+_, _, NAME = __name__.rpartition('.')
 
-DEFAULT_DATABASE_ARCNAME = 'sabio_rk.sqlite'
-# :obj:`str`: default name for the sqlite database within a gzip backup
+DEFAULT_CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'cache')
+# :obj:`str`: default path for the sqlite database
 
 SqlalchemyBase = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: SQL Alchemy base class for class definitions
 
 
-def get_engine(filename=DEFAULT_DATABASE_FILENAME):
+def get_engine(filename=None):
     """ Get an engine for the sqlite database
 
     Args:
-        filename (:obj:`str`): path to sqlite database
+        filename (:obj:`str`, optional): path to sqlite file
 
     Returns:
         :obj:`sqlalchemy.engine.Engine`: database engine
     """
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
     if not os.path.isdir(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
     return sqlalchemy.create_engine('sqlite:///' + filename)
 
 
 def get_session(engine=None, auto_download=True, auto_update=False, force_download=False, force_update=False,
-                arcname=DEFAULT_DATABASE_ARCNAME, max_laws=float('inf')):
+                max_entries=float('inf'), arcname=None):
     """ Get a session for the sqlite database
 
     Args:
         engine (:obj:`sqlalchemy.engine.Engine`, optional): database engine
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
         auto_download (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, download an archive of
             the database from the Karr Lab server and then update the local database from SABIO
-        auto_update (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, update the local database 
+        auto_update (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, update the local database
             from SABIO
         force_download (:obj:`bool`, optional): if :obj:`True`, download an archive of the database from the Karr Lab server
-            Note: this setting will be overriden to :obj:`True` if there is no local sqlite data and :obj:`auto_download` is 
+            Note: this setting will be overriden to :obj:`True` if there is no local sqlite data and :obj:`auto_download` is
             :obj:`True`
         force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
-            Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download` 
+            Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download`
             or :obj:`auto_update` is :obj:`True`
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
-        max_laws (:obj:`int`, optional): maximum number of laws to download
+        max_entries (:obj:`int`, optional): maximum number of laws to download
+        arcname (:obj:`str`, optional): filename to download sqlite database from remote server
 
     Returns:
         :obj:`sqlalchemy.orm.session.Session`: database session
@@ -85,36 +85,46 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
             force_update = True
 
     if force_download and os.getenv('CODE_SERVER_TOKEN'):
+        if not arcname:
+            arcname = NAME + '.sqlite'
         download(filename=filename, arcname=arcname)
 
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     if force_update:
-        Downloader(session=session, max_laws=max_laws).download()
+        Downloader(session=session, max_entries=max_entries).download()
 
     return session
 
 
-def backup(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+def backup(filename=None, arcname=None):
     """ Backup the local sqlite database to the Karr Lab server
 
     Args:
-        filename (:obj:`str`, optional): path to sqlite database
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+        filename (:obj:`str`, optional): path to sqlite file
+        arcname (:obj:`str`, optional): filename to save sqlite database on remote server
     """
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
+    if not arcname:
+        arcname = NAME + '.sqlite'
     BackupManager(filename, arcname=arcname) \
         .create() \
         .upload() \
         .cleanup()
 
 
-def download(filename=DEFAULT_DATABASE_FILENAME, arcname=DEFAULT_DATABASE_ARCNAME):
+def download(filename=None, arcname=None):
     """ Download the local sqlite database from the Karr Lab server
 
     Args:
-        filename (:obj:`str`, optional): path to sqlite database
-        arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
+        filename (:obj:`str`, optional): path to sqlite file
+        arcname (:obj:`str`, optional): filename to download sqlite database from remote server
     """
+    if not filename:
+        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
+    if not arcname:
+        arcname = NAME + '.sqlite'
     BackupManager(filename, arcname=arcname) \
         .download() \
         .extract() \
@@ -275,7 +285,7 @@ class Parameter(Entry):
 class KineticLaw(Entry):
     """ Represents a kinetic law in the SABIO-RK database
 
-    Attributes:        
+    Attributes:
         reaction (:obj:`Reaction`): reaction
         enzyme (:obj:`Enzyme`): enzyme
         enzyme_compartment (:obj:`Compartment): compartment
@@ -350,7 +360,7 @@ class CompoundStructure(SqlalchemyBase):
         value (:obj:`str`): the structure in InChI, SMILES, etc. format
         format (:obj:`str`): format (InChI, SMILES, etc.) of the structure
         _value_inchi (:obj:`str`): structure in InChI format
-        _value_inchi_formula_connectivity (:obj:`str`): empiral formula (without hydrogen) and connectivity InChI layers; used to 
+        _value_inchi_formula_connectivity (:obj:`str`): empiral formula (without hydrogen) and connectivity InChI layers; used to
             quickly search for compound structures
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -465,12 +475,12 @@ class Downloader(object):
 
     Attributes:
         session (:obj:`sqlalchemy.orm.session.Session`): database session
-        max_laws (:obj:`int`): maximum number of laws to download
         index_batch_size (:obj:`int`): size of batches to download the IDs of the kinetic laws
         webservice_batch_size (:obj:`int`): size of batches to download kinetic information from the SABIO webservice
         excel_batch_size (:obj:`int`): size of batches to download kinetic information from the SABIO Excel download service
         compound_batch_size (:obj:`int`): size of batches to download compound information
-        requests_cache_name (:obj:`str`): name of the sqlite database to cache SABIO-RK HTTP requests
+        requests_cache_filename (:obj:`str`): filename of the sqlite database to cache SABIO-RK HTTP requests
+        max_entries (:obj:`int`): maximum number of laws to download
         verbose (:obj:`bool`): if :obj:`True`, print status information to the standard output
 
         ENDPOINT_KINETIC_LAWS_SEARCH (:obj:`str`): URL to obtain a list of the ids of all of the kinetic laws in SABIO-Rk
@@ -482,7 +492,7 @@ class Downloader(object):
         DEFAULT_EXCEL_BATCH_SIZE (:obj:`int`): default size of batches to download kinetic information from the SABIO
             Excel download service
         DEFAULT_COMPOUND_BATCH_SIZE (:obj:`int`): size of batches to download compound information
-        SKIP_KINETIC_LAW_IDS (:obj:`tuple` of :obj:`int`): IDs of kinetic laws that should be skipped (because they cannot contained 
+        SKIP_KINETIC_LAW_IDS (:obj:`tuple` of :obj:`int`): IDs of kinetic laws that should be skipped (because they cannot contained
             errors and can't be downloaded from SABIO)
     """
 
@@ -496,38 +506,39 @@ class Downloader(object):
     DEFAULT_COMPOUND_BATCH_SIZE = 100
     SKIP_KINETIC_LAW_IDS = (51286,)
 
-    def __init__(self, session, max_laws=float('inf'),
+    def __init__(self, session,
                  index_batch_size=DEFAULT_INDEX_BATCH_SIZE,
                  webservice_batch_size=DEFAULT_WEBSERVICE_BATCH_SIZE,
                  excel_batch_size=DEFAULT_EXCEL_BATCH_SIZE,
                  compound_batch_size=DEFAULT_COMPOUND_BATCH_SIZE,
-                 requests_cache_name=None, verbose=False):
+                 requests_cache_filename=None, max_entries=float('inf'), verbose=False):
         """
         Args:
             session (:obj:`sqlalchemy.orm.session.Session`): database session
-            max_laws (:obj:`int`, optional): maximum number of laws to download
             index_batch_size (:obj:`int`, optional): size of batches to download the IDs of the kinetic laws
             webservice_batch_size (:obj:`int`, optional): size of batches to download kinetic information from the SABIO webservice
             compound_batch_size (:obj:`int`, optional): size of batches to download compound information
             excel_batch_size (:obj:`int`, optional): size of batches to download kinetic information from the SABIO Excel download service
-            requests_cache_name (:obj:`str`, optional): name of the sqlite database to cache SABIO-RK HTTP requests
+            requests_cache_filename (:obj:`str`, optional): filename of the sqlite database to cache SABIO-RK HTTP requests
+            max_entries (:obj:`int`, optional): maximum number of laws to download
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
         """
         self.session = session
 
-        self.max_laws = max_laws
         self.index_batch_size = index_batch_size
         self.webservice_batch_size = webservice_batch_size
         self.excel_batch_size = excel_batch_size
         self.compound_batch_size = compound_batch_size
 
-        if requests_cache_name is None:
-            requests_cache_dir = os.path.join(os.path.dirname(__file__), 'cache')
-            if not os.path.isdir(requests_cache_dir):
-                os.makedirs(requests_cache_dir)
-            requests_cache_name = os.path.join(requests_cache_dir, 'sabio_rk_requests_cache.py{}'.format(sys.version_info[0]))
-        self.requests_cache_name = requests_cache_name
+        if requests_cache_filename is None:
+            requests_cache_filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.requests.py{}.sqlite'.format(sys.version_info[0]))
+        elif not requests_cache_filename.endswith('.sqlite'):
+            raise ValueError('Request cache filename must have the extension .sqlite')
+        if not os.path.isdir(os.path.dirname(requests_cache_filename)):
+            os.makedirs(os.path.dirname(requests_cache_filename))
+        self.requests_cache_filename = requests_cache_filename
 
+        self.max_entries = max_entries
         self.verbose = verbose
 
         # initialize cache, database
@@ -540,7 +551,8 @@ class Downloader(object):
 
     def clear_requests_cache(self):
         """ Clear the cahce for SABIO-RK HTTP requests """
-        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        name, _, _ = self.requests_cache_filename.partition('.')
+        session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
         session.cache.clear()
 
     def init_database(self):
@@ -695,7 +707,7 @@ class Downloader(object):
                 print('  Downloaded ids {}-{} of {}'.format(
                     i_batch * batch_size + 1,
                     min(n_laws, (i_batch + 1) * batch_size),
-                    min(self.max_laws, n_laws),
+                    min(self.max_entries, n_laws),
                 ))
 
             # get ids of kinetic laws
@@ -708,9 +720,9 @@ class Downloader(object):
             i_batch += 1
 
             # stop if all IDs have been collected
-            if len(ids) >= min(self.max_laws, n_laws):
-                if len(ids) > self.max_laws:
-                    ids = ids[0:self.max_laws]
+            if len(ids) >= min(self.max_entries, n_laws):
+                if len(ids) > self.max_entries:
+                    ids = ids[0:self.max_entries]
                 break
 
         # return IDs
@@ -727,7 +739,8 @@ class Downloader(object):
             :obj:`Error`: if an HTTP request fails
         """
         # todo: scrape strain, recombinant, experiment type information from web pages
-        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        name, _, _ = self.requests_cache_filename.partition('.')
+        session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
 
         batch_size = self.webservice_batch_size
         for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
@@ -1310,7 +1323,8 @@ class Downloader(object):
         Raises:
             :obj:`Error`: if an HTTP request fails
         """
-        session = requests_cache.core.CachedSession(self.requests_cache_name, backend='sqlite', expire_after=None)
+        name, _, _ = self.requests_cache_filename.partition('.')
+        session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
 
         batch_size = self.compound_batch_size
 
