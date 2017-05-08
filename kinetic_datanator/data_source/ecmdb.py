@@ -64,7 +64,7 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
             Note: this setting will be overriden to :obj:`True` if there is no local sqlite data and :obj:`auto_download` is 
             :obj:`True`
         force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
-            Note: this setting will be overriden to :obj:`True` if there is no local sqlite database adn :obj:`auto_download` 
+            Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download` 
             or :obj:`auto_update` is :obj:`True`
         arcname (:obj:`str`, optional): name for the sqlite database within a gzip backup
         max_laws (:obj:`int`, optional): maximum number of laws to download

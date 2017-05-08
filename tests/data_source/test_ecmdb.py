@@ -117,7 +117,8 @@ class TestEcmdb(unittest.TestCase):
         # compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000734').first()
 
     def test_download_all(self):
-        session = ecmdb.get_session()
+        engine = ecmdb.get_engine()
+        session = ecmdb.get_session(engine=engine)
         downloader = ecmdb.Downloader(session, verbose=True)
         downloader.download(update_database=True, update_requests=False)
         session.close()
