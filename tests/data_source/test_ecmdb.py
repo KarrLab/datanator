@@ -59,7 +59,7 @@ class TestEcmdb(unittest.TestCase):
         ])
         self.assertTrue(compound.description.startswith('2-Ketobutyric acid (alpha ketobutyric acid)'))
         self.assertEqual(compound.structure, 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7/h2H2,1H3,(H,6,7)')
-        self.assertEqual(compound._structure_formula_connectivity, 'C4O3/c1-2-3(5)4(6)7')
+        self.assertEqual(compound._structure_formula_connectivity, 'C4H6O3/c1-2-3(5)4(6)7')
         self.assertEqual([c.name for c in compound.compartments], ['Cytosol'])
 
         self.assertEqual(compound.concentrations, [])

@@ -51,7 +51,7 @@ def get_engine(filename=None):
 
 
 def get_session(engine=None, auto_download=True, auto_update=False, force_download=False, force_update=False,
-                max_entries=float('inf'), arcname=None):
+                requests_cache_filename=None, max_entries=float('inf'), arcname=None):
     """ Get a session for the sqlite database
 
     Args:
@@ -66,6 +66,7 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
         force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
             Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download`
             or :obj:`auto_update` is :obj:`True`
+        requests_cache_filename (:obj:`str`, optional): filename of the sqlite database to cache SABIO-RK HTTP requests
         max_entries (:obj:`int`, optional): maximum number of laws to download
         arcname (:obj:`str`, optional): filename to download sqlite database from remote server
 
@@ -83,14 +84,12 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
             force_update = True
 
     if force_download and os.getenv('CODE_SERVER_TOKEN'):
-        if not arcname:
-            arcname = NAME + '.sqlite'
         download(filename=filename, arcname=arcname)
 
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     if force_update:
-        Downloader(session=session, max_entries=max_entries).download()
+        Downloader(session=session, requests_cache_filename=requests_cache_filename, max_entries=max_entries).download()
 
     return session
 
@@ -158,10 +157,11 @@ concentration_resource = sqlalchemy.Table(
 
 
 class Synonym(SqlalchemyBase):
-    """
+    """ Represents a synonym
+
     Args:
-        name
-        compouds
+        name (:obj:`str`): name
+        compounds (:obj:`list` of :obj:`Compound`): list of compounds
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -172,10 +172,11 @@ class Synonym(SqlalchemyBase):
 
 
 class Compartment(SqlalchemyBase):
-    """
+    """ Represents a compartment
+
     Attributes:
-        name
-        compounds
+        name (:obj:`str`): name
+        compounds (:obj:`list` of :obj:`Compound`): list of compounds
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -186,19 +187,23 @@ class Compartment(SqlalchemyBase):
 
 
 class Concentration(SqlalchemyBase):
-    """
+    """ Represents an observed concentration
+
     Attributes:
-        value
-        error
-        strain
-        state
-        media
-        temperature
-        system
-        compound
+        compound (:obj:`Compound`): compound
+        value (:obj:`float`): value in uM
+        error (:obj:`float`): error in uM
+        strain (:obj:`str`): observed strain
+        growth_status (:obj:`str`): observed growth status (e.g. exponential phase, log phase, etc.)
+        media (:obj:`str`): observed media
+        temperaturer (:obj:`float`): temperature in C
+        growth_system (:obj:`str`): observed growth system (e.g. chemostat, 384 well plate, etc.)
+        references (:obj:`list` of :obj:`Resource`): list of references
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
+    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
+    compound = sqlalchemy.orm.relationship('Compound', back_populates='concentrations', foreign_keys=[compound_id])
     value = sqlalchemy.Column(sqlalchemy.Float())
     error = sqlalchemy.Column(sqlalchemy.Float())
     strain = sqlalchemy.Column(sqlalchemy.String())
@@ -206,8 +211,6 @@ class Concentration(SqlalchemyBase):
     media = sqlalchemy.Column(sqlalchemy.String())
     temperature = sqlalchemy.Column(sqlalchemy.Float())
     growth_system = sqlalchemy.Column(sqlalchemy.String())
-    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
-    compound = sqlalchemy.orm.relationship('Compound', back_populates='concentrations', foreign_keys=[compound_id])
     references = sqlalchemy.orm.relationship('Resource', secondary='concentration_resource', back_populates='concentrations')
 
     __tablename__ = 'concentration'
@@ -220,6 +223,7 @@ class Resource(SqlalchemyBase):
         namespace (:obj:`str`): external namespace
         id (:obj:`str`): external identifier
         compounds (:obj:`list` of :obj:`Compound`): compounds
+        concentrations (:obj:`list` of :obj:`Concentration`): concentrations
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -237,19 +241,20 @@ class Compound(SqlalchemyBase):
     """ Represents an ECMDB entry
 
     Attributes:
-        id
-        name
-        synonyms
-        description
-        structure
-        _structure_formula_connectivity
-        compartments
-        concentrations
-        cross_references
-        comment
-        created
-        updated
-        downloaded
+        id (:obj:`str`): ECMDB identifier
+        name (:obj:`str`): name
+        synonyms (:obj:`list` of :obj:`Synonym`): synonyms
+        description (:obj:`str`): description
+        structure (:obj:`str`): structure in InChI format
+        _structure_formula_connectivity (:obj:`str`): empiral formula and connectivity InChI layers; used to
+            quickly search for compound structures
+        compartments (:obj:`list` of :obj:`Compartment`): compartments
+        concentrations (:obj:`list` of :obj:`Concentration`): concentrations
+        cross_references (:obj:`list` of :obj:`Resources`): cross references
+        comment (:obj:`str`): internal ECMDB comments about the entry
+        created (:obj:`datetime.datetime`): time that the entry was created in ECMDB
+        updated (:obj:`datetime.datetime`): time that the entry was last updated in ECMDB
+        downloaded (:obj:`datetime.datetime`): time that the entry was downloaded from ECMDB
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -278,13 +283,13 @@ class Downloader(object):
         requests_cache_filename (:obj:`str`): filename of the sqlite database to cache SABIO-RK HTTP requests
         max_entries (:obj:`int`): maximum number of laws to download
         verbose (:obj:`bool`): if :obj:`True`, print status information to the standard output
+
+        DOWNLOAD_INDEX_URL (:obj:`str`): URL to download an index of ECMDB
+        DOWNLOAD_COMPOUND_URL (:obj:`str`): URL pattern to download an ECMDB compound entry
     """
 
     DOWNLOAD_INDEX_URL = 'http://ecmdb.ca/download/ecmdb.json.zip'
-    # :obj:`str`: URL to download an index of ECMDB
-
     DOWNLOAD_COMPOUND_URL = 'http://ecmdb.ca/compounds/{}.xml'
-    # :obj:`str`: URL pattern to download an ECMDB compound entry
 
     def __init__(self, session,
                  requests_cache_filename=None, max_entries=float('inf'), verbose=False):
@@ -412,7 +417,7 @@ class Downloader(object):
 
             # calculate core InChI layers to facilitate searching
             compound._structure_formula_connectivity = molecule_util.InchiMolecule(compound.structure) \
-                .get_formula_and_connectivity(hydrogen=False)
+                .get_formula_and_connectivity()
 
             # synonyms
             compound.synonyms = []
@@ -562,6 +567,17 @@ class Downloader(object):
             print('  done')
 
     def get_or_create_object(self, cls, **kwargs):
+        """ Get the SQLAlchemy object of type :obj:`cls` with attribute/value pairs specified by `**kwargs`. If
+        an object with these attribute/value pairs does not exist, create an object with these attribute/value pairs
+        and add it to the SQLAlchemy session.
+
+        Args:
+            cls (:obj:`class`): child class of :obj:`SqlalchemyBase`
+            **kwargs (:obj:`dict`, optional): attribute-value pairs of desired SQLAlchemy object of type :obj:`cls`
+
+        Returns:
+            :obj:`SqlalchemyBase`: SQLAlchemy object of type :obj:`cls`
+        """
         q = self.session.query(cls).filter_by(**kwargs)
         if q.count():
             return q.first()
@@ -571,12 +587,29 @@ class Downloader(object):
             return obj
 
     def get_node_children(self, node, children_name):
+        """ Get the children of an XML node
+
+        Args:
+            node (:obj:`jxmlease.cdatanode.XMLNode`): XML node
+            children_name (:obj:`str`): tag names of the desired children
+
+        Returns:
+            :obj:`list` of :obj:`XMLNode`: list of child nodes
+        """
         nodes = node[children_name]
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes
         return [nodes]
 
     def get_node_text(self, node):
+        """ Get the next of a XML node
+
+        Args:
+            node (:obj:`jxmlease.cdatanode.XMLCDATANode` or :obj:`str`): XML node or its text
+
+        Returns:
+            :obj:`str`: text of the node
+        """
         if isinstance(node, jxmlease.cdatanode.XMLCDATANode):
             return node.get_cdata()
         return node

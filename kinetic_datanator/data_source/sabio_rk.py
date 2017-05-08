@@ -53,7 +53,7 @@ def get_engine(filename=None):
 
 
 def get_session(engine=None, auto_download=True, auto_update=False, force_download=False, force_update=False,
-                max_entries=float('inf'), arcname=None):
+                requests_cache_filename=None, max_entries=float('inf'), arcname=None):
     """ Get a session for the sqlite database
 
     Args:
@@ -68,6 +68,7 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
         force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
             Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download`
             or :obj:`auto_update` is :obj:`True`
+        requests_cache_filename (:obj:`str`, optional): filename of the sqlite database to cache SABIO-RK HTTP requests
         max_entries (:obj:`int`, optional): maximum number of laws to download
         arcname (:obj:`str`, optional): filename to download sqlite database from remote server
 
@@ -85,14 +86,12 @@ def get_session(engine=None, auto_download=True, auto_update=False, force_downlo
             force_update = True
 
     if force_download and os.getenv('CODE_SERVER_TOKEN'):
-        if not arcname:
-            arcname = NAME + '.sqlite'
         download(filename=filename, arcname=arcname)
 
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     if force_update:
-        Downloader(session=session, max_entries=max_entries).download()
+        Downloader(session=session, requests_cache_filename=requests_cache_filename, max_entries=max_entries).download()
 
     return session
 
@@ -397,7 +396,7 @@ class CompoundStructure(SqlalchemyBase):
         # calculate formula (without hydrogen) and connectivity
         if self._value_inchi:
             self._value_inchi_formula_connectivity = molecule_util.InchiMolecule(self._value_inchi) \
-                .get_formula_and_connectivity(hydrogen=False)
+                .get_formula_and_connectivity()
 
 
 class Compound(Entry):
