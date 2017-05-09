@@ -5,8 +5,8 @@
 :License: MIT
 """
 
-from abc import ABCMeta, abstractmethod
-from wc_utils.backup import BackupManager
+from wc_utils import backup
+import abc
 import os
 import requests
 import requests_cache
@@ -19,7 +19,7 @@ CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'ca
 # :obj:`str`: default path for the sqlite database
 
 
-class DataSource(six.with_metaclass(ABCMeta, object)):
+class DataSource(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents an external data source 
 
     Attributes:
@@ -34,6 +34,7 @@ class DataSource(six.with_metaclass(ABCMeta, object)):
         if not name:
             name = self.__class__.__name__
         self.name = name
+
 
 class CachedDataSource(DataSource):
     """ Represents an external data source that is cached locally in a sqlite database 
@@ -132,19 +133,19 @@ class CachedDataSource(DataSource):
 
     def upload_backup(self):
         """ Backup the local sqlite database to the Karr Lab server """
-        BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
+        backup.BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
             .create() \
             .upload() \
             .cleanup()
 
     def download_backup(self):
         """ Download the local sqlite database from the Karr Lab server """
-        BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
+        backup.BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
             .download() \
             .extract() \
             .cleanup()
 
-    @abstractmethod
+    @abc.abstractmethod
     def load_content(self):
         """ Load the content of the local copy of the data source """
         pass
@@ -230,6 +231,7 @@ class HttpDataSource(CachedDataSource):
     def disable_warnings(self):
         """ Disable insecure HTTP request warnings """
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
 
 class WebserviceDataSource(DataSource):
     """ A data source that is a webservice """
