@@ -153,6 +153,14 @@ class Reaction(object):
 
         return pairs
 
+    def get_ec_numbers(self):
+        """ Get the EC numbers from the list of cross references
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of EC numbers
+        """
+        return list(filter(lambda xr: xr.namespace == 'ec-code', self.cross_references))
+
     def get_ec_number(self):
         """ Get the most relevant EC number from the list of cross references
 
