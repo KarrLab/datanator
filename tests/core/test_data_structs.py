@@ -20,9 +20,9 @@ class TestCrossReferenceAssignmentMethod(unittest.TestCase):
 class TestCrossReference(unittest.TestCase):
 
     def test_init(self):
-        xr = data_structs.CrossReference(source='src', id='identifier', relevance=2.,
+        xr = data_structs.CrossReference(namespace='src', id='identifier', relevance=2.,
                                          assignment_method=data_structs.CrossReferenceAssignmentMethod.manual)
-        self.assertEqual(xr.source, 'src')
+        self.assertEqual(xr.namespace, 'src')
         self.assertEqual(xr.id, 'identifier')
         self.assertEqual(xr.relevance, 2.)
         self.assertEqual(xr.assignment_method, data_structs.CrossReferenceAssignmentMethod.manual)

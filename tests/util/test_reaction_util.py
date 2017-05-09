@@ -147,41 +147,41 @@ class TestReaction(unittest.TestCase):
 
     def test_get_ec_number(self):
         rxn = reaction_util.Reaction(cross_references=[
-            data_structs.CrossReference(source='ec-code', id='1.1.1.1', relevance=20.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.1', relevance=20.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.2', relevance=30.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.2', relevance=30.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.3', relevance=10.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.3', relevance=10.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.2')
 
         rxn = reaction_util.Reaction(cross_references=[
-            data_structs.CrossReference(source='ec-code', id='1.1.1.1', relevance=20.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.1', relevance=20.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.manual),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.2', relevance=30.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.2', relevance=30.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.3', relevance=10.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.3', relevance=10.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.1')
 
         rxn = reaction_util.Reaction(cross_references=[
-            data_structs.CrossReference(source='ec-code', id='1.1.1.1', relevance=20.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.1', relevance=20.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.manual),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.2', relevance=30.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.2', relevance=30.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.3', relevance=10.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.3', relevance=10.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.manual),
         ])
         self.assertRaises(ValueError, rxn.get_ec_number)
 
         rxn = reaction_util.Reaction(cross_references=[
-            data_structs.CrossReference(source='ec2', id='1.1.1.1', relevance=20.,
+            data_structs.CrossReference(namespace='ec2', id='1.1.1.1', relevance=20.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.manual),
-            data_structs.CrossReference(source='ec-code', id='1.1.1.2', relevance=30.,
+            data_structs.CrossReference(namespace='ec-code', id='1.1.1.2', relevance=30.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted),
-            data_structs.CrossReference(source='ec2', id='1.1.1.3', relevance=10.,
+            data_structs.CrossReference(namespace='ec2', id='1.1.1.3', relevance=10.,
                                         assignment_method=data_structs.CrossReferenceAssignmentMethod.manual),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.2')

@@ -165,7 +165,7 @@ class Reaction(object):
         """
 
         # return
-        manual_ec_numbers = list(filter(lambda xr: xr.source == 'ec-code' and xr.assignment_method ==
+        manual_ec_numbers = list(filter(lambda xr: xr.namespace == 'ec-code' and xr.assignment_method ==
                                         data_structs.CrossReferenceAssignmentMethod.manual, self.cross_references))
         if len(manual_ec_numbers) == 1:
             return manual_ec_numbers[0].id
