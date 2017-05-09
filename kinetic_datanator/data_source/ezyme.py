@@ -7,13 +7,14 @@
 :License: MIT
 """
 
+from kinetic_datanator.core import data_source
 from kinetic_datanator.util import reaction_util
 import itertools
 import re
 import requests
 
 
-class Ezyme(object):
+class Ezyme(data_source.WebserviceDataSource):
     """ Utilities for using Ezyme to predict EC numbers.
 
     See Ezyme (http://www.genome.jp/tools-bin/predict_reaction) for more information.
@@ -26,9 +27,6 @@ class Ezyme(object):
     REQUEST_URL = 'http://www.genome.jp/tools-bin/predict_view'
     RETRIEVAL_URL = 'http://www.genome.jp/tools-bin/e-zyme2/result.cgi'
     EC_PREDICTION_URL = 'http://www.genome.jp/kegg-bin/get_htext?htext=ko01000.keg&query='
-
-    def __init__(self):
-        pass
 
     @classmethod
     def run(cls, reaction):

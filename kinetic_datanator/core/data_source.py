@@ -35,7 +35,6 @@ class DataSource(six.with_metaclass(ABCMeta, object)):
             name = self.__class__.__name__
         self.name = name
 
-
 class CachedDataSource(DataSource):
     """ Represents an external data source that is cached locally in a sqlite database 
 
@@ -231,3 +230,7 @@ class HttpDataSource(CachedDataSource):
     def disable_warnings(self):
         """ Disable insecure HTTP request warnings """
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
+class WebserviceDataSource(DataSource):
+    """ A data source that is a webservice """
+    pass
