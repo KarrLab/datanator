@@ -8,155 +8,52 @@
 :License: MIT
 """
 
-from io import BytesIO
+from kinetic_datanator.core import data_source
 from kinetic_datanator.util import molecule_util
-from wc_utils.backup import BackupManager
 import datetime
 import dateutil.parser
+import io
 import json
 import jxmlease
-import os
-import requests
-import requests_cache
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-import sys
-import urllib
 import zipfile
 
-_, _, NAME = __name__.rpartition('.')
 
-DEFAULT_CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'cache')
-# :obj:`str`: default path for the sqlite database
-
-SqlalchemyBase = sqlalchemy.ext.declarative.declarative_base()
-# :obj:`Base`: SQL Alchemy base class for class definitions
-
-
-def get_engine(filename=None):
-    """ Get an engine for the sqlite database
-
-    Args:
-        filename (:obj:`str`, optional): path to sqlite file
-
-    Returns:
-        :obj:`sqlalchemy.engine.Engine`: database engine
-    """
-    if not filename:
-        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
-    if not os.path.isdir(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    return sqlalchemy.create_engine('sqlite:///' + filename)
-
-
-def get_session(engine=None, auto_download=True, auto_update=False, force_download=False, force_update=False,
-                requests_cache_filename=None, max_entries=float('inf'), arcname=None):
-    """ Get a session for the sqlite database
-
-    Args:
-        engine (:obj:`sqlalchemy.engine.Engine`, optional): database engine
-        auto_download (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, download an archive of
-            the database from the Karr Lab server and then update the local database from SABIO
-        auto_update (:obj:`bool`, optional): if :obj:`True` and there is no local sqlite database, update the local database
-            from SABIO
-        force_download (:obj:`bool`, optional): if :obj:`True`, download an archive of the database from the Karr Lab server
-            Note: this setting will be overriden to :obj:`True` if there is no local sqlite data and :obj:`auto_download` is
-            :obj:`True`
-        force_update (:obj:`bool`, optional): if :obj:`True`, update the local database from SABIO
-            Note: this setting will be overriden to :obj:`True` if there is no local sqlite database and :obj:`auto_download`
-            or :obj:`auto_update` is :obj:`True`
-        requests_cache_filename (:obj:`str`, optional): filename of the sqlite database to cache SABIO-RK HTTP requests
-        max_entries (:obj:`int`, optional): maximum number of laws to download
-        arcname (:obj:`str`, optional): filename to download sqlite database from remote server
-
-    Returns:
-        :obj:`sqlalchemy.orm.session.Session`: database session
-    """
-    if not engine:
-        engine = get_engine()
-    filename = str(engine.url).replace('sqlite:///', '')
-
-    if not os.path.isfile(filename):
-        if auto_download:
-            force_download = True
-        elif auto_update:
-            force_update = True
-
-    if force_download and os.getenv('CODE_SERVER_TOKEN'):
-        download(filename=filename, arcname=arcname)
-
-    session = sqlalchemy.orm.sessionmaker(bind=engine)()
-
-    if force_update:
-        Downloader(session=session, requests_cache_filename=requests_cache_filename, max_entries=max_entries).download()
-
-    return session
-
-
-def backup(filename=None, arcname=None):
-    """ Backup the local sqlite database to the Karr Lab server
-
-    Args:
-        filename (:obj:`str`, optional): path to sqlite file
-        arcname (:obj:`str`, optional): filename to save sqlite database on remote server
-    """
-    if not filename:
-        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
-    if not arcname:
-        arcname = NAME + '.sqlite'
-    BackupManager(filename, arcname=arcname) \
-        .create() \
-        .upload() \
-        .cleanup()
-
-
-def download(filename=None, arcname=None):
-    """ Download the local sqlite database from the Karr Lab server
-
-    Args:
-        filename (:obj:`str`, optional): path to sqlite file
-        arcname (:obj:`str`, optional): filename to download sqlite database from remote server
-    """
-    if not filename:
-        filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.sqlite')
-    if not arcname:
-        arcname = NAME + '.sqlite'
-    BackupManager(filename, arcname=arcname) \
-        .download() \
-        .extract() \
-        .cleanup()
+Base = sqlalchemy.ext.declarative.declarative_base()
+# :obj:`Base`: base model for local sqlite database
 
 compound_compartment = sqlalchemy.Table(
-    'compound_compartment', SqlalchemyBase.metadata,
+    'compound_compartment', Base.metadata,
     sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
     sqlalchemy.Column('compartment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compartment._id')),
 )
 # :obj:`sqlalchemy.Table`: Compound:Compartment many-to-many association table
 
 compound_synonym = sqlalchemy.Table(
-    'compound_synonym', SqlalchemyBase.metadata,
+    'compound_synonym', Base.metadata,
     sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
     sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id')),
 )
 # :obj:`sqlalchemy.Table`: Compound:Synonym many-to-many association table
 
 compound_resource = sqlalchemy.Table(
-    'compound_resource', SqlalchemyBase.metadata,
+    'compound_resource', Base.metadata,
     sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
     sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
 )
 # :obj:`sqlalchemy.Table`: Compound:Resource many-to-many association table
 
 concentration_resource = sqlalchemy.Table(
-    'concentration_resource', SqlalchemyBase.metadata,
+    'concentration_resource', Base.metadata,
     sqlalchemy.Column('concentration__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('concentration._id')),
     sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
 )
 # :obj:`sqlalchemy.Table`: Concentration:Resource many-to-many association table
 
 
-class Synonym(SqlalchemyBase):
+class Synonym(Base):
     """ Represents a synonym
 
     Args:
@@ -171,7 +68,7 @@ class Synonym(SqlalchemyBase):
     __tablename__ = 'synonym'
 
 
-class Compartment(SqlalchemyBase):
+class Compartment(Base):
     """ Represents a compartment
 
     Attributes:
@@ -186,7 +83,7 @@ class Compartment(SqlalchemyBase):
     __tablename__ = 'compartment'
 
 
-class Concentration(SqlalchemyBase):
+class Concentration(Base):
     """ Represents an observed concentration
 
     Attributes:
@@ -216,7 +113,7 @@ class Concentration(SqlalchemyBase):
     __tablename__ = 'concentration'
 
 
-class Resource(SqlalchemyBase):
+class Resource(Base):
     """ Represents an external resource
 
     Attributes:
@@ -237,7 +134,7 @@ class Resource(SqlalchemyBase):
     __tablename__ = 'resource'
 
 
-class Compound(SqlalchemyBase):
+class Compound(Base):
     """ Represents an ECMDB entry
 
     Attributes:
@@ -275,87 +172,22 @@ class Compound(SqlalchemyBase):
     __tablename__ = 'compound'
 
 
-class Downloader(object):
-    """ Downloads the content of the ECMDB database into a local sqlite database
+class Ecmdb(data_source.HttpDataSource):
+    """ A local sqlite copy of the ECMDB database
 
-    Attributes
-        session (:obj:`sqlalchemy.orm.session.Session`): database session
-        requests_cache_filename (:obj:`str`): filename of the sqlite database to cache SABIO-RK HTTP requests
-        max_entries (:obj:`int`): maximum number of laws to download
-        verbose (:obj:`bool`): if :obj:`True`, print status information to the standard output
-
+    Attributes:
         DOWNLOAD_INDEX_URL (:obj:`str`): URL to download an index of ECMDB
         DOWNLOAD_COMPOUND_URL (:obj:`str`): URL pattern to download an ECMDB compound entry
     """
 
+    base_model = Base
     DOWNLOAD_INDEX_URL = 'http://ecmdb.ca/download/ecmdb.json.zip'
     DOWNLOAD_COMPOUND_URL = 'http://ecmdb.ca/compounds/{}.xml'
 
-    def __init__(self, session,
-                 requests_cache_filename=None, max_entries=float('inf'), verbose=False):
-        """
-        Args:
-            session (:obj:`sqlalchemy.orm.session.Session`): database session
-            requests_cache_filename (:obj:`str`, optional): filename of the sqlite database to cache SABIO-RK HTTP requests
-            max_entries (:obj:`int`, optional): maximum number of laws to download
-            verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
-        """
-        self.session = session
-
-        if requests_cache_filename is None:
-            requests_cache_filename = os.path.join(DEFAULT_CACHE_DIRNAME, NAME + '.requests.py{}.sqlite'.format(sys.version_info[0]))
-        elif not requests_cache_filename.endswith('.sqlite'):
-            raise ValueError('Request cache filename must have the extension .sqlite')
-        if not os.path.isdir(os.path.dirname(requests_cache_filename)):
-            os.makedirs(os.path.dirname(requests_cache_filename))
-        self.requests_cache_filename = requests_cache_filename
-
-        self.max_entries = max_entries
-        self.verbose = verbose
-
-        # initialize cache, database
-        self.init_requests_cache()
-        self.init_database()
-
-    def init_requests_cache(self):
-        """ Setup the cache for SABIO-RK HTTP requests """
-        pass
-
-    def clear_requests_cache(self):
-        """ Clear the cahce for SABIO-RK HTTP requests """
-        name, _, _ = self.requests_cache_filename.partition('.')
-        session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
-        session.cache.clear()
-
-    def init_database(self):
-        """ Initialize the local sqlite database to store the content of SABIO-RK """
-        engine = self.session.get_bind()
-        if not os.path.isfile(str(engine.url).replace('sqlite:///', '')):
-            SqlalchemyBase.metadata.create_all(engine)
-
-    def clear_database(self):
-        """ Clear the content of the local sqlite database to store the content of SABIO-RK """
-        engine = self.session.get_bind()
-        SqlalchemyBase.metadata.drop_all(engine)
-        SqlalchemyBase.metadata.create_all(engine)
-
-    def download(self, update_database=False, update_requests=False):
-        """ Download the content of SABIO-RK and store it to a local sqlite database.
-        Optionally, clear any existing database and/or HTTP request cache.
-
-        Args:
-            update_database (:obj:`bool`): if :obj:`True`, clear the existing database
-            update_requests (:obj:`bool`): if :obj:`True`, clear HTTP request cache
-        """
-        if update_database:
-            self.clear_database()
-
-        if update_requests:
-            self.clear_requests_cache()
-
+    def load_content(self):
+        """ Download the content of SABIO-RK and store it to a local sqlite database. """
         db_session = self.session
-        name, _, _ = self.requests_cache_filename.partition('.')
-        req_session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
+        req_session = self.requests_session
 
         # download content from server
         if self.verbose:
@@ -371,7 +203,7 @@ class Downloader(object):
         if self.verbose:
             print('Parsing compound IDs ...')
 
-        with zipfile.ZipFile(BytesIO(response.content), 'r') as zip_file:
+        with zipfile.ZipFile(io.BytesIO(response.content), 'r') as zip_file:
             with zip_file.open('ecmdb.json', 'r') as json_file:
                 entries = json.load(json_file)
 
@@ -393,7 +225,6 @@ class Downloader(object):
         for i_entry, entry in enumerate(entries):
             if self.verbose and (i_entry % 100 == 0):
                 print('  Downloading compound {} of {}'.format(i_entry + 1, len(entries)))
-            print(entry['m2m_id'])  # todo: remove
 
             # get details
             response = req_session.get(self.DOWNLOAD_COMPOUND_URL.format(entry['m2m_id']))
@@ -565,26 +396,6 @@ class Downloader(object):
 
         if self.verbose:
             print('  done')
-
-    def get_or_create_object(self, cls, **kwargs):
-        """ Get the SQLAlchemy object of type :obj:`cls` with attribute/value pairs specified by `**kwargs`. If
-        an object with these attribute/value pairs does not exist, create an object with these attribute/value pairs
-        and add it to the SQLAlchemy session.
-
-        Args:
-            cls (:obj:`class`): child class of :obj:`SqlalchemyBase`
-            **kwargs (:obj:`dict`, optional): attribute-value pairs of desired SQLAlchemy object of type :obj:`cls`
-
-        Returns:
-            :obj:`SqlalchemyBase`: SQLAlchemy object of type :obj:`cls`
-        """
-        q = self.session.query(cls).filter_by(**kwargs)
-        if q.count():
-            return q.first()
-        else:
-            obj = cls(**kwargs)
-            self.session.add(obj)
-            return obj
 
     def get_node_children(self, node, children_name):
         """ Get the children of an XML node

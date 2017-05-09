@@ -10,11 +10,12 @@
 
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme, Reaction,
-                                                    ReactionParticipant, KineticLaw, Parameter, Resource, Downloader)
+                                                    ReactionParticipant, KineticLaw, Parameter, Resource)
 from kinetic_datanator.util import warning_util
 import datetime
 import math
 import os
+import shutil
 import six
 import sqlalchemy
 import tempfile
@@ -33,34 +34,22 @@ warning_util.disable_warnings()
 class TestDownloader(unittest.TestCase):
 
     def setUp(self):
-        _, self.engine_filename = tempfile.mkstemp()
-        os.remove(self.engine_filename)
-
-        _, name = tempfile.mkstemp()
-        os.remove(name)
-        self.requests_cache_filename = name + '.sqlite'
+        self.cache_dirname = tempfile.mkdtemp()
 
     def tearDown(self):
-        if os.path.isfile(self.engine_filename):
-            os.remove(self.engine_filename)
+        shutil.rmtree(self.cache_dirname)
 
-        if os.path.isfile(self.requests_cache_filename):
-            os.remove(self.requests_cache_filename)
-
-    def test_download_kinetic_law_ids(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename, max_entries=10,
-                                         index_batch_size=5, webservice_batch_size=5, excel_batch_size=5, compound_batch_size=5)
-
-        ids = downloader.download_kinetic_law_ids()
+    def test_load_kinetic_law_ids(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, max_entries=10,
+                               index_batch_size=5, webservice_batch_size=5, excel_batch_size=5)
+        ids = src.load_kinetic_law_ids()
         self.assertEqual(ids, [1, 10, 100, 1000, 10000, 10001, 10002, 10003, 10004, 10005])
 
-    def test_download_kinetic_laws_and_compounds(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename)
-        downloader.download_kinetic_laws([1])
+    def test_load_kinetic_laws_and_compounds(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        src.load_kinetic_laws([1])
+
+        session = src.session
 
         """ compartments """
         q = session.query(Compartment).filter_by(name='Cell')
@@ -172,7 +161,7 @@ class TestDownloader(unittest.TestCase):
         ])
 
         # download compounds
-        downloader.download_compounds()
+        src.load_compounds()
         c = session.query(Compound).filter_by(id=40).first()
         self.assertEqual(c.name, 'H2O')
         self.assertEqual(c._is_name_ambiguous, False)
@@ -190,11 +179,11 @@ class TestDownloader(unittest.TestCase):
         self.assertIsInstance(c.modified, datetime.datetime)
         self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 120)
 
-    def test_download_kinetic_laws_multiple(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename)
-        downloader.download_kinetic_laws([2, 10026])
+    def test_load_kinetic_laws_multiple(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        src.load_kinetic_laws([2, 10026])
+
+        session = src.session
 
         """ compartments """
         self.assertEqual(session.query(Compartment).filter_by(name='Cell').count(), 0)
@@ -231,19 +220,19 @@ class TestDownloader(unittest.TestCase):
             if param.compound:
                 self.assertEqual(param.compartment, cytosol)
 
-    def test_download_kinetic_laws_modifier_type(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename)
-        downloader.download_kinetic_laws([10054])
+    def test_load_kinetic_laws_modifier_type(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        src.load_kinetic_laws([10054])
+
+        session = src.session
 
         l = session.query(KineticLaw).filter_by(id=10054).first()
         self.assertEqual(l.enzyme_type, 'Modifier-Catalyst')
 
     def test_infer_compound_structures_from_names(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename)
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+
+        session = src.session
 
         compound_unknown = sabio_rk.Compound(name='Unknown')
         compound_no_pubchem = sabio_rk.Compound(name='a random string: adfkja;uvhayocbvadf')
@@ -255,7 +244,7 @@ class TestDownloader(unittest.TestCase):
         session.add(compound_multiple_pubchem)
 
         compounds = [compound_unknown, compound_no_pubchem, compound_one_pubchem, compound_multiple_pubchem]
-        downloader.infer_compound_structures_from_names(compounds)
+        src.infer_compound_structures_from_names(compounds)
 
         self.assertEqual(compound_unknown.cross_references, [])
         self.assertEqual(compound_unknown.structures, [])
@@ -282,10 +271,6 @@ class TestDownloader(unittest.TestCase):
         ]))
 
     def test_calc_inchi_formula_connectivity(self):
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename)
-
         s = sabio_rk.CompoundStructure(format='smiles', value='[H]O[H]')
         s.calc_inchi_formula_connectivity()
         self.assertEqual(s._value_inchi, 'InChI=1S/H2O/h1H2')
@@ -302,99 +287,35 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(s._value_inchi, 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
         self.assertEqual(s._value_inchi_formula_connectivity, 'C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')
 
-    def test_download(self):
+    def test_load_content(self):
         # get some kinetic laws
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename,
-                                         max_entries=9,
-                                         index_batch_size=3, webservice_batch_size=3,
-                                         excel_batch_size=3, compound_batch_size=3,
-                                         verbose=True)
-        downloader.download()
-        session.close()
-        engine.dispose()
-
-        self.assertTrue(os.path.isfile(self.engine_filename))
-        engine2 = sabio_rk.get_engine(filename=self.engine_filename)
-        session2 = sabio_rk.get_session(engine=engine2, auto_download=False)
-        self.assertEqual(session2.query(KineticLaw).count(), downloader.max_entries)
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False,  load_content=True,
+                               max_entries=9, index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
+        self.assertTrue(os.path.isfile(src.filename))
+        self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
         # get some more
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename,
-                                         max_entries=18,
-                                         index_batch_size=3, webservice_batch_size=3,
-                                         excel_batch_size=3, compound_batch_size=3,
-                                         verbose=True)
-        downloader.download()
-        session.close()
-        engine.dispose()
-
-        self.assertTrue(os.path.isfile(self.engine_filename))
-        engine2 = sabio_rk.get_engine(filename=self.engine_filename)
-        session2 = sabio_rk.get_session(engine=engine2, auto_download=False)
-        self.assertEqual(session2.query(KineticLaw).count(), downloader.max_entries)
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=True,
+                               max_entries=18, index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
+        self.assertTrue(os.path.isfile(src.filename))
+        self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
 
 class TestBackupAndInstall(unittest.TestCase):
 
     def setUp(self):
-        _, self.engine_filename = tempfile.mkstemp()
-        os.remove(self.engine_filename)
-
-        _, self.engine_filename_2 = tempfile.mkstemp()
-        os.remove(self.engine_filename_2)
-
-        _, self.engine_filename_3 = tempfile.mkstemp()
-        os.remove(self.engine_filename_3)
-
-        _, self.engine_filename_4 = tempfile.mkstemp()
-        os.remove(self.engine_filename_4)
-
-        _, name = tempfile.mkstemp()
-        os.remove(name)
-        self.requests_cache_filename = name + '.sqlite'
-
-        _, name = tempfile.mkstemp()
-        os.remove(name)
-        self.requests_cache_filename_2 = name + '.sqlite'
-
-        _, name = tempfile.mkstemp()
-        os.remove(name)
-        self.requests_cache_filename_3 = name + '.sqlite'
-
-        # download some kinetic laws
-        engine = sabio_rk.get_engine(filename=self.engine_filename)
-        session = sabio_rk.get_session(engine=engine, auto_download=False)
-        downloader = sabio_rk.Downloader(session, requests_cache_filename=self.requests_cache_filename,
-                                         max_entries=2,
-                                         index_batch_size=10, webservice_batch_size=10,
-                                         excel_batch_size=10, compound_batch_size=10,
-                                         verbose=True)
-        downloader.download()
-        session.close()
-        engine.dispose()
+        self.cache_dirname_1 = tempfile.mkdtemp()
+        self.cache_dirname_2 = tempfile.mkdtemp()
+        self.cache_dirname_3 = tempfile.mkdtemp()
+        self.cache_dirname_4 = tempfile.mkdtemp()
+        self.cache_dirname_5 = tempfile.mkdtemp()
 
     def tearDown(self):
-        if os.path.isfile(self.engine_filename):
-            os.remove(self.engine_filename)
-
-        if os.path.isfile(self.engine_filename_2):
-            os.remove(self.engine_filename_2)
-
-        if os.path.isfile(self.engine_filename_3):
-            os.remove(self.engine_filename_3)
-
-        if os.path.isfile(self.requests_cache_filename):
-            os.remove(self.requests_cache_filename)
-
-        if os.path.isfile(self.requests_cache_filename_2):
-            os.remove(self.requests_cache_filename_2)
-
-        if os.path.isfile(self.requests_cache_filename_3):
-            os.remove(self.requests_cache_filename_3)
+        shutil.rmtree(self.cache_dirname_1)
+        shutil.rmtree(self.cache_dirname_2)
+        shutil.rmtree(self.cache_dirname_3)
+        shutil.rmtree(self.cache_dirname_4)
+        shutil.rmtree(self.cache_dirname_5)
 
     def test(self):
         env = EnvironmentVarGuard()
@@ -404,44 +325,51 @@ class TestBackupAndInstall(unittest.TestCase):
                 env.set('CODE_SERVER_TOKEN', file.read().rstrip())
 
         # backup and download
-        sabio_rk.backup(filename=self.engine_filename, arcname='test.sabio_rk.sqlite')
-        sabio_rk.download(filename=self.engine_filename_2, arcname='test.sabio_rk.sqlite')
-        self.assertTrue(os.path.isfile(self.engine_filename_2))
+        src = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_1, download_backup=False, load_content=True,
+                               max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+        src.upload_backup()
 
-        engine = sabio_rk.get_engine(filename=self.engine_filename_2)
-        session = sabio_rk.get_session(engine=engine)
-        self.assertEqual(session.query(KineticLaw).count(), 2)
+        # download
+        src2 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_2, download_backup=True, load_content=False,
+                                max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+        self.assertTrue(os.path.isfile(src2.filename))
+        self.assertEqual(src2.session.query(KineticLaw).count(), 2)
 
         # setup with download and update
-        engine = sabio_rk.get_engine(filename=self.engine_filename_3)
-        session = sabio_rk.get_session(engine=engine, auto_download=True, force_update=True, arcname='test.sabio_rk.sqlite',
-                                       requests_cache_filename=self.requests_cache_filename_2, max_entries=4)
-        self.assertEqual(session.query(KineticLaw).count(), 4)
+        src3 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_3, download_backup=True, load_content=True,
+                                max_entries=4, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+        self.assertEqual(src3.session.query(KineticLaw).count(), 4)
 
         # setup with update
-        engine = sabio_rk.get_engine(filename=self.engine_filename_4)
-        session = sabio_rk.get_session(engine=engine, auto_download=False, auto_update=True,
-                                       requests_cache_filename=self.requests_cache_filename_3,
-                                       max_entries=4)
-        self.assertEqual(session.query(KineticLaw).count(), 4)
+        src4 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_4, download_backup=False, load_content=True,
+                                max_entries=4, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+        self.assertEqual(src4.session.query(KineticLaw).count(), 4)
+
+        # no download or update
+        src5 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_5, download_backup=False, load_content=False,
+                                max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+        self.assertEqual(src5.session.query(KineticLaw).count(), 0)
 
 
 class TestAll(unittest.TestCase):
 
+    def setUp(self):
+        self.dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dirname)
+
     @unittest.skip('Skip this test because it is long')
     def test_update_all_and_backup(self):
-        session = sabio_rk.get_session(auto_download=False)
-        downloader = sabio_rk.Downloader(session, verbose=True)
-
-        downloader.download(update_database=True, update_requests=True)
-        self.assertGreaterEqual(session.query(KineticLaw).count(), 55000)
+        src = sabio_rk.SabioRk(cache_dirname=self.dirname, download_backup=False, load_content=True, clear_content=True,
+                               verbose=True, clear_requests_cache=True, max_entries=10)
+        self.assertGreaterEqual(src.session.query(KineticLaw).count(), 10)
 
         env = EnvironmentVarGuard()
         if not os.getenv('CODE_SERVER_TOKEN'):
             with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
                 env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-
-        sabio_rk.backup()
+        src.backup()
 
     def test_download_full_database(self):
         env = EnvironmentVarGuard()
@@ -449,13 +377,6 @@ class TestAll(unittest.TestCase):
             with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
                 env.set('CODE_SERVER_TOKEN', file.read().rstrip())
 
-        _, filename = tempfile.mkstemp()
-        os.remove(filename)
-
-        engine = sabio_rk.get_engine(filename=filename)
-        session = sabio_rk.get_session(engine=engine)
-        self.assertGreaterEqual(session.query(KineticLaw).count(), 55000)
-
-        session.close()
-        engine.dispose()
-        os.remove(filename)
+        src = sabio_rk.SabioRk(cache_dirname=self.dirname, download_backup=True, load_content=False,
+                               verbose=True)
+        self.assertGreaterEqual(src.session.query(KineticLaw).count(), 55000)
