@@ -51,7 +51,7 @@ class CachedDataSource(DataSource):
         base_model (:obj:`Base`): base ORM model for the sqlite databse
     """
 
-    def __init__(self, name=None, cache_dirname=CACHE_DIRNAME, clear_content=False, load_content=False, max_entries=float('inf'),
+    def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  download_backup=True, verbose=False):
         """
         Args:
@@ -68,6 +68,8 @@ class CachedDataSource(DataSource):
 
         """ Set settings """
         # name
+        if not cache_dirname:
+            cache_dirname = CACHE_DIRNAME
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
 
@@ -179,7 +181,7 @@ class HttpDataSource(CachedDataSource):
         requests_session (:obj:`requests_cache.core.CachedSession`): cache-enabled HTTP request session
     """
 
-    def __init__(self, name=None, cache_dirname=CACHE_DIRNAME, clear_content=False, load_content=False, max_entries=float('inf'),
+    def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  download_backup=True, verbose=False,
                  clear_requests_cache=False):
         """
@@ -197,6 +199,8 @@ class HttpDataSource(CachedDataSource):
         """ CachedDataSource settings """
         if not name:
             name = self.__class__.__name__
+        if not cache_dirname:
+            cache_dirname = CACHE_DIRNAME
 
         """ Request settings """
         self.requests_cache_filename = os.path.join(cache_dirname, name + '.requests.py{}.sqlite'.format(sys.version_info[0]))
