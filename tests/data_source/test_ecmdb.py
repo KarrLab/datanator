@@ -115,6 +115,11 @@ class TestEcmdb(unittest.TestCase):
         # compound with comment
         # compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000734').first()
 
+    def test_commit_intermediate_results(self):
+        src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=5,
+                          commit_intermediate_results=True)
+        src.load_content()
+
     @unittest.skip('Skip because this is a long test')
     def test_download_all(self):
         src = ecmdb.Ecmdb(download_backup=False, load_content=True, clear_content=True, clear_requests_cache=True)

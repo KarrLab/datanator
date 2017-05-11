@@ -46,13 +46,15 @@ class CachedDataSource(DataSource):
         engine (:obj:`sqlalchemy.engine.Engine`): sqlalchemy engine
         session (:obj:`sqlalchemy.orm.session.Session`): sqlalchemy session
         max_entries (:obj:`float`): maximum number of entries to save locally
+        commit_intermediate_results (:obj:`bool`): if :obj:`True`, commit the changes throughout the loading
+            process. This is particularly helpful for restarting this method when webservices go offline.
         verbose (:obj:`bool`): if :obj:`True`, print status information to the standard output
 
         base_model (:obj:`Base`): base ORM model for the sqlite databse
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 download_backup=True, verbose=False):
+                 commit_intermediate_results=False, download_backup=True, verbose=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -60,7 +62,9 @@ class CachedDataSource(DataSource):
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
-            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
+            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server            
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
         """
 
@@ -75,6 +79,9 @@ class CachedDataSource(DataSource):
 
         # loading
         self.max_entries = max_entries
+
+        # committing
+        self.commit_intermediate_results = commit_intermediate_results
 
         # backup settings
         self.backup_server_token = os.getenv('CODE_SERVER_TOKEN')
@@ -182,7 +189,7 @@ class HttpDataSource(CachedDataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 download_backup=True, verbose=False,
+                 commit_intermediate_results=False, download_backup=True, verbose=False,
                  clear_requests_cache=False):
         """
         Args:
@@ -191,6 +198,8 @@ class HttpDataSource(CachedDataSource):
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
             download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
@@ -214,6 +223,7 @@ class HttpDataSource(CachedDataSource):
         """ Call superclass constructor which will optionally load content """
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
+                                             commit_intermediate_results=commit_intermediate_results,
                                              download_backup=download_backup, verbose=verbose)
 
     def get_requests_session(self):

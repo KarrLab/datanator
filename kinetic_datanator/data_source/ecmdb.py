@@ -299,17 +299,17 @@ class Ecmdb(data_source.HttpDataSource):
                 systems = self.get_node_children(parent_node, 'growth_system')
                 references = self.get_node_children(parent_node, 'reference')
 
-                for i in range(len(values)):
-                    value = float(self.get_node_text(values[i]))
-                    error = float(self.get_node_text(errors[i]) or 'nan')
-                    unit = self.get_node_text(units[i])
+                for i_conc in range(len(values)):
+                    value = float(self.get_node_text(values[i_conc]))
+                    error = float(self.get_node_text(errors[i_conc]) or 'nan')
+                    unit = self.get_node_text(units[i_conc])
                     if unit == 'uM':
                         pass
                     else:
                         raise ValueError('Unsupport units: {}'.format(unit))
 
-                    if temperatures[i]:
-                        temperature, unit = self.get_node_text(temperatures[i]).split(' ')
+                    if temperatures[i_conc]:
+                        temperature, unit = self.get_node_text(temperatures[i_conc]).split(' ')
                         temperature = float(temperature)
                         if unit != 'oC':
                             raise ValueError('Unsupport units: {}'.format(unit))
@@ -319,16 +319,16 @@ class Ecmdb(data_source.HttpDataSource):
                     concentration = Concentration(
                         value=value,
                         error=error,
-                        strain=self.get_node_text(strains[i]) or None,
-                        growth_status=self.get_node_text(statuses[i]) or None,
-                        media=self.get_node_text(medias[i]) or None,
+                        strain=self.get_node_text(strains[i_conc]) or None,
+                        growth_status=self.get_node_text(statuses[i_conc]) or None,
+                        media=self.get_node_text(medias[i_conc]) or None,
                         temperature=temperature,
-                        growth_system=self.get_node_text(systems[i]) or None,
+                        growth_system=self.get_node_text(systems[i_conc]) or None,
                     )
                     db_session.add(concentration)
 
-                    if 'pubmed_id' in references[i]:
-                        pmid_nodes = self.get_node_children(references[i], 'pubmed_id')
+                    if 'pubmed_id' in references[i_conc]:
+                        pmid_nodes = self.get_node_children(references[i_conc], 'pubmed_id')
                         for node in pmid_nodes:
                             id = self.get_node_text(node)
                             concentration.references.append(self.get_or_create_object(Resource, namespace='pubmed', id=id))
@@ -384,6 +384,9 @@ class Ecmdb(data_source.HttpDataSource):
 
             # add to session
             db_session.add(compound)
+
+            if self.commit_intermediate_results and (i_entry % 100 == 99):
+                db_session.commit()
 
         if self.verbose:
             print('  done')

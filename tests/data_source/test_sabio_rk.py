@@ -229,6 +229,27 @@ class TestDownloader(unittest.TestCase):
         l = session.query(KineticLaw).filter_by(id=10054).first()
         self.assertEqual(l.enzyme_type, 'Modifier-Catalyst')
 
+    def test_load_kinetic_laws_with_same_reaction(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        src.load_kinetic_laws([16011, 16013, 16016])
+
+        session = src.session
+
+        l = session.query(KineticLaw).filter_by(id=16011).first()
+        self.assertEqual(l.reaction.id, 9886)
+
+        l = session.query(KineticLaw).filter_by(id=16013).first()
+        self.assertEqual(l.reaction.id, 9886)
+
+        l = session.query(KineticLaw).filter_by(id=16016).first()
+        self.assertEqual(l.reaction.id, 9930)
+
+        r = session.query(Reaction).filter_by(id=9886).first()
+        self.assertEqual(set([l.id for l in r.kinetic_laws]), set([16011, 16013]))
+
+        r = session.query(Reaction).filter_by(id=9930).first()
+        self.assertEqual([l.id for l in r.kinetic_laws], [16016])
+
     def test_infer_compound_structures_from_names(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
 
@@ -298,6 +319,12 @@ class TestDownloader(unittest.TestCase):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=True,
                                max_entries=18, index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
         self.assertTrue(os.path.isfile(src.filename))
+        self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
+
+    def test_load_content_commit_intermediate_results(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False,  load_content=True,
+                               max_entries=9, commit_intermediate_results=True,
+                               index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
         self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
 

@@ -245,7 +245,7 @@ class Reaction(Entry):
     products = sqlalchemy.orm.relationship('ReactionParticipant', back_populates='product_reaction',
                                            foreign_keys=[ReactionParticipant.product_reaction_id])
     kinetic_laws = sqlalchemy.orm.relationship('KineticLaw', back_populates='reaction',
-                                              foreign_keys=[KineticLaw.reaction_id])
+                                               foreign_keys=[KineticLaw.reaction_id])
 
     __tablename__ = 'reaction'
     __mapper_args__ = {'polymorphic_identity': 'reaction'}
@@ -394,7 +394,7 @@ class SabioRk(data_source.HttpDataSource):
     SKIP_KINETIC_LAW_IDS = (51286,)
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 download_backup=True, verbose=False,
+                 commit_intermediate_results=False, download_backup=True, verbose=False,
                  clear_requests_cache=False,
                  index_batch_size=1000, webservice_batch_size=250, excel_batch_size=100):
         """
@@ -404,6 +404,8 @@ class SabioRk(data_source.HttpDataSource):
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
             download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
@@ -418,12 +420,15 @@ class SabioRk(data_source.HttpDataSource):
 
         super(SabioRk, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                       load_content=load_content, max_entries=max_entries,
+                                      commit_intermediate_results=commit_intermediate_results,
                                       download_backup=download_backup, verbose=verbose,
                                       clear_requests_cache=clear_requests_cache)
 
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """
 
+        ##################################
+        ##################################
         # determine ids of kinetic laws
         if self.verbose:
             print('Downloading the IDs of the kinetic laws ...')
@@ -436,6 +441,8 @@ class SabioRk(data_source.HttpDataSource):
         # remove bad IDs
         ids = filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids)
 
+        ##################################
+        ##################################
         # download kinetic laws
         new_ids = list(set(ids).difference(set(l.id for l in self.session.query(KineticLaw).all())))
         new_ids.sort()
@@ -448,6 +455,8 @@ class SabioRk(data_source.HttpDataSource):
         if self.verbose:
             print('  done')
 
+        ##################################
+        ##################################
         # download compounds
         compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
 
@@ -459,6 +468,8 @@ class SabioRk(data_source.HttpDataSource):
         if self.verbose:
             print('  done')
 
+        ##################################
+        ##################################
         # infer structures for compounds with no provided structure
         compounds = self.session.query(Compound).filter(~Compound.structures.any()).all()
 
@@ -470,6 +481,8 @@ class SabioRk(data_source.HttpDataSource):
         if self.verbose:
             print('  done')
 
+        ##################################
+        ##################################
         # normalize compound structures to facilitate seaching. retain only
         # - InChI formula layer (without hydrogen)
         # - InChI connectivity layer
@@ -603,6 +616,9 @@ class SabioRk(data_source.HttpDataSource):
 
             self.create_kinetic_laws_from_sbml(response.content if six.PY2 else response.text)
 
+            if self.commit_intermediate_results:
+                self.session.commit()
+
         # download information from custom Excel export
         batch_size = self.excel_batch_size
         for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
@@ -631,6 +647,9 @@ class SabioRk(data_source.HttpDataSource):
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
 
             self.update_kinetic_laws_from_tsv(response.text)
+
+            if self.commit_intermediate_results:
+                self.session.commit()
 
     def create_kinetic_laws_from_sbml(self, sbml):
         """ Add kinetic laws defined in an SBML file to the local sqlite database
@@ -1268,6 +1287,9 @@ class SabioRk(data_source.HttpDataSource):
             # udated
             c.modified = datetime.datetime.utcnow()
 
+            if self.commit_intermediate_results and (i_compound % 100 == 99):
+                self.session.commit()
+
     def infer_compound_structures_from_names(self, compounds):
         """ Try to use PubChem to infer the structure of compounds from their names
 
@@ -1304,3 +1326,6 @@ class SabioRk(data_source.HttpDataSource):
                 else:
                     structure = CompoundStructure(value=p_compound.inchi, format='inchi')
                 compound.structures.append(structure)
+
+            if self.commit_intermediate_results and (i_compound % 100 == 99):
+                self.session.commit()
