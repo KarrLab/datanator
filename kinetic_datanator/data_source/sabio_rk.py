@@ -903,7 +903,7 @@ class SabioRk(data_source.HttpDataSource):
             :obj:`KineticLaw`: kinetic law
 
         Raises:
-            :obj:`ValueError`: if the temperature is expressed in an unsupported unit
+            :obj:`ValueError`: if the temperature is expressed in an unsupported unit or there is no reaction with `id` = `reaction_id`
         """
         law = sbml.getKineticLaw()
         x_refs = self.create_cross_references_from_sbml(law)
@@ -924,7 +924,10 @@ class SabioRk(data_source.HttpDataSource):
 
         # reaction id
         reaction_id = next(int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'sabiork.reaction')
-        kinetic_law.reaction = self.session.query(Reaction).filter_by(id=reaction_id).first()
+        q = self.session.query(Reaction).filter_by(id=reaction_id)
+        if q.count() != 1:
+            raise ValueError('Unable to find reaction with id {}'.format(reaction_id))
+        kinetic_law.reaction = q.first()
 
         # rate_law
         kinetic_law.equation = functions[law.getMetaId()[5:]]
@@ -1094,7 +1097,9 @@ class SabioRk(data_source.HttpDataSource):
                 * :obj:`Compartment`: compartment
 
         Raises:
-            :obj:`ValueError`: if the species is not a compound or enzyme
+            :obj:`ValueError`: if the species is not a compound or enzyme, no species
+                with `id` = `specie_id` exists, or no compartment with `name` = `compartment_name`
+                exists
         """
         tmp = specie_id.split('_')
         type = tmp[0]
@@ -1102,14 +1107,21 @@ class SabioRk(data_source.HttpDataSource):
         compartment_name = '_'.join(tmp[2:])
 
         if type == 'SPC':
-            specie = self.session.query(Compound).filter_by(id=specie_id).first()
+            q = self.session.query(Compound).filter_by(id=specie_id)
         elif type == 'ENZ':
-            specie = self.session.query(Enzyme).filter_by(id=specie_id).first()
+            q = self.session.query(Enzyme).filter_by(id=specie_id)
         else:
             raise ValueError('Unsupported species type {}'.format(type))
 
+        if q.count() != 1:
+            raise ValueError('Could not find species with id {}'.format(specie_id))
+        specie = q.first()
+
         if compartment_name != 'Cell':
-            compartment = self.session.query(Compartment).filter_by(name=compartment_name).first()
+            q = self.session.query(Compartment).filter_by(name=compartment_name)
+            if q.count() != 1:
+                raise ValueError('Could not find compartment with name "{}"'.format(compartment_name))
+            compartment = q.first()
         else:
             compartment = None
 
