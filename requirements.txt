@@ -1,10 +1,10 @@
 bs4
 cement
-dateutil
+python-dateutil
 enum34
 ete3
 jxmlease
-libsbml
+python-libsbml
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
