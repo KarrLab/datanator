@@ -110,7 +110,7 @@ class TestDownloader(unittest.TestCase):
         self.assertTrue(rxn.products[0].coefficient is None or math.isnan(rxn.products[0].coefficient))
         self.assertTrue(rxn.products[1].coefficient is None or math.isnan(rxn.products[1].coefficient))
 
-        self.assertEqual([(r.compound, r.coefficient) for r in rxn.kinetic_law.modifiers], [
+        self.assertEqual([(r.compound, r.coefficient) for r in rxn.kinetic_laws[0].modifiers], [
             (cpd_20035, None),
         ])
         self.assertEqual([dict(namespace=xr.namespace, id=xr.id) for xr in rxn.cross_references], [

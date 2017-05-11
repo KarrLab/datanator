@@ -205,7 +205,7 @@ class KineticLaw(Entry):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
     reaction_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('reaction._id'))
-    reaction = sqlalchemy.orm.relationship('Reaction', uselist=False, back_populates='kinetic_law', foreign_keys=[reaction_id])
+    reaction = sqlalchemy.orm.relationship('Reaction', uselist=False, back_populates='kinetic_laws', foreign_keys=[reaction_id])
     enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'))
     enzyme = sqlalchemy.orm.relationship('Enzyme', uselist=False, back_populates='kinetic_laws', foreign_keys=[enzyme_id])
     enzyme_compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'))
@@ -236,7 +236,7 @@ class Reaction(Entry):
     Attributes:
         reactants (:obj:`list` of :obj:`ReactionParticipant`): list of reactants
         products (:obj:`list` of :obj:`ReactionParticipant`): list of products
-        kinetic_law (:obj:`KineticLaw`): kinetic law
+        kinetic_laws (:obj:`list` of :obj:`KineticLaw`): kinetic law
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
@@ -244,7 +244,7 @@ class Reaction(Entry):
                                             foreign_keys=[ReactionParticipant.reactant_reaction_id])
     products = sqlalchemy.orm.relationship('ReactionParticipant', back_populates='product_reaction',
                                            foreign_keys=[ReactionParticipant.product_reaction_id])
-    kinetic_law = sqlalchemy.orm.relationship('KineticLaw', uselist=False, back_populates='reaction',
+    kinetic_laws = sqlalchemy.orm.relationship('KineticLaw', back_populates='reaction',
                                               foreign_keys=[KineticLaw.reaction_id])
 
     __tablename__ = 'reaction'
