@@ -161,6 +161,24 @@ class Reaction(object):
         """
         return list(filter(lambda xr: xr.namespace == 'ec-code', self.cross_references))
 
+    def get_manual_ec_numbers(self):
+        """ Get the manually assigned EC numbers from the list of cross references
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of EC manually assigned numbers
+        """
+        return list(filter(lambda xr: xr.namespace == 'ec-code' and xr.assignment_method ==
+                           data_structs.CrossReferenceAssignmentMethod.manual, self.cross_references))
+
+    def get_predicted_ec_numbers(self):
+        """ Get the predicted EC numbers from the list of cross references
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of predicted EC numbers
+        """
+        return list(filter(lambda xr: xr.namespace == 'ec-code' and xr.assignment_method ==
+                           data_structs.CrossReferenceAssignmentMethod.predicted, self.cross_references))
+
     def get_ec_number(self):
         """ Get the most relevant EC number from the list of cross references
 

@@ -158,6 +158,8 @@ class TestReaction(unittest.TestCase):
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.2')
         self.assertEqual(rxn.get_ec_numbers(), rxn.cross_references[1:])
+        self.assertEqual(rxn.get_manual_ec_numbers(), [])
+        self.assertEqual(rxn.get_predicted_ec_numbers(), rxn.cross_references[1:])
 
         rxn = reaction_util.Reaction(cross_references=[
             data_structs.CrossReference(namespace='ec-code', id='1.1.1.1', relevance=20.,
@@ -171,6 +173,8 @@ class TestReaction(unittest.TestCase):
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.1')
         self.assertEqual(rxn.get_ec_numbers(), rxn.cross_references[0:-1])
+        self.assertEqual(rxn.get_manual_ec_numbers(), rxn.cross_references[0:1])
+        self.assertEqual(rxn.get_predicted_ec_numbers(), rxn.cross_references[1:3])
 
         rxn = reaction_util.Reaction(cross_references=[
             data_structs.CrossReference(namespace='ec-code', id='1.1.1.1', relevance=20.,
