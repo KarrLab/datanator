@@ -385,6 +385,8 @@ class SabioRk(data_source.HttpDataSource):
         ENDPOINT_COMPOUNDS_PAGE (:obj:`str`): URL to download information about a SABIO-RK compound        
         SKIP_KINETIC_LAW_IDS (:obj:`tuple` of :obj:`int`): IDs of kinetic laws that should be skipped (because they cannot contained
             errors and can't be downloaded from SABIO)
+        PUBCHEM_MAX_TRIES (:obj:`int`): maximum number of times to time querying PubChem before failing
+        PUBCHEM_TRY_DELAY (:obj:`float`): delay in seconds between PubChem queries (to delay overloading the server)
     """
 
     base_model = Base
@@ -393,6 +395,8 @@ class SabioRk(data_source.HttpDataSource):
     ENDPOINT_EXCEL_EXPORT = 'http://sabio.villa-bosch.de/entry/exportToExcelCustomizable'
     ENDPOINT_COMPOUNDS_PAGE = 'http://sabio.villa-bosch.de/compdetails.jsp'
     SKIP_KINETIC_LAW_IDS = (51286,)
+    PUBCHEM_MAX_TRIES = 10
+    PUBCHEM_TRY_DELAY = 0.25
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
@@ -1310,7 +1314,17 @@ class SabioRk(data_source.HttpDataSource):
             if compound.name == 'Unknown':
                 continue
 
-            p_compounds = pubchempy.get_compounds(compound.name, 'name')
+            for i_try in range(self.PUBCHEM_MAX_TRIES):
+                try:
+                    p_compounds = pubchempy.get_compounds(compound.name, 'name')
+                    break
+                except pubchempy.PubChemHTTPError:
+                    if i_try < self.PUBCHEM_MAX_TRIES - 1:
+                        # sleep to avoid getting overloading PubChem server and then try again
+                        time.sleep(self.PUBCHEM_TRY_DELAY)
+                    else:
+                        raise
+
             for p_compound in p_compounds:
                 q = resource_query.filter_by(namespace='pubchem.compound', id=str(p_compound.cid))
                 if q.count():
@@ -1330,5 +1344,3 @@ class SabioRk(data_source.HttpDataSource):
 
             if self.commit_intermediate_results and (i_compound % 100 == 99):
                 self.session.commit()
-
-            time.sleep(0.25) # sleep to avoid getting overloading PubChem server
