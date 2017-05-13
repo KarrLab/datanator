@@ -58,6 +58,8 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={
         'kinetic_datanator': [
+            'config/schema.cfg',
+            'config/default.cfg',
             'data/*.txt',
             'data/*.xlsx',
         ],

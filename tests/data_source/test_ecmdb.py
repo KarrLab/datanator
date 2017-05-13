@@ -11,15 +11,8 @@ import datetime
 import dateutil
 import os
 import shutil
-import six
 import tempfile
 import unittest
-
-if six.PY3:
-    from test.support import EnvironmentVarGuard
-else:
-    from test.test_support import EnvironmentVarGuard
-
 
 class TestEcmdb(unittest.TestCase):
 
@@ -127,12 +120,7 @@ class TestEcmdb(unittest.TestCase):
         session = src.session
         self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
 
-    def test_download_from_cache(self):
-        env = EnvironmentVarGuard()
-        if not os.getenv('CODE_SERVER_TOKEN'):
-            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
-                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-
+    def test_download_from_backup(self):
         src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname)
         session = src.session
 

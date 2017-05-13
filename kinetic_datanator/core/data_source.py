@@ -7,6 +7,7 @@
 
 from wc_utils import backup
 import abc
+import kinetic_datanator.config.paths
 import os
 import requests
 import requests_cache
@@ -14,6 +15,10 @@ import six
 import sqlalchemy
 import sqlalchemy.orm
 import sys
+import wc_utils.config.core
+
+config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
+# :obj:`wc_utils.config.core.ConfigManager`: configuration manager
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 # :obj:`str`: default path for the sqlite database
@@ -84,7 +89,8 @@ class CachedDataSource(DataSource):
         self.commit_intermediate_results = commit_intermediate_results
 
         # backup settings
-        self.backup_server_token = os.getenv('CODE_SERVER_TOKEN')
+        self.backup_server_token = config_manager.get_config()['wc_utils']['backup']['token']
+
 
         # verbosity
         self.verbose = verbose

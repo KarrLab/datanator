@@ -16,17 +16,9 @@ import datetime
 import math
 import os
 import shutil
-import six
 import sqlalchemy
 import tempfile
 import unittest
-
-
-if six.PY3:
-    from test.support import EnvironmentVarGuard
-else:
-    from test.test_support import EnvironmentVarGuard
-
 
 warning_util.disable_warnings()
 
@@ -345,12 +337,6 @@ class TestBackupAndInstall(unittest.TestCase):
         shutil.rmtree(self.cache_dirname_5)
 
     def test(self):
-        env = EnvironmentVarGuard()
-
-        if not os.getenv('CODE_SERVER_TOKEN'):
-            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
-                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-
         # backup and download
         src = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_1, download_backup=False, load_content=True,
                                max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
@@ -392,18 +378,9 @@ class TestAll(unittest.TestCase):
                                verbose=True, clear_requests_cache=False, max_entries=float('inf'))
         self.assertGreaterEqual(src.session.query(KineticLaw).count(), 55000)
 
-        env = EnvironmentVarGuard()
-        if not os.getenv('CODE_SERVER_TOKEN'):
-            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
-                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
         src.upload_backup()
 
     def test_download_full_database(self):
-        env = EnvironmentVarGuard()
-        if not os.getenv('CODE_SERVER_TOKEN'):
-            with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
-                env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-
         src = sabio_rk.SabioRk(cache_dirname=self.dirname, download_backup=True, load_content=False,
                                verbose=True)
         self.assertGreaterEqual(src.session.query(KineticLaw).count(), 55000)

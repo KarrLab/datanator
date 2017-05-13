@@ -4,5 +4,8 @@ include LICENSE
 # requirements
 include requirements.txt
 
+# configuration
+recursive-include kinetic_datanator/config *.cfg
+
 # data files
 recursive-include kinetic_datanator/data *.txt *.xlsx

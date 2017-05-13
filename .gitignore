@@ -108,3 +108,6 @@ tests/fixtures/secret/
 
 # cache files
 kinetic_datanator/data_source/cache/
+
+# configuration
+kinetic_datanator.cfg
