@@ -388,7 +388,7 @@ class TestAll(unittest.TestCase):
 
     @unittest.skip('Skip this test because it is long')
     def test_update_all_and_backup(self):
-        src = sabio_rk.SabioRk(cache_dirname=self.dirname, download_backup=False, load_content=True, clear_content=True,
+        src = sabio_rk.SabioRk(download_backup=False, load_content=True, clear_content=True,
                                verbose=True, clear_requests_cache=False, max_entries=float('inf'))
         self.assertGreaterEqual(src.session.query(KineticLaw).count(), 55000)
 
@@ -396,7 +396,7 @@ class TestAll(unittest.TestCase):
         if not os.getenv('CODE_SERVER_TOKEN'):
             with open('tests/fixtures/secret/CODE_SERVER_TOKEN', 'r') as file:
                 env.set('CODE_SERVER_TOKEN', file.read().rstrip())
-        src.backup()
+        src.upload_backup()
 
     def test_download_full_database(self):
         env = EnvironmentVarGuard()

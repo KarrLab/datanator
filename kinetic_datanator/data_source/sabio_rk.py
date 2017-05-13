@@ -25,6 +25,7 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import sys
+import time
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -1329,3 +1330,5 @@ class SabioRk(data_source.HttpDataSource):
 
             if self.commit_intermediate_results and (i_compound % 100 == 99):
                 self.session.commit()
+
+            time.sleep(0.25) # sleep to avoid getting overloading PubChem server
