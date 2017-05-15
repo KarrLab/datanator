@@ -15,9 +15,11 @@ import dateutil.parser
 import io
 import json
 import jxmlease
+import requests.exceptions
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
+import warnings
 import zipfile
 
 
@@ -228,7 +230,12 @@ class Ecmdb(data_source.HttpDataSource):
 
             # get details
             response = req_session.get(self.DOWNLOAD_COMPOUND_URL.format(entry['m2m_id']))
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                warnings.warn('Unable to download data for compound {}'.format(entry['m2m_id']))
+                continue
+
             entry_details = xml_parser(response.text)['compound']
 
             compound = self.get_or_create_object(Compound, id=self.get_node_text(entry_details['m2m_id']))
