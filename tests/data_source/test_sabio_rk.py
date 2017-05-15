@@ -105,9 +105,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual([(r.compound, r.coefficient) for r in rxn.kinetic_laws[0].modifiers], [
             (cpd_20035, None),
         ])
-        self.assertEqual([dict(namespace=xr.namespace, id=xr.id) for xr in rxn.cross_references], [
-            dict(namespace='ec-code', id='3.4.21.62'),
-        ])
+        self.assertEqual(rxn.cross_references, [])
 
         """ kinetic laws """
         l = session.query(KineticLaw).filter_by(id=1).first()
@@ -115,6 +113,9 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(l.enzyme, enz_147631)
         self.assertEqual(l.enzyme_compartment, None)
         self.assertEqual(l.equation, None)
+        self.assertEqual([dict(namespace=xr.namespace, id=xr.id) for xr in l.cross_references], [
+            dict(namespace='ec-code', id='3.4.21.62'),
+        ])
 
         self.assertEqual(len(l.parameters), 4)
 

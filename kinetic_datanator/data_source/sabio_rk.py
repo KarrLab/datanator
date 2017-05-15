@@ -875,8 +875,9 @@ class SabioRk(data_source.HttpDataSource):
             self.session.add(reaction)
 
         # cross references
-        x_refs = list(filter(lambda x_ref: x_ref.namespace not in ('sabiork.reaction', 'taxonomy'), x_refs))
-        reaction.cross_references = x_refs
+        x_refs = list(filter(lambda x_ref: x_ref.namespace not in ('sabiork.reaction', 'taxonomy', 'ec-code', 'kegg.reaction'), x_refs))
+        if x_refs:
+            raise ValueError('Reaction {} has cross-reference(s) to unsupported namespace(s): {}'.format(id, ', '.join([xr.namespace for xr in x_refs])))
 
         """ participants """
         reaction.reactants[:] = []
@@ -952,6 +953,12 @@ class SabioRk(data_source.HttpDataSource):
         if q.count() != 1:
             raise ValueError('Unable to find reaction with id {}'.format(reaction_id))
         kinetic_law.reaction = q.first()
+
+        """ cross references """
+        # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
+        # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
+        # 1.1.1.50, respectively.
+        kinetic_law.cross_references = list(filter(lambda x_ref: x_ref.namespace not in ['sabiork.reaction', 'taxonomy'], reaction_x_refs))
 
         # rate_law
         kinetic_law.equation = functions[law.getMetaId()[5:]]
@@ -1058,8 +1065,7 @@ class SabioRk(data_source.HttpDataSource):
             kinetic_law.media = media
 
         """ references """
-        x_refs = list(filter(lambda x_ref: x_ref.namespace != 'sabiork.kineticrecord', x_refs))
-        kinetic_law.references = x_refs
+        kinetic_law.references = list(filter(lambda x_ref: x_ref.namespace != 'sabiork.kineticrecord', x_refs))
 
         """ updated """
         kinetic_law.modified = datetime.datetime.utcnow()
