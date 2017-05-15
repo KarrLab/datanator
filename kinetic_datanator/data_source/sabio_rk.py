@@ -10,6 +10,7 @@
 
 from kinetic_datanator.core import data_source
 from kinetic_datanator.util import molecule_util
+from xml import etree
 import bs4
 import csv
 import datetime
@@ -374,7 +375,6 @@ class SabioRk(data_source.HttpDataSource):
     """ A local sqlite copy of the SABIO-RK database
 
     Attributes:
-        index_batch_size (:obj:`int`): size of batches to download the IDs of the kinetic laws
         webservice_batch_size (:obj:`int`): default size of batches to download kinetic information from the SABIO webservice
         excel_batch_size (:obj:`int`): default size of batches to download kinetic information from the SABIO
             Excel download service
@@ -390,10 +390,11 @@ class SabioRk(data_source.HttpDataSource):
     """
 
     base_model = Base
-    ENDPOINT_KINETIC_LAWS_SEARCH = 'http://sabio.villa-bosch.de/newSearch/search'
-    ENDPOINT_WEBSERVICE = 'http://sabiork.h-its.org/sabioRestWebServices/kineticLaws'
-    ENDPOINT_EXCEL_EXPORT = 'http://sabio.villa-bosch.de/entry/exportToExcelCustomizable'
-    ENDPOINT_COMPOUNDS_PAGE = 'http://sabio.villa-bosch.de/compdetails.jsp'
+    ENDPOINT_DOMAIN = 'http://sabiork.h-its.org'
+    ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAIN + '/sabioRestWebServices/searchKineticLaws/entryIDs'
+    ENDPOINT_WEBSERVICE = ENDPOINT_DOMAIN + '/sabioRestWebServices/kineticLaws'
+    ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAIN + '/entry/exportToExcelCustomizable'
+    ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAIN + '/compdetails.jsp'
     SKIP_KINETIC_LAW_IDS = (51286,)
     PUBCHEM_MAX_TRIES = 10
     PUBCHEM_TRY_DELAY = 0.25
@@ -401,7 +402,7 @@ class SabioRk(data_source.HttpDataSource):
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
                  clear_requests_cache=False,
-                 index_batch_size=1000, webservice_batch_size=250, excel_batch_size=100):
+                 webservice_batch_size=250, excel_batch_size=100):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -414,12 +415,10 @@ class SabioRk(data_source.HttpDataSource):
             download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
-            index_batch_size (:obj:`int`, optional): size of batches to download the IDs of the kinetic laws
             webservice_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO webservice
             excel_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO
                 Excel download service
         """
-        self.index_batch_size = index_batch_size
         self.webservice_batch_size = webservice_batch_size
         self.excel_batch_size = excel_batch_size
 
@@ -443,8 +442,17 @@ class SabioRk(data_source.HttpDataSource):
         if self.verbose:
             print('  Downloaded {} IDs'.format(len(ids)))
 
+        ##################################
+        ##################################
         # remove bad IDs
-        ids = filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids)
+        ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
+
+        # sort ids
+        ids.sort()
+
+        # load only `max_entries` IDs
+        if len(ids) > self.max_entries:
+            ids = ids[0:self.max_entries]
 
         ##################################
         ##################################
@@ -511,80 +519,27 @@ class SabioRk(data_source.HttpDataSource):
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
 
+        Returns:
+            :obj:`list` of :obj:`int`: list of kinetic law IDs
+
         Raises:
             :obj:`Error`: if an HTTP request fails or the expected number of kinetic laws is not returned
         """
-        batch_size = self.index_batch_size
-
         # create session
-        session = requests.Session()
+        session = self.requests_session
         response = session.post(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
-            'q': '',
-            'ontologySearch': 'false',
-            'wildtype': 'true',
-            'mutant': 'true',
-            'recombinant': 'false',
-            'kineticData': 'false',
-            'transportReaction': 'false',
-            'phValues': '0 - 14',
-            'temperatures': '-10 C° - 115 C°',
-            'directSubmission': 'true',
-            'journal': 'true',
-            'biomodel': 'true',
-            'date': 'false',
-            'entryDate': '14/10/2008',
-            'ipAddress': '127.0.1.1',
-            'ipAddress2': '127.0.0.1',
-            'remoteHost': '127.0.0.1',
-            'view': 'entry',
+            'q': 'DateSubmitted:01/01/2000',
         })
         response.raise_for_status()
 
         # get IDs of kinetic laws
-        ids = []
-        i_batch = 0
-        while True:
-            # get page
-            response = session.post(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
-                'view': 'entry',
-                'offset': i_batch * batch_size,
-                'max': batch_size,
-            })
-            response.raise_for_status()
-            if response.text.find('Sorry, we found no results for your query...') != -1:
-                raise ValueError('Error creating session with SABIO-RK')
+        root = etree.ElementTree.fromstring(response.text)
+        ids = [int(float(node.text)) for node in root.findall('SabioEntryID')]
 
-            # parse page
-            doc = bs4.BeautifulSoup(response.text, 'html.parser')
-
-            # get number of laws
-            n_laws = int(float(doc.find('div', id='numberofKinLaw').find('span').get_text()))
-
-            # print status
-            if self.verbose:
-                print('  Downloaded ids {}-{} of {}'.format(
-                    i_batch * batch_size + 1,
-                    min(n_laws, (i_batch + 1) * batch_size),
-                    min(self.max_entries, n_laws),
-                ))
-
-            # get ids of kinetic laws
-            more_ids = [int(float(node.get('kinlawentryid'))) for node in doc.find_all('img', attrs={'name': 'kinlawEntryId'})]
-            if len(more_ids) != min(batch_size, min(n_laws, (i_batch + 1) * batch_size) - i_batch * batch_size):
-                raise ValueError('Batch {} failed to download the expected number of kinetic law ids'.format(i_batch))
-            ids.extend(more_ids)
-
-            # increment batch number
-            i_batch += 1
-
-            # stop if all IDs have been collected
-            if len(ids) >= min(self.max_entries, n_laws):
-                if len(ids) > self.max_entries:
-                    ids = ids[0:self.max_entries]
-                break
+        # sort ids
+        ids.sort()
 
         # return IDs
-        ids.sort()
         return ids
 
     def load_kinetic_laws(self, ids):
@@ -619,7 +574,7 @@ class SabioRk(data_source.HttpDataSource):
                 cache.delete(key)
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
 
-            self.create_kinetic_laws_from_sbml(response.content if six.PY2 else response.text)
+            self.create_kinetic_laws_from_sbml(batch_ids, response.content if six.PY2 else response.text)
 
             if self.commit_intermediate_results:
                 self.session.commit()
@@ -633,6 +588,7 @@ class SabioRk(data_source.HttpDataSource):
                     min(len(ids), (i_batch + 1) * batch_size),
                     len(ids)))
 
+            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
             response = session.get(self.ENDPOINT_EXCEL_EXPORT, params={
                 'entryIDs[]': batch_ids,
                 'fields[]': [
@@ -656,11 +612,20 @@ class SabioRk(data_source.HttpDataSource):
             if self.commit_intermediate_results:
                 self.session.commit()
 
-    def create_kinetic_laws_from_sbml(self, sbml):
+    def create_kinetic_laws_from_sbml(self, ids, sbml):
         """ Add kinetic laws defined in an SBML file to the local sqlite database
 
         Args:
+            ids (:obj:`list` of :obj:`int`): list kinetic law IDs
             sbml (:obj:`str`): SBML representation of one or more kinetic laws
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`list` of :obj:`KineticLaw`: list of kinetic laws
+                * :obj:`list` of :obj:`Reaction`: list of reactions
+                * :obj:`list` of :obj:`Compound` or :obj:`Enzyme`: list of species (compounds or enzymes)
+                * :obj:`list` of :obj:`Compartment`: list of compartments
         """
         reader = libsbml.SBMLReader()
         doc = reader.readSBMLFromString(sbml)
@@ -685,29 +650,38 @@ class SabioRk(data_source.HttpDataSource):
 
         # compartments
         compartments_sbml = model.getListOfCompartments()
+        compartments = []
         for i_compartment in range(compartments_sbml.size()):
             compartment_sbml = compartments_sbml.get(i_compartment)
-            self.create_compartment_from_sbml(compartment_sbml)
+            compartments.append(self.create_compartment_from_sbml(compartment_sbml))
 
         # species
         specie_properties = {}
         species_sbml = model.getListOfSpecies()
+        species = []
         for i_specie in range(species_sbml.size()):
             specie_sbml = species_sbml.get(i_specie)
-            _, properties = self.create_specie_from_sbml(specie_sbml)
+            specie, properties = self.create_specie_from_sbml(specie_sbml)
+            species.append(specie)
             specie_properties[specie_sbml.getId()] = properties
 
         # reactions
         reactions_sbml = model.getListOfReactions()
+        reactions = []
         for i_reaction in range(reactions_sbml.size()):
             reaction_sbml = reactions_sbml.get(i_reaction)
-            self.create_reaction_from_sbml(reaction_sbml, specie_properties)
+            reactions.append(self.create_reaction_from_sbml(reaction_sbml, specie_properties))
 
         # kinetic laws
         reactions_sbml = model.getListOfReactions()
-        for i_reaction in range(reactions_sbml.size()):
+        if reactions_sbml.size() != len(ids):
+            raise ValueError('{} reactions {} is different from the expected {}'.format(reaction_sbml.size(), len(ids)))
+        kinetic_laws = []
+        for i_reaction, id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
-            self.create_kinetic_law_from_sbml(reaction_sbml, specie_properties, functions, units)
+            kinetic_laws.append(self.create_kinetic_law_from_sbml(id, reaction_sbml, specie_properties, functions, units))
+
+        return (kinetic_laws, reactions, species, compartments)
 
     def create_compartment_from_sbml(self, sbml):
         """ Add a compartment to the local sqlite database
@@ -877,7 +851,8 @@ class SabioRk(data_source.HttpDataSource):
         # cross references
         x_refs = list(filter(lambda x_ref: x_ref.namespace not in ('sabiork.reaction', 'taxonomy', 'ec-code', 'kegg.reaction'), x_refs))
         if x_refs:
-            raise ValueError('Reaction {} has cross-reference(s) to unsupported namespace(s): {}'.format(id, ', '.join([xr.namespace for xr in x_refs])))
+            raise ValueError('Reaction {} has cross-reference(s) to unsupported namespace(s): {}'
+                             .format(id, ', '.join([xr.namespace for xr in x_refs])))
 
         """ participants """
         reaction.reactants[:] = []
@@ -910,10 +885,11 @@ class SabioRk(data_source.HttpDataSource):
         """ return reaction """
         return reaction
 
-    def create_kinetic_law_from_sbml(self, sbml, specie_properties, functions, units):
+    def create_kinetic_law_from_sbml(self, id, sbml, specie_properties, functions, units):
         """ Add a kinetic law to the local sqlite database
 
         Args:
+            id (:obj:`int`): identifier
             sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction
             specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
 
@@ -939,7 +915,9 @@ class SabioRk(data_source.HttpDataSource):
             return None
 
         # ID
-        id = next(int(float(x_ref.id)) for x_ref in x_refs if x_ref.namespace == 'sabiork.kineticrecord')
+        annotated_id = next((int(float(x_ref.id)) for x_ref in x_refs if x_ref.namespace == 'sabiork.kineticrecord'), None)
+        if annotated_id is not None and annotated_id != id:
+            raise ValueError('Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
         query = self.session.query(KineticLaw).filter_by(id=id)
         if query.count():
             kinetic_law = query.first()

@@ -33,9 +33,10 @@ class TestDownloader(unittest.TestCase):
 
     def test_load_kinetic_law_ids(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, max_entries=10,
-                               index_batch_size=5, webservice_batch_size=5, excel_batch_size=5)
+                               webservice_batch_size=5, excel_batch_size=5)
         ids = src.load_kinetic_law_ids()
-        self.assertEqual(ids, [1, 10, 100, 1000, 10000, 10001, 10002, 10003, 10004, 10005])
+        self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.assertGreater(len(ids), 55000)
 
     def test_load_kinetic_laws_and_compounds(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
@@ -304,20 +305,20 @@ class TestDownloader(unittest.TestCase):
     def test_load_content(self):
         # get some kinetic laws
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False,  load_content=True,
-                               max_entries=9, index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
+                               max_entries=9, webservice_batch_size=3, excel_batch_size=3, verbose=True)
         self.assertTrue(os.path.isfile(src.filename))
         self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
         # get some more
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=True,
-                               max_entries=18, index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
+                               max_entries=18, webservice_batch_size=3, excel_batch_size=3, verbose=True)
         self.assertTrue(os.path.isfile(src.filename))
         self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
     def test_load_content_commit_intermediate_results(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False,  load_content=True,
                                max_entries=9, commit_intermediate_results=True,
-                               index_batch_size=3, webservice_batch_size=3, excel_batch_size=3, verbose=True)
+                               webservice_batch_size=3, excel_batch_size=3, verbose=True)
         self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
 
@@ -340,28 +341,28 @@ class TestBackupAndInstall(unittest.TestCase):
     def test(self):
         # backup and download
         src = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_1, download_backup=False, load_content=True,
-                               max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+                               max_entries=2, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         src.upload_backup()
 
         # download
         src2 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_2, download_backup=True, load_content=False,
-                                max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+                                max_entries=2, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         self.assertTrue(os.path.isfile(src2.filename))
         self.assertEqual(src2.session.query(KineticLaw).count(), 2)
 
         # setup with download and update
         src3 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_3, download_backup=True, load_content=True,
-                                max_entries=4, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+                                max_entries=4, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         self.assertEqual(src3.session.query(KineticLaw).count(), 4)
 
         # setup with update
         src4 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_4, download_backup=False, load_content=True,
-                                max_entries=4, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+                                max_entries=4, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         self.assertEqual(src4.session.query(KineticLaw).count(), 4)
 
         # no download or update
         src5 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_5, download_backup=False, load_content=False,
-                                max_entries=2, index_batch_size=10, webservice_batch_size=10, excel_batch_size=10, verbose=True)
+                                max_entries=2, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         self.assertEqual(src5.session.query(KineticLaw).count(), 0)
 
 
