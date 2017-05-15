@@ -63,7 +63,6 @@ class Synonym(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
     name = sqlalchemy.Column(sqlalchemy.String(), unique=True, index=True)
-    compounds = sqlalchemy.orm.relationship('Compound', secondary=compound_synonym, back_populates='synonyms')
 
     __tablename__ = 'synonym'
 
@@ -78,7 +77,6 @@ class Compartment(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
     name = sqlalchemy.Column(sqlalchemy.String(), unique=True, index=True)
-    compounds = sqlalchemy.orm.relationship('Compound', secondary=compound_compartment, back_populates='compartments')
 
     __tablename__ = 'compartment'
 
@@ -100,7 +98,6 @@ class Concentration(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
     compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
-    compound = sqlalchemy.orm.relationship('Compound', back_populates='concentrations', foreign_keys=[compound_id])
     value = sqlalchemy.Column(sqlalchemy.Float())
     error = sqlalchemy.Column(sqlalchemy.Float())
     strain = sqlalchemy.Column(sqlalchemy.String())
@@ -108,7 +105,8 @@ class Concentration(Base):
     media = sqlalchemy.Column(sqlalchemy.String())
     temperature = sqlalchemy.Column(sqlalchemy.Float())
     growth_system = sqlalchemy.Column(sqlalchemy.String())
-    references = sqlalchemy.orm.relationship('Resource', secondary='concentration_resource', back_populates='concentrations')
+    references = sqlalchemy.orm.relationship('Resource', secondary='concentration_resource',
+                                             backref=sqlalchemy.orm.backref('concentrations'))
 
     __tablename__ = 'concentration'
 
@@ -126,8 +124,6 @@ class Resource(Base):
 
     namespace = sqlalchemy.Column(sqlalchemy.String())
     id = sqlalchemy.Column(sqlalchemy.String())
-    compounds = sqlalchemy.orm.relationship('Compound', secondary=compound_resource, back_populates='cross_references')
-    concentrations = sqlalchemy.orm.relationship('Concentration', secondary='concentration_resource', back_populates='references')
 
     sqlalchemy.schema.UniqueConstraint(namespace, id)
 
@@ -157,13 +153,16 @@ class Compound(Base):
 
     id = sqlalchemy.Column(sqlalchemy.String())
     name = sqlalchemy.Column(sqlalchemy.String(), index=True)
-    synonyms = sqlalchemy.orm.relationship('Synonym', secondary=compound_synonym, back_populates='compounds')
+    synonyms = sqlalchemy.orm.relationship('Synonym', secondary=compound_synonym, backref=sqlalchemy.orm.backref('compounds'))
     description = sqlalchemy.Column(sqlalchemy.Text())
     structure = sqlalchemy.Column(sqlalchemy.Text())
     _structure_formula_connectivity = sqlalchemy.Column(sqlalchemy.Text(), index=True)
-    compartments = sqlalchemy.orm.relationship('Compartment', secondary=compound_compartment, back_populates='compounds')
-    concentrations = sqlalchemy.orm.relationship('Concentration', back_populates='compound', foreign_keys=[Concentration.compound_id])
-    cross_references = sqlalchemy.orm.relationship('Resource', secondary=compound_resource, back_populates='compounds')
+    compartments = sqlalchemy.orm.relationship('Compartment', secondary=compound_compartment, backref=sqlalchemy.orm.backref('compounds'))
+    concentrations = sqlalchemy.orm.relationship('Concentration',
+                                                 foreign_keys=[Concentration.compound_id],
+                                                 backref=sqlalchemy.orm.backref('compound'),
+                                                 cascade="all, delete-orphan")
+    cross_references = sqlalchemy.orm.relationship('Resource', secondary=compound_resource, backref=sqlalchemy.orm.backref('compounds'))
     comment = sqlalchemy.Column(sqlalchemy.Text())
     created = sqlalchemy.Column(sqlalchemy.DateTime)
     updated = sqlalchemy.Column(sqlalchemy.DateTime)

@@ -14,18 +14,31 @@ import shutil
 import tempfile
 import unittest
 
-class TestEcmdb(unittest.TestCase):
+
+class TestEcmdbFromRemote(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        src = ecmdb.Ecmdb(cache_dirname=cls.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=12)
+        src.load_content()        
+        src.session.close()
+        src.engine.dispose()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
+        self.src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=12)
 
     def tearDown(self):
-        shutil.rmtree(self.cache_dirname)
+        src = self.src
+        src.session.close()
+        src.engine.dispose()
 
     def test_download_from_remote(self):
-        src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=12)
-        src.load_content()
-
+        src = self.src
         session = src.session
         q = session.query(ecmdb.Compound)
 
@@ -108,6 +121,74 @@ class TestEcmdb(unittest.TestCase):
         # compound with comment
         # compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000734').first()
 
+    def test_cascade_concentrations(self):
+        src = self.src
+        session = src.session
+
+        n_compound = session.query(ecmdb.Compound).count()
+        n_concentration = session.query(ecmdb.Concentration).count()
+
+        compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000010').first()
+        n_concentration_compound = len(compound.concentrations)
+        session.delete(compound)
+
+        self.assertEqual(session.query(ecmdb.Compound).count(), n_compound - 1)
+        self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - n_concentration_compound)
+
+    def test_cascade_compounds_1(self):
+        src = self.src
+        session = src.session
+
+        n_compound = session.query(ecmdb.Compound).count()
+        n_concentration = session.query(ecmdb.Concentration).count()
+
+        compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000010').first()
+        n_concentration_compound = len(compound.concentrations)
+        compound.concentrations[0].compound = None
+
+        self.assertEqual(len(compound.concentrations), n_concentration_compound - 1)
+        self.assertEqual(session.query(ecmdb.Compound).count(), n_compound)
+        self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - 1)
+
+    def test_cascade_compounds_2(self):
+        src = self.src
+        session = src.session
+
+        n_compound = session.query(ecmdb.Compound).count()
+        n_concentration = session.query(ecmdb.Concentration).count()
+
+        compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000010').first()
+        n_concentration_compound = len(compound.concentrations)
+        concentration = compound.concentrations[0]
+        concentration.compound = None
+        session.delete(concentration)
+
+        self.assertEqual(len(compound.concentrations), n_concentration_compound - 1)
+        self.assertEqual(session.query(ecmdb.Compound).count(), n_compound)
+        self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - 1)
+
+    def test_cascade_compounds_3(self):
+        src = self.src
+        session = src.session
+
+        n_compound = session.query(ecmdb.Compound).count()
+        n_concentration = session.query(ecmdb.Concentration).count()
+
+        concentration = session.query(ecmdb.Concentration).first()
+        session.delete(concentration)
+
+        self.assertEqual(session.query(ecmdb.Compound).count(), n_compound)
+        self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - 1)
+
+
+class TestEcmdbFromBlank(unittest.TestCase):
+
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dirname)
+
     def test_commit_intermediate_results(self):
         src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=5,
                           commit_intermediate_results=True)
@@ -115,7 +196,8 @@ class TestEcmdb(unittest.TestCase):
 
     @unittest.skip('Skip because this is a long test')
     def test_download_all(self):
-        src = ecmdb.Ecmdb(download_backup=False, load_content=True, clear_content=True, clear_requests_cache=True)
+        src = ecmdb.Ecmdb(download_backup=False, load_content=True, clear_content=True, clear_requests_cache=False, verbose=True)
+        src.upload_backup()
 
         session = src.session
         self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
