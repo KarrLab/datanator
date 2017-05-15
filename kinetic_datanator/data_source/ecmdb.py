@@ -180,8 +180,9 @@ class Ecmdb(data_source.HttpDataSource):
     """
 
     base_model = Base
-    DOWNLOAD_INDEX_URL = 'http://ecmdb.ca/download/ecmdb.json.zip'
-    DOWNLOAD_COMPOUND_URL = 'http://ecmdb.ca/compounds/{}.xml'
+    ENDPOINT_DOMAIN = 'http://ecmdb.ca'
+    DOWNLOAD_INDEX_URL = ENDPOINT_DOMAIN + '/download/ecmdb.json.zip'
+    DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAIN +'/compounds/{}.xml'
 
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """

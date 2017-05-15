@@ -91,7 +91,6 @@ class CachedDataSource(DataSource):
         # backup settings
         self.backup_server_token = config_manager.get_config()['wc_utils']['backup']['token']
 
-
         # verbosity
         self.verbose = verbose
 
@@ -192,7 +191,12 @@ class HttpDataSource(CachedDataSource):
     Attributes:
         requests_cache_filename (:obj:`str`): path to cache HTTP requests
         requests_session (:obj:`requests_cache.core.CachedSession`): cache-enabled HTTP request session
+        ENDPOINT_DOMAIN (:obj:`str`): domains to retry
+        MAX_HTTP_RETRIES (:obj:`int`): maximum number of times to retry each HTTP request
     """
+
+    ENDPOINT_DOMAIN = ''
+    MAX_HTTP_RETRIES = 5
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
@@ -241,7 +245,14 @@ class HttpDataSource(CachedDataSource):
         if not os.path.isdir(os.path.dirname(self.requests_cache_filename)):
             os.makedirs(os.path.dirname(self.requests_cache_filename))
         name, _, _ = self.requests_cache_filename.rpartition('.')
+
+        # create caching session
         session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
+
+        # setup retrying
+        if self.ENDPOINT_DOMAIN:
+            session.mount(self.ENDPOINT_DOMAIN, requests.adapters.HTTPAdapter(max_retries=self.MAX_HTTP_RETRIES))
+
         return session
 
     def clear_requests_cache(self):
