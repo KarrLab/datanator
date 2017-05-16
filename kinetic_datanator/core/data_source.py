@@ -147,16 +147,23 @@ class CachedDataSource(DataSource):
 
     def upload_backup(self):
         """ Backup the local sqlite database to the Karr Lab server """
-        backup.BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
-            .create() \
+        file = backup.BackupFile(self.filename, self.name + '.sqlite')
+        file.set_created_modified_time()
+        file.set_username_ip()
+        file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+        backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
+            .create([file]) \
             .upload() \
             .cleanup()
 
     def download_backup(self):
         """ Download the local sqlite database from the Karr Lab server """
-        backup.BackupManager(self.filename, arcname=self.name + '.sqlite', token=self.backup_server_token) \
+        file = backup.BackupFile(self.filename, self.name + '.sqlite')
+
+        backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
             .download() \
-            .extract() \
+            .extract([file]) \
             .cleanup()
 
     @abc.abstractmethod
