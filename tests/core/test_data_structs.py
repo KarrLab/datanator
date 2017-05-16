@@ -7,7 +7,27 @@
 """
 
 from kinetic_datanator.core import data_structs
+from kinetic_datanator.core import observation
 import unittest
+
+
+class TestConsensus(unittest.TestCase):
+
+    def test(self):
+        attr_vals = {
+            'component': 'ATP',
+            'attribute': 'concentration',
+            'value': 1.1,
+            'error': 0.3,
+            'units': 'uM',
+            'method': 'media',
+            'observations': [
+                observation.Observation(),
+                observation.Observation(),
+            ],
+        }
+        c = data_structs.Consensus(**attr_vals)
+        self.assertEqual(c.__dict__, attr_vals)
 
 
 class TestCrossReferenceAssignmentMethod(unittest.TestCase):
