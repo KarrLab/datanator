@@ -108,6 +108,9 @@ class TestDownloader(unittest.TestCase):
         ])
         self.assertEqual(rxn.cross_references, [])
 
+        for mod in rxn.kinetic_laws[0].modifiers:
+            self.assertEqual(mod.kinetic_law, rxn.kinetic_laws[0])
+
         """ kinetic laws """
         l = session.query(KineticLaw).filter_by(id=1).first()
         self.assertEqual(l.reaction.id, 6570)
@@ -153,6 +156,8 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual([dict(n=ref.namespace, i=ref.id) for ref in l.references], [
             dict(n='pubmed', i='12962477')
         ])
+        for ref in l.references:
+            self.assertIn(l, ref.kinetic_laws)
 
         # download compounds
         src.load_compounds()
