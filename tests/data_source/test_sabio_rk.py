@@ -353,6 +353,7 @@ class TestBackupAndInstall(unittest.TestCase):
         src2 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_2, download_backup=True, load_content=False,
                                 max_entries=2, webservice_batch_size=10, excel_batch_size=10, verbose=True)
         self.assertTrue(os.path.isfile(src2.filename))
+        self.assertGreater(os.stat(src2.requests_cache_filename).st_size, 1e6)
         self.assertEqual(src2.session.query(KineticLaw).count(), 2)
 
         # setup with download and update

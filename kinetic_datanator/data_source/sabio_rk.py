@@ -27,6 +27,7 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import sys
 import time
+import warnings
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -564,16 +565,25 @@ class SabioRk(data_source.HttpDataSource):
             if self.commit_intermediate_results:
                 self.session.commit()
 
+        # print warning with list of unidentified ids
+        loaded_ids = [l.id for l in self.session.query(KineticLaw).order_by(KineticLaw.id)]
+
+        not_loaded_ids = list(set(ids).difference(loaded_ids))
+        if not_loaded_ids:
+            not_loaded_ids.sort()
+            warnings.warn('Several kinetic laws were not found:\n  {}'.format(
+                '\n  '.join([str(id) for id in not_loaded_ids])), data_source.DataSourceWarning)
+
         # download information from custom Excel export
         batch_size = self.excel_batch_size
-        for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
+        for i_batch in range(int(math.ceil(float(len(loaded_ids)) / batch_size))):
             if self.verbose:
                 print('  Downloading kinetic laws {}-{} of {} in Excel format'.format(
                     i_batch * batch_size + 1,
-                    min(len(ids), (i_batch + 1) * batch_size),
-                    len(ids)))
+                    min(len(loaded_ids), (i_batch + 1) * batch_size),
+                    len(loaded_ids)))
 
-            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            batch_ids = loaded_ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(loaded_ids))]
             response = session.get(self.ENDPOINT_EXCEL_EXPORT, params={
                 'entryIDs[]': batch_ids,
                 'fields[]': [
