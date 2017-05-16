@@ -233,7 +233,7 @@ class Ecmdb(data_source.HttpDataSource):
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError:
-                warnings.warn('Unable to download data for compound {}'.format(entry['m2m_id']))
+                warnings.warn('Unable to download data for compound {}'.format(entry['m2m_id']), data_source.DataSourceWarning)
                 continue
 
             entry_details = xml_parser(response.text)['compound']

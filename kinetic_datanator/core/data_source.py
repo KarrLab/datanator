@@ -342,3 +342,8 @@ class HttpDataSource(CachedDataSource):
 class WebserviceDataSource(DataSource):
     """ A data source that is a webservice """
     pass
+
+
+class DataSourceWarning(UserWarning):
+    """ Data source warning """
+    pass
