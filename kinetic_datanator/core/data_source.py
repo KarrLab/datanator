@@ -15,6 +15,7 @@ import six
 import sqlalchemy
 import sqlalchemy.orm
 import sys
+import tarfile
 import wc_utils.config.core
 
 config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
@@ -155,17 +156,18 @@ class CachedDataSource(DataSource):
 
     def download_backup(self):
         """ Download the local sqlite database from the Karr Lab server """
-        files = self.get_backup_files(set_metadata=False)
-        backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
-            .download() \
-            .extract(files) \
-            .cleanup()
+        backup_manager = backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token)
+        backup_manager.download()
 
-    def get_backup_files(self, set_metadata=True):
+        files = self.get_backup_files(upload=False)
+        backup_manager.extract(files)
+        backup_manager.cleanup()
+
+    def get_backup_files(self, upload=True):
         """ Get a list of the files to backup/unpack
 
         Args:
-            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+            upload (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
 
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
@@ -173,7 +175,7 @@ class CachedDataSource(DataSource):
         files = []
 
         file = backup.BackupFile(self.filename, self.name + '.sqlite')
-        if set_metadata:
+        if upload:
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -285,7 +287,7 @@ class HttpDataSource(CachedDataSource):
         """ Disable insecure HTTP request warnings """
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-    def get_backup_files(self, set_metadata=True):
+    def get_backup_files(self, upload=True):
         """ Get a list of the files to backup/unpack
 
         Args:
@@ -294,14 +296,45 @@ class HttpDataSource(CachedDataSource):
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
         """
-        files = super(HttpDataSource, self).get_backup_files(set_metadata=set_metadata)
+        files = super(HttpDataSource, self).get_backup_files(upload=upload)
 
-        file = backup.BackupFile(self.requests_cache_filename, os.path.basename(self.requests_cache_filename))
-        if set_metadata:
+        requests_cache_basename_2 = self.name + '.requests.py2.sqlite'
+        requests_cache_basename_3 = self.name + '.requests.py3.sqlite'
+
+        requests_cache_filename_2 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_2)
+        requests_cache_filename_3 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_3)
+
+        if not upload:
+            tar_file = tarfile.open(self.filename + '.tar.gz', "r:gz")
+
+        file = backup.BackupFile(requests_cache_filename_2, requests_cache_basename_2)
+        if upload and os.path.isfile(file.filename):
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-        files.append(file)
+            files.append(file)
+        elif not upload:
+            try:
+                tar_file.getmember(file.arcname)
+                files.append(file)
+            except KeyError:
+                pass
+
+        file = backup.BackupFile(requests_cache_filename_3, requests_cache_basename_3)
+        if upload and os.path.isfile(file.filename):
+            file.set_created_modified_time()
+            file.set_username_ip()
+            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
+            files.append(file)
+        elif not upload:
+            try:
+                tar_file.getmember(file.arcname)
+                files.append(file)
+            except KeyError:
+                pass
+
+        if not upload:
+            tar_file.close()
 
         return files
 
