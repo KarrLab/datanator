@@ -512,7 +512,7 @@ class SabioRk(data_source.HttpDataSource):
         """
         # create session
         session = self.requests_session
-        response = session.post(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
+        response = session.get(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
             'q': 'DateSubmitted:01/01/2000',
         })
         response.raise_for_status()
