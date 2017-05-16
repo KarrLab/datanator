@@ -147,24 +147,39 @@ class CachedDataSource(DataSource):
 
     def upload_backup(self):
         """ Backup the local sqlite database to the Karr Lab server """
-        file = backup.BackupFile(self.filename, self.name + '.sqlite')
-        file.set_created_modified_time()
-        file.set_username_ip()
-        file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-
+        files = self.get_backup_files()
         backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
-            .create([file]) \
+            .create(files) \
             .upload() \
             .cleanup()
 
     def download_backup(self):
         """ Download the local sqlite database from the Karr Lab server """
-        file = backup.BackupFile(self.filename, self.name + '.sqlite')
-
+        files = self.get_backup_files(set_metadata=False)
         backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
             .download() \
-            .extract([file]) \
+            .extract(files) \
             .cleanup()
+
+    def get_backup_files(self, set_metadata=True):
+        """ Get a list of the files to backup/unpack
+
+        Args:
+            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+
+        Returns:
+            :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
+        """
+        files = []
+
+        file = backup.BackupFile(self.filename, self.name + '.sqlite')
+        if set_metadata:
+            file.set_created_modified_time()
+            file.set_username_ip()
+            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
+        files.append(file)
+
+        return files
 
     @abc.abstractmethod
     def load_content(self):
@@ -269,6 +284,26 @@ class HttpDataSource(CachedDataSource):
     def disable_warnings(self):
         """ Disable insecure HTTP request warnings """
         requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
+    def get_backup_files(self, set_metadata=True):
+        """ Get a list of the files to backup/unpack
+
+        Args:
+            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+
+        Returns:
+            :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
+        """
+        files = super(HttpDataSource, self).get_backup_files(set_metadata=set_metadata)
+
+        file = backup.BackupFile(self.requests_cache_filename, os.path.basename(self.requests_cache_filename))
+        if set_metadata:
+            file.set_created_modified_time()
+            file.set_username_ip()
+            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
+        files.append(file)
+
+        return files
 
 
 class WebserviceDataSource(DataSource):
