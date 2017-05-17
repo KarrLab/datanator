@@ -12,6 +12,7 @@ from kinetic_datanator.core import filter
 from kinetic_datanator.core import observation
 from numpy import testing as npt
 from scipy.stats import norm
+import math
 import numpy as np
 import unittest
 
@@ -21,16 +22,17 @@ class TestFilter(unittest.TestCase):
     def test_TaxonomicDistanceFilter(self):
         # example 1
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129')
-        self.assertEqual(f.max_dist, 10.)
+        self.assertEqual(f.max_dist, 8.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
         self.assertEqual(f.score(o), 1.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
-        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
+        self.assertEqual(f.scale, 8./5)
+        self.assertEqual(f.score(o), math.exp(-1/f.scale))
 
         o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
-        self.assertEqual(f.score(o), 1. - 8./f.max_dist)
+        self.assertEqual(f.score(o), math.exp(-5))
 
         # example 2
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max_dist=5)
@@ -40,14 +42,14 @@ class TestFilter(unittest.TestCase):
         self.assertEqual(f.score(o), 1.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
-        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
+        self.assertEqual(f.score(o), math.exp(-1/f.scale))
 
         o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
         self.assertEqual(f.score(o), -1)
 
         # example 3
         f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
-        self.assertEqual(f.max_dist, 9.)
+        self.assertEqual(f.max_dist, 7.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium G37'))
         self.assertEqual(f.score(o), 1.)
@@ -56,7 +58,7 @@ class TestFilter(unittest.TestCase):
         self.assertEqual(f.score(o), 1)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma'))
-        self.assertEqual(f.score(o), 1. - 1./f.max_dist)
+        self.assertEqual(f.score(o), math.exp(-1/f.scale))
 
     def test_OptionsFilter(self):
         f = filter.OptionsFilter(('taxon', 'perturbations', ), [''])
@@ -84,7 +86,7 @@ class TestFilter(unittest.TestCase):
         o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
         self.assertEqual(f.score(o), -1)
 
-    def test_ComponentMolecularSimilarityFilter(self):        
+    def test_ComponentMolecularSimilarityFilter(self):
         adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         h2o = 'O'
@@ -197,6 +199,16 @@ class TestFilter(unittest.TestCase):
         npt.assert_almost_equal(f.score(obs(8)), 2 * norm.cdf(-1), decimal=5)
         npt.assert_almost_equal(f.score(obs(5)), 2 * norm.cdf(-2), decimal=5)
         npt.assert_almost_equal(f.score(obs(9)), 2 * norm.cdf(-2), decimal=5)
+
+    def test_ExponentialFilter(self):
+        def obs(temperature):
+            return observation.Observation(environment=observation.Environment(temperature=temperature))
+
+        f = filter.ExponentialFilter(('environment', 'temperature', ), center=1., scale=1.)
+        self.assertEqual(f.score(obs(1)), 1)
+        npt.assert_almost_equal(f.score(obs(100)), 0, decimal=5)
+        npt.assert_almost_equal(f.score(obs(2)), math.exp(-1), decimal=5)
+        npt.assert_almost_equal(f.score(obs(3)), math.exp(-2), decimal=5)
 
     def test_FilterResult(self):
         o = [
