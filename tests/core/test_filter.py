@@ -22,7 +22,7 @@ class TestFilter(unittest.TestCase):
     def test_TaxonomicDistanceFilter(self):
         # example 1
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129')
-        self.assertEqual(f.max_dist, 8.)
+        self.assertEqual(f.max, 8.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
         self.assertEqual(f.score(o), 1.)
@@ -35,8 +35,8 @@ class TestFilter(unittest.TestCase):
         self.assertEqual(f.score(o), math.exp(-5))
 
         # example 2
-        f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max_dist=5)
-        self.assertEqual(f.max_dist, 5.)
+        f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max=5)
+        self.assertEqual(f.max, 5.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
         self.assertEqual(f.score(o), 1.)
@@ -49,7 +49,7 @@ class TestFilter(unittest.TestCase):
 
         # example 3
         f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
-        self.assertEqual(f.max_dist, 7.)
+        self.assertEqual(f.max, 7.)
 
         o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium G37'))
         self.assertEqual(f.score(o), 1.)
