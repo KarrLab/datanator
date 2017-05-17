@@ -393,35 +393,34 @@ class ExponentialFilter(Filter):
         return math.exp(-(val - self.center) / self.scale)
 
 
-class TaxonomicDistanceFilter(ExponentialFilter, RangeFilter):
+class TaxonomicDistanceFilter(Filter):
     """ Prioritizes observations that are from taxonomically close taxa
 
     Attributes:
         taxon (:obj:`str`): name of the taxon to find data for
     """
 
-    def __init__(self, taxon, scale=float('nan'), max=float('nan')):
+    def __init__(self, taxon, max=float('nan'), scale=float('nan')):
         """
         Args:
-            taxon (:obj:`str`): name of the taxon to find data for
-            scale (:obj:`float`, optional): The scale of the distribution. This determines how quickly the score falls to zero away from the center.
+            taxon (:obj:`str`): name of the taxon to find data for            
             max (:obj:`float`, optional): maximum distance to the latest common ancestor with the observed taxon
+            scale (:obj:`float`, optional): The scale of the distribution. This determines how quickly the score falls to zero away from the center.
         """
-
-        if numpy.isnan(scale):
-            taxon_obj = taxonomy_util.Taxon(name=taxon)
-            scale = (taxon_obj.get_max_distance_to_common_ancestor() - 2) / 5
 
         if numpy.isnan(max):
             taxon_obj = taxonomy_util.Taxon(name=taxon)
             max = taxon_obj.get_max_distance_to_common_ancestor() - 2
 
+        if numpy.isnan(scale):
+            taxon_obj = taxonomy_util.Taxon(name=taxon)
+            scale = (taxon_obj.get_max_distance_to_common_ancestor() - 2) / 5.
+
         super(TaxonomicDistanceFilter, self).__init__(('taxon', 'name', ))
 
         self.taxon = taxon
-        self.scale = scale
-        self.min = 0
         self.max = max
+        self.scale = scale
 
     def transform_attribute_value(self, taxon):
         """ Transform an attribute value
