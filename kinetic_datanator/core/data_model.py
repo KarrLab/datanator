@@ -6,6 +6,7 @@
 :License: MIT
 """
 
+from kinetic_datanator.util import molecule_util
 import copy
 import enum
 import numpy
@@ -120,6 +121,69 @@ class Specie(Observable):
         structure (:obj:`str`): structure
     """
     structure = obj_model.core.LongStringAttribute()
+
+    def to_inchi(self, only_formula_and_connectivity=False):
+        """ Get the structure in InChi format
+
+        Args:
+            only_formula_and_connectivity (:obj:`bool`): if :obj:`True`, return only the
+                formula and connectivity layers         
+
+        Returns:
+            :obj:`str`: structure in InChi format or just the formula and connectivity layers
+                if :obj:`only_formula_and_connectivity` is :obj:`True`
+        """
+        inchi = molecule_util.Molecule(structure=self.structure).to_inchi()
+        if only_formula_and_connectivity:
+            return molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+        else:
+            return inchi
+
+    def to_mol(self):
+        """ Get the structure in .mol format
+
+        Returns:
+            :obj:`str`: structure in .mol format
+        """
+        return molecule_util.Molecule(structure=self.structure).to_mol()
+
+    def to_openbabel(self):
+        """ Get the structure as a Open Babel molecule
+
+        Returns:
+            :obj:`openbabel.OBMol`: structure as a Open Babel molecule
+        """
+        return molecule_util.Molecule(structure=self.structure).to_openbabel()
+
+    def to_pybel(self):
+        """ Get the structure as a Pybel molecule
+
+        Returns:
+            :obj:`pybel.Molecule`: structure as a Pybel molecule
+        """
+        return molecule_util.Molecule(structure=self.structure).to_pybel()
+
+    def to_smiles(self):
+        """ Get the structure in canonical SMILES format
+
+        Returns:
+            :obj:`str`: structure in canonical SMILES format
+        """
+        return molecule_util.Molecule(structure=self.structure).to_smiles()
+
+    def get_similarity(self, other, fingerprint_type='fp2'):
+        """ Calculate the similarity with another species
+
+        Args:
+            other (:obj:`Specie`): a second species
+            fingerprint_type (:obj:`str`, optional): fingerprint type to use to calculate similarity
+
+        Returns:
+            :obj:`float`: the similarity with the other molecule
+        """
+        self_mol = molecule_util.Molecule(structure=self.structure)
+        other_mol = molecule_util.Molecule(structure=other.structure)
+        return self_mol.get_similarity(other_mol, fingerprint_type=fingerprint_type)
 
 
 class Reaction(Observable):

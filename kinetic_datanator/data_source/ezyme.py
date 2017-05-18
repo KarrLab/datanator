@@ -9,7 +9,6 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_source
-from kinetic_datanator.util import molecule_util
 import itertools
 import re
 import requests
@@ -48,9 +47,9 @@ class Ezyme(data_source.WebserviceDataSource):
         products = []
         for pair in pairs:
             if pair[0]:
-                reactants.append(molecule_util.Molecule(structure=pair[0].specie.structure).to_mol())
+                reactants.append(pair[0].specie.to_mol())
             if pair[1]:
-                products.append(molecule_util.Molecule(structure=pair[1].specie.structure).to_mol())
+                products.append(pair[1].specie.to_mol())
 
         return self._run(reactants, products)
 

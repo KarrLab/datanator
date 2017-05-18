@@ -110,6 +110,39 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(o.reference.pages, '1-10')
 
 
+class TestSpecie(unittest.TestCase):
+    adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
+    atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
+    pi = 'InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2'
+
+    def test_to_inchi(self):
+        s = data_model.Specie(structure=self.pi)
+        self.assertEqual(s.to_inchi(), self.pi)
+        self.assertEqual(s.to_inchi(only_formula_and_connectivity=True), 'H3O4P/c1-5(2,3)4')
+
+    def test_to_mol(self):
+        s = data_model.Specie(structure=self.pi)
+        self.assertIsInstance(s.to_mol(), str)
+        self.assertNotEqual(s.to_mol(), '')
+
+    def test_to_openbabel(self):
+        s = data_model.Specie(structure=self.pi)
+        self.assertEqual(s.to_openbabel().GetFormula(), 'HO4P--')
+
+    def test_to_pybel(self):
+        s = data_model.Specie(structure=self.pi)
+        self.assertEqual(s.to_pybel().formula, 'HO4P--')
+
+    def test_to_smiles(self):
+        s = data_model.Specie(structure=self.pi)
+        self.assertEqual(s.to_smiles(), '[O-]P(=O)(O)[O-]')
+
+    def get_similarity(self):
+        adp = data_model.Specie(structure=seld.adp)
+        atp = data_model.Specie(structure=seld.atp)
+        self.assertAlmostEqual(adp.get_similarity(atp), 0.955, places=3)
+
+
 class TestReaction(unittest.TestCase):
     adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
     atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
@@ -229,13 +262,13 @@ class TestReaction(unittest.TestCase):
     def test_get_ec_number(self):
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='xx', id='yy', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec-code', id='1.1.1.1', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec-code', id='1.1.1.2', relevance=30.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec-code', id='1.1.1.3', relevance=10.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.2')
         self.assertEqual(rxn.get_ec_numbers(), rxn.cross_references[1:])
@@ -244,13 +277,13 @@ class TestReaction(unittest.TestCase):
 
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='ec-code', id='1.1.1.1', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.manual),
+                                assignment_method=data_model.ResourceAssignmentMethod.manual),
             data_model.Resource(namespace='ec-code', id='1.1.1.2', relevance=30.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec-code', id='1.1.1.3', relevance=10.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='xx', id='yy', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.1')
         self.assertEqual(rxn.get_ec_numbers(), rxn.cross_references[0:-1])
@@ -259,21 +292,21 @@ class TestReaction(unittest.TestCase):
 
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='ec-code', id='1.1.1.1', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.manual),
+                                assignment_method=data_model.ResourceAssignmentMethod.manual),
             data_model.Resource(namespace='ec-code', id='1.1.1.2', relevance=30.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec-code', id='1.1.1.3', relevance=10.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.manual),
+                                assignment_method=data_model.ResourceAssignmentMethod.manual),
         ])
         self.assertRaises(ValueError, rxn.get_ec_number)
 
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='ec2', id='1.1.1.1', relevance=20.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.manual),
+                                assignment_method=data_model.ResourceAssignmentMethod.manual),
             data_model.Resource(namespace='ec-code', id='1.1.1.2', relevance=30.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.predicted),
+                                assignment_method=data_model.ResourceAssignmentMethod.predicted),
             data_model.Resource(namespace='ec2', id='1.1.1.3', relevance=10.,
-                                 assignment_method=data_model.ResourceAssignmentMethod.manual),
+                                assignment_method=data_model.ResourceAssignmentMethod.manual),
         ])
         self.assertEqual(rxn.get_ec_number(), '1.1.1.2')
 
@@ -304,7 +337,7 @@ class TestResource(unittest.TestCase):
 
     def test_init(self):
         xr = data_model.Resource(namespace='src', id='identifier', relevance=2.,
-                                  assignment_method=data_model.ResourceAssignmentMethod.manual)
+                                 assignment_method=data_model.ResourceAssignmentMethod.manual)
         self.assertEqual(xr.namespace, 'src')
         self.assertEqual(xr.id, 'identifier')
         self.assertEqual(xr.relevance, 2.)

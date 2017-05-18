@@ -541,8 +541,7 @@ class ReactionSimilarityFilter(Filter):
             for part in participants:
                 if not part.specie.structure:
                     return None
-                inchi = molecule_util.Molecule(structure=part.specie.structure).to_inchi()
-                val = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+                val = part.specie.to_inchi(only_formula_and_connectivity=True)
                 if val not in [None, '', 'H2O']:
                     vals.add(val)
             return vals
