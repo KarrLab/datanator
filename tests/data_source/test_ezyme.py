@@ -92,11 +92,6 @@ class TestEzyme(unittest.TestCase):
         """ test that Ezyme returns None for partiicpants with no defined structure """
         self.assertEqual(ezyme.Ezyme()._run([m.dr5p], [m.no_structure]), None)
 
-        # todo: additional tests:
-        #
-        #  * cases where the reaction is 3 and 3, but simply looping through each three with sub_inchi_smiles = sub_inchi_smiles[-1:] + sub_inchi_smiles[:-1]
-        #    because the position of the 3 is wrong, and I would have to change the position of the middle, so the side, or soemthing
-
     def test_run(self):
         rxn = data_model.Reaction(participants=[
             data_model.ReactionParticipant(

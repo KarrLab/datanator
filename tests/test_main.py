@@ -43,7 +43,7 @@ class TestWithTempFile(unittest.TestCase):
         with App(argv=argv) as app:
             app.run()
 
-        # todo: add assertions
+        # todo: add assertions after implementing CLI method
         # self.assertTrue(os.path.isfile(output_filename))
 
     def test_GenerateTemplateController(self):

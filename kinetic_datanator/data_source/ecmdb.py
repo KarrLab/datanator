@@ -286,7 +286,7 @@ class Ecmdb(data_source.HttpDataSource):
                     name = self.get_node_text(node)
                     compound.compartments.append(self.get_or_create_object(Compartment, name=name))
 
-            # todo: experimental properties
+            # todo: parse experimental properties
             # * state
             # * melting_point
             # * water_solubility

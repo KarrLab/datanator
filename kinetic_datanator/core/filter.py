@@ -493,7 +493,7 @@ class SpecieMolecularSimilarityFilter(Filter):
 
 
 class MolecularSimilarityFilter(Filter):
-    pass  # todo
+    pass  # todo: implement for small molecules, sequences
 
 
 class ReactionSimilarityFilter(Filter):
