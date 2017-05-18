@@ -203,13 +203,13 @@ class InchiMolecule(object):
         Raises:
             :obj:`ValueError`: if :obj:`structure` is not a valid InChI string
         """
-        if not structure.startswith('InChI=1S/'):
+        if not structure.startswith('InChI='):
             raise ValueError('{} is a not a valid InChI string'.format(structure))
 
         for layer in self.LAYERS.values():
             setattr(self, layer, '')
 
-        for layer in structure[9:].split('/'):
+        for layer in structure.split('/')[1:]:
             if layer[0].isalpha() and layer[0].islower():
                 prefix = layer[0]
                 value = layer[1:]
