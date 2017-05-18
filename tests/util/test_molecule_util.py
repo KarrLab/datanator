@@ -119,6 +119,9 @@ class TestInchiMolecule(unittest.TestCase):
         inchi = 'InChI=1S/BrH/h1H/p-1'
         self.assertEqual(str(molecule_util.InchiMolecule(inchi)), inchi)
 
+        inchi = 'InChI=1S/p+1'
+        self.assertEqual(str(molecule_util.InchiMolecule(inchi)), inchi)
+
     def test_remove_layer(self):
         a = molecule_util.InchiMolecule('InChI=1S/BrH/h1H/p-1')
         a.remove_layer('protons')

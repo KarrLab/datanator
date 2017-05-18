@@ -178,40 +178,45 @@ class InchiMolecule(object):
         fixed_hydrogens (:obj:`str`): fixed hydrogens (f) layer
         reconnected_metals (:obj:`str`): reconnected metal (r) layer
 
-        LAYERS (:obj:`tuple`): tuple layers and their prefixes
+        LAYERS (:obj:`dict`): dictionary of layer prefixes and names
     """
-    LAYERS = (
-        {'prefix': '',  'name': 'formula', },
-        {'prefix': 'c', 'name': 'connections'},
-        {'prefix': 'h', 'name': 'hydrogens'},
-        {'prefix': 'p', 'name': 'protons'},
-        {'prefix': 'q', 'name': 'charge'},
-        {'prefix': 'b', 'name': 'double_bonds'},
-        {'prefix': 't', 'name': 'stereochemistry'},
-        {'prefix': 'm', 'name': 'stereochemistry_parity'},
-        {'prefix': 's', 'name': 'stereochemistry_type'},
-        {'prefix': 'i', 'name': 'isotopes'},
-        {'prefix': 'f', 'name': 'fixed_hydrogens'},
-        {'prefix': 'r', 'name': 'reconnected_metals'},
-    )
+    LAYERS = {
+        '': 'formula',
+        'c': 'connections',
+        'h': 'hydrogens',
+        'p': 'protons',
+        'q': 'charge',
+        'b': 'double_bonds',
+        't': 'stereochemistry',
+        'm': 'stereochemistry_parity',
+        's': 'stereochemistry_type',
+        'i': 'isotopes',
+        'f': 'fixed_hydrogens',
+        'r': 'reconnected_metals',
+    }
 
     def __init__(self, structure):
         """
         Args:
             structure (:obj:`str`): InChI-encoded structure of a molecule
-        """
-        for layer in self.LAYERS:
-            start = structure.find('/' + layer['prefix'])
-            if start == -1:
-                val = ''
-            else:
-                end = structure.find('/', start + 1)
-                if end == -1:
-                    val = structure[start + 1 + len(layer['prefix']):]
-                else:
-                    val = structure[start + 1 + len(layer['prefix']):end]
 
-            setattr(self, layer['name'], val)
+        Raises:
+            :obj:`ValueError`: if :obj:`structure` is not a valid InChI string
+        """
+        if not structure.startswith('InChI=1S/'):
+            raise ValueError('{} is a not a valid InChI string'.format(structure))
+
+        for layer in self.LAYERS.values():
+            setattr(self, layer, '')
+
+        for layer in structure[9:].split('/'):
+            if layer[0].lower() == layer[0]:
+                prefix = layer[0]
+                value = layer[1:]
+            else:
+                prefix = ''
+                value = layer
+            setattr(self, self.LAYERS[prefix], value)
 
     def __str__(self):
         """ Generate an InChI string representation of the molecule
@@ -220,10 +225,10 @@ class InchiMolecule(object):
             :obj:`str`: InChI string representation of the molecule
         """
         vals = []
-        for layer in self.LAYERS:
-            val = getattr(self, layer['name'])
+        for prefix, name in self.LAYERS.items():
+            val = getattr(self, name)
             if val:
-                vals.append('/' + layer['prefix'] + val)
+                vals.append('/' + prefix + val)
 
         return 'InChI=1S' + ''.join(vals)
 
