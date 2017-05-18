@@ -7,11 +7,7 @@
 :License: MIT
 """
 
-from .core import data_structs
-from .util import compartment_util
-from .util import molecule_util
-from .util import reaction_util
-from .util import taxonomy_util
+from kinetic_datanator.core import observation
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
 import re
@@ -20,8 +16,10 @@ import openpyxl
 
 class InputReader(object):
 
-    @classmethod
-    def run(cls, filename):
+    def __init__(self):
+        pass
+
+    def run(self, filename):
         """ Read input data from an Excel workbook
 
         Args:
@@ -30,71 +28,87 @@ class InputReader(object):
         Returns:
             :obj:`tuple`: 
 
-                * :obj:`taxonomy_util.Taxon`: taxon
-                * :obj:`list` of :obj:`compartment_util.Compartment`: list of compartments
-                * :obj:`list` of :obj:`molecule_util.Molecule`: list of molecules
-                * :obj:`list` of :obj:`reaction_util.Reaction`: list of reactions
+                * :obj:`observation.Genetics`: genetics
+                * :obj:`list` of :obj:`observation.Compartment`: list of compartments
+                * :obj:`list` of :obj:`observation.Specie`: list of species
+                * :obj:`list` of :obj:`observation.Reaction`: list of reactions
         """
         wb = openpyxl.load_workbook(filename=filename)
-        taxon = cls._read_taxon(wb.get_sheet_by_name('Taxon'))
-        compartments = []
-        molecules = cls._read_molecules(wb.get_sheet_by_name('Molecules'))
-        reactions = cls._read_reactions(wb.get_sheet_by_name('Reactions'))
-        
-        cls.link_objects(compartments, molecules, reactions)
+        genetics = self.read_genetics(wb.get_sheet_by_name('Genetics'))
+        compartments = self.read_compartments(wb.get_sheet_by_name('Compartments'))
+        species = self.read_species(wb.get_sheet_by_name('Species'))
+        reactions = self.read_reactions(wb.get_sheet_by_name('Reactions'), compartments, species)
 
-        return (taxon, compartments, molecules, reactions)
+        return (genetics, compartments, species, reactions)
 
-    @classmethod
-    def _read_taxon(cls, ws):
+    def read_genetics(self, ws):
         """ Read taxon from an Excel worksheet
 
         Args:
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`taxonomy_util.Taxon`: taxon
+            :obj:`observation.Genetics`: taxon
         """
-        return taxonomy_util.Taxon(name=ws.cell(row=2, column=1).value)
+        return observation.Genetics(
+                taxon=ws.cell(row=2, column=1).value,
+                variation=ws.cell(row=2, column=2).value,
+                )
 
-    @classmethod
-    def _read_molecules(cls, ws):
-        """ Read molecules from an Excel worksheet
+    def read_compartments(self, ws):
+        """ Read compartments from an Excel worksheet
 
         Args:
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`list` of `molecule_util.Molecule`: list of molecules
+            :obj:`list` of `observation.Compartment`: list of compartments
         """
-        molecules = []
+        compartments = []
         for i in range(2, ws.max_row + 1):
-            molecules.append(molecule_util.Molecule(
+            compartments.append(observation.Compartment(
+                id=ws.cell(row=i, column=1).value,
+                name=ws.cell(row=i, column=2).value,
+            ))
+        return compartments
+
+    def read_species(self, ws):
+        """ Read species from an Excel worksheet
+
+        Args:
+            ws (:obj:`openpyxl.Worksheet`): worksheet
+
+        Returns:
+            :obj:`list` of `observation.Specie`: list of species
+        """
+        species = []
+        for i in range(2, ws.max_row + 1):
+            species.append(observation.Specie(
                 id=ws.cell(row=i, column=1).value,
                 structure=ws.cell(row=i, column=2).value,
             ))
 
-        return molecules
+        return species
 
-    @classmethod
-    def _read_reactions(cls, ws):
+    def read_reactions(self, ws, compartments, species):
         """ Read reactions from an Excel worksheet
 
         Args:
             ws (:obj:`openpyxl.Worksheet`): worksheet
+            compartments (:obj:`list` of :obj:`observation.Compartment`): list of compartments
+            species (:obj:`list` of :obj:`observation.Specie`): list of species
 
         Returns:
-            :obj:`list` of `reaction_util.Reaction`: list of reactions
+            :obj:`list` of `observation.Reaction`: list of reactions
         """
         reactions = []
         for i in range(2, ws.max_row + 1):
-            rxn = cls.parse_reaction_equation(ws.cell(row=i, column=2).value)
+            rxn = self.parse_reaction_equation(ws.cell(row=i, column=2).value, compartments, species)
             rxn.id = ws.cell(row=i, column=1).value
             reactions.append(rxn)
         return reactions
 
-    @classmethod
-    def parse_reaction_equation(cls, equation):
+    def parse_reaction_equation(self, equation, compartments, species):
         """ Parse a reaction equation, e.g.
 
         * [c]: ATP + H2O ==> ADP + PI + H
@@ -102,10 +116,15 @@ class InputReader(object):
 
         Args:
             equation (:obj:`str`): reaction equation
+            compartments (:obj:`list` of :obj:`observation.Compartment`): list of compartments
+            species (:obj:`list` of :obj:`observation.Specie`): list of species
 
         Returns:
-            :obj:`reaction_util.Reaction': reaction
+            :obj:`observation.Reaction': reaction
         """
+        compartments_dict = {c.id: c for c in compartments}
+        species_dict = {s.id: s for s in species}
+
         global_comp = '\[(?P<comp>[a-z0-9_]+)\]: *'
         global_part = ' *(([0-9\.]+) )?([a-z0-9_]+)'
         global_lhs = '(?P<lhs>{}( *\+ *{})*)'.format(global_part, global_part)
@@ -129,15 +148,15 @@ class InputReader(object):
 
             participants = []
             for part in re.findall(global_part, lhs, re.IGNORECASE):
-                participants.append(reaction_util.ReactionParticipant(
-                    molecule=part[2],
-                    compartment=global_comp,
+                participants.append(observation.ReactionParticipant(
+                    specie=species_dict[part[2]],
+                    compartment=compartments_dict[global_comp],
                     coefficient=-float(part[0][0:-1] or 1.),
                 ))
             for part in re.findall(global_part, rhs, re.IGNORECASE):
-                participants.append(reaction_util.ReactionParticipant(
-                    molecule=part[2],
-                    compartment=global_comp,
+                participants.append(observation.ReactionParticipant(
+                    specie=species_dict[part[2]],
+                    compartment=compartments_dict[global_comp],
                     coefficient=float(part[0][0:-1] or 1.),
                 ))
 
@@ -148,15 +167,15 @@ class InputReader(object):
 
             participants = []
             for part in re.findall(local_part, lhs, re.IGNORECASE):
-                participants.append(reaction_util.ReactionParticipant(
-                    molecule=part[2],
-                    compartment=part[3],
+                participants.append(observation.ReactionParticipant(
+                    specie=species_dict[part[2]],
+                    compartment=compartments_dict[part[3]],
                     coefficient=-float(part[0][0:-1] or 1.),
                 ))
             for part in re.findall(local_part, rhs, re.IGNORECASE):
-                participants.append(reaction_util.ReactionParticipant(
-                    molecule=part[2],
-                    compartment=part[3],
+                participants.append(observation.ReactionParticipant(
+                    specie=species_dict[part[2]],
+                    compartment=compartments_dict[part[3]],
                     coefficient=float(part[0][0:-1] or 1.),
                 ))
         else:
@@ -166,31 +185,7 @@ class InputReader(object):
         for i_part, part in enumerate(participants):
             part.order = i_part
 
-        return reaction_util.Reaction(participants=participants, reversible=sep == '<')
-
-    @classmethod
-    def link_objects(cls, compartments, molecules, reactions):
-        """ Link objects to build object graph
-
-        Args:
-            compartments (:obj:`list` of :obj:`compartment_util.Compartment`): list of compartments
-            molecules (:obj:`list` of :obj:`molecule_util.Molecule`): list of molecules
-            reactions (:obj:`list` of :obj:`reaction_util.Reaction`): list of reactions
-        """
-        for rxn in reactions:
-            for part in rxn.participants:
-                m_str = part.molecule
-                m_obj = next((m for m in molecules if m.id == m_str), None)
-                if not m_obj:
-                    raise ValueError('Participant {} of reaction {} is not defined'.format(m_str, rxn.id))
-                part.molecule = m_obj
-
-                c_str = part.compartment
-                c_obj = next((c for c in compartments if c.id == c_str), None)
-                if not c_obj:
-                    c_obj = compartment_util.Compartment(id=c_str)
-                    compartments.append(c_obj)
-                part.compartment = c_obj
+        return observation.Reaction(participants=participants, reversible=sep == '<')
 
 
 class ResultsWriter(object):
@@ -209,10 +204,10 @@ class ResultsWriter(object):
         style = WorkbookStyle()
 
         # taxon
-        style['Taxon'] = WorksheetStyle(head_rows=1, head_columns=0,
+        style['Genetics'] = WorksheetStyle(head_rows=1, head_columns=0,
                                         head_row_font_bold=True, head_row_fill_fgcolor='CCCCCC', row_height=15)
 
-        ws = wb['Taxon'] = Worksheet()
+        ws = wb['Genetics'] = Worksheet()
         ws.append(Row(['Name', 'NCBI ID']))
         ws.append(Row([taxon, taxonomy_util.Taxon(taxon).get_ncbi_id()]))
 

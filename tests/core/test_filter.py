@@ -7,213 +7,308 @@
 :License: MIT
 """
 
-from copy import copy
 from kinetic_datanator.core import filter
 from kinetic_datanator.core import observation
-from numpy import testing as npt
-from scipy.stats import norm
+from kinetic_datanator.util import warning_util
+import copy
 import math
-import numpy as np
+import numpy
+import scipy.stats
 import unittest
 
 
-class TestFilter(unittest.TestCase):
+warning_util.disable_warnings()
+
+
+class TestFilters(unittest.TestCase):
 
     def test_TaxonomicDistanceFilter(self):
         # example 1
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129')
         self.assertEqual(f.max, 8.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
-        self.assertEqual(f.score(o), 1.)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae M129')))
+        self.assertEqual(f.score(ov), 1.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.scale, 8./5)
-        self.assertEqual(f.score(o), math.exp(-1/f.scale))
+        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
-        o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
-        self.assertEqual(f.score(o), math.exp(-5))
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Escherichia coli')))
+        self.assertEqual(f.score(ov), math.exp(-5))
 
         # example 2
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max=5)
         self.assertEqual(f.max, 5.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae M129'))
-        self.assertEqual(f.score(o), 1.)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae M129')))
+        self.assertEqual(f.score(ov), 1.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma pneumoniae'))
-        self.assertEqual(f.score(o), math.exp(-1/f.scale))
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae')))
+        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
-        o = observation.Observation(taxon=observation.Taxon(name='Escherichia coli'))
-        self.assertEqual(f.score(o), -1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Escherichia coli')))
+        self.assertEqual(f.score(ov), -1)
 
         # example 3
         f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
         self.assertEqual(f.max, 7.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium G37'))
-        self.assertEqual(f.score(o), 1.)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma genitalium G37')))
+        self.assertEqual(f.score(ov), 1.)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma genitalium'))
-        self.assertEqual(f.score(o), 1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma genitalium')))
+        self.assertEqual(f.score(ov), 1)
 
-        o = observation.Observation(taxon=observation.Taxon(name='Mycoplasma'))
-        self.assertEqual(f.score(o), math.exp(-1/f.scale))
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma')))
+        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
     def test_OptionsFilter(self):
-        f = filter.OptionsFilter(('taxon', 'perturbations', ), [''])
-        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
-        self.assertEqual(f.score(o), 1)
-        o = observation.Observation(taxon=observation.Taxon(perturbations='wildtype'))
-        self.assertEqual(f.score(o), -1)
-        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
-        self.assertEqual(f.score(o), -1)
+        f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), [''])
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        self.assertEqual(f.score(ov), 1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='wildtype')))
+        self.assertEqual(f.score(ov), -1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        self.assertEqual(f.score(ov), -1)
 
-        f = filter.OptionsFilter(('taxon', 'perturbations', ), ['wildtype'])
-        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
-        self.assertEqual(f.score(o), -1)
-        o = observation.Observation(taxon=observation.Taxon(perturbations='wildtype'))
-        self.assertEqual(f.score(o), 1)
-        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
-        self.assertEqual(f.score(o), -1)
+        f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), ['wildtype'])
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        self.assertEqual(f.score(ov), -1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='wildtype')))
+        self.assertEqual(f.score(ov), 1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        self.assertEqual(f.score(ov), -1)
 
     def test_WildtypeFilter(self):
         f = filter.WildtypeFilter()
 
-        o = observation.Observation(taxon=observation.Taxon(perturbations=''))
-        self.assertEqual(f.score(o), 1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        self.assertEqual(f.score(ov), 1)
 
-        o = observation.Observation(taxon=observation.Taxon(perturbations='Delta gene-01'))
-        self.assertEqual(f.score(o), -1)
+        ov = observation.ObservedValue(
+            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        self.assertEqual(f.score(ov), -1)
 
-    def test_ComponentMolecularSimilarityFilter(self):
+    def test_SpecieMolecularSimilarityFilter(self):
         adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         h2o = 'O'
 
-        f = filter.ComponentMolecularSimilarityFilter(atp)
+        f = filter.SpecieMolecularSimilarityFilter(atp)
 
-        o = observation.Observation(component=observation.MoleculeComponent(structure=adp))
-        npt.assert_almost_equal(f.score(o), 0.955, decimal=3)
+        ov = observation.ObservedValue(observable=observation.Specie(structure=adp))
+        numpy.testing.assert_almost_equal(f.score(ov), 0.955, decimal=3)
 
-        o = observation.Observation(component=observation.MoleculeComponent(structure=h2o))
-        npt.assert_almost_equal(f.score(o), 0, decimal=3)
+        ov = observation.ObservedValue(observable=observation.Specie(structure=h2o))
+        numpy.testing.assert_almost_equal(f.score(ov), 0, decimal=3)
 
-    @unittest.skip('implement me')
-    def test_ComponentReactionSimilarityFilter(self):
-        pass
+    def test_ReactionSimilarityFilter(self):
+        def get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2', ec='1.1.1.1'):
+            atp = observation.Specie(
+                id='atp', structure='InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1')
+            h2o = observation.Specie(id='h2o', structure='InChI=1S/H2O/h1H2')
+            adp = observation.Specie(
+                id='adp', structure='InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/p-3/t4-,6-,7-,10-/m1/s1')
+            pi = observation.Specie(id='pi', structure=pi)
+            h = observation.Specie(id='h', structure='InChI=1S/p+1/i/hH')
+
+            return observation.Reaction(
+                participants=[
+                    observation.ReactionParticipant(coefficient=-1, specie=atp),
+                    observation.ReactionParticipant(coefficient=-1, specie=h2o),
+                    observation.ReactionParticipant(coefficient=1, specie=adp),
+                    observation.ReactionParticipant(coefficient=1, specie=pi),
+                    observation.ReactionParticipant(coefficient=1, specie=h),
+                ],
+                cross_references=[
+                    observation.Resource(namespace='ec-code', id=ec)
+                ])
+
+        f = filter.ReactionSimilarityFilter(get_reaction(), min_ec_level=3, scale=1)
+
+        # same participants
+        ov = observation.ObservedValue(observable=get_reaction())
+        numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
+
+        # similiar participants
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4'))
+        numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
+
+        # different participants, same 4-digit EC
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4'))
+        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-1), decimal=3)
+
+        # different participants, same 3-digit EC
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.2'))
+        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
+        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.'))
+        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.-'))
+        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+
+        # different participants, same 2-digit EC
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
+        numpy.testing.assert_almost_equal(f.score(ov), -1, decimal=3)
+
+        # target reaction only has 3 digits
+        f1 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1'), min_ec_level=3, scale=1)
+        f2 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1.'), min_ec_level=3, scale=1)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
+        numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.1'))
+        numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
+
+        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
+        numpy.testing.assert_almost_equal(f1.score(ov), -1, decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(ov), -1, decimal=3)
 
     def test_RangeFilter(self):
-        def obs(temperature):
-            return observation.Observation(environment=observation.Environment(temperature=temperature))
+        def obs_val(temperature):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
 
-        f = filter.RangeFilter(('environment', 'temperature', ), min=15., max=30.)
-        self.assertEqual(f.score(obs(float('nan'))), -1)
-        self.assertEqual(f.score(obs(10)), -1)
-        self.assertEqual(f.score(obs(15.0)), 1)
-        self.assertEqual(f.score(obs(15.01)), 1)
-        self.assertEqual(f.score(obs(29.99)), 1)
-        self.assertEqual(f.score(obs(30.0)), 1)
-        self.assertEqual(f.score(obs(31)), -1)
+        f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=30.)
+        self.assertEqual(f.score(obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(obs_val(10)), -1)
+        self.assertEqual(f.score(obs_val(15.0)), 1)
+        self.assertEqual(f.score(obs_val(15.01)), 1)
+        self.assertEqual(f.score(obs_val(29.99)), 1)
+        self.assertEqual(f.score(obs_val(30.0)), 1)
+        self.assertEqual(f.score(obs_val(31)), -1)
 
-        f = filter.RangeFilter(('environment', 'temperature', ), min=float('nan'), max=30.)
-        self.assertEqual(f.score(obs(float('nan'))), -1)
-        self.assertEqual(f.score(obs(10)), 1)
-        self.assertEqual(f.score(obs(15.0)), 1)
-        self.assertEqual(f.score(obs(15.01)), 1)
-        self.assertEqual(f.score(obs(29.99)), 1)
-        self.assertEqual(f.score(obs(30.0)), 1)
-        self.assertEqual(f.score(obs(31)), -1)
+        f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=float('nan'), max=30.)
+        self.assertEqual(f.score(obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(obs_val(10)), 1)
+        self.assertEqual(f.score(obs_val(15.0)), 1)
+        self.assertEqual(f.score(obs_val(15.01)), 1)
+        self.assertEqual(f.score(obs_val(29.99)), 1)
+        self.assertEqual(f.score(obs_val(30.0)), 1)
+        self.assertEqual(f.score(obs_val(31)), -1)
 
-        f = filter.RangeFilter(('environment', 'temperature', ), min=15., max=float('nan'))
-        self.assertEqual(f.score(obs(float('nan'))), -1)
-        self.assertEqual(f.score(obs(10)), -1)
-        self.assertEqual(f.score(obs(15.0)), 1)
-        self.assertEqual(f.score(obs(15.01)), 1)
-        self.assertEqual(f.score(obs(29.99)), 1)
-        self.assertEqual(f.score(obs(30.0)), 1)
-        self.assertEqual(f.score(obs(31)), 1)
+        f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=float('nan'))
+        self.assertEqual(f.score(obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(obs_val(10)), -1)
+        self.assertEqual(f.score(obs_val(15.0)), 1)
+        self.assertEqual(f.score(obs_val(15.01)), 1)
+        self.assertEqual(f.score(obs_val(29.99)), 1)
+        self.assertEqual(f.score(obs_val(30.0)), 1)
+        self.assertEqual(f.score(obs_val(31)), 1)
 
-        f = filter.RangeFilter(('environment', 'temperature', ))
-        self.assertEqual(f.score(obs(float('nan'))), 1)
-        self.assertEqual(f.score(obs(10)), 1)
-        self.assertEqual(f.score(obs(15.0)), 1)
-        self.assertEqual(f.score(obs(15.01)), 1)
-        self.assertEqual(f.score(obs(29.99)), 1)
-        self.assertEqual(f.score(obs(30.0)), 1)
-        self.assertEqual(f.score(obs(31)), 1)
+        f = filter.RangeFilter(('observation', 'environment', 'temperature', ))
+        self.assertEqual(f.score(obs_val(float('nan'))), 1)
+        self.assertEqual(f.score(obs_val(10)), 1)
+        self.assertEqual(f.score(obs_val(15.0)), 1)
+        self.assertEqual(f.score(obs_val(15.01)), 1)
+        self.assertEqual(f.score(obs_val(29.99)), 1)
+        self.assertEqual(f.score(obs_val(30.0)), 1)
+        self.assertEqual(f.score(obs_val(31)), 1)
 
     def test_TemperatureRangeFilter(self):
-        def obs(temperature):
-            return observation.Observation(environment=observation.Environment(temperature=temperature))
+        def obs_val(temperature):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
 
         f = filter.TemperatureRangeFilter(min=15., max=30.)
-        self.assertEqual(f.score(obs(10)), -1)
-        self.assertEqual(f.score(obs(15.0)), 1)
-        self.assertEqual(f.score(obs(15.01)), 1)
-        self.assertEqual(f.score(obs(29.99)), 1)
-        self.assertEqual(f.score(obs(30.0)), 1)
-        self.assertEqual(f.score(obs(31)), -1)
+        self.assertEqual(f.score(obs_val(10)), -1)
+        self.assertEqual(f.score(obs_val(15.0)), 1)
+        self.assertEqual(f.score(obs_val(15.01)), 1)
+        self.assertEqual(f.score(obs_val(29.99)), 1)
+        self.assertEqual(f.score(obs_val(30.0)), 1)
+        self.assertEqual(f.score(obs_val(31)), -1)
 
     def test_PhRangeFilter(self):
-        def obs(ph):
-            return observation.Observation(environment=observation.Environment(ph=ph))
+        def obs_val(ph):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(ph=ph)))
 
         f = filter.PhRangeFilter(min=5., max=9.)
-        self.assertEqual(f.score(obs(3)), -1)
-        self.assertEqual(f.score(obs(5.0)), 1)
-        self.assertEqual(f.score(obs(5.01)), 1)
-        self.assertEqual(f.score(obs(8.99)), 1)
-        self.assertEqual(f.score(obs(9.0)), 1)
-        self.assertEqual(f.score(obs(10)), -1)
+        self.assertEqual(f.score(obs_val(3)), -1)
+        self.assertEqual(f.score(obs_val(5.0)), 1)
+        self.assertEqual(f.score(obs_val(5.01)), 1)
+        self.assertEqual(f.score(obs_val(8.99)), 1)
+        self.assertEqual(f.score(obs_val(9.0)), 1)
+        self.assertEqual(f.score(obs_val(10)), -1)
 
     def test_NormalFilter(self):
-        def obs(temperature):
-            return observation.Observation(environment=observation.Environment(temperature=temperature))
+        def obs_val(temperature):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
 
-        f = filter.NormalFilter(('environment', 'temperature', ), mean=37, std=1)
-        self.assertEqual(f.score(obs(37)), 1)
-        npt.assert_almost_equal(f.score(obs(36)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(38)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(35)), 2 * norm.cdf(-2), decimal=5)
-        npt.assert_almost_equal(f.score(obs(39)), 2 * norm.cdf(-2), decimal=5)
+        f = filter.NormalFilter(('observation', 'environment', 'temperature', ), mean=37, std=1)
+        self.assertEqual(f.score(obs_val(37)), 1)
+        numpy.testing.assert_almost_equal(f.score(obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_TemperatureNormalFilter(self):
-        def obs(temperature):
-            return observation.Observation(environment=observation.Environment(temperature=temperature))
+        def obs_val(temperature):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
 
         f = filter.TemperatureNormalFilter(mean=37, std=1)
-        self.assertEqual(f.score(obs(37)), 1)
-        npt.assert_almost_equal(f.score(obs(36)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(38)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(35)), 2 * norm.cdf(-2), decimal=5)
-        npt.assert_almost_equal(f.score(obs(39)), 2 * norm.cdf(-2), decimal=5)
+        self.assertEqual(f.score(obs_val(37)), 1)
+        numpy.testing.assert_almost_equal(f.score(obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_PhNormalFilter(self):
-        def obs(ph):
-            return observation.Observation(environment=observation.Environment(ph=ph))
+        def obs_val(ph):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(ph=ph)))
 
         f = filter.PhNormalFilter(mean=7, std=1)
-        self.assertEqual(f.score(obs(7)), 1)
-        npt.assert_almost_equal(f.score(obs(6)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(8)), 2 * norm.cdf(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(5)), 2 * norm.cdf(-2), decimal=5)
-        npt.assert_almost_equal(f.score(obs(9)), 2 * norm.cdf(-2), decimal=5)
+        self.assertEqual(f.score(obs_val(7)), 1)
+        numpy.testing.assert_almost_equal(f.score(obs_val(6)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(8)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(5)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(9)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_ExponentialFilter(self):
-        def obs(temperature):
-            return observation.Observation(environment=observation.Environment(temperature=temperature))
+        def obs_val(temperature):
+            return observation.ObservedValue(
+                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
 
-        f = filter.ExponentialFilter(('environment', 'temperature', ), center=1., scale=1.)
-        self.assertEqual(f.score(obs(1)), 1)
-        npt.assert_almost_equal(f.score(obs(100)), 0, decimal=5)
-        npt.assert_almost_equal(f.score(obs(2)), math.exp(-1), decimal=5)
-        npt.assert_almost_equal(f.score(obs(3)), math.exp(-2), decimal=5)
+        f = filter.ExponentialFilter(('observation', 'environment', 'temperature', ), center=1., scale=1.)
+        self.assertEqual(f.score(obs_val(1)), 1)
+        numpy.testing.assert_almost_equal(f.score(obs_val(100)), 0, decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(2)), math.exp(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(obs_val(3)), math.exp(-2), decimal=5)
 
-    def test_FilterResult(self):
-        o = [
-            observation.Observation(value=1),
-            observation.Observation(value=2),
+
+class TestFilterResult(unittest.TestCase):
+
+    def test(self):
+        ov = [
+            observation.ObservedValue(value=1),
+            observation.ObservedValue(value=2),
         ]
         f = [
             filter.RangeFilter(('environment', 'temperature', )),
@@ -221,18 +316,35 @@ class TestFilter(unittest.TestCase):
         ]
         s = [0.3, 0.5]
 
-        filter.FilterResult(o, f, s, copy(o), copy(s), [1, 2])
+        filter_result = filter.FilterResult(ov, f, s, copy.copy(ov), copy.copy(s), [1, 2])
+        self.assertEqual(filter_result.observed_values, ov)
+        self.assertEqual(filter_result.filters, f)
+        self.assertEqual(filter_result.scores, s)
+        self.assertEqual(filter_result.ordered_observed_values, ov)
+        self.assertEqual(filter_result.ordered_scores, s)
+        self.assertEqual(filter_result.ordered_observed_value_indices, [1, 2])
 
-    def test_FilterRunner_score(self):
-        o = [
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=6)),
+
+class TestFilterRunner(unittest.TestCase):
+
+    def test_score(self):
+        ov = [
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
         ]
         f = [
             filter.TemperatureRangeFilter(min=36.5, max=37.5),
@@ -241,85 +353,110 @@ class TestFilter(unittest.TestCase):
         ]
 
         runner = filter.FilterRunner(f[0])
-        self.assertEqual(list(runner.score(o).ravel()), [1., 1., -1., -1., 1., 1., -1., -1.])
+        self.assertEqual(list(runner.score(ov).ravel()), [1., 1., -1., -1., 1., 1., -1., -1.])
 
         runner = filter.FilterRunner(f[1])
-        self.assertEqual(list(runner.score(o).ravel()), [1., -1., 1., -1., 1., -1., 1., -1.])
+        self.assertEqual(list(runner.score(ov).ravel()), [1., -1., 1., -1., 1., -1., 1., -1.])
 
         runner = filter.FilterRunner(f[2])
-        s = 2 * norm.cdf(-1)
-        npt.assert_almost_equal(list(runner.score(o).ravel()), [1., 1., s, s, 1., 1., s, s], decimal=5)
+        s = 2 * scipy.stats.norm.cdf(-1)
+        numpy.testing.assert_almost_equal(list(runner.score(ov).ravel()), [1., 1., s, s, 1., 1., s, s], decimal=5)
 
-    def test_FilterRunner_filter(self):
-        o = [
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=6)),
+    def test_filter(self):
+        ov = [
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
         ]
 
         # one filter
-        s = np.array([1, -1, 0.5, 1, -1, 0, -1, 0.3], ndmin=2).transpose()
+        s = numpy.array([1, -1, 0.5, 1, -1, 0, -1, 0.3], ndmin=2).transpose()
         runner = filter.FilterRunner([])
-        filt_o, filt_s, i_filt_o = runner.filter(o, s)
+        filt_o, filt_s, i_filt_o = runner.filter(ov, s)
 
-        self.assertEqual(filt_o, [o[0], o[2], o[3], o[5], o[7]])
-        npt.assert_equal(filt_s, np.array([1, 0.5, 1, 0, 0.3], ndmin=2).transpose())
+        self.assertEqual(filt_o, [ov[0], ov[2], ov[3], ov[5], ov[7]])
+        numpy.testing.assert_equal(filt_s, numpy.array([1, 0.5, 1, 0, 0.3], ndmin=2).transpose())
         self.assertEqual(i_filt_o, [0, 2, 3, 5, 7])
 
         # multiple filters
-        s = np.array([[1, -1, 0.5, 1, -1, 0, -1, 0.3], [0, 0, 0, 0, 0, 0, 0, -1]], ndmin=2).transpose()
+        s = numpy.array([[1, -1, 0.5, 1, -1, 0, -1, 0.3], [0, 0, 0, 0, 0, 0, 0, -1]], ndmin=2).transpose()
         runner = filter.FilterRunner([])
-        filt_o, filt_s, i_filt_o = runner.filter(o, s)
+        filt_o, filt_s, i_filt_o = runner.filter(ov, s)
 
-        self.assertEqual(filt_o, [o[0], o[2], o[3], o[5]])
-        npt.assert_equal(filt_s, np.array([[1, 0.5, 1, 0], [0, 0, 0, 0]], ndmin=2).transpose())
+        self.assertEqual(filt_o, [ov[0], ov[2], ov[3], ov[5]])
+        numpy.testing.assert_equal(filt_s, numpy.array([[1, 0.5, 1, 0], [0, 0, 0, 0]], ndmin=2).transpose())
         self.assertEqual(i_filt_o, [0, 2, 3, 5])
 
-    def test_FilterRunner_order(self):
-        o = [
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=36, ph=6)),
+    def test_order(self):
+        ov = [
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
         ]
 
         # one filter
-        s = np.array([0.9, -1, 0.5, 1, -1.1, 0, -1.3, 0.3], ndmin=2).transpose()
+        s = numpy.array([0.9, -1, 0.5, 1, -1.1, 0, -1.3, 0.3], ndmin=2).transpose()
         runner = filter.FilterRunner([])
-        order_o, order_s, i_order_o = runner.order(o, s)
+        order_o, order_s, i_order_o = runner.order(ov, s)
 
-        self.assertEqual(order_o, [o[3], o[0], o[2], o[7], o[5], o[1], o[4], o[6]])
-        npt.assert_equal(order_s, np.array([1, 0.9, 0.5, 0.3, 0, -1, -1.1, -1.3], ndmin=2).transpose())
+        self.assertEqual(order_o, [ov[3], ov[0], ov[2], ov[7], ov[5], ov[1], ov[4], ov[6]])
+        numpy.testing.assert_equal(order_s, numpy.array([1, 0.9, 0.5, 0.3, 0, -1, -1.1, -1.3], ndmin=2).transpose())
         self.assertEqual(i_order_o, [3, 0, 2, 7, 5, 1, 4, 6])
 
         # multiple filters
-        s = np.array([[0.9, -1, 0.5, 1, -1.1, 0, -1.3, 0.3], [0, 0, 0, 0, 0, 0, 0, 0]], ndmin=2).transpose()
+        s = numpy.array([[0.9, -1, 0.5, 1, -1.1, 0, -1.3, 0.3], [0, 0, 0, 0, 0, 0, 0, 0]], ndmin=2).transpose()
         runner = filter.FilterRunner([])
-        order_o, order_s, i_order_o = runner.order(o, s)
+        order_o, order_s, i_order_o = runner.order(ov, s)
 
-        self.assertEqual(order_o, [o[3], o[0], o[2], o[7], o[5], o[1], o[4], o[6]])
-        npt.assert_equal(order_s, np.array([[1, 0.9, 0.5, 0.3, 0, -1, -1.1, -1.3], [0, 0, 0, 0, 0, 0, 0, 0]], ndmin=2).transpose())
+        self.assertEqual(order_o, [ov[3], ov[0], ov[2], ov[7], ov[5], ov[1], ov[4], ov[6]])
+        numpy.testing.assert_equal(order_s, numpy.array(
+            [[1, 0.9, 0.5, 0.3, 0, -1, -1.1, -1.3], [0, 0, 0, 0, 0, 0, 0, 0]], ndmin=2).transpose())
         self.assertEqual(i_order_o, [3, 0, 2, 7, 5, 1, 4, 6])
 
-    def test_FilterRunner_run(self):
-        o = [
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=37, ph=6)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=7)),
-            observation.Observation(value=1, environment=observation.Environment(temperature=36, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37.1, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37.1, ph=6)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37.01, ph=7)),
-            observation.Observation(value=2, environment=observation.Environment(temperature=37.01, ph=6)),
+    def test_run(self):
+        ov = [
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=37, ph=6))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=7))),
+            observation.ObservedValue(value=1, observation=observation.Observation(
+                environment=observation.Environment(temperature=36, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37.1, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37.1, ph=6))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37.01, ph=7))),
+            observation.ObservedValue(value=2, observation=observation.Observation(
+                environment=observation.Environment(temperature=37.01, ph=6))),
         ]
         f = [
             filter.TemperatureNormalFilter(mean=37, std=1),
@@ -328,19 +465,19 @@ class TestFilter(unittest.TestCase):
         runner = filter.FilterRunner(f)
 
         # return_info=True
-        result = runner.run(o, return_info=True)
-        self.assertEqual(result.observations, o)
+        result = runner.run(ov, return_info=True)
+        self.assertEqual(result.observed_values, ov)
         self.assertEqual(result.filters, f)
-        s1 = 2 * norm.cdf(-1)
-        s01 = 2 * norm.cdf(-0.1)
-        s001 = 2 * norm.cdf(-0.01)
-        npt.assert_almost_equal(result.scores, np.array([[1., 1., s1, s1, s01, s01, s001, s001],
-                                                         [1., -1., 1., -1., 1., -1., 1., -1.]], ndmin=2).transpose())
+        s1 = 2 * scipy.stats.norm.cdf(-1)
+        s01 = 2 * scipy.stats.norm.cdf(-0.1)
+        s001 = 2 * scipy.stats.norm.cdf(-0.01)
+        numpy.testing.assert_almost_equal(result.scores, numpy.array([[1., 1., s1, s1, s01, s01, s001, s001],
+                                                                      [1., -1., 1., -1., 1., -1., 1., -1.]], ndmin=2).transpose())
 
-        self.assertEqual(result.ordered_observations, [o[0], o[6], o[4], o[2]])
-        npt.assert_almost_equal(result.ordered_scores, np.array([[1., s001, s01, s1], [1., 1., 1., 1.]], ndmin=2).transpose())
-        self.assertEqual(result.ordered_observation_indices, [0, 6, 4, 2])
+        self.assertEqual(result.ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])
+        numpy.testing.assert_almost_equal(result.ordered_scores, numpy.array([[1., s001, s01, s1], [1., 1., 1., 1.]], ndmin=2).transpose())
+        self.assertEqual(result.ordered_observed_value_indices, [0, 6, 4, 2])
 
         # return_info=False
-        ordered_observations = runner.run(o, return_info=False)
-        self.assertEqual(ordered_observations, [o[0], o[6], o[4], o[2]])
+        ordered_observed_values = runner.run(ov, return_info=False)
+        self.assertEqual(ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])

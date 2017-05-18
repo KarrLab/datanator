@@ -1,3 +1,4 @@
+bioservices
 bs4
 cement
 python-dateutil
