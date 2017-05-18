@@ -32,4 +32,7 @@ class TestWarningUtil(unittest.TestCase):
 
     @unittest.skip('todo: implement')
     def test_disable_warnings_urllib3(self):
-        pass
+        warning_util.disable_warnings()
+        with CaptureOutput() as capturer:
+            response = requests.get('http://www.karrlab.org')
+            self.assertEqual(capturer.get_text(), '')

@@ -7,17 +7,17 @@
 :License: MIT
 """
 
-from requests.packages import urllib3
 import openbabel
+import requests.packages.urllib3
 
 
 def disable_warnings():
     """ Disable warning messages from openbabel and urllib """
     openbabel.obErrorLog.SetOutputLevel(openbabel.obError)
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 
 def enable_warnings():
     """ Enable warning messages from openbabel and urllib """
     openbabel.obErrorLog.SetOutputLevel(openbabel.obWarning)
-    urllib3.warnings.resetwarnings()
+    requests.packages.urllib3.warnings.resetwarnings()

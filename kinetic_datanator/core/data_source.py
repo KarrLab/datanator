@@ -252,8 +252,6 @@ class HttpDataSource(CachedDataSource):
         if clear_requests_cache:
             self.clear_requests_cache()
 
-        self.disable_warnings()
-
         """ Call superclass constructor which will optionally load content """
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
@@ -282,10 +280,6 @@ class HttpDataSource(CachedDataSource):
     def clear_requests_cache(self):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
-
-    def disable_warnings(self):
-        """ Disable insecure HTTP request warnings """
-        requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
     def get_backup_files(self, upload=True):
         """ Get a list of the files to backup/unpack
