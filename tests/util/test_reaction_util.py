@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from kinetic_datanator.util import reaction_util
 import unittest
 
@@ -19,26 +19,26 @@ class TestReaction(unittest.TestCase):
     pi = 'OP([O-])([O-])=O'
 
     def make_reaction(self):
-        return observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.atp, id='atp'),
-                compartment=observation.Compartment(id='c'),
+        return data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.atp, id='atp'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=-1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.h2o, id='h2o'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.h2o, id='h2o'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=-1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.adp, id='adp'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.adp, id='adp'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.pi, id='pi'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.pi, id='pi'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.h, id='h'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.h, id='h'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1),
         ])
 

@@ -7,8 +7,8 @@
 :License: MIT
 """
 
+from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_source
-from kinetic_datanator.core import observation
 from kinetic_datanator.util import molecule_util
 import itertools
 import re
@@ -33,7 +33,7 @@ class Ezyme(data_source.WebserviceDataSource):
         """ Use Ezyme to predict the first three digits of the EC number of a reaction.
 
         Args:
-            :obj:`observation.Reaction`: reaction
+            :obj:`data_model.Reaction`: reaction
 
         Returns:
             :obj:`list` of :obj:`EzymeResult` or :obj:`None`: ranked list of predicted EC numbers and their scores

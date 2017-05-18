@@ -8,7 +8,7 @@
 """
 
 from kinetic_datanator import io
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from os import path
 from wc_utils.util.types import assert_value_equal
 import unittest
@@ -33,23 +33,23 @@ class TestInputReader(unittest.TestCase):
         return True
 
     def test_parse_reaction_equation(self):
-        c = observation.Compartment(id='c')
-        e = observation.Compartment(id='e')
+        c = data_model.Compartment(id='c')
+        e = data_model.Compartment(id='e')
         compartments = [c, e]
 
-        Complex_Acp = observation.Specie(id='Complex_Acp')
-        ATP = observation.Specie(id='ATP')
-        HDCA = observation.Specie(id='HDCA')
-        PPI = observation.Specie(id='PPI')
-        AMP = observation.Specie(id='AMP')
-        Complex_Acp_hdc = observation.Specie(id='Complex_Acp_hdc')
-        A = observation.Specie(id='A')
-        B2 = observation.Specie(id='B2')
-        B_2 = observation.Specie(id='B_2')
-        C = observation.Specie(id='C')
-        D = observation.Specie(id='D')
-        E = observation.Specie(id='E')
-        F = observation.Specie(id='F')
+        Complex_Acp = data_model.Specie(id='Complex_Acp')
+        ATP = data_model.Specie(id='ATP')
+        HDCA = data_model.Specie(id='HDCA')
+        PPI = data_model.Specie(id='PPI')
+        AMP = data_model.Specie(id='AMP')
+        Complex_Acp_hdc = data_model.Specie(id='Complex_Acp_hdc')
+        A = data_model.Specie(id='A')
+        B2 = data_model.Specie(id='B2')
+        B_2 = data_model.Specie(id='B_2')
+        C = data_model.Specie(id='C')
+        D = data_model.Specie(id='D')
+        E = data_model.Specie(id='E')
+        F = data_model.Specie(id='F')
         species = [
             Complex_Acp,
             ATP,
@@ -68,14 +68,14 @@ class TestInputReader(unittest.TestCase):
 
         eq = "[c]: Complex_Acp + ATP + HDCA ==> PPI + AMP + Complex_Acp_hdc"
         response = io.InputReader().parse_reaction_equation(eq, compartments, species)
-        expected_answer = observation.Reaction(
+        expected_answer = data_model.Reaction(
             participants=[
-                observation.ReactionParticipant(specie=Complex_Acp,     compartment=c, coefficient=-1, order=0),
-                observation.ReactionParticipant(specie=ATP,             compartment=c, coefficient=-1, order=1),
-                observation.ReactionParticipant(specie=HDCA,            compartment=c, coefficient=-1, order=2),
-                observation.ReactionParticipant(specie=PPI,             compartment=c, coefficient=1, order=3),
-                observation.ReactionParticipant(specie=AMP,             compartment=c, coefficient=1, order=4),
-                observation.ReactionParticipant(specie=Complex_Acp_hdc, compartment=c, coefficient=1, order=5),
+                data_model.ReactionParticipant(specie=Complex_Acp,     compartment=c, coefficient=-1, order=0),
+                data_model.ReactionParticipant(specie=ATP,             compartment=c, coefficient=-1, order=1),
+                data_model.ReactionParticipant(specie=HDCA,            compartment=c, coefficient=-1, order=2),
+                data_model.ReactionParticipant(specie=PPI,             compartment=c, coefficient=1, order=3),
+                data_model.ReactionParticipant(specie=AMP,             compartment=c, coefficient=1, order=4),
+                data_model.ReactionParticipant(specie=Complex_Acp_hdc, compartment=c, coefficient=1, order=5),
             ],
             reversible=False,
         )
@@ -83,14 +83,14 @@ class TestInputReader(unittest.TestCase):
 
         eq = "A[c] + B2[e] + 2 C[c] ==> 2.5 D[c] + E[c] + F[c]"
         response = io.InputReader().parse_reaction_equation(eq, compartments, species)
-        expected_answer = observation.Reaction(
+        expected_answer = data_model.Reaction(
             participants=[
-                observation.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
-                observation.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
-                observation.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
-                observation.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
-                observation.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
-                observation.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
+                data_model.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
+                data_model.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
+                data_model.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
+                data_model.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
+                data_model.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
+                data_model.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
             ],
             reversible=False,
         )
@@ -98,28 +98,28 @@ class TestInputReader(unittest.TestCase):
 
         eq = "A[c]+B_2[e]+2 C[c]<==>2.5 D[c] + E[c] + F[c]"
         response = io.InputReader().parse_reaction_equation(eq, compartments, species)
-        expected_answer = observation.Reaction(
+        expected_answer = data_model.Reaction(
             participants=[
-                observation.ReactionParticipant(specie=A,   compartment=c, coefficient=-1., order=0),
-                observation.ReactionParticipant(specie=B_2, compartment=e, coefficient=-1., order=1),
-                observation.ReactionParticipant(specie=C,   compartment=c, coefficient=-2., order=2),
-                observation.ReactionParticipant(specie=D,   compartment=c, coefficient=2.5, order=3),
-                observation.ReactionParticipant(specie=E,   compartment=c, coefficient=1., order=4),
-                observation.ReactionParticipant(specie=F,   compartment=c, coefficient=1., order=5),
+                data_model.ReactionParticipant(specie=A,   compartment=c, coefficient=-1., order=0),
+                data_model.ReactionParticipant(specie=B_2, compartment=e, coefficient=-1., order=1),
+                data_model.ReactionParticipant(specie=C,   compartment=c, coefficient=-2., order=2),
+                data_model.ReactionParticipant(specie=D,   compartment=c, coefficient=2.5, order=3),
+                data_model.ReactionParticipant(specie=E,   compartment=c, coefficient=1., order=4),
+                data_model.ReactionParticipant(specie=F,   compartment=c, coefficient=1., order=5),
             ],
             reversible=True,
         )
         self.assertTrue(self.are_reactions_equal(response, expected_answer))
 
         # alternative separators
-        expected_answer = observation.Reaction(
+        expected_answer = data_model.Reaction(
             participants=[
-                observation.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
-                observation.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
-                observation.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
-                observation.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
-                observation.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
-                observation.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
+                data_model.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
+                data_model.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
+                data_model.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
+                data_model.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
+                data_model.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
+                data_model.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
             ],
             reversible=False,
         )
@@ -136,14 +136,14 @@ class TestInputReader(unittest.TestCase):
         eq = "A[c] + B2[e] + 2 C[c] -> 2.5 D[c] + E[c] + F[c]"
         self.are_reactions_equal(io.InputReader().parse_reaction_equation(eq, compartments, species), expected_answer)
 
-        expected_answer = observation.Reaction(
+        expected_answer = data_model.Reaction(
             participants=[
-                observation.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
-                observation.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
-                observation.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
-                observation.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
-                observation.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
-                observation.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
+                data_model.ReactionParticipant(specie=A,  compartment=c, coefficient=-1., order=0),
+                data_model.ReactionParticipant(specie=B2, compartment=e, coefficient=-1., order=1),
+                data_model.ReactionParticipant(specie=C,  compartment=c, coefficient=-2., order=2),
+                data_model.ReactionParticipant(specie=D,  compartment=c, coefficient=2.5, order=3),
+                data_model.ReactionParticipant(specie=E,  compartment=c, coefficient=1., order=4),
+                data_model.ReactionParticipant(specie=F,  compartment=c, coefficient=1., order=5),
             ],
             reversible=True,
         )
@@ -186,7 +186,7 @@ class TestInputReader(unittest.TestCase):
         #####################################
         # taxon
         #####################################
-        self.assertIsInstance(genetics, observation.Genetics)
+        self.assertIsInstance(genetics, data_model.Genetics)
         self.assertEqual(genetics.taxon, 'Mycoplasma pneumoniae M129')
 
         #####################################

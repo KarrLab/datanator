@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
 import re
@@ -28,10 +28,10 @@ class InputReader(object):
         Returns:
             :obj:`tuple`: 
 
-                * :obj:`observation.Genetics`: genetics
-                * :obj:`list` of :obj:`observation.Compartment`: list of compartments
-                * :obj:`list` of :obj:`observation.Specie`: list of species
-                * :obj:`list` of :obj:`observation.Reaction`: list of reactions
+                * :obj:`data_model.Genetics`: genetics
+                * :obj:`list` of :obj:`data_model.Compartment`: list of compartments
+                * :obj:`list` of :obj:`data_model.Specie`: list of species
+                * :obj:`list` of :obj:`data_model.Reaction`: list of reactions
         """
         wb = openpyxl.load_workbook(filename=filename)
         genetics = self.read_genetics(wb.get_sheet_by_name('Genetics'))
@@ -48,9 +48,9 @@ class InputReader(object):
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`observation.Genetics`: taxon
+            :obj:`data_model.Genetics`: taxon
         """
-        return observation.Genetics(
+        return data_model.Genetics(
                 taxon=ws.cell(row=2, column=1).value,
                 variation=ws.cell(row=2, column=2).value,
                 )
@@ -62,11 +62,11 @@ class InputReader(object):
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`list` of `observation.Compartment`: list of compartments
+            :obj:`list` of `data_model.Compartment`: list of compartments
         """
         compartments = []
         for i in range(2, ws.max_row + 1):
-            compartments.append(observation.Compartment(
+            compartments.append(data_model.Compartment(
                 id=ws.cell(row=i, column=1).value,
                 name=ws.cell(row=i, column=2).value,
             ))
@@ -79,11 +79,11 @@ class InputReader(object):
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`list` of `observation.Specie`: list of species
+            :obj:`list` of `data_model.Specie`: list of species
         """
         species = []
         for i in range(2, ws.max_row + 1):
-            species.append(observation.Specie(
+            species.append(data_model.Specie(
                 id=ws.cell(row=i, column=1).value,
                 structure=ws.cell(row=i, column=2).value,
             ))
@@ -95,11 +95,11 @@ class InputReader(object):
 
         Args:
             ws (:obj:`openpyxl.Worksheet`): worksheet
-            compartments (:obj:`list` of :obj:`observation.Compartment`): list of compartments
-            species (:obj:`list` of :obj:`observation.Specie`): list of species
+            compartments (:obj:`list` of :obj:`data_model.Compartment`): list of compartments
+            species (:obj:`list` of :obj:`data_model.Specie`): list of species
 
         Returns:
-            :obj:`list` of `observation.Reaction`: list of reactions
+            :obj:`list` of `data_model.Reaction`: list of reactions
         """
         reactions = []
         for i in range(2, ws.max_row + 1):
@@ -116,11 +116,11 @@ class InputReader(object):
 
         Args:
             equation (:obj:`str`): reaction equation
-            compartments (:obj:`list` of :obj:`observation.Compartment`): list of compartments
-            species (:obj:`list` of :obj:`observation.Specie`): list of species
+            compartments (:obj:`list` of :obj:`data_model.Compartment`): list of compartments
+            species (:obj:`list` of :obj:`data_model.Specie`): list of species
 
         Returns:
-            :obj:`observation.Reaction': reaction
+            :obj:`data_model.Reaction': reaction
         """
         compartments_dict = {c.id: c for c in compartments}
         species_dict = {s.id: s for s in species}
@@ -148,13 +148,13 @@ class InputReader(object):
 
             participants = []
             for part in re.findall(global_part, lhs, re.IGNORECASE):
-                participants.append(observation.ReactionParticipant(
+                participants.append(data_model.ReactionParticipant(
                     specie=species_dict[part[2]],
                     compartment=compartments_dict[global_comp],
                     coefficient=-float(part[0][0:-1] or 1.),
                 ))
             for part in re.findall(global_part, rhs, re.IGNORECASE):
-                participants.append(observation.ReactionParticipant(
+                participants.append(data_model.ReactionParticipant(
                     specie=species_dict[part[2]],
                     compartment=compartments_dict[global_comp],
                     coefficient=float(part[0][0:-1] or 1.),
@@ -167,13 +167,13 @@ class InputReader(object):
 
             participants = []
             for part in re.findall(local_part, lhs, re.IGNORECASE):
-                participants.append(observation.ReactionParticipant(
+                participants.append(data_model.ReactionParticipant(
                     specie=species_dict[part[2]],
                     compartment=compartments_dict[part[3]],
                     coefficient=-float(part[0][0:-1] or 1.),
                 ))
             for part in re.findall(local_part, rhs, re.IGNORECASE):
-                participants.append(observation.ReactionParticipant(
+                participants.append(data_model.ReactionParticipant(
                     specie=species_dict[part[2]],
                     compartment=compartments_dict[part[3]],
                     coefficient=float(part[0][0:-1] or 1.),
@@ -185,7 +185,7 @@ class InputReader(object):
         for i_part, part in enumerate(participants):
             part.order = i_part
 
-        return observation.Reaction(participants=participants, reversible=sep == '<')
+        return data_model.Reaction(participants=participants, reversible=sep == '<')
 
 
 class ResultsWriter(object):

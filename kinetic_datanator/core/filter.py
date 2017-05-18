@@ -17,7 +17,7 @@
 :License: MIT
 """
 
-from . import observation
+from kinetic_datanator.core import data_model
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from six import with_metaclass
@@ -57,11 +57,11 @@ class FilterRunner(object):
         3. Order the observed values by their mean score
 
         Args:
-            observed_values (:obj:`list` of :obj:`observation.ObservedValue`): list of experimental and/or computational observed values            
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values            
             return_info (:obj:`bool`, optional): if `True`, also return the scores and indices of the ordered observed values in the input list
 
         Returns:
-            :obj:`list` of :obj:`observation.ObservedValue` or :obj:`FilterResult`:
+            :obj:`list` of :obj:`data_model.ObservedValue` or :obj:`FilterResult`:
 
                 * If `return_info` is `False`: return a list of the observed values which matches the filters, ordered by their mean score
                 * If `return_info` is `True`: return a list of the observed values which matches the filters, ordered by their mean score plus additional diagnostic information
@@ -88,7 +88,7 @@ class FilterRunner(object):
         """ Score observed values against the filters
 
         Args:
-            observed_values (:obj:`list` of :obj:`observation.ObservedValue`): list of experimental and/or computational observed values
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
 
         Returns:
             :obj:`list` of :obj:`float`: list of scores
@@ -106,13 +106,13 @@ class FilterRunner(object):
         """ Filter out observed values that must be discarded (observed values with score = -1)
 
         Args:
-            observed_values (:obj:`list` of :obj:`observation.ObservedValue`): list of experimental and/or computational observed values
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
             scores (:obj:`list` of :obj:`float`): list of scores
 
         Returns:
             :obj:`tuple`: 
 
-                * :obj:`list` of :obj:`observation.ObservedValue`: list of acceptable observed values (observed values without scores = -1)
+                * :obj:`list` of :obj:`data_model.ObservedValue`: list of acceptable observed values (observed values without scores = -1)
                 * :obj:`list` of :obj:`float`: list of scores of the acceptable observed values
                 * :obj:`list` of :obj:`int`: list of indices of the ordered observed values within the original list of observed values
 
@@ -127,14 +127,14 @@ class FilterRunner(object):
         """ Order observed values by their mean score
 
         Args:
-            observed_values (:obj:`list` of :obj:`observation.ObservedValue`): list of observed values
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
             scores (:obj:`list` of :obj:`float`): list of scores
             i_observations (:obj:`list` of :obj:`int`, optional): list of indices within the original list of observed values
 
         Returns:
             :obj:`tuple`: 
 
-                * :obj:`list` of :obj:`observation.ObservedValue`: ordered list of observed values
+                * :obj:`list` of :obj:`data_model.ObservedValue`: ordered list of observed values
                 * :obj:`list` of :obj:`float`: list of scores of the ordered observed values
                 * :obj:`list` of :obj:`int`: list of indices of the ordered observed values within the original list of observed values
         """
@@ -155,10 +155,10 @@ class FilterResult(object):
     """ Represents the results of applying a list of filters to a dataset
 
     Attributes:
-        observed_values (:obj:`list` of `observation.ObservedValue`): input list of observed values
+        observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
         filters (:obj:`list` of `Filter`): list of filters applied to observed values
         scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
-        ordered_observed_values (:obj:`list` of `observation.ObservedValue`): prioritized list of observed values
+        ordered_observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
         ordered_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
         ordered_observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
     """
@@ -166,10 +166,10 @@ class FilterResult(object):
     def __init__(self, observed_values, filters, scores, ordered_observed_values, ordered_scores, ordered_observed_value_indices):
         """
         Args:
-            observed_values (:obj:`list` of `observation.ObservedValue`): input list of observed values
+            observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
             filters (:obj:`list` of `Filter`): list of filters applied to observed values
             scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
-            ordered_observed_values (:obj:`list` of `observation.ObservedValue`): prioritized list of observed values
+            ordered_observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
             ordered_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
             ordered_observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
         """
@@ -203,7 +203,7 @@ class Filter(object):
         """ Get the value of the attribute of observed value :obj:`observed_value`
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): observed value
+            observed_value (:obj:`data_model.ObservedValue`): observed value
 
         Returns:
             :obj:`object`: value of the attribute of the observed value
@@ -230,7 +230,7 @@ class Filter(object):
         order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
@@ -261,7 +261,7 @@ class OptionsFilter(Filter):
         order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
@@ -297,7 +297,7 @@ class RangeFilter(Filter):
         Please see :obj:`FilterRunner` to see how these scores are used to filter and order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
@@ -310,7 +310,7 @@ class RangeFilter(Filter):
         order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
@@ -349,7 +349,7 @@ class NormalFilter(Filter):
         normal distribution (mean, std).
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the normal distribution (mean, std)
@@ -384,7 +384,7 @@ class ExponentialFilter(Filter):
         distribution (center, scale).
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the distribution (center, scale)
@@ -443,7 +443,7 @@ class TaxonomicDistanceFilter(Filter):
         order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
@@ -505,7 +505,7 @@ class ReactionSimilarityFilter(Filter):
     * Score=-1: Reactions belong to different EC classes
 
     Attributes:
-        reaction (:obj:`observation.Reaction`): reaction
+        reaction (:obj:`data_model.Reaction`): reaction
         min_ec_level (:obj:`int`): minimum EC level that must be common to the observed and target reaction 
         scale (:obj:`float`): How to exponentially scale of the scores. This determines how quickly the score 
             falls to zero.
@@ -514,7 +514,7 @@ class ReactionSimilarityFilter(Filter):
     def __init__(self, reaction, min_ec_level=3, scale=2./5.):
         """
         Args:
-            reaction (:obj:`observation.Reaction`): reaction
+            reaction (:obj:`data_model.Reaction`): reaction
             min_ec_level (:obj:`int`, optional): minimum EC level that must be common to the observed and target reaction 
             scale (:obj:`float`, optional): How to exponentially scale of the scores. This determines how quickly the score 
                 falls to zero.
@@ -528,7 +528,7 @@ class ReactionSimilarityFilter(Filter):
         """ Transform an attribute value
 
         Args:
-            reaction (:obj:`observation.Reaction`): observed reaction
+            reaction (:obj:`data_model.Reaction`): observed reaction
 
         Returns:
             :obj:`int`: transformed value
@@ -585,7 +585,7 @@ class ReactionSimilarityFilter(Filter):
         order observed values.
 
         Args:
-            observed_value (:obj:`observation.ObservedValue`): experimentally or computationally observed value
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed_value matches the criteria

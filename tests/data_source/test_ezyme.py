@@ -9,7 +9,7 @@
 
 from attrdict import AttrDict
 from kinetic_datanator.data_source import ezyme
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import warning_util
 import unittest
@@ -98,30 +98,30 @@ class TestEzyme(unittest.TestCase):
         #    because the position of the 3 is wrong, and I would have to change the position of the middle, so the side, or soemthing
 
     def test_run(self):
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['atp'], id='atp'),
-                compartment=observation.Compartment(id='c'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['atp'], id='atp'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['h2o'], id='h2o'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['h2o'], id='h2o'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['adp'], id='adp'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['adp'], id='adp'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['ppi'], id='ppi'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['ppi'], id='ppi'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1,
                 order=3),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['h'], id='h'),
-                compartment=observation.Compartment(id='c'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['h'], id='h'),
+                compartment=data_model.Compartment(id='c'),
                 coefficient=1,
                 order=4),
         ])
@@ -135,21 +135,21 @@ class TestEzyme(unittest.TestCase):
         self.assertEqual(result[0].ec_number, '3.6.1')  # true EC is 3.6.1.3
 
         # example where Ezyme predicts no EC number when the order is swapped
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['t3p1'], id='atp'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['t3p1'], id='atp'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['s7p'], id='h2o'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['s7p'], id='h2o'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['x5p'], id='adp'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['x5p'], id='adp'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['r5p'], id='ppi'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['r5p'], id='ppi'),
                 coefficient=1,
                 order=3),
         ])
@@ -157,21 +157,21 @@ class TestEzyme(unittest.TestCase):
         self.assertEqual(result[0].ec_number, "4.1.2")  # true EC is 2.2.1.1
         self.assertEqual(result[1].ec_number, "2.2.1")
 
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['s7p'], id='atp'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['s7p'], id='atp'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['t3p1'], id='h2o'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['t3p1'], id='h2o'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['x5p'], id='adp'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['x5p'], id='adp'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['r5p'], id='ppi'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['r5p'], id='ppi'),
                 coefficient=1,
                 order=3),
         ])
@@ -179,42 +179,42 @@ class TestEzyme(unittest.TestCase):
         self.assertEqual(result, [])
 
         # example where Ezyme predicts different EC numbers when the order is swapped
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dGMP'], id='atp'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dGMP'], id='atp'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['h2o'], id='h2o'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['h2o'], id='h2o'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dG'], id='adp'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dG'], id='adp'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['pi'], id='ppi'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['pi'], id='ppi'),
                 coefficient=1,
                 order=3),
         ])
         result = ezyme.Ezyme().run(rxn)
         self.assertEqual(result[0].ec_number, "3.1.3")  # true EC is 3.1.3.89
 
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['h2o'], id='atp'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['h2o'], id='atp'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dGMP'], id='h2o'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dGMP'], id='h2o'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dG'], id='adp'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dG'], id='adp'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['pi'], id='ppi'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['pi'], id='ppi'),
                 coefficient=1,
                 order=3),
         ])
@@ -222,21 +222,21 @@ class TestEzyme(unittest.TestCase):
         self.assertEqual(result[0].ec_number, "3.1.3")  # true EC is 3.1.3.89
 
         # example where a structure is not defined
-        rxn = observation.Reaction(participants=[
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['h2o'], id='atp'),
+        rxn = data_model.Reaction(participants=[
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['h2o'], id='atp'),
                 coefficient=-1,
                 order=1),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dGMP'], id='h2o'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dGMP'], id='h2o'),
                 coefficient=-1,
                 order=0),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure=self.molecules['e1dG'], id='adp'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure=self.molecules['e1dG'], id='adp'),
                 coefficient=1,
                 order=2),
-            observation.ReactionParticipant(
-                specie=observation.Specie(structure='', id='ppi'),
+            data_model.ReactionParticipant(
+                specie=data_model.Specie(structure='', id='ppi'),
                 coefficient=1,
                 order=3),
         ])

@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from kinetic_datanator.util import molecule_util
 import numpy
 
@@ -16,10 +16,10 @@ def calc_reactant_product_pairs(reaction):
     """ Get list of pairs of similar reactants and products using a greedy algorithm.
 
     Args:
-        reaction (:obj:`observation.Reaction`): reaction
+        reaction (:obj:`data_model.Reaction`): reaction
 
     Returns:
-        :obj:`list` of :obj:`tuple` of obj:`observation.Specie`, :obj:`observation.Specie`: list of pairs of similar reactants and products
+        :obj:`list` of :obj:`tuple` of obj:`data_model.Specie`, :obj:`data_model.Specie`: list of pairs of similar reactants and products
     """
     participants = reaction.get_ordered_participants()
     reactants = list(filter(lambda p: p.coefficient < 0, participants))

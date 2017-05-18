@@ -7,11 +7,12 @@
 :License: MIT
 """
 
-#from kinetic_datanator import datanator
+#from kinetic_datanator import datanator #todo
+from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import observation
+from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import ezyme
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
@@ -334,8 +335,8 @@ class ReactionGetEcNumberController(controller.CementBaseController):
                     structure = ''
                     errors.append(participant)
 
-                reaction.participants.append(observation.ReactionParticipant(
-                    specie=observation.Specie(structure=structure),
+                reaction.participants.append(data_model.ReactionParticipant(
+                    specie=data_model.Specie(structure=structure),
                     coefficient=coefficient,
                 ))
 
@@ -344,7 +345,7 @@ class ReactionGetEcNumberController(controller.CementBaseController):
             print('The reaction is ill-formed', file=sys.stderr)
             return
 
-        reaction = observation.Reaction()
+        reaction = data_model.Reaction()
         errors = []
         parse_participants(match.group(1), -1, reaction, errors)
         parse_participants(match.group(2),  1, reaction, errors)

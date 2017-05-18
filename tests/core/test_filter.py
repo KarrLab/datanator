@@ -7,8 +7,8 @@
 :License: MIT
 """
 
+from kinetic_datanator.core import data_model
 from kinetic_datanator.core import filter
-from kinetic_datanator.core import observation
 from kinetic_datanator.util import warning_util
 import copy
 import math
@@ -27,83 +27,83 @@ class TestFilters(unittest.TestCase):
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129')
         self.assertEqual(f.max, 8.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae M129')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
         self.assertEqual(f.score(ov), 1.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.scale, 8./5)
         self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Escherichia coli')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
         self.assertEqual(f.score(ov), math.exp(-5))
 
         # example 2
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max=5)
         self.assertEqual(f.max, 5.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae M129')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
         self.assertEqual(f.score(ov), 1.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma pneumoniae')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Escherichia coli')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
         self.assertEqual(f.score(ov), -1)
 
         # example 3
         f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
         self.assertEqual(f.max, 7.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma genitalium G37')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium G37')))
         self.assertEqual(f.score(ov), 1.)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma genitalium')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium')))
         self.assertEqual(f.score(ov), 1)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(taxon='Mycoplasma')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma')))
         self.assertEqual(f.score(ov), math.exp(-1/f.scale))
 
     def test_OptionsFilter(self):
         f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), [''])
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(ov), 1)
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='wildtype')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
         self.assertEqual(f.score(ov), -1)
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(ov), -1)
 
         f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), ['wildtype'])
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(ov), -1)
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='wildtype')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
         self.assertEqual(f.score(ov), 1)
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(ov), -1)
 
     def test_WildtypeFilter(self):
         f = filter.WildtypeFilter()
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(ov), 1)
 
-        ov = observation.ObservedValue(
-            observation=observation.Observation(genetics=observation.Genetics(variation='Delta gene-01')))
+        ov = data_model.ObservedValue(
+            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(ov), -1)
 
     def test_SpecieMolecularSimilarityFilter(self):
@@ -113,85 +113,85 @@ class TestFilters(unittest.TestCase):
 
         f = filter.SpecieMolecularSimilarityFilter(atp)
 
-        ov = observation.ObservedValue(observable=observation.Specie(structure=adp))
+        ov = data_model.ObservedValue(observable=data_model.Specie(structure=adp))
         numpy.testing.assert_almost_equal(f.score(ov), 0.955, decimal=3)
 
-        ov = observation.ObservedValue(observable=observation.Specie(structure=h2o))
+        ov = data_model.ObservedValue(observable=data_model.Specie(structure=h2o))
         numpy.testing.assert_almost_equal(f.score(ov), 0, decimal=3)
 
     def test_ReactionSimilarityFilter(self):
         def get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2', ec='1.1.1.1'):
-            atp = observation.Specie(
+            atp = data_model.Specie(
                 id='atp', structure='InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1')
-            h2o = observation.Specie(id='h2o', structure='InChI=1S/H2O/h1H2')
-            adp = observation.Specie(
+            h2o = data_model.Specie(id='h2o', structure='InChI=1S/H2O/h1H2')
+            adp = data_model.Specie(
                 id='adp', structure='InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/p-3/t4-,6-,7-,10-/m1/s1')
-            pi = observation.Specie(id='pi', structure=pi)
-            h = observation.Specie(id='h', structure='InChI=1S/p+1/i/hH')
+            pi = data_model.Specie(id='pi', structure=pi)
+            h = data_model.Specie(id='h', structure='InChI=1S/p+1/i/hH')
 
-            return observation.Reaction(
+            return data_model.Reaction(
                 participants=[
-                    observation.ReactionParticipant(coefficient=-1, specie=atp),
-                    observation.ReactionParticipant(coefficient=-1, specie=h2o),
-                    observation.ReactionParticipant(coefficient=1, specie=adp),
-                    observation.ReactionParticipant(coefficient=1, specie=pi),
-                    observation.ReactionParticipant(coefficient=1, specie=h),
+                    data_model.ReactionParticipant(coefficient=-1, specie=atp),
+                    data_model.ReactionParticipant(coefficient=-1, specie=h2o),
+                    data_model.ReactionParticipant(coefficient=1, specie=adp),
+                    data_model.ReactionParticipant(coefficient=1, specie=pi),
+                    data_model.ReactionParticipant(coefficient=1, specie=h),
                 ],
                 cross_references=[
-                    observation.Resource(namespace='ec-code', id=ec)
+                    data_model.Resource(namespace='ec-code', id=ec)
                 ])
 
         f = filter.ReactionSimilarityFilter(get_reaction(), min_ec_level=3, scale=1)
 
         # same participants
-        ov = observation.ObservedValue(observable=get_reaction())
+        ov = data_model.ObservedValue(observable=get_reaction())
         numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
 
         # similiar participants
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4'))
         numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
 
         # different participants, same 4-digit EC
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4'))
         numpy.testing.assert_almost_equal(f.score(ov), math.exp(-1), decimal=3)
 
         # different participants, same 3-digit EC
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.2'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.2'))
         numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
         numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.'))
         numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.-'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.-'))
         numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
 
         # different participants, same 2-digit EC
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
         numpy.testing.assert_almost_equal(f.score(ov), -1, decimal=3)
 
         # target reaction only has 3 digits
         f1 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1'), min_ec_level=3, scale=1)
         f2 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1.'), min_ec_level=3, scale=1)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
         numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
         numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.1'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.1'))
         numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
         numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
 
-        ov = observation.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
+        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
         numpy.testing.assert_almost_equal(f1.score(ov), -1, decimal=3)
         numpy.testing.assert_almost_equal(f2.score(ov), -1, decimal=3)
 
     def test_RangeFilter(self):
         def obs_val(temperature):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=30.)
         self.assertEqual(f.score(obs_val(float('nan'))), -1)
@@ -231,8 +231,8 @@ class TestFilters(unittest.TestCase):
 
     def test_TemperatureRangeFilter(self):
         def obs_val(temperature):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.TemperatureRangeFilter(min=15., max=30.)
         self.assertEqual(f.score(obs_val(10)), -1)
@@ -244,8 +244,8 @@ class TestFilters(unittest.TestCase):
 
     def test_PhRangeFilter(self):
         def obs_val(ph):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(ph=ph)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
 
         f = filter.PhRangeFilter(min=5., max=9.)
         self.assertEqual(f.score(obs_val(3)), -1)
@@ -257,8 +257,8 @@ class TestFilters(unittest.TestCase):
 
     def test_NormalFilter(self):
         def obs_val(temperature):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.NormalFilter(('observation', 'environment', 'temperature', ), mean=37, std=1)
         self.assertEqual(f.score(obs_val(37)), 1)
@@ -269,8 +269,8 @@ class TestFilters(unittest.TestCase):
 
     def test_TemperatureNormalFilter(self):
         def obs_val(temperature):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.TemperatureNormalFilter(mean=37, std=1)
         self.assertEqual(f.score(obs_val(37)), 1)
@@ -281,8 +281,8 @@ class TestFilters(unittest.TestCase):
 
     def test_PhNormalFilter(self):
         def obs_val(ph):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(ph=ph)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
 
         f = filter.PhNormalFilter(mean=7, std=1)
         self.assertEqual(f.score(obs_val(7)), 1)
@@ -293,8 +293,8 @@ class TestFilters(unittest.TestCase):
 
     def test_ExponentialFilter(self):
         def obs_val(temperature):
-            return observation.ObservedValue(
-                observation=observation.Observation(environment=observation.Environment(temperature=temperature)))
+            return data_model.ObservedValue(
+                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.ExponentialFilter(('observation', 'environment', 'temperature', ), center=1., scale=1.)
         self.assertEqual(f.score(obs_val(1)), 1)
@@ -307,8 +307,8 @@ class TestFilterResult(unittest.TestCase):
 
     def test(self):
         ov = [
-            observation.ObservedValue(value=1),
-            observation.ObservedValue(value=2),
+            data_model.ObservedValue(value=1),
+            data_model.ObservedValue(value=2),
         ]
         f = [
             filter.RangeFilter(('environment', 'temperature', )),
@@ -329,22 +329,22 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_score(self):
         ov = [
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
         ]
         f = [
             filter.TemperatureRangeFilter(min=36.5, max=37.5),
@@ -364,22 +364,22 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_filter(self):
         ov = [
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
         ]
 
         # one filter
@@ -402,22 +402,22 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_order(self):
         ov = [
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
         ]
 
         # one filter
@@ -441,22 +441,22 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_run(self):
         ov = [
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=37, ph=6))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=7))),
-            observation.ObservedValue(value=1, observation=observation.Observation(
-                environment=observation.Environment(temperature=36, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37.1, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37.1, ph=6))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37.01, ph=7))),
-            observation.ObservedValue(value=2, observation=observation.Observation(
-                environment=observation.Environment(temperature=37.01, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37, ph=6))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=7))),
+            data_model.ObservedValue(value=1, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=36, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37.1, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37.1, ph=6))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37.01, ph=7))),
+            data_model.ObservedValue(value=2, observation=data_model.Observation(
+                environment=data_model.Environment(temperature=37.01, ph=6))),
         ]
         f = [
             filter.TemperatureNormalFilter(mean=37, std=1),
