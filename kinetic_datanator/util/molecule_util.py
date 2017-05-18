@@ -210,7 +210,7 @@ class InchiMolecule(object):
             setattr(self, layer, '')
 
         for layer in structure[9:].split('/'):
-            if layer[0].lower() == layer[0]:
+            if layer[0].isalpha() and layer[0].islower():
                 prefix = layer[0]
                 value = layer[1:]
             else:
