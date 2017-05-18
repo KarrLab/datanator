@@ -125,6 +125,10 @@ class TestInchiMolecule(unittest.TestCase):
         inchi = 'InChI=1S/4O.V/q;3*-1;'
         self.assertEqual(str(molecule_util.InchiMolecule(inchi)), inchi)
 
+        inchi_1 = 'InChI=1/C6H12O6/c7-1-3-4(9)5(10)6(11,2-8)12-3/h3-5,7-11H,1-2H2/t3-,4-,5+,6u/m0/s1'
+        inchi_2 = 'InChI=1S/C6H12O6/c7-1-3-4(9)5(10)6(11,2-8)12-3/h3-5,7-11H,1-2H2/t3-,4-,5+,6u/m0/s1'
+        self.assertEqual(str(molecule_util.InchiMolecule(inchi_1)), inchi_2)
+
     def test_remove_layer(self):
         a = molecule_util.InchiMolecule('InChI=1S/BrH/h1H/p-1')
         a.remove_layer('protons')

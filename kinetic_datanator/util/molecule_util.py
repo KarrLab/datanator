@@ -7,6 +7,7 @@
 :License: MIT
 """
 
+import collections
 import openbabel
 import pybel
 import re
@@ -180,20 +181,20 @@ class InchiMolecule(object):
 
         LAYERS (:obj:`dict`): dictionary of layer prefixes and names
     """
-    LAYERS = {
-        '': 'formula',
-        'c': 'connections',
-        'h': 'hydrogens',
-        'p': 'protons',
-        'q': 'charge',
-        'b': 'double_bonds',
-        't': 'stereochemistry',
-        'm': 'stereochemistry_parity',
-        's': 'stereochemistry_type',
-        'i': 'isotopes',
-        'f': 'fixed_hydrogens',
-        'r': 'reconnected_metals',
-    }
+    LAYERS = collections.OrderedDict([
+        ('', 'formula'),
+        ('c', 'connections'),
+        ('h', 'hydrogens'),
+        ('p', 'protons'),
+        ('q', 'charge'),
+        ('b', 'double_bonds'),
+        ('t', 'stereochemistry'),
+        ('m', 'stereochemistry_parity'),
+        ('s', 'stereochemistry_type'),
+        ('i', 'isotopes'),
+        ('f', 'fixed_hydrogens'),
+        ('r', 'reconnected_metals'),
+    ])
 
     def __init__(self, structure):
         """
