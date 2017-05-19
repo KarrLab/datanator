@@ -9,7 +9,7 @@
 """
 
 from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme, Reaction,
+from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme,
                                                     ReactionParticipant, KineticLaw, Parameter, Resource)
 from kinetic_datanator.util import warning_util
 import datetime
@@ -81,44 +81,45 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(e.cross_references, [])
 
         """ reactions """
-        rxn = session.query(Reaction).filter_by(id=6570).first()
+        law = session.query(KineticLaw).filter_by(id=1).first()
         cpd_40 = session.query(Compound).filter_by(id=40).first()
         cpd_2562 = session.query(Compound).filter_by(id=2562).first()
         cpd_20035 = session.query(Compound).filter_by(id=20035).first()
         enz_147631 = session.query(Enzyme).filter_by(id=147631).first()
 
-        self.assertEqual(len(rxn.reactants), 2)
-        self.assertEqual(rxn.reactants[0].compound, cpd_2562)
-        self.assertEqual(rxn.reactants[0].compartment, None)
-        self.assertTrue(rxn.reactants[0].coefficient is None or math.isnan(rxn.reactants[0].coefficient))
-        self.assertEqual(rxn.reactants[1].compound, cpd_40)
-        self.assertEqual(rxn.reactants[1].coefficient, 1.)
-        self.assertEqual(rxn.reactants[1].compartment, None)
+        self.assertEqual(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'), '6570')
 
-        self.assertEqual(len(rxn.products), 2)
-        self.assertEqual(rxn.products[0].compound, cpd_2562)
-        self.assertEqual(rxn.products[1].compound, cpd_2562)
-        self.assertEqual(rxn.reactants[0].compartment, None)
-        self.assertEqual(rxn.reactants[1].compartment, None)
-        self.assertTrue(rxn.products[0].coefficient is None or math.isnan(rxn.products[0].coefficient))
-        self.assertTrue(rxn.products[1].coefficient is None or math.isnan(rxn.products[1].coefficient))
+        self.assertEqual(len(law.reactants), 2)
+        self.assertEqual(law.reactants[0].compound, cpd_2562)
+        self.assertEqual(law.reactants[0].compartment, None)
+        self.assertTrue(law.reactants[0].coefficient is None or math.isnan(law.reactants[0].coefficient))
+        self.assertEqual(law.reactants[1].compound, cpd_40)
+        self.assertEqual(law.reactants[1].coefficient, 1.)
+        self.assertEqual(law.reactants[1].compartment, None)
 
-        self.assertEqual([(r.compound, r.coefficient) for r in rxn.kinetic_laws[0].modifiers], [
+        self.assertEqual(len(law.products), 2)
+        self.assertEqual(law.products[0].compound, cpd_2562)
+        self.assertEqual(law.products[1].compound, cpd_2562)
+        self.assertEqual(law.products[0].compartment, None)
+        self.assertEqual(law.products[1].compartment, None)
+        self.assertTrue(law.products[0].coefficient is None or math.isnan(law.products[0].coefficient))
+        self.assertTrue(law.products[1].coefficient is None or math.isnan(law.products[1].coefficient))
+
+        self.assertEqual([(r.compound, r.coefficient) for r in law.modifiers], [
             (cpd_20035, None),
         ])
-        self.assertEqual(rxn.cross_references, [])
 
-        for mod in rxn.kinetic_laws[0].modifiers:
-            self.assertEqual(mod.kinetic_law, rxn.kinetic_laws[0])
+        for mod in law.modifiers:
+            self.assertEqual(mod.modifier_kinetic_law, law)
 
         """ kinetic laws """
         l = session.query(KineticLaw).filter_by(id=1).first()
-        self.assertEqual(l.reaction.id, 6570)
         self.assertEqual(l.enzyme, enz_147631)
         self.assertEqual(l.enzyme_compartment, None)
         self.assertEqual(l.equation, None)
         self.assertEqual([dict(namespace=xr.namespace, id=xr.id) for xr in l.cross_references], [
             dict(namespace='ec-code', id='3.4.21.62'),
+            dict(namespace='sabiork.reaction', id='6570'),
         ])
 
         self.assertEqual(len(l.parameters), 4)
@@ -191,9 +192,9 @@ class TestDownloader(unittest.TestCase):
 
         """ reactions """
         l = session.query(KineticLaw).filter_by(id=10026).first()
-        for part in l.reaction.reactants:
+        for part in l.reactants:
             self.assertEqual(part.compartment, cytosol)
-        for part in l.reaction.products:
+        for part in l.products:
             self.assertEqual(part.compartment, cytosol)
 
         """ kinetic laws """
@@ -235,19 +236,37 @@ class TestDownloader(unittest.TestCase):
         session = src.session
 
         l = session.query(KineticLaw).filter_by(id=16011).first()
-        self.assertEqual(l.reaction.id, 9886)
+        self.assertEqual(next(xr.id for xr in l.cross_references if xr.namespace == 'sabiork.reaction'), '9886')
 
         l = session.query(KineticLaw).filter_by(id=16013).first()
-        self.assertEqual(l.reaction.id, 9886)
+        self.assertEqual(next(xr.id for xr in l.cross_references if xr.namespace == 'sabiork.reaction'), '9886')
 
         l = session.query(KineticLaw).filter_by(id=16016).first()
-        self.assertEqual(l.reaction.id, 9930)
+        self.assertEqual(next(xr.id for xr in l.cross_references if xr.namespace == 'sabiork.reaction'), '9930')
 
-        r = session.query(Reaction).filter_by(id=9886).first()
-        self.assertEqual(set([l.id for l in r.kinetic_laws]), set([16011, 16013]))
+        r = session.query(Resource).filter_by(namespace='sabiork.reaction', id='9886').first()
+        self.assertEqual(set([l.id for l in r.entries]), set([16011, 16013]))
 
-        r = session.query(Reaction).filter_by(id=9930).first()
-        self.assertEqual([l.id for l in r.kinetic_laws], [16016])
+        r = session.query(Resource).filter_by(namespace='sabiork.reaction', id='9930').first()
+        self.assertEqual([l.id for l in r.entries], [16016])
+
+    def test_load_kinetic_laws_with_opposite_directions_of_same_reaction(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        src.load_kinetic_laws([46425, 46427])
+
+        session = src.session
+
+        Lactaldehyde = session.query(Compound).filter_by(id=2845).first()
+
+        l = session.query(KineticLaw).filter_by(id=46425).first()
+        self.assertEqual(next(xr.id for xr in l.cross_references if xr.namespace == 'sabiork.reaction'), '554')
+        self.assertIn(Lactaldehyde, [p.compound for p in l.reactants])
+        self.assertNotIn(Lactaldehyde, [p.compound for p in l.products])
+
+        l = session.query(KineticLaw).filter_by(id=46427).first()
+        self.assertEqual(next(xr.id for xr in l.cross_references if xr.namespace == 'sabiork.reaction'), '554')
+        self.assertNotIn(Lactaldehyde, [p.compound for p in l.reactants])
+        self.assertIn(Lactaldehyde, [p.compound for p in l.products])
 
     def test_infer_compound_structures_from_names(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)

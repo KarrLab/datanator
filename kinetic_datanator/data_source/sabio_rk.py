@@ -130,9 +130,8 @@ class ReactionParticipant(Base):
         compartment (:obj:`Compartment`): compartment
         coefficient (:obj:`float`): coefficient
         type (:obj:`str`): type
-        reactant_reaction (:obj:`Reaction`): reaction in which the participant appears as a reactant
-        product_reaction (:obj:`Reaction`): reaction in which the participant appears as a product
-        modifier_reaction (:obj:`Reaction`): reaction in which the participant appears as a modifier
+        reactant_kinetic_law (:obj:`KineticLaw`): kinetic law in which the participant appears as a reactant
+        product_kinetic_law (:obj:`KineticLaw`): kinetic law in which the participant appears as a product        
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -143,9 +142,9 @@ class ReactionParticipant(Base):
         'reaction_participants'), foreign_keys=[compartment_id])
     coefficient = sqlalchemy.Column(sqlalchemy.Float())
     type = sqlalchemy.Column(sqlalchemy.String())
-    reactant_reaction_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('reaction._id'))
-    product_reaction_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('reaction._id'))
-    kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
+    reactant_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
+    product_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
+    modifier_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
 
     __tablename__ = 'reaction_participant'
 
@@ -181,13 +180,14 @@ class KineticLaw(Entry):
     """ Represents a kinetic law in the SABIO-RK database
 
     Attributes:
-        reaction (:obj:`Reaction`): reaction
+        reactants (:obj:`list` of :obj:`ReactionParticipant`): list of reactants
+        products (:obj:`list` of :obj:`ReactionParticipant`): list of products
         enzyme (:obj:`Enzyme`): enzyme
         enzyme_compartment (:obj:`Compartment): compartment
         enzyme_type (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
         tissue (:obj:`str`): tissue
         mechanism (:obj:`str`): mechanism of enzymatic catalysis (e.g. Michaelis-Menten)
-        equation (:obj:`str`): equation
+        equation (:obj:`str`): equation        
         parameters (:obj:`list` of :obj:`Parameter`): list of parameters
         modifiers (:obj:`list` of :obj:`ReactionParticipant`): list of modifiers
         taxon (:obj:`str`): taxon
@@ -199,10 +199,12 @@ class KineticLaw(Entry):
         references (:obj:`list` of :obj:`Resource`): list of PubMed references
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
-
-    reaction_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('reaction._id'))
-    reaction = sqlalchemy.orm.relationship(
-        'Reaction', uselist=False, backref=sqlalchemy.orm.backref('kinetic_laws'), foreign_keys=[reaction_id])
+    reactants = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('reactant_kinetic_law'),
+                                            foreign_keys=[ReactionParticipant.reactant_kinetic_law_id],
+                                            cascade='all, delete-orphan')
+    products = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('product_kinetic_law'),
+                                           foreign_keys=[ReactionParticipant.product_kinetic_law_id],
+                                           cascade='all, delete-orphan')
     enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'))
     enzyme = sqlalchemy.orm.relationship('Enzyme', uselist=False, backref=sqlalchemy.orm.backref('kinetic_laws'), foreign_keys=[enzyme_id])
     enzyme_compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'))
@@ -214,7 +216,8 @@ class KineticLaw(Entry):
     equation = sqlalchemy.Column(sqlalchemy.Text())
     parameters = sqlalchemy.orm.relationship('Parameter', backref=sqlalchemy.orm.backref('kinetic_law'),
                                              foreign_keys=[Parameter.kinetic_law_id], cascade='all, delete-orphan')
-    modifiers = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('kinetic_law'),
+    modifiers = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('modifier_kinetic_law'),
+                                            foreign_keys=[ReactionParticipant.modifier_kinetic_law_id],
                                             cascade='all, delete-orphan')
     taxon = sqlalchemy.Column(sqlalchemy.Integer())
     taxon_wildtype = sqlalchemy.Column(sqlalchemy.Boolean())
@@ -226,27 +229,6 @@ class KineticLaw(Entry):
 
     __tablename__ = 'kinetic_law'
     __mapper_args__ = {'polymorphic_identity': 'kinetic_law'}
-
-
-class Reaction(Entry):
-    """ Represents a reaction in the SABIO-RK database
-
-    Attributes:
-        reactants (:obj:`list` of :obj:`ReactionParticipant`): list of reactants
-        products (:obj:`list` of :obj:`ReactionParticipant`): list of products
-        kinetic_laws (:obj:`list` of :obj:`KineticLaw`): kinetic law
-    """
-    _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
-
-    reactants = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('reactant_reaction'),
-                                            foreign_keys=[ReactionParticipant.reactant_reaction_id],
-                                            cascade='all, delete-orphan')
-    products = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('product_reaction'),
-                                           foreign_keys=[ReactionParticipant.product_reaction_id],
-                                           cascade='all, delete-orphan')
-
-    __tablename__ = 'reaction'
-    __mapper_args__ = {'polymorphic_identity': 'reaction'}
 
 
 class CompoundStructure(Base):
@@ -618,7 +600,6 @@ class SabioRk(data_source.HttpDataSource):
             :obj:`tuple`:
 
                 * :obj:`list` of :obj:`KineticLaw`: list of kinetic laws
-                * :obj:`list` of :obj:`Reaction`: list of reactions
                 * :obj:`list` of :obj:`Compound` or :obj:`Enzyme`: list of species (compounds or enzymes)
                 * :obj:`list` of :obj:`Compartment`: list of compartments
         """
@@ -659,14 +640,7 @@ class SabioRk(data_source.HttpDataSource):
             specie, properties = self.create_specie_from_sbml(specie_sbml)
             species.append(specie)
             specie_properties[specie_sbml.getId()] = properties
-
-        # reactions
-        reactions_sbml = model.getListOfReactions()
-        reactions = []
-        for i_reaction in range(reactions_sbml.size()):
-            reaction_sbml = reactions_sbml.get(i_reaction)
-            reactions.append(self.create_reaction_from_sbml(reaction_sbml, specie_properties))
-
+    
         # kinetic laws
         reactions_sbml = model.getListOfReactions()
         if reactions_sbml.size() != len(ids):
@@ -676,7 +650,7 @@ class SabioRk(data_source.HttpDataSource):
             reaction_sbml = reactions_sbml.get(i_reaction)
             kinetic_laws.append(self.create_kinetic_law_from_sbml(id, reaction_sbml, specie_properties, functions, units))
 
-        return (kinetic_laws, reactions, species, compartments)
+        return (kinetic_laws, species, compartments)
 
     def create_compartment_from_sbml(self, sbml):
         """ Add a compartment to the local sqlite database
@@ -815,70 +789,7 @@ class SabioRk(data_source.HttpDataSource):
             variant = None
             return (name, is_wildtype, variant)
 
-        raise ValueError('Cannot parse enzyme name: {}'.format(sbml))
-
-    def create_reaction_from_sbml(self, sbml, specie_properties):
-        """ Add a reaction to the local sqlite database
-
-        Args:
-            sbml (:obj:`libsbml.Reaction`): SBML-representation of a reaction
-            specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
-
-                * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
-                * `variant` (:obj:`str`): description of the variant of the eznyme
-                * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
-
-        Returns:
-            :obj:`Reaction`: reaction
-        """
-        """ annotation """
-        x_refs = self.create_cross_references_from_sbml(sbml)
-
-        # id
-        id = next(int(float(x_ref.id)) for x_ref in x_refs if x_ref.namespace == 'sabiork.reaction')
-        query = self.session.query(Reaction).filter_by(id=id)
-        if query.count():
-            reaction = query.first()
-        else:
-            reaction = Reaction(id=id)
-            self.session.add(reaction)
-
-        # cross references
-        x_refs = list(filter(lambda x_ref: x_ref.namespace not in ('sabiork.reaction', 'taxonomy', 'ec-code', 'kegg.reaction'), x_refs))
-        if x_refs:
-            raise ValueError('Reaction {} has cross-reference(s) to unsupported namespace(s): {}'
-                             .format(id, ', '.join([xr.namespace for xr in x_refs])))
-
-        """ participants """
-        reaction.reactants[:] = []
-        reactants = sbml.getListOfReactants()
-        for i_part in range(reactants.size()):
-            part_sbml = reactants.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
-            part = ReactionParticipant(
-                compound=compound,
-                compartment=compartment,
-                coefficient=part_sbml.getStoichiometry())
-            self.session.add(part)
-            reaction.reactants.append(part)
-
-        reaction.products[:] = []
-        products = sbml.getListOfProducts()
-        for i_part in range(products.size()):
-            part_sbml = products.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
-            part = ReactionParticipant(
-                compound=compound,
-                compartment=compartment,
-                coefficient=part_sbml.getStoichiometry())
-            self.session.add(part)
-            reaction.products.append(part)
-
-        """ updated """
-        reaction.modified = datetime.datetime.utcnow()
-
-        """ return reaction """
-        return reaction
+        raise ValueError('Cannot parse enzyme name: {}'.format(sbml))    
 
     def create_kinetic_law_from_sbml(self, id, sbml, specie_properties, functions, units):
         """ Add a kinetic law to the local sqlite database
@@ -899,7 +810,7 @@ class SabioRk(data_source.HttpDataSource):
             :obj:`KineticLaw`: kinetic law
 
         Raises:
-            :obj:`ValueError`: if the temperature is expressed in an unsupported unit or there is no reaction with `id` = `reaction_id`
+            :obj:`ValueError`: if the temperature is expressed in an unsupported unit
         """
         law = sbml.getKineticLaw()
         x_refs = self.create_cross_references_from_sbml(law)
@@ -920,18 +831,36 @@ class SabioRk(data_source.HttpDataSource):
             kinetic_law = KineticLaw(id=id)
             self.session.add(kinetic_law)
 
-        # reaction id
-        reaction_id = next(int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'sabiork.reaction')
-        q = self.session.query(Reaction).filter_by(id=reaction_id)
-        if q.count() != 1:
-            raise ValueError('Unable to find reaction with id {}'.format(reaction_id))
-        kinetic_law.reaction = q.first()
+        """ participants """
+        kinetic_law.reactants[:] = []
+        reactants = sbml.getListOfReactants()
+        for i_part in range(reactants.size()):
+            part_sbml = reactants.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            part = ReactionParticipant(
+                compound=compound,
+                compartment=compartment,
+                coefficient=part_sbml.getStoichiometry())
+            self.session.add(part)
+            kinetic_law.reactants.append(part)
+
+        kinetic_law.products[:] = []
+        products = sbml.getListOfProducts()
+        for i_part in range(products.size()):
+            part_sbml = products.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            part = ReactionParticipant(
+                compound=compound,
+                compartment=compartment,
+                coefficient=part_sbml.getStoichiometry())
+            self.session.add(part)
+            kinetic_law.products.append(part)
 
         """ cross references """
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
         # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
         # 1.1.1.50, respectively.
-        kinetic_law.cross_references = list(filter(lambda x_ref: x_ref.namespace not in ['sabiork.reaction', 'taxonomy'], reaction_x_refs))
+        kinetic_law.cross_references = list(filter(lambda x_ref: x_ref.namespace not in ['taxonomy'], reaction_x_refs))
 
         # rate_law
         kinetic_law.equation = functions[law.getMetaId()[5:]]
