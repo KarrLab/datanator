@@ -61,12 +61,12 @@ class TestObservation(unittest.TestCase):
 
         observable = data_model.Property(
             id='K_m',
-            parent=data_model.Specie(
-                id='ATP',
-                parent=data_model.Compartment(
-                    id='c',
-                    parent=data_model.Reaction(
-                        id='AtpSynthase'
+            parent=data_model.Reaction(
+                id='AtpSynthase',
+                parent=data_model.Specie(
+                    id='ATP',
+                    parent=data_model.Compartment(
+                        id='c',
                     )
                 )
             )
@@ -86,9 +86,10 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(o.values, [ov])
         self.assertEqual(ov.observation, o)
         self.assertEqual(ov.observable.id, 'K_m')
-        self.assertEqual(ov.observable.parent.id, 'ATP')
-        self.assertEqual(ov.observable.parent.parent.id, 'c')
-        self.assertEqual(ov.observable.parent.parent.parent.id, 'AtpSynthase')
+        self.assertEqual(ov.observable.parent.id, 'AtpSynthase')
+        self.assertEqual(ov.observable.parent.parent.id, 'ATP')
+        self.assertEqual(ov.observable.parent.parent.parent.id, 'c')
+
         self.assertEqual(ov.value, 1.0)
         self.assertEqual(ov.error, 0.5)
         self.assertEqual(ov.units, 'U/mg')
