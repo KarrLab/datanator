@@ -7,104 +7,89 @@
 :License: MIT
 """
 
-from . import datanator
-from .util import molecule_util
-from .util import taxonomy_util
-from cement.core.foundation import CementApp
-from cement.core.controller import CementBaseController, expose
+#from kinetic_datanator import datanator #todo
+from __future__ import print_function
+from cement.core import controller
+from cement.core import foundation
+from kinetic_datanator import io
+from kinetic_datanator.core import data_model
+from kinetic_datanator.data_source import ezyme
+from kinetic_datanator.util import molecule_util
+from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
-import openpyxl
-import os.path
+import bioservices
+import pubchempy
+import re
+import shutil
+import sys
 
 
-class BaseController(CementBaseController):
+class BaseController(controller.CementBaseController):
 
     class Meta:
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
 
 
-class GetKineticsController(CementBaseController):
+class GetDataController(controller.CementBaseController):
 
     class Meta:
-        label = 'get-kinetics'
-        description = "Get kinetic data"
+        label = 'get-data'
+        description = "Get relevant data for a model of a taxon"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
-            # we can make these arguments "positional" (required) by not adding "--arg" and just writing "arg"
-            # the action 'store' will store the value passed for the option in self.app.pargs
-            (['input_data_file'], dict(metavar='input-data-file',
-                                       type=str, help="path to the input data spreadsheet (xlsx)")),
-            (['output_data_file'], dict(metavar='output-data-file',
-                                        type=str, help="path to the output data spreadsheet (xlsx)")),
-            (['species'], dict(metavar='input-data-file',
-                               type=str, help="name of the species you are searching")),
-            # the following arguments are optional arguments, we connote this by adding "--" to the argument
-            (['--min-temp'], dict(action='store',
-                                  metavar='FLOAT', help="minimum temperature", default=15)),
-            (['--max-temp'], dict(action='store',
-                                  metavar='FLOAT', help="maximum temperature", default=40)),
-            (['--min-ph'], dict(action='store',
-                                metavar='FLOAT', help="minimum ph", default=5)),
-            (['--max-ph'], dict(action='store',
-                                metavar='FLOAT', help="maximum ph", default=9)),
-            # the action 'store_true' turns this option into a boolean that will be store in self.app.pargs
-            (['--include-mutants'], dict(action='store_true',
-                                         help="include mutants")),
-            (['--proxim-limit'], dict(action='store',
-                                      metavar='FLOAT', help="the maximum acceptable taxonomic distance", default=1000))
+            (['input_file'], dict(type=str, help="path to the input data spreadsheet (.xlsx)")),
+            (['output_file'], dict(type=str, help="path to the output data spreadsheet (.xlsx)")),
+            (['--max-taxon-dist'], dict(help="Maximum acceptable taxonomic distance",
+                                        type=int, default=None)),
+            (['--taxon-dist-scale'], dict(help="Exponential constant for scoring taxonomic distance",
+                                          type=float, default=float('nan'))),
+            (['--include-variants'], dict(help="If set, include data from genetic variants",
+                                          action='store_true', default=False)),
+            (['--temperature'], dict(help="Target temperature", type=float, default=37.)),
+            (['--temperature-std'], dict(help="Standard deviation for scoring temperatures",
+                                         type=float, default=1.)),
+            (['--ph'], dict(help="Target pH", type=float, default=7.5)),
+            (['--ph-std'], dict(help="Standard deviation for scoring pHs",
+                                type=float, default=0.3)),
         ]
 
-        # print(sabio_rk.format_ec_number_for_sabio("a"))
-
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
-        self.app.log.info("In get_kinetics")
-        self.app.log.info("Input file: '{}'".format(self.app.pargs.input_data_file))
-        self.app.log.info("Output file: '{}'".format(self.app.pargs.output_data_file))
-        self.app.log.info("Species: '{}'".format(self.app.pargs.species))
-        self.app.log.info("Minimum temperature: '{}'".format(self.app.pargs.min_temp))
-        self.app.log.info("Maximum temperature: '{}'".format(self.app.pargs.max_temp))
-        self.app.log.info("Minimum ph: '{}'".format(self.app.pargs.min_ph))
-        self.app.log.info("Maximum ph: '{}'".format(self.app.pargs.max_ph))
-        self.app.log.info("Include mutants: '{}'".format(self.app.pargs.include_mutants))
-        self.app.log.info("Proximity Limit: '{}'".format(self.app.pargs.proxim_limit))
+        pargs = self.app.pargs
+        genetics, compartments, species, reactions = io.InputReader().run(pargs.input_file)
 
-        # temp_range = [30, 40], enzyme_type = "wildtype", ph_range = [5,9], proxim_limit=1000):
+        # todo: implement
+        return
 
-        enzyme_type = "wildtype"
-        if self.app.pargs.include_mutants:
-            enzyme_type = "(wildtype OR mutant)"
-        datanator.get_kinetic_data(self.app.pargs.input_data_file,
-                                   self.app.pargs.output_data_file,
-                                   self.app.pargs.species,
-                                   temp_range=[float(self.app.pargs.min_temp), float(self.app.pargs.max_temp)],
-                                   ph_range=[float(self.app.pargs.min_ph), float(self.app.pargs.max_ph)],
-                                   enzyme_type=enzyme_type,
-                                   proxim_limit=float(self.app.pargs.proxim_limit)
-                                   )
+        data = datanator.get_kinetic_data(
+            taxon=genetics.taxon, max_taxon_dist=pargs.max_taxon_dist, taxon_dist_scale=pargs.taxon_dist_scale,
+            include_variants=pargs.include_variants,
+            temperature=pargs.temperature, temperature_std=pargs.temperature_std,
+            ph=pargs.ph, ph_std=pargs.ph_std)
+        io.OutputWriter().run(pargs.pargs.output_file, data)
 
 
-class GenerateTemplateController(CementBaseController):
+class GenerateTemplateController(controller.CementBaseController):
 
     class Meta:
         label = 'generate-template'
         description = "Generate an Excel template for specifying which reactions to aggregate kinetic data about"
         stacked_on = 'base'
         stacked_type = 'nested'
-        arguments = []  # todo: add argument for template output file
+        arguments = [
+            (['filename'], dict(type=str, help="path to save the Excel template")),
+        ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         # todo: generate template
         template_filename = resource_filename('kinetic_datanator', 'data/InputTemplate.xlsx')
-        output_filename = 'InputTemplate.xlsx'
-        wb = openpyxl.load_workbook(filename)
-        wb.save(output_filename)
+        shutil.copyfile(template_filename, self.app.pargs.filename)
 
 
-class TaxonomyController(CementBaseController):
+class TaxonomyController(controller.CementBaseController):
 
     class Meta:
         label = 'taxonomy'
@@ -114,7 +99,7 @@ class TaxonomyController(CementBaseController):
         arguments = []
 
 
-class TaxonomyGetRankController(CementBaseController):
+class TaxonomyGetRankController(controller.CementBaseController):
 
     class Meta:
         label = 'get-rank'
@@ -122,19 +107,19 @@ class TaxonomyGetRankController(CementBaseController):
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
-            (['taxon_id_or_name'], dict(metavar='taxon_id_or_name',
-                                        type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')"))
+            (['taxon_id_or_name'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')"))
         ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.distance_from_nearest_ncbi_taxon != 0:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+                             .format(self.app.pargs.taxon_id_or_name))
         print(taxon.get_rank())
 
 
-class TaxonomyGetParentsController(CementBaseController):
+class TaxonomyGetParentsController(controller.CementBaseController):
 
     class Meta:
         label = 'get-parents'
@@ -142,22 +127,22 @@ class TaxonomyGetParentsController(CementBaseController):
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
-            (['taxon_id_or_name'], dict(metavar='taxon_id_or_name',
-                                        type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')"))
+            (['taxon_id_or_name'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')"))
         ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+                             .format(self.app.pargs.taxon_id_or_name))
 
         parents = taxon.get_parent_taxa()
         for i_parent, parent in enumerate(parents):
             print(parent.name)
 
 
-class TaxonomyGetCommonAncestorController(CementBaseController):
+class TaxonomyGetCommonAncestorController(controller.CementBaseController):
 
     class Meta:
         label = 'get-common-ancestor'
@@ -165,26 +150,26 @@ class TaxonomyGetCommonAncestorController(CementBaseController):
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
-            (['taxon_id_or_name_1'], dict(metavar='taxon_id_or_name_1',
-                                          type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
-            (['taxon_id_or_name_2'], dict(metavar='taxon_id_or_name_2',
-                                          type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
+            (['taxon_id_or_name_1'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
+            (['taxon_id_or_name_2'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
         ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         taxon_1 = create_taxon(self.app.pargs.taxon_id_or_name_1)
         taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_1))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+                self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_2))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+                self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_common_ancestor(taxon_2).name)
 
 
-class TaxonomyGetDistanceToCommonAncestorController(CementBaseController):
+class TaxonomyGetDistanceToCommonAncestorController(controller.CementBaseController):
 
     class Meta:
         label = 'get-distance-to-common-ancestor'
@@ -192,26 +177,26 @@ class TaxonomyGetDistanceToCommonAncestorController(CementBaseController):
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
-            (['taxon_id_or_name_1'], dict(metavar='taxon_id_or_name_1',
-                                          type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
-            (['taxon_id_or_name_2'], dict(metavar='taxon_id_or_name_2',
-                                          type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
+            (['taxon_id_or_name_1'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
+            (['taxon_id_or_name_2'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
         ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         taxon_1 = create_taxon(self.app.pargs.taxon_id_or_name_1)
         taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_1))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+                self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name_2))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+                self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_distance_to_common_ancestor(taxon_2))
 
 
-class TaxonomyGetDistanceToRoot(CementBaseController):
+class TaxonomyGetDistanceToRoot(controller.CementBaseController):
 
     class Meta:
         label = 'get-distance-to-root'
@@ -219,55 +204,169 @@ class TaxonomyGetDistanceToRoot(CementBaseController):
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
-            (['taxon_id_or_name'], dict(metavar='taxon_id_or_name',
-                                        type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
+            (['taxon_id_or_name'], dict(type=str, help="Taxon id or name (examples: 9606, 'Homo sapiens')")),
         ]
 
-    @expose(hide=True)
+    @controller.expose(hide=True)
     def default(self):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
 
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(self.app.pargs.taxon_id_or_name))
+            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+                             .format(self.app.pargs.taxon_id_or_name))
 
         print(taxon.get_distance_to_root())
 
 
-class MoleculeController(CementBaseController):
+class MoleculeController(controller.CementBaseController):
 
     class Meta:
         label = 'molecule'
         description = 'Molecule utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
+        arguments = []
+
+
+class MoleculeGetStructureController(controller.CementBaseController):
+
+    class Meta:
+        label = 'get-structure'
+        description = 'Get the structure of a molecule by its name or id'
+        stacked_on = 'molecule'
+        stacked_type = 'nested'
         arguments = [
-            (['structure'], dict(metavar='structure',
-                                 type=str, help="Structure in InChI, MOL, or canonical SMILES format")),
-            (['format'], dict(metavar='format',
-                              type=str, help="Output format: inchi (InChI), mol (MOL), or can (canonical SMILES)")),
+            (['--by-name'], dict(dest='by_name', action='store_true', default=True,
+                                 help="If set, lookup structure by name")),
+            (['--by-id'], dict(dest='by_name', action='store_false', default=True,
+                               help="If set, lookup structure by id")),
+            (['--namespace'], dict(type=str, help="Namespace of id")),
+            (['name_or_id'], dict(type=str, help="Name or id of the molecule")),
         ]
 
-    @expose(help='Convert molecule structure')
-    def convert_structure(self):
+    @controller.expose(hide=True)
+    def default(self):
+        if self.app.pargs.by_name:
+            compounds = pubchempy.get_compounds(self.app.pargs.name_or_id, 'name')
+            results = [[compound.synonyms[0], 'pubchem.compound', compound.cid, compound.inchi] for compound in compounds]
+        else:
+            unichem = bioservices.UniChem()
+            structure = unichem.get_structure(int(float(self.app.pargs.name_or_id)), self.app.pargs.namespace)
+            if structure:
+                results = [['', self.app.pargs.namespace, self.app.pargs.name_or_id, structure['standardinchi']]]
+            else:
+                results = []
+
+        if not results:
+            print('Unable to find structure', file=sys.stderr)
+            return
+
+        lens = [
+            max(4, max(len(str(r[0])) for r in results)),
+            max(9, max(len(str(r[1])) for r in results)),
+            max(2, max(len(str(r[2])) for r in results)),
+            max(9, max(len(str(r[3])) for r in results)),
+        ]
+        format = '{{:<{}}}  {{:<{}}}  {{:<{}}}  {{:<{}}}'.format(*lens)
+        print(format.format('Name', 'Namespace', 'ID', 'Structure'))
+        print(format.format('=' * lens[0], '=' * lens[1], '=' * lens[2], '=' * lens[3]))
+        for result in results:
+            print(format.format(*result))
+
+
+class MoleculeConvertStructureController(controller.CementBaseController):
+
+    class Meta:
+        label = 'convert-structure'
+        description = 'Convert molecule structure'
+        stacked_on = 'molecule'
+        stacked_type = 'nested'
+        arguments = [
+            (['structure'], dict(type=str, help="Structure in InChI, MOL, or canonical SMILES format")),
+            (['format'], dict(type=str, help="Output format: inchi (InChI), mol (MOL), or can (canonical SMILES)")),
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
         structure = self.app.pargs.structure
         format = self.app.pargs.format
         print(molecule_util.Molecule(structure=structure).to_format(format))
 
 
-class ReactionController(CementBaseController):
+class ReactionController(controller.CementBaseController):
 
     class Meta:
         label = 'reaction'
         description = 'Reaction utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
+        arguments = []
+
+
+class ReactionGetEcNumberController(controller.CementBaseController):
+
+    class Meta:
+        label = 'get-ec-number'
+        description = 'Use Ezyme to predict the EC number of a reaction'
+        stacked_on = 'reaction'
+        stacked_type = 'nested'
         arguments = [
+            (['reaction'], dict(
+                type=str, help=("The reaction (e.g. {ATP(4-) + H2O --> ADP(3-) + PI(2-) + proton}, "
+                                "{inchi-atp + inchi-h2o --> inchi-adp + inchi-pi + inchi-h}), or "
+                                "{smiles-atp + smiles-h2o --> smiles-adp + smiles-pi + smiles-h})"
+                                ))),
         ]
 
-        # todo: add find_ec
+    # todo: add find_ec
+    @controller.expose(hide=True)
+    def default(self):
+        # parse input
+        def parse_participants(side, coefficient, reaction, errors):
+            for participant in side.split(' + '):
+                participant = participant.strip()
+
+                pubchem_compounds = pubchempy.get_compounds(participant, 'name')
+                if len(pubchem_compounds) == 1:
+                    structure = pubchem_compounds[0].inchi
+                elif molecule_util.Molecule(structure=participant).get_format():
+                    structure = participant
+                else:
+                    structure = ''
+                    errors.append(participant)
+
+                reaction.participants.append(data_model.ReactionParticipant(
+                    specie=data_model.Specie(structure=structure),
+                    coefficient=coefficient,
+                ))
+
+        match = re.match('^(.*?)<*[\-=]{1,2}>(.*?)$', self.app.pargs.reaction)
+        if not match:
+            print('The reaction is ill-formed', file=sys.stderr)
+            return
+
+        reaction = data_model.Reaction()
+        errors = []
+        parse_participants(match.group(1), -1, reaction, errors)
+        parse_participants(match.group(2),  1, reaction, errors)
+        if errors:
+            print('Unable to interpret participants:\n  '.format('\n  '.join(errors)), file=sys.stderr)
+            return
+
+        # predict EC number
+        results = ezyme.Ezyme().run(reaction)
+
+        # print results
+        if results:
+            print('EC number  Weight')
+            print('=========  ======')
+            for result in results:
+                print('{:<9s} {:>6.2f}'.format(result.ec_number, result.score))
+        else:
+            print('There is no appropriate EC number for the reaction')
 
 
-class App(CementApp):
+class App(foundation.CementApp):
 
     class Meta:
         label = "kinetic_datanator"
@@ -275,7 +374,7 @@ class App(CementApp):
         handlers = [
             BaseController,
 
-            GetKineticsController,
+            GetDataController,
             GenerateTemplateController,
 
             TaxonomyController,
@@ -286,8 +385,11 @@ class App(CementApp):
             TaxonomyGetDistanceToRoot,
 
             MoleculeController,
+            MoleculeGetStructureController,
+            MoleculeConvertStructureController,
 
             ReactionController,
+            ReactionGetEcNumberController,
         ]
 
 

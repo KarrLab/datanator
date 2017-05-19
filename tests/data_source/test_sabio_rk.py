@@ -176,7 +176,7 @@ class TestDownloader(unittest.TestCase):
 
         self.assertEqual(c.created, h20_created)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 120)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 240)
 
     def test_load_kinetic_laws_multiple(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
