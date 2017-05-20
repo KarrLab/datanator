@@ -395,19 +395,17 @@ class Method(obj_model.core.Model):
 
     Attributes:
         name (:obj:`str`): name
+        description (:obj:`str`): description
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
     name = obj_model.core.StringAttribute()
+    description = obj_model.core.LongStringAttribute()
 
 
 class ExperimentalMethod(Method):
-    """ Represents a experimental method used to generate an observation
-
-    Attributes:
-        description (:obj:`str`): description
-    """
-    description = obj_model.core.LongStringAttribute()
+    """ Represents a experimental method used to generate an observation """
+    pass
 
 
 class ComputationalMethod(Method):
