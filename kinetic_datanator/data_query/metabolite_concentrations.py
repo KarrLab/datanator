@@ -10,7 +10,7 @@ from kinetic_datanator.core import data_query
 from kinetic_datanator.data_source import ecmdb
 
 
-class MetaboliteConcentrationsQueryEngine(data_query.CachedDataSourceQueryEngine):
+class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for metabolites """
 
     def __init__(self,
@@ -29,7 +29,7 @@ class MetaboliteConcentrationsQueryEngine(data_query.CachedDataSourceQueryEngine
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(MetaboliteConcentrationsQueryEngine, self).__init__(
+        super(MetaboliteConcentrationsQueryGenerator, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,

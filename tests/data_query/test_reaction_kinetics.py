@@ -15,7 +15,7 @@ from kinetic_datanator.util import molecule_util
 import unittest
 
 
-class TestReactionKineticsQueryEngine(unittest.TestCase):
+class TestReactionKineticsQueryGenerator(unittest.TestCase):
 
     def setUp(self):
         self.reaction_1_1_1_55 = data_model.Reaction(
@@ -100,7 +100,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
             ])
 
     def test_get_compounds_by_structure(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
 
         inchi = 'InChI=1S/C6H13O9P/c7-3-2(1-14-16(11,12)13)15-6(10)5(9)4(3)8/h2-10H,1H2,(H2,11,12,13)/t2-,3-,4+,5-,6+/m1/s1'
 
@@ -117,7 +117,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
         self.assertEqual([c[0] for c in compounds], [24])
 
     def test_get_kinetic_laws_by_compound(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
 
         d_Lactaldehyde = 'InChI=1S/C3H6O2/c1-3(5)2-4/h2-3,5H,1H3/t3-/m1/s1'
 
@@ -166,7 +166,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
         self.assertEqual(rxn_ids, set(['10424']))
 
     def test_get_kinetic_laws_by_participants(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
 
         participants = self.reaction_1_1_1_55.participants
 
@@ -209,7 +209,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
                                                 22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
 
     def test_get_kinetic_laws_by_ec_numbers(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
 
         # single EC, match_levels=4
         laws = q.get_kinetic_laws_by_ec_numbers(['1.1.1.52'], match_levels=4).all()
@@ -252,7 +252,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
         self.assertEqual(ids_contains.difference(ids), set())
 
     def test_get_kinetic_laws_by_reaction(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
 
         laws = q.get_kinetic_laws_by_reaction(self.reaction_1_1_1_55) \
             .order_by(sabio_rk.KineticLaw.id) \
@@ -274,7 +274,7 @@ class TestReactionKineticsQueryEngine(unittest.TestCase):
         self.assertEqual([l.id for l in laws], [46425, 46426, 46427, 46428])
 
     def test_get_observed_values(self):
-        q = reaction_kinetics.ReactionKineticsQueryEngine()
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
         vals = q.get_observed_values(self.reaction_1_1_1_55)
 
         table = []

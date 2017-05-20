@@ -18,7 +18,7 @@ import six
 unit_registry = pint.UnitRegistry()
 
 
-class DataQueryEngine(six.with_metaclass(abc.ABCMeta, object)):
+class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents a query of a data source
 
     1. Find observations for the exact or similar model components
@@ -172,7 +172,7 @@ class DataQueryEngine(six.with_metaclass(abc.ABCMeta, object)):
         return consensus
 
 
-class CachedDataSourceQueryEngine(DataQueryEngine):
+class CachedDataSourceQueryGenerator(DataQueryGenerator):
     """ Represents a query of a cached data source
 
     Attributes:
@@ -197,7 +197,7 @@ class CachedDataSourceQueryEngine(DataQueryEngine):
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
             data_source (:obj:`kinetic_datanator.core.data_source.CachedDataSource`, optional): cached data source
         """
-        super(CachedDataSourceQueryEngine, self).__init__(
+        super(CachedDataSourceQueryGenerator, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std)
