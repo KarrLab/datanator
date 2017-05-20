@@ -16,7 +16,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 
-class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
+class ReactionKineticsQueryEngine(data_query.CachedDataSourceQueryEngine):
     """ Finds relevant kinetics observations for reactions
 
     1. Find kinetics observed for the reaction or similar reactions
@@ -56,7 +56,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ReactionKineticsQuery, self).__init__(
+        super(ReactionKineticsQueryEngine, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
