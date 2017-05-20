@@ -103,7 +103,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
                         name=parameter.compartment.name,
                         parent=reaction,
                     )
-  
+
                 observed_vals.append(data_model.ObservedValue(
                     observation=observation,
                     observable=observable,
@@ -149,51 +149,26 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
 
     def get_kinetic_laws_by_participants(self, participants, only_formula_and_connectivity=True, include_water_hydrogen=False,
                                          select=sabio_rk.KineticLaw):
-        """ Get kinetic laws which were observed for reactions with the participants :obj:`participants`
+        """ Get kinetic laws with the participants :obj:`participants`
 
         Args:
             participants (:obj:`list` of :obj:`data_model.ReactionParticipant`): list of reaction participants
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find reactions which contain species with the same
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find kinetic laws which contain species with the same
                 InChI formula and connectivity layers
-            include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict reactions based on their water, hydroxide, and
+            include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict kinetic laws based on their water, hydroxide, and
                 hydrogen participants
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional): 
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
                 :obj:`sabio_rk.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain all of the participants
         """
-        q_reactions = self.get_reactions_by_participants(
-            participants,
-            only_formula_and_connectivity=only_formula_and_connectivity,
-            include_water_hydrogen=include_water_hydrogen,
-            select=sabio_rk.Reaction)
-        return self.data_source.session \
-            .query(select) \
-            .join((q_reactions.subquery(), sabio_rk.KineticLaw.reaction))
-
-    def get_reactions_by_participants(self, participants, only_formula_and_connectivity=True, include_water_hydrogen=False,
-                                      select=sabio_rk.Reaction):
-        """ Get reactions with the participants :obj:`participants`
-
-        Args:
-            participants (:obj:`list` of :obj:`data_model.ReactionParticipant`): list of reaction participants
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find reactions which contain species with the same
-                InChI formula and connectivity layers
-            include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict reactions based on their water, hydroxide, and
-                hydrogen participants
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.Reaction` or one of its columns
-
-        Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for reactions that contain all of the participants
-        """
-        q_reactions = None
+        q_laws = None
         for i_part, part in enumerate(participants):
             try:
                 structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
             except ValueError:
-                return self.data_source.session.query(select).filter(sabio_rk.Reaction.id == -1)
+                return self.data_source.session.query(select).filter(sabio_rk.KineticLaw.id == -1)
 
             if not include_water_hydrogen:
                 if only_formula_and_connectivity:
@@ -208,30 +183,30 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
             elif part.coefficient > 0:
                 role = 'product'
 
-            q_part = self.get_reactions_by_compound(
+            q_part = self.get_kinetic_laws_by_compound(
                 structure, only_formula_and_connectivity=only_formula_and_connectivity, role=role,
                 select=select)
 
-            if not q_reactions:
-                q_reactions = q_part
+            if not q_laws:
+                q_laws = q_part
             else:
-                q_reactions = q_reactions.intersect(q_part)
+                q_laws = q_laws.intersect(q_part)
 
-        return q_reactions
+        return q_laws
 
-    def get_reactions_by_compound(self, structure, only_formula_and_connectivity=False, role='reactant', select=sabio_rk.Reaction):
-        """ Get reactions that contain a structure in role :obj:`role`
+    def get_kinetic_laws_by_compound(self, structure, only_formula_and_connectivity=False, role='reactant', select=sabio_rk.KineticLaw):
+        """ Get kinetic laws that contain a structure in role :obj:`role`
 
         Args:
             structure (:obj:`str`): InChI structure or formula and connectivity layers to search for
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find reactions which contain species with the same
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find kinetic laws which contain species with the same
                 InChI formula and connectivity layers
-            role (:obj:`str`, optional): reaction role (reactant, or product) to search for species
+            role (:obj:`str`, optional): role (reactant, or product) to search for species
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.Reaction` or one of its columns
+                :obj:`sabio_rk.KineticLaw` or one of its columns
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for reactions that contain the structure in role :obj:`role`
+            :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
         """
         if only_formula_and_connectivity:
             condition = sabio_rk.CompoundStructure._value_inchi_formula_connectivity == structure
@@ -239,16 +214,16 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQuery):
             condition = sabio_rk.CompoundStructure._value_inchi == structure
 
         if role == 'reactant':
-            participant_type = sabio_rk.Reaction.reactants
+            participant_type = sabio_rk.KineticLaw.reactants
         else:
-            participant_type = sabio_rk.Reaction.products
+            participant_type = sabio_rk.KineticLaw.products
 
         return self.data_source.session.query(select) \
             .join((sabio_rk.ReactionParticipant, participant_type)) \
             .join((sabio_rk.Compound, sabio_rk.ReactionParticipant.compound)) \
             .join((sabio_rk.CompoundStructure, sabio_rk.Compound.structures)) \
             .filter(condition) \
-            .distinct(sabio_rk.Reaction.id)
+            .distinct(sabio_rk.KineticLaw.id)
 
     def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=True, select=sabio_rk.Compound):
         """ Get compounds with the same structure. Optionally, get compounds which only have

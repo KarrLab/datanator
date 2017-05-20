@@ -57,7 +57,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
                     coefficient=1),
             ])
 
-        self.reaction_not_1_1_1_52 = data_model.Reaction(
+        self.reaction_1_1_1_55_rev = data_model.Reaction(
             participants=[
                 data_model.ReactionParticipant(
                     specie=data_model.Specie(
@@ -96,7 +96,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
                     coefficient=1),
             ],
             cross_references=[
-                data_model.Resource(namespace='ec-code', id='1.1.1.52', assignment_method=data_model.ResourceAssignmentMethod.manual),
+                data_model.Resource(namespace='ec-code', id='1.1.1.55', assignment_method=data_model.ResourceAssignmentMethod.manual),
             ])
 
     def test_get_compounds_by_structure(self):
@@ -116,69 +116,54 @@ class TestReactionKineticsQuery(unittest.TestCase):
         compounds = q.get_compounds_by_structure(inchi, only_formula_and_connectivity=False, select=sabio_rk.Compound.id).all()
         self.assertEqual([c[0] for c in compounds], [24])
 
-    def test_get_reactions_by_compound(self):
+    def test_get_kinetic_laws_by_compound(self):
         q = reaction_kinetics.ReactionKineticsQuery()
 
         d_Lactaldehyde = 'InChI=1S/C3H6O2/c1-3(5)2-4/h2-3,5H,1H3/t3-/m1/s1'
 
         # whole structure, reactant, select id
-        q_rxn = q.get_reactions_by_compound(
+        q_law = q.get_kinetic_laws_by_compound(
             d_Lactaldehyde, only_formula_and_connectivity=False,
-            role='reactant', select=sabio_rk.Reaction.id) \
-            .order_by(sabio_rk.Reaction.id)
-        # reactions: [548, 10424], laws: [22877, 22870, 22882, 38452, 44597, 50464, 50469, 50470]
-        self.assertEqual([r[0] for r in q_rxn.all()], [548])
+            role='reactant', select=sabio_rk.KineticLaw.id) \
+            .order_by(sabio_rk.KineticLaw.id)
+        self.assertEqual([l[0] for l in q_law.all()], [22870, 22877, 22882, 38452, 44597, 50464, 50469, 50470])
 
         # whole structure, reactant, select object
-        q_rxn = q.get_reactions_by_compound(
+        q_law = q.get_kinetic_laws_by_compound(
             d_Lactaldehyde, only_formula_and_connectivity=False,
-            role='reactant', select=sabio_rk.Reaction) \
-            .order_by(sabio_rk.Reaction.id)
-        # reactions: [548, 10424], laws: [22877, 22870, 22882, 38452, 44597, 50464, 50469, 50470]
-        self.assertEqual([r.id for r in q_rxn.all()], [548])
+            role='reactant', select=sabio_rk.KineticLaw) \
+            .order_by(sabio_rk.KineticLaw.id)
+        self.assertEqual([l.id for l in q_law.all()], [22870, 22877, 22882, 38452, 44597, 50464, 50469, 50470])
+
+        rxn_ids = set()
+        for law in q_law.all():
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertEqual(rxn_ids, set(['548', '10424']))
 
         # formula and connectivity, reactant, select object
-        q_rxn = q.get_reactions_by_compound(
+        q_law = q.get_kinetic_laws_by_compound(
             molecule_util.InchiMolecule(d_Lactaldehyde).get_formula_and_connectivity(), only_formula_and_connectivity=True,
-            role='reactant', select=sabio_rk.Reaction) \
-            .order_by(sabio_rk.Reaction.id)
-        rxn_ids = [r.id for r in q_rxn.all()]  # laws: [50464, 26317, 28508, 41400]
-        self.assertIn(548, rxn_ids)
-        self.assertIn(553, rxn_ids)
-        self.assertIn(554, rxn_ids)
-        self.assertIn(12492, rxn_ids)
+            role='reactant', select=sabio_rk.KineticLaw) \
+            .order_by(sabio_rk.KineticLaw.id)
+        law_ids = set([l.id for l in q_law.all()])
+        self.assertGreater(len(law_ids.difference(set([22870, 22877, 22882, 38452, 44597, 50464, 50469, 50470]))), 0)
+
+        rxn_ids = set()
+        for law in q_law.all():
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertGreater(len(rxn_ids.difference(set(['548', '10424']))), 0)
 
         # whole structure, product, select object
-        q_rxn = q.get_reactions_by_compound(
+        q_law = q.get_kinetic_laws_by_compound(
             d_Lactaldehyde, only_formula_and_connectivity=False,
-            role='product', select=sabio_rk.Reaction) \
-            .order_by(sabio_rk.Reaction.id)
-        self.assertEqual([r.id for r in q_rxn.all()], [10424])  # reactions: [10424], laws: [44603]
+            role='product', select=sabio_rk.KineticLaw) \
+            .order_by(sabio_rk.KineticLaw.id)
+        self.assertEqual([l.id for l in q_law.all()], [44603])
 
-    def test_get_reactions_by_participants(self):
-        q = reaction_kinetics.ReactionKineticsQuery()
-
-        participants = self.reaction_1_1_1_55.participants
-
-        # only_formula_and_connectivity=True, include_water_hydrogen=False
-        reactions = q.get_reactions_by_participants(participants) \
-            .order_by(sabio_rk.Reaction.id)
-        self.assertEqual([r.id for r in reactions], [554, 2227, 10434])
-
-        # only_formula_and_connectivity=False
-        reactions = q.get_reactions_by_participants(participants, only_formula_and_connectivity=False) \
-            .order_by(sabio_rk.Reaction.id)
-        self.assertEqual([r.id for r in reactions], [554, 2227])
-
-        # include_water_hydrogen=True
-        reactions = q.get_reactions_by_participants(participants, include_water_hydrogen=True) \
-            .order_by(sabio_rk.Reaction.id)
-        self.assertEqual([r.id for r in reactions], [554, 2227, 10434])
-
-        # select=sabio_rk.Reaction.id
-        reactions = q.get_reactions_by_participants(participants, select=sabio_rk.Reaction.id) \
-            .order_by(sabio_rk.Reaction.id)
-        self.assertEqual([r[0] for r in reactions], [554, 2227, 10434])
+        rxn_ids = set()
+        for law in q_law.all():
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertEqual(rxn_ids, set(['10424']))
 
     def test_get_kinetic_laws_by_participants(self):
         q = reaction_kinetics.ReactionKineticsQuery()
@@ -188,22 +173,40 @@ class TestReactionKineticsQuery(unittest.TestCase):
         # only_formula_and_connectivity=True, include_water_hydrogen=False
         laws = q.get_kinetic_laws_by_participants(participants) \
             .order_by(sabio_rk.KineticLaw.id)
-        self.assertEqual([l.id for l in laws], [22871, 22874, 22876, 22880, 28503, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l.id for l in laws], [22870, 22871, 22874, 22876, 22877,
+                                                22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
+
+        rxn_ids = set()
+        for law in laws:
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertEqual(rxn_ids, set(['554', '2227', '10424', '10434']))
 
         # only_formula_and_connectivity=False
         laws = q.get_kinetic_laws_by_participants(participants, only_formula_and_connectivity=False) \
             .order_by(sabio_rk.KineticLaw.id)
-        self.assertEqual([l.id for l in laws], [22871, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l.id for l in laws], [22870, 22871, 22877, 22882, 38452, 38455, 44597, 46425, 46426, 46428])
+
+        rxn_ids = set()
+        for law in laws:
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertEqual(rxn_ids, set(['554', '2227', '10424']))
 
         # include_water_hydrogen=True
         laws = q.get_kinetic_laws_by_participants(participants, include_water_hydrogen=True) \
             .order_by(sabio_rk.KineticLaw.id)
-        self.assertEqual([l.id for l in laws], [22871, 22874, 22876, 22880, 28503, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l.id for l in laws], [22870, 22871, 22874, 22876, 22877,
+                                                22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
+
+        rxn_ids = set()
+        for law in laws:
+            rxn_ids.add(next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction'))
+        self.assertEqual(rxn_ids, set(['554', '2227', '10424', '10434']))
 
         # select=sabio_rk.KineticLaw.id
         laws = q.get_kinetic_laws_by_participants(participants, select=sabio_rk.KineticLaw.id) \
             .order_by(sabio_rk.KineticLaw.id)
-        self.assertEqual([l[0] for l in laws], [22871, 22874, 22876, 22880, 28503, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l[0] for l in laws], [22870, 22871, 22874, 22876, 22877,
+                                                22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
 
     def test_get_kinetic_laws_by_ec_numbers(self):
         q = reaction_kinetics.ReactionKineticsQuery()
@@ -254,19 +257,21 @@ class TestReactionKineticsQuery(unittest.TestCase):
         laws = q.get_kinetic_laws_by_reaction(self.reaction_1_1_1_55) \
             .order_by(sabio_rk.KineticLaw.id) \
             .all()
-        self.assertEqual([l.id for l in laws], [22871, 22874, 22876, 22880, 28503, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l.id for l in laws], [22870, 22871, 22874, 22876, 22877,
+                                                22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
 
         # select=sabio_rk.KineticLaw.id
         laws = q.get_kinetic_laws_by_reaction(self.reaction_1_1_1_55, select=sabio_rk.KineticLaw.id) \
             .order_by(sabio_rk.KineticLaw.id) \
             .all()
-        self.assertEqual([l[0] for l in laws], [22871, 22874, 22876, 22880, 28503, 28508, 38455, 46425, 46426, 46427, 46428])
+        self.assertEqual([l[0] for l in laws], [22870, 22871, 22874, 22876, 22877,
+                                                22880, 22882, 28503, 38452, 38455, 44597, 46425, 46426, 46428])
 
         # get by EC
-        laws = q.get_kinetic_laws_by_reaction(self.reaction_not_1_1_1_52) \
+        laws = q.get_kinetic_laws_by_reaction(self.reaction_1_1_1_55_rev) \
             .order_by(sabio_rk.KineticLaw.id) \
             .all()
-        self.assertEqual([l.id for l in laws], [16011, 16013, 16016])
+        self.assertEqual([l.id for l in laws], [46425, 46426, 46427, 46428])
 
     def test_get_observed_values(self):
         q = reaction_kinetics.ReactionKineticsQuery()
