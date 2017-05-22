@@ -277,22 +277,34 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
         vals = q.get_observed_values(self.reaction_1_1_1_55)
 
+        for val in vals:
+            sabiork_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction')
+            if sabiork_id == '10424' and val.observable.property == 'Km':
+                break
+        self.assertEqual(val.observable.interaction.cross_references[0].namespace, 'sabiork.reaction')
+        self.assertEqual(val.observable.interaction.cross_references[0].id, '10424')
+        self.assertEqual(val.observable.compartment.id, 'cytoplasm')
+        self.assertEqual(val.observable.specie.name, 'D-Lactaldehyde')
+        self.assertEqual(val.observable.property, 'Km')
+        self.assertEqual(val.value, 7.9e-5)
+        self.assertEqual(val.units, 'M')
+
+        """
         table = []
         for v in vals:
-            row = [v.observable.name, None, None, v.value, v.units]
-            if v.observable.parent.parent:
-                row[1] = v.observable.parent.parent.name
-            if v.observable.parent.parent.parent:
-                row[2] = v.observable.parent.parent.parent.name
+            row = [v.observable.property, None, None, v.value, v.units]
+            if v.observable.specie:
+                row[1] = v.observable.specie.name
+            if v.observable.compartment:
+                row[2] = v.observable.compartment.id
             table.append(row)
 
         print('\n')
-        print('{:<20}  {:<20}  {:<20}  {:<20}  {:<20}'.format('Parameter', 'Compound', 'Compartment', 'Value', 'Units'))
-        print('{:<20}  {:<20}  {:<20}  {:<20}  {:<20}'.format('=' * 20, '=' * 20, '=' * 20, '=' * 20, '=' * 20))
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}'.format('Parameter', 'Species', 'Compartment', 'Value', 'Units'))
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}'.format('=' * 9, '=' * 16, '=' * 20, '=' * 20, '=' * 5))
         for row in table:
-            print('{:<20}  {:<20}  {:<20}  {:>20}  {:<20}'.format(row[0] or '', row[1] or '', row[2] or '', row[3] or '', row[4] or ''))
-
-        self.assertIn(['kcat_Km', 'N-Ethylmaleimide', None, 85000.0, None], table)
+            print('{:<9}  {:<16}  {:<20}  {:>20}  {:<5}'.format(row[0] or '', row[1] or '', row[2] or '', row[3] or '', row[4] or ''))
+        """
 
     @unittest.skip('implement me')
     def test_(self):

@@ -25,7 +25,7 @@ class TestConsensus(unittest.TestCase):
 
     def test(self):
         c = data_model.Consensus(
-            observable=data_model.Property(id='volume'),
+            observable=data_model.Observable(),
             value=1.1,
             error=0.3,
             units='uM',
@@ -59,17 +59,11 @@ class TestObservation(unittest.TestCase):
         o.environment = data_model.Environment(temperature=37, ph=7., media='Hayflick')
         o.reference = data_model.Reference(title='title', author='author', year=2017, volume=1, number=1, pages='1-10')
 
-        observable = data_model.Property(
-            id='K_m',
-            parent=data_model.Reaction(
-                id='AtpSynthase',
-                parent=data_model.Specie(
-                    id='ATP',
-                    parent=data_model.Compartment(
-                        id='c',
-                    )
-                )
-            )
+        observable = data_model.Observable(
+            interaction=data_model.Reaction(id='AtpSynthase'),
+            specie=data_model.Specie(id='ATP'),
+            compartment=data_model.Compartment(id='c'),
+            property='K_m',
         )
 
         ov = data_model.ObservedValue(
@@ -84,11 +78,11 @@ class TestObservation(unittest.TestCase):
         o.validate()
 
         self.assertEqual(o.values, [ov])
-        self.assertEqual(ov.observation, o)
-        self.assertEqual(ov.observable.id, 'K_m')
-        self.assertEqual(ov.observable.parent.id, 'AtpSynthase')
-        self.assertEqual(ov.observable.parent.parent.id, 'ATP')
-        self.assertEqual(ov.observable.parent.parent.parent.id, 'c')
+        self.assertEqual(ov.observation, o)        
+        self.assertEqual(ov.observable.interaction.id, 'AtpSynthase')
+        self.assertEqual(ov.observable.specie.id, 'ATP')
+        self.assertEqual(ov.observable.compartment.id, 'c')
+        self.assertEqual(ov.observable.property, 'K_m')
 
         self.assertEqual(ov.value, 1.0)
         self.assertEqual(ov.error, 0.5)

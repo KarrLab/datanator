@@ -86,23 +86,29 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
         """
 
-        laws = self.get_kinetic_laws_by_reaction(reaction)
+        q_law = self.get_kinetic_laws_by_reaction(reaction)
         observed_vals = []
-        for law in laws.all():
+        for law in q_law.all():
+            sabiork_reaction_id = next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction')
+
             observation = data_model.Observation()
             for parameter in law.parameters:
-                observable = data_model.Property(name=parameter.type, parent=reaction)
+                observable = data_model.Observable(
+                    interaction=data_model.Reaction(
+                        cross_references=[data_model.Resource(namespace='sabiork.reaction', id=sabiork_reaction_id)],
+                        ), 
+                    property=parameter.type,
+                    )
 
                 if parameter.compound:
-                    observable.parent.parent = data_model.Specie(
+                    observable.specie = data_model.Specie(
                         name=parameter.compound.name,
                         structure=parameter.compound.structures[0] if parameter.compound.structures else None,
                     )
-                if parameter.compartment:
-                    observable.parent.parent.parent = data_model.Compartment(
-                        name=parameter.compartment.name,
-                        parent=reaction,
-                    )
+                    if parameter.compartment:
+                        observable.compartment = data_model.Compartment(
+                            id=parameter.compartment.name,
+                        )
 
                 observed_vals.append(data_model.ObservedValue(
                     observation=observation,

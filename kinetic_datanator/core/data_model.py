@@ -29,7 +29,7 @@ class Consensus(obj_model.core.Model):
     """ Represents a consensus of one or more observed values of an attribute of a component of a model
 
     Attributes:
-        observable (:obj:`Observable`): biological component that was observed
+        observable (:obj:`Observable`): biological component that was estimated
         value (:obj:`float`): consensus value of the attribute of the model component
         error (:obj:`float`): uncertainty of the value of the attribute of the model component
         units (:obj:`str`): units of the value of the attribute of the model component        
@@ -79,8 +79,7 @@ class ObservedValue(obj_model.core.Model):
     """ Represents an observed value of a biological system
 
     Attributes:
-        observation (:obj:`Observaton`): the collection of covariate observed values
-        observable (:obj:`Observable`): biological component that was observed
+        observation (:obj:`Observaton`): the collection of covariate observed values        
         value (:obj:`float`): observed value
         error (:obj:`float`): uncertainty of the observed value
         units (:obj:`units`): SI units of the observed value
@@ -98,23 +97,36 @@ class Observable(obj_model.core.Model):
     """ Represents an observable of a biological system
 
     Attributes:
+        interaction (:obj:`Interaction`): observed interaction
+        specie (:obj:`Specie`): observed species
+        compartment (:obj:`Compartment`): compartment that the spcies/interaction was observed in
+        property (:obj:`str`): property that was observed
+    """
+    interaction = obj_model.core.ManyToOneAttribute('Interaction', related_name='observed_values')
+    specie = obj_model.core.ManyToOneAttribute('Specie', related_name='observed_values')
+    compartment = obj_model.core.ManyToOneAttribute('Compartment', related_name='observed_values')
+    property = obj_model.core.StringAttribute()
+
+
+class EntityInteractionOrProperty(obj_model.core.Model):
+    """ Represents an observable of a biological system
+
+    Attributes:
         id (:obj:`str`): identifier
         name (:obj:`str`): name
         cross_references (:obj:`list` of :obj:`Resource`): list of cross references to external resources
-        parent (:obj:`Observable`): parent of the observable (e.g. the parents of k_cat kinetic parameters are reactions)        
     """
     id = obj_model.core.StringAttribute()
     name = obj_model.core.StringAttribute()
     cross_references = obj_model.core.ManyToManyAttribute('Resource', related_name='observables')
-    parent = obj_model.core.ManyToOneAttribute('Observable', related_name='children')
 
 
-class Compartment(Observable):
+class Compartment(EntityInteractionOrProperty):
     """ Representes a compartment in a biological system """
     pass
 
 
-class Specie(Observable):
+class Specie(EntityInteractionOrProperty):
     """ Represents a molecular species in a biological system
 
     Attributes:
@@ -186,7 +198,12 @@ class Specie(Observable):
         return self_mol.get_similarity(other_mol, fingerprint_type=fingerprint_type)
 
 
-class Reaction(Observable):
+class Interaction(EntityInteractionOrProperty):
+    """ Represents an interaction """
+    pass
+
+
+class Reaction(Interaction):
     """ Represents a reaction
 
     Attributes:
@@ -339,11 +356,6 @@ class ReactionParticipant(obj_model.core.Model):
     compartment = obj_model.core.ManyToOneAttribute(Compartment, related_name='reaction_participants')
     coefficient = obj_model.core.FloatAttribute()
     order = obj_model.core.IntegerAttribute()
-
-
-class Property(Observable):
-    """ Represents an observable property of an observable """
-    pass
 
 
 class Genetics(obj_model.core.Model):
