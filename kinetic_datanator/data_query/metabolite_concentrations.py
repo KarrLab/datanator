@@ -37,11 +37,11 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
 
         self.filters.append(filter.MolecularSimilarityFilter())
 
-    def get_observed_values(self, component):
+    def get_observed_values(self, specie):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         Args:
-            component (:obj:`str`): model component to find data for
+            specie (:obj:`data_model.Specie`): species to find data for
 
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations

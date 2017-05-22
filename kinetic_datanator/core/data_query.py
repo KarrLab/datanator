@@ -78,7 +78,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         3. Calculate a consensus statistical representation of the relevant observations
 
         Args:
-            component (:obj:`str`): model component to find data for
+            component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
 
         Returns:
             :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observations of 
@@ -93,7 +93,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """ Find the observations relevant to :obj:`component`
 
         Args:
-            component (:obj:`str`): model component to find data for
+            observable (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
 
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
@@ -106,7 +106,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         environmental conditions.
 
         Args:
-            component (:obj:`str`): model component to find data for
+            component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
             observations (:obj:`list` of :obj:`data_model.ObservedValue`): list of observations
 
         Returns:
@@ -119,7 +119,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """ Calculate a consensus statistical representation of the one or more observations
 
         Args:
-            component (:obj:`str`): model component to find data for
+            component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
             filter_result (:obj:`filter.FilterResult`): filter result
 
         Returns:
