@@ -198,6 +198,30 @@ class Specie(EntityInteractionOrProperty):
         return self_mol.get_similarity(other_mol, fingerprint_type=fingerprint_type)
 
 
+class PolymerSpecie(Specie):
+    """ Represents a polymer
+
+    Attributes:
+        sequence (:obj:`str`): sequence
+    """
+    sequence = obj_model.core.LongStringAttribute()
+
+
+class DnaSpecie(PolymerSpecie):
+    """ Represents a DNA polymer """
+    pass
+
+
+class RnaSpecie(PolymerSpecie):
+    """ Represents a RNA polymer """
+    pass
+
+
+class ProteinSpecie(PolymerSpecie):
+    """ Represents a protein polymer """
+    pass
+
+
 class Interaction(EntityInteractionOrProperty):
     """ Represents an interaction """
     pass

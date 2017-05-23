@@ -78,7 +78,7 @@ class TestObservation(unittest.TestCase):
         o.validate()
 
         self.assertEqual(o.values, [ov])
-        self.assertEqual(ov.observation, o)        
+        self.assertEqual(ov.observation, o)
         self.assertEqual(ov.observable.interaction.id, 'AtpSynthase')
         self.assertEqual(ov.observable.specie.id, 'ATP')
         self.assertEqual(ov.observable.compartment.id, 'c')
@@ -136,6 +136,22 @@ class TestSpecie(unittest.TestCase):
         adp = data_model.Specie(structure=seld.adp)
         atp = data_model.Specie(structure=seld.atp)
         self.assertAlmostEqual(adp.get_similarity(atp), 0.955, places=3)
+
+
+class TestPolymerSpecie(unittest.TestCase):
+
+    def test(self):
+        s = data_model.PolymerSpecie(sequence='ACGT')
+        self.assertEqual(s.sequence, 'ACGT')
+
+        s = data_model.DnaSpecie(sequence='ACGT')
+        self.assertEqual(s.sequence, 'ACGT')
+
+        s = data_model.ProteinSpecie(sequence='ACGT')
+        self.assertEqual(s.sequence, 'ACGT')
+
+        s = data_model.RnaSpecie(sequence='ACGT')
+        self.assertEqual(s.sequence, 'ACGT')
 
 
 class TestReaction(unittest.TestCase):
