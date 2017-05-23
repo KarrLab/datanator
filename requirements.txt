@@ -11,6 +11,7 @@ git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
 openpyxl
 pint
+pronto
 pubchempy
 requests
 requests-cache
