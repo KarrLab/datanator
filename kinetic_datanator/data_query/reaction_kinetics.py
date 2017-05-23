@@ -39,16 +39,14 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     """
 
     def __init__(self,
-                 reaction=None,
                  taxon=None, max_taxon_dist=None, taxon_dist_scale=None, include_variants=False,
                  temperature=37., temperature_std=1.,
                  ph=7.5, ph_std=0.3):
         """
         Args:
-            reaction (:obj:`data_model.Reaction`, optional): reaction to find data for
             taxon (:obj:`str`, optional): target taxon
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
-            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
+            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution.
                 This determines how quickly the score falls to zero away from zero.
             include_variants (:obj:`bool`, optional): if :obj:`True`, also include observations from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
@@ -62,8 +60,8 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ph=ph, ph_std=ph_std,
             data_source=sabio_rk.SabioRk())
 
-        if reaction:
-            self.filters.append(filter.ReactionSimilarityFilter(reaction))
+        self.filters.append(filter.ReactionSimilarityFilter())
+        self.filters.append(filter.ReactionParticipantFilter())
 
     def get_observed_values(self, reaction):
         """ Find observed kinetics for the reaction or similar reactions
@@ -91,20 +89,92 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         for law in q_law.all():
             sabiork_reaction_id = next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction')
 
-            observation = data_model.Observation()
+            reaction = data_model.Reaction(
+                cross_references=[
+                    data_model.Resource(namespace='sabiork.kineticrecord', id=str(law.id)),
+                    data_model.Resource(namespace='sabiork.reaction', id=sabiork_reaction_id),
+                ],
+            )
+            species = {}
+            compartments = {}
+
+            for reactant in law.reactants:
+                part = data_model.ReactionParticipant(coefficient=-1)
+
+                if reactant.compound.id not in species:
+                    species[reactant.compound.id] = data_model.Specie(name=reactant.compound.name)
+                part.specie = species[reactant.compound.id]
+
+                if reactant.compound.structures:
+                    part.specie.structure = reactant.compound.structures[0].value
+
+                if reactant.compartment:
+                    if reactant.compartment.name not in compartments:
+                        compartments[reactant.compartment.name] = data_model.Compartment(name=reactant.compartment.name)
+                    part.compartment = compartments[reactant.compartment.name]
+
+                reaction.participants.append(part)
+
+            for product in law.products:
+                part = data_model.ReactionParticipant(coefficient=1)
+
+                if product.compound.id not in species:
+                    species[product.compound.id] = data_model.Specie(name=product.compound.name)
+                part.specie = species[product.compound.id]
+
+                if product.compound.structures:
+                    part.specie.structure = product.compound.structures[0].value
+
+                if product.compartment:
+                    if product.compartment.name not in compartments:
+                        compartments[product.compartment.name] = data_model.Compartment(name=product.compartment.name)
+                    part.compartment = compartments[product.compartment.name]
+
+                reaction.participants.append(part)
+
+            for modifier in law.modifiers:
+                part = data_model.ReactionParticipant(coefficient=0)
+
+                if modifier.compound.id not in species:
+                    species[modifier.compound.id] = data_model.Specie(name=modifier.compound.name)
+                part.specie = species[modifier.compound.id]
+
+                if modifier.compound.structures:
+                    part.specie.structure = modifier.compound.structures[0].value
+
+                if modifier.compartment:
+                    if modifier.compartment.name not in compartments:
+                        compartments[modifier.compartment.name] = data_model.Compartment(name=modifier.compartment.name)
+                    part.compartment = compartments[modifier.compartment.name]
+
+                reaction.participants.append(part)
+
+            observation = data_model.Observation(
+                genetics=data_model.Genetics(
+                    taxon=law.taxon,
+                    variation=law.taxon_variant,
+                ),
+                environment=data_model.Environment(
+                    temperature=law.temperature,
+                    ph=law.ph,
+                    media=law.media,
+                ),
+            )
             for parameter in law.parameters:
+                if parameter.value is None:
+                    continue
+
+                property = parameter.type
+                if property.startswith('Km'):
+                    property = 'Km'
+
                 observable = data_model.Observable(
-                    interaction=data_model.Reaction(
-                        cross_references=[data_model.Resource(namespace='sabiork.reaction', id=sabiork_reaction_id)],
-                        ), 
-                    property=parameter.type,
-                    )
+                    interaction=reaction,
+                    property=property,
+                )
 
                 if parameter.compound:
-                    observable.specie = data_model.Specie(
-                        name=parameter.compound.name,
-                        structure=parameter.compound.structures[0] if parameter.compound.structures else None,
-                    )
+                    observable.specie = species[parameter.compound.id]
                     if parameter.compartment:
                         observable.compartment = data_model.Compartment(
                             id=parameter.compartment.name,
@@ -239,7 +309,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         Args:
             inchi (:obj:`str`): molecule structure in InChI format
             only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
-                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the 
+                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
                 identical structure.
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
                 :obj:`sabio_rk.Compound` or one of its columns

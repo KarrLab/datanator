@@ -22,6 +22,7 @@ from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from six import with_metaclass
 from wc_utils.util import string
+import itertools
 import math
 import numpy
 import scipy.stats
@@ -43,7 +44,7 @@ class FilterRunner(object):
             filters = [filters]
         self.filters = filters
 
-    def run(self, observed_values, return_info=False):
+    def run(self, target_component, observed_values, return_info=False):
         """ Filter and order a list of observed values according to a list of filters. Optionally, return additional
         information about the filtering including the scores of the observed values and the indices of the prioritized
         observed values in the input list of observed values.
@@ -57,6 +58,7 @@ class FilterRunner(object):
         3. Order the observed values by their mean score
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values            
             return_info (:obj:`bool`, optional): if `True`, also return the scores and indices of the ordered observed values in the input list
 
@@ -68,7 +70,7 @@ class FilterRunner(object):
         """
 
         # score observed values against the filters
-        all_scores = self.score(observed_values)
+        all_scores = self.score(target_component, observed_values)
 
         # filter out observed values that must be discarded (observed values with score = -1)
         obs_vals, scores, i_obs_values = self.filter(observed_values, all_scores)
@@ -79,15 +81,16 @@ class FilterRunner(object):
         # return
         if return_info:
             # return ordered list of observed values and additional information
-            return FilterResult(observed_values, self.filters, all_scores, obs_vals, scores, i_obs_values)
+            return FilterResult(obs_vals, scores, i_obs_values, observed_values, all_scores)
         else:
             # return ordered list of observed values
             return obs_vals
 
-    def score(self, observed_values):
+    def score(self, target_component, observed_values):
         """ Score observed values against the filters
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
 
         Returns:
@@ -98,7 +101,7 @@ class FilterRunner(object):
         scores = numpy.full((n_obs, n_filt, ), numpy.nan)
         for i_filter, filter in enumerate(self.filters):
             for i_obs, obs in enumerate(observed_values):
-                scores[i_obs, i_filter] = filter.score(obs)
+                scores[i_obs, i_filter] = filter.score(target_component, obs)
 
         return scores
 
@@ -117,11 +120,10 @@ class FilterRunner(object):
                 * :obj:`list` of :obj:`int`: list of indices of the ordered observed values within the original list of observed values
 
         """
-        ok_observations = numpy.extract(numpy.all(scores >= 0, 1).transpose(), observed_values).tolist()
-        i_ok_observations = numpy.flatnonzero(numpy.all(scores >= 0, 1)).tolist()
-        ok_scores = scores[i_ok_observations, :]
-
-        return (ok_observations, ok_scores, i_ok_observations, )
+        ok_observed_values = numpy.extract(numpy.all(scores >= 0, 1).transpose(), observed_values).tolist()
+        i_ok_observed_values = numpy.flatnonzero(numpy.all(scores >= 0, 1)).tolist()
+        ok_scores = scores[i_ok_observed_values, :]
+        return (ok_observed_values, ok_scores, i_ok_observed_values, )
 
     def order(self, observed_values, scores, i_observations=None):
         """ Order observed values by their mean score
@@ -155,30 +157,27 @@ class FilterResult(object):
     """ Represents the results of applying a list of filters to a dataset
 
     Attributes:
-        observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
-        filters (:obj:`list` of `Filter`): list of filters applied to observed values
-        scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
-        ordered_observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
-        ordered_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
-        ordered_observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
+        observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+        scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
+        observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
+        all_observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+        all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
     """
 
-    def __init__(self, observed_values, filters, scores, ordered_observed_values, ordered_scores, ordered_observed_value_indices):
+    def __init__(self, observed_values, scores, observed_value_indices, all_observed_values, all_scores):
         """
         Args:
-            observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
-            filters (:obj:`list` of `Filter`): list of filters applied to observed values
-            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
-            ordered_observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
-            ordered_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
-            ordered_observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
+            observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)            
+            observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
+            all_observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+            all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
         """
         self.observed_values = observed_values
-        self.filters = filters
         self.scores = scores
-        self.ordered_observed_values = ordered_observed_values
-        self.ordered_scores = ordered_scores
-        self.ordered_observed_value_indices = ordered_observed_value_indices
+        self.observed_value_indices = observed_value_indices
+        self.all_observed_values = all_observed_values
+        self.all_scores = all_scores
 
 
 class Filter(object):
@@ -199,7 +198,7 @@ class Filter(object):
         """
         self.attribute = attribute
 
-    def get_attribute_value(self, observed_value):
+    def get_attribute_of_observed_value(self, observed_value):
         """ Get the value of the attribute of observed value :obj:`observed_value`
 
         Args:
@@ -210,32 +209,40 @@ class Filter(object):
         """
         val = observed_value
         for attr in self.attribute:
-            val = getattr(val, attr)
+            if hasattr(val, attr):
+                val = getattr(val, attr)
+            else:
+                return None
         return val
 
-    def transform_attribute_value(self, value):
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
         """ Transform an attribute value
 
         Args:
-            value (:obj:`object`): raw value
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`object`: transformed value
         """
-        return value
+        return self.get_attribute_of_observed_value(observed_value)
 
-    def score(self, observed_value):
+    def score(self, target_component, observed_value):
         """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
         one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
         order observed values.
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
         """
-        return self.transform_attribute_value(self.get_attribute_value(observed_value))
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
+        return val
 
 
 class OptionsFilter(Filter):
@@ -255,18 +262,21 @@ class OptionsFilter(Filter):
         super(OptionsFilter, self).__init__(attribute)
         self.options = options
 
-    def score(self, observed_value):
+    def score(self, target_component, observed_value):
         """ Calculate a numeric score which indicates how well the observed value matches 
         one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
         order observed values.
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
         """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
         if val in self.options:
             return 1
         return -1
@@ -292,31 +302,21 @@ class RangeFilter(Filter):
         self.min = float(min)
         self.max = float(max)
 
-    def get_raw_score(self, observed_value):
-        """ Calculate a numeric score which indicates how well the observed value matches one or more criteria
-        Please see :obj:`FilterRunner` to see how these scores are used to filter and order observed values.
-
-        Args:
-            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
-
-        Returns:
-            :obj:`float`: score which indicates how well the observed value matches the criteria
-        """
-        return self.get_attribute_value(observed_value)
-
-    def score(self, observed_value):
+    def score(self, target_component, observed_value):
         """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
         one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
         order observed values.
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
         """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
-
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
         if not numpy.isnan(self.min) and (numpy.isnan(val) or val < self.min):
             return -1
         if not numpy.isnan(self.max) and (numpy.isnan(val) or val > self.max):
@@ -344,18 +344,20 @@ class NormalFilter(Filter):
         self.mean = mean
         self.std = std
 
-    def score(self, observed_value):
+    def score(self, target_component, observed_value):
         """ Calculate a numeric score which indicates how well the attribute of the observed value matches the specified
         normal distribution (mean, std).
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the normal distribution (mean, std)
         """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
-
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
         return 1 - 2 * abs(scipy.stats.norm.cdf(val, loc=self.mean, scale=self.std) - 0.5)
 
 
@@ -379,19 +381,288 @@ class ExponentialFilter(Filter):
         self.center = center
         self.scale = scale
 
-    def score(self, observed_value):
+    def score(self, target_component, observed_value):
         """ Calculate a numeric score which indicates how well the attribute of the observed value matches the specified
         distribution (center, scale).
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the distribution (center, scale)
         """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
-
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
         return math.exp(-(val - self.center) / self.scale)
+
+
+class SpecieMolecularSimilarityFilter(Filter):
+    """ Score similarity with observed molecules """
+
+    def __init__(self):
+        """
+        Args:
+            structure (:obj:`str`): structure
+        """
+        super(SpecieMolecularSimilarityFilter, self).__init__(('observable', 'structure', ), )
+
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
+        """ Transform an attribute value
+
+        Args:
+            target_component (:obj:`data_model.Specie`): species to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`float`: similarity between the observed and query structure
+        """
+        target_structure = target_component.structure
+        observed_structure = self.get_attribute_of_observed_value(observed_value)
+        target_mol = molecule_util.Molecule(structure=target_structure)
+        observed_mol = molecule_util.Molecule(structure=observed_structure)
+        return target_mol.get_similarity(observed_mol)
+
+
+class MolecularSimilarityFilter(Filter):
+    pass  # todo: implement for small molecules, sequences
+
+
+class ReactionSimilarityFilter(Filter):
+    """ Prioritize reactions by their chemical similarity, as judged by (a) having the same participants and (b)
+    belonging to the same EC class (or superclass).
+
+    * 1: Reactions have the same participants
+    * <0, 1>: Reactions belong to the same EC class (or superclass), but don't have different participants
+    * Score=-1: Reactions belong to different EC classes
+
+    Attributes:
+        reaction (:obj:`data_model.Reaction`): reaction
+        min_ec_level (:obj:`int`): minimum EC level that must be common to the observed and target reaction 
+        scale (:obj:`float`): How to exponentially scale of the scores. This determines how quickly the score 
+            falls to zero.
+    """
+
+    def __init__(self, min_ec_level=3, scale=2./5.):
+        """
+        Args:
+            min_ec_level (:obj:`int`, optional): minimum EC level that must be common to the observed and target reaction 
+            scale (:obj:`float`, optional): How to exponentially scale of the scores. This determines how quickly the score 
+                falls to zero.
+        """
+        super(ReactionSimilarityFilter, self).__init__(('observable', 'interaction'))
+        self.min_ec_level = min_ec_level
+        self.scale = scale
+
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
+        """ Transform an attribute value
+
+        Args:
+            target_component (:obj:`data_model.Reaction`): reaction to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`int`: transformed value
+        """
+        # todo: use weights associated with predicted EC numbers
+
+        target_reaction = target_component
+        observed_reaction = self.get_attribute_of_observed_value(observed_value)
+
+        def get_participant_species(participants):
+            species = []
+            for part in participants:
+                if not part.specie or not part.specie.structure:
+                    return None
+                species.append(part.specie)
+            return species
+
+        target_reactants = get_participant_species(target_reaction.get_reactants())
+        target_products = get_participant_species(target_reaction.get_products())
+        observed_reactants = get_participant_species(observed_reaction.get_reactants())
+        observed_products = get_participant_species(observed_reaction.get_products())
+
+        # check participants are the same
+        def get_formula_connectivities(species):
+            if species is None:
+                return None
+
+            vals = set()
+            for specie in species:
+                val = specie.to_inchi(only_formula_and_connectivity=True)
+                if val not in [None, '', 'H2O']:
+                    vals.add(val)
+            return vals
+
+        target_reactant_connectivities = get_formula_connectivities(target_reactants)
+        target_product_connectivities = get_formula_connectivities(target_products)
+        observed_reactant_connectivities = get_formula_connectivities(observed_reactants)
+        observed_product_connectivities = get_formula_connectivities(observed_products)
+        if \
+                target_reactant_connectivities is not None and \
+                target_product_connectivities is not None and \
+                observed_reactant_connectivities is not None and \
+                observed_product_connectivities is not None and \
+                observed_reactant_connectivities == target_reactant_connectivities and \
+                observed_product_connectivities == target_product_connectivities:
+            return 5
+
+        # check numbers of reactants and products are the same
+        if observed_reactants and observed_products and \
+                (len(observed_reactant_connectivities) != len(target_reactant_connectivities) or
+                    len(observed_product_connectivities) != len(target_product_connectivities)):
+            return -1
+
+        # check directions are the same
+        def get_side_similarity(target_connectivities, observed_connectivities):
+            similarities = numpy.full((len(target_connectivities), len(observed_connectivities)), numpy.nan)
+            for t, t_conn in enumerate(target_connectivities):
+                for o, o_conn in enumerate(observed_connectivities):
+                    similarities[t, o] = molecule_util.Molecule(structure='InChI=1S/' + t_conn) \
+                        .get_similarity(molecule_util.Molecule(structure='InChI=1S/' + o_conn))
+
+            # greedy search
+            max_vals = []
+            for i in range(len(target_connectivities)):
+                i_max = numpy.argmax(similarities[i, :])
+                max_vals.append(similarities[i, i_max])
+                similarities = numpy.delete(similarities, i_max, 1)
+            return numpy.mean(max_vals)
+
+        if observed_reactants and observed_products and len(target_reactant_connectivities) == len(target_product_connectivities):
+            if \
+                    get_side_similarity(target_reactant_connectivities, observed_reactant_connectivities) < \
+                    get_side_similarity(target_product_connectivities, observed_reactant_connectivities) or \
+                    get_side_similarity(target_product_connectivities, observed_product_connectivities) < \
+                    get_side_similarity(target_reactant_connectivities, observed_product_connectivities):
+                return -1
+
+        # check membership to same EC class
+        target_ecs = target_reaction.get_ec_numbers()
+        observed_ecs = observed_reaction.get_ec_numbers()
+
+        for level in range(4, 0, -1):
+            part_target_ecs = []
+            for target_ec in target_ecs:
+                if target_ec.id.count('.') >= level - 1:
+                    part_target_ec, _, _ = string.partition_nth(target_ec.id, '.', level)
+                    if part_target_ec[-1] != '.':
+                        part_target_ecs.append(part_target_ec)
+
+            part_observed_ecs = []
+            for observed_ec in observed_ecs:
+                if observed_ec.id.count('.') >= level - 1:
+                    part_observed_ec, _, _ = string.partition_nth(observed_ec.id, '.', level)
+                    if part_observed_ec[-1] != '.':
+                        part_observed_ecs.append(part_observed_ec)
+
+            if part_observed_ecs and set(part_observed_ecs).intersection(part_target_ecs):
+                return level
+
+        return 0
+
+    def score(self, target_component, observed_value):
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        order observed values.
+
+        Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`float`: score which indicates how well the observed_value matches the criteria
+        """
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
+        if val >= self.min_ec_level:
+            return math.exp(-(5. - val) / self.scale)
+        return -1
+
+
+class ReactionParticipantFilter(Filter):
+    """
+    Attributes:
+        min_similarity (:obj:`float`): mini
+    """
+
+    def __init__(self, min_similarity=0.5):
+        """
+        Args:
+            min_similarity (:obj:`float`, optional): mini
+        """
+        super(ReactionParticipantFilter, self).__init__(('observable', 'specie', 'structure'))
+        self.min_similarity = min_similarity
+
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
+        """ Transform an attribute value
+
+        Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`int`: transformed value
+        """
+        observed_reaction = observed_value.observable.interaction
+        observed_specie = observed_value.observable.specie
+
+        # if observed property is not associated with a species, return 1
+        if not observed_specie:
+            return 1
+
+        # if the observed species has no structure, return None
+        observed_structure = observed_specie.structure
+        if not observed_structure:
+            return None
+
+        # if the observed structure matches one of the target structures, return 1
+        if next((True for part in observed_reaction.get_reactants() if part.specie is observed_specie), None):
+            target_parts = target_component.get_reactants()
+        elif next((True for part in observed_reaction.get_products() if part.specie is observed_specie), None):
+            target_parts = target_component.get_products()
+        elif next((True for part in observed_reaction.get_modifiers() if part.specie is observed_specie), None):
+            target_parts = target_component.get_modifiers()
+        else:
+            return None
+
+        if not target_parts:
+            return None
+
+        target_species = [part.specie for part in target_parts]
+        target_structures = [specie.structure for specie in target_species]
+        if observed_structure in target_structures:
+            return 1
+
+        # if the observed structure is similar to one of the target structures, return 1
+        target_formula_connectivities = [specie.to_inchi(only_formula_and_connectivity=True) for specie in target_species]
+        observed_formula_connectivities = observed_specie.to_inchi(only_formula_and_connectivity=True)
+        if observed_formula_connectivities in target_formula_connectivities:
+            return 1
+
+        # return maximal similarity to target species
+        return max(target_specie.get_similarity(observed_specie) for target_specie in target_species)
+
+    def score(self, target_component, observed_value):
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        order observed values.
+
+        Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`float`: score which indicates how well the observed_value matches the criteria
+        """
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return -1
+        if val < self.min_similarity:
+            return -1
+        return val
 
 
 class TaxonomicDistanceFilter(Filter):
@@ -423,32 +694,40 @@ class TaxonomicDistanceFilter(Filter):
         self.max = max
         self.scale = scale
 
-    def transform_attribute_value(self, taxon):
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
         """ Transform an attribute value
 
         Args:
-            taxon (:obj:`str`): observed taxon
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): target component
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`int`: distance to latest common ancestor with the observed taxon
         """
-        self_taxon = taxonomy_util.Taxon(name=self.taxon)
-        obs_taxon = taxonomy_util.Taxon(name=taxon)
+        observed_taxon = self.get_attribute_of_observed_value(observed_value)
+        if not observed_taxon:
+            return None
 
-        return self_taxon.get_distance_to_common_ancestor(obs_taxon)
+        target_taxon_obj = taxonomy_util.Taxon(name=self.taxon)
+        obsserved_taxon_obj = taxonomy_util.Taxon(name=observed_taxon)
 
-    def score(self, observed_value):
+        return target_taxon_obj.get_distance_to_common_ancestor(obsserved_taxon_obj)
+
+    def score(self, target_component, observed_value):
         """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
         one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
         order observed values.
 
         Args:
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
             :obj:`float`: score which indicates how well the observed value matches the criteria
         """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val is None:
+            return 0.5
 
         if not numpy.isnan(self.max) and (numpy.isnan(val) or val > self.max):
             return -1
@@ -461,139 +740,6 @@ class WildtypeFilter(OptionsFilter):
 
     def __init__(self):
         super(WildtypeFilter, self).__init__(('observation', 'genetics', 'variation', ), [''])
-
-
-class SpecieMolecularSimilarityFilter(Filter):
-    """ Score similarity with observed molecules
-
-    Attributes:
-        structure (:obj:`str`): 
-    """
-
-    def __init__(self, structure):
-        """
-        Args:
-            structure (:obj:`str`): structure
-        """
-        super(SpecieMolecularSimilarityFilter, self).__init__(('observable', 'structure', ), )
-        self.structure = structure
-
-    def transform_attribute_value(self, structure):
-        """ Transform an attribute value
-
-        Args:
-            structure (:obj:`str`): observed structure
-
-        Returns:
-            :obj:`float`: similarity between the observed and query structure
-        """
-        self_mol = molecule_util.Molecule(structure=self.structure)
-        obs_mol = molecule_util.Molecule(structure=structure)
-        return self_mol.get_similarity(obs_mol)
-
-
-class MolecularSimilarityFilter(Filter):
-    pass  # todo: implement for small molecules, sequences
-
-
-class ReactionSimilarityFilter(Filter):
-    """ Prioritize reactions by their chemical similarity, as judged by (a) having the same participants and (b)
-    belonging to the same EC class (or superclass).
-
-    * 1: Reactions have the same participants
-    * <0, 1>: Reactions belong to the same EC class (or superclass), but don't have different participants
-    * Score=-1: Reactions belong to different EC classes
-
-    Attributes:
-        reaction (:obj:`data_model.Reaction`): reaction
-        min_ec_level (:obj:`int`): minimum EC level that must be common to the observed and target reaction 
-        scale (:obj:`float`): How to exponentially scale of the scores. This determines how quickly the score 
-            falls to zero.
-    """
-
-    def __init__(self, reaction, min_ec_level=3, scale=2./5.):
-        """
-        Args:
-            reaction (:obj:`data_model.Reaction`): reaction
-            min_ec_level (:obj:`int`, optional): minimum EC level that must be common to the observed and target reaction 
-            scale (:obj:`float`, optional): How to exponentially scale of the scores. This determines how quickly the score 
-                falls to zero.
-        """
-        super(ReactionSimilarityFilter, self).__init__(('observable',))
-        self.reaction = reaction
-        self.min_ec_level = min_ec_level
-        self.scale = scale
-
-    def transform_attribute_value(self, reaction):
-        """ Transform an attribute value
-
-        Args:
-            reaction (:obj:`data_model.Reaction`): observed reaction
-
-        Returns:
-            :obj:`int`: transformed value
-        """
-        # todo: use weights associated with predicted EC numbers
-
-        # check participants are the same
-        def get_formula_connectivities(participants):
-            vals = set()
-            for part in participants:
-                if not part.specie.structure:
-                    return None
-                val = part.specie.to_inchi(only_formula_and_connectivity=True)
-                if val not in [None, '', 'H2O']:
-                    vals.add(val)
-            return vals
-
-        reactants = get_formula_connectivities(reaction.get_reactants())
-        products = get_formula_connectivities(reaction.get_products())
-        self_reactants = get_formula_connectivities(self.reaction.get_reactants())
-        self_products = get_formula_connectivities(self.reaction.get_products())
-        if reactants is not None and self_reactants is not None and reactants == self_reactants and \
-                products is not None and self_products is not None and products == self_products:
-            return 5
-
-        # check membership to same EC class
-        ecs = reaction.get_ec_numbers()
-        self_ecs = self.reaction.get_ec_numbers()
-
-        for level in range(4, 0, -1):
-            part_ecs = []
-            for ec in ecs:
-                if ec.id.count('.') >= level - 1:
-                    part_ec, _, _ = string.partition_nth(ec.id, '.', level)
-                    if part_ec[-1] != '.':
-                        part_ecs.append(part_ec)
-
-            self_part_ecs = []
-            for self_ec in self_ecs:
-                if self_ec.id.count('.') >= level - 1:
-                    self_part_ec, _, _ = string.partition_nth(self_ec.id, '.', level)
-                    if self_part_ec[-1] != '.':
-                        self_part_ecs.append(self_part_ec)
-
-            if part_ecs and set(part_ecs).intersection(self_part_ecs):
-                return level
-
-        return 0
-
-    def score(self, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
-        order observed values.
-
-        Args:
-            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
-
-        Returns:
-            :obj:`float`: score which indicates how well the observed_value matches the criteria
-        """
-        val = self.transform_attribute_value(self.get_attribute_value(observed_value))
-
-        if val >= self.min_ec_level:
-            return math.exp(-(5. - val) / self.scale)
-        return -1
 
 
 class TemperatureRangeFilter(RangeFilter):

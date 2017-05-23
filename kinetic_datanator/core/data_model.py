@@ -229,6 +229,14 @@ class Reaction(Interaction):
         """
         return list(filter(lambda p: p.coefficient > 0, self.participants))
 
+    def get_modifiers(self):
+        """ Get the modifiers
+
+        Returns:
+            :obj:`list` of :obj:`ReactionParticipant`: list of modifiers
+        """
+        return list(filter(lambda p: p.coefficient == 0, self.participants))
+
     def get_ordered_participants(self, collapse_repeated=True):
         """ Get an ordered list of the participants 
 

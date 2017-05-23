@@ -29,16 +29,16 @@ class TestFilters(unittest.TestCase):
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
-        self.assertEqual(f.score(ov), 1.)
+        self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.scale, 8./5)
-        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
+        self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
-        self.assertEqual(f.score(ov), math.exp(-5))
+        self.assertEqual(f.score(None, ov), math.exp(-5))
 
         # example 2
         f = filter.TaxonomicDistanceFilter('Mycoplasma pneumoniae M129', max=5)
@@ -46,15 +46,15 @@ class TestFilters(unittest.TestCase):
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
-        self.assertEqual(f.score(ov), 1.)
+        self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
-        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
+        self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
 
         # example 3
         f = filter.TaxonomicDistanceFilter('Mycoplasma genitalium')
@@ -62,131 +62,246 @@ class TestFilters(unittest.TestCase):
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium G37')))
-        self.assertEqual(f.score(ov), 1.)
+        self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium')))
-        self.assertEqual(f.score(ov), 1)
+        self.assertEqual(f.score(None, ov), 1)
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma')))
-        self.assertEqual(f.score(ov), math.exp(-1/f.scale))
+        self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
     def test_OptionsFilter(self):
         f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), [''])
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
-        self.assertEqual(f.score(ov), 1)
+        self.assertEqual(f.score(None, ov), 1)
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
 
         f = filter.OptionsFilter(('observation', 'genetics', 'variation', ), ['wildtype'])
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
-        self.assertEqual(f.score(ov), 1)
+        self.assertEqual(f.score(None, ov), 1)
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
 
     def test_WildtypeFilter(self):
         f = filter.WildtypeFilter()
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
-        self.assertEqual(f.score(ov), 1)
+        self.assertEqual(f.score(None, ov), 1)
 
         ov = data_model.ObservedValue(
             observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
-        self.assertEqual(f.score(ov), -1)
+        self.assertEqual(f.score(None, ov), -1)
 
     def test_SpecieMolecularSimilarityFilter(self):
         adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         h2o = 'O'
 
-        f = filter.SpecieMolecularSimilarityFilter(atp)
+        f = filter.SpecieMolecularSimilarityFilter()
 
         ov = data_model.ObservedValue(observable=data_model.Specie(structure=adp))
-        numpy.testing.assert_almost_equal(f.score(ov), 0.955, decimal=3)
+        numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), 0.955, decimal=3)
 
         ov = data_model.ObservedValue(observable=data_model.Specie(structure=h2o))
-        numpy.testing.assert_almost_equal(f.score(ov), 0, decimal=3)
+        numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), 0, decimal=3)
 
     def test_ReactionSimilarityFilter(self):
-        def get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2', ec='1.1.1.1'):
-            atp = data_model.Specie(
-                id='atp', structure='InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1')
-            h2o = data_model.Specie(id='h2o', structure='InChI=1S/H2O/h1H2')
-            adp = data_model.Specie(
-                id='adp', structure='InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/p-3/t4-,6-,7-,10-/m1/s1')
-            pi = data_model.Specie(id='pi', structure=pi)
-            h = data_model.Specie(id='h', structure='InChI=1S/p+1/i/hH')
-
+        atp_structure = (
+            'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20'
+            '/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1'
+        )
+        h2o_structure = 'InChI=1S/H2O/h1H2'
+        adp_structure = (
+            'InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20'
+            '/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/p-3/t4-,6-,7-,10-/m1/s1'
+        )
+        pi_structure = 'InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2'
+        h_structure = 'InChI=1S/p+1/i/hH'
+        def get_reaction(pi_structure=pi_structure, ec='1.1.1.1'):
             return data_model.Reaction(
                 participants=[
-                    data_model.ReactionParticipant(coefficient=-1, specie=atp),
-                    data_model.ReactionParticipant(coefficient=-1, specie=h2o),
-                    data_model.ReactionParticipant(coefficient=1, specie=adp),
-                    data_model.ReactionParticipant(coefficient=1, specie=pi),
-                    data_model.ReactionParticipant(coefficient=1, specie=h),
+                    data_model.ReactionParticipant(coefficient=-1, specie=data_model.Specie(structure=atp_structure)),
+                    data_model.ReactionParticipant(coefficient=-1, specie=data_model.Specie(structure=h2o_structure)),
+                    data_model.ReactionParticipant(coefficient=1, specie=data_model.Specie(structure=adp_structure)),
+                    data_model.ReactionParticipant(coefficient=1, specie=data_model.Specie(structure=pi_structure)),
+                    data_model.ReactionParticipant(coefficient=1, specie=data_model.Specie(structure=h_structure)),
                 ],
                 cross_references=[
                     data_model.Resource(namespace='ec-code', id=ec)
                 ])
 
-        f = filter.ReactionSimilarityFilter(get_reaction(), min_ec_level=3, scale=1)
+        rxn = get_reaction()
+        f = filter.ReactionSimilarityFilter(min_ec_level=3, scale=1)
 
         # same participants
-        ov = data_model.ObservedValue(observable=get_reaction())
-        numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=get_reaction()))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), 1, decimal=3)
 
         # similiar participants
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H3O4P/c1-5(2,3)4'))
-        numpy.testing.assert_almost_equal(f.score(ov), 1, decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=get_reaction(pi_structure='InChI=1S/H3O4P/c1-5(2,3)4')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), 1, decimal=3)
 
         # different participants, same 4-digit EC
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4'))
-        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-1), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), math.exp(-1), decimal=3)
 
         # different participants, same 3-digit EC
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.2'))
-        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.2')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), math.exp(-2), decimal=3)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
-        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), math.exp(-2), decimal=3)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.'))
-        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), math.exp(-2), decimal=3)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.-'))
-        numpy.testing.assert_almost_equal(f.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.-')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), math.exp(-2), decimal=3)
 
         # different participants, same 2-digit EC
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
-        numpy.testing.assert_almost_equal(f.score(ov), -1, decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1')))
+        numpy.testing.assert_almost_equal(f.score(rxn, ov), -1, decimal=3)
 
         # target reaction only has 3 digits
-        f1 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1'), min_ec_level=3, scale=1)
-        f2 = filter.ReactionSimilarityFilter(get_reaction(ec='1.1.1.'), min_ec_level=3, scale=1)
+        rxn_1_1_1 = get_reaction(ec='1.1.1')
+        rxn_1_1_1_1 = get_reaction(ec='1.1.1.1')
+        f1 = filter.ReactionSimilarityFilter(min_ec_level=3, scale=1)
+        f2 = filter.ReactionSimilarityFilter(min_ec_level=3, scale=1)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1'))
-        numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
-        numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1')))
+        numpy.testing.assert_almost_equal(f1.score(rxn_1_1_1, ov), math.exp(-2), decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(rxn_1_1_1_1, ov), math.exp(-2), decimal=3)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.1'))
-        numpy.testing.assert_almost_equal(f1.score(ov), math.exp(-2), decimal=3)
-        numpy.testing.assert_almost_equal(f2.score(ov), math.exp(-2), decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.1.1')))
+        numpy.testing.assert_almost_equal(f1.score(rxn_1_1_1, ov), math.exp(-2), decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(rxn_1_1_1_1, ov), math.exp(-1), decimal=3)
 
-        ov = data_model.ObservedValue(observable=get_reaction(pi='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1'))
-        numpy.testing.assert_almost_equal(f1.score(ov), -1, decimal=3)
-        numpy.testing.assert_almost_equal(f2.score(ov), -1, decimal=3)
+        ov = data_model.ObservedValue(observable=data_model.Observable(
+            interaction=get_reaction(pi_structure='InChI=1S/H4O4P/c1-5(2,3)4', ec='1.1.2.1')))
+        numpy.testing.assert_almost_equal(f1.score(rxn_1_1_1, ov), -1, decimal=3)
+        numpy.testing.assert_almost_equal(f2.score(rxn_1_1_1_1, ov), -1, decimal=3)
+
+        # reverse direction, different numbers of reactants/products
+        f = filter.ReactionSimilarityFilter(min_ec_level=3, scale=1)
+
+        for_rxn = get_reaction()
+        rev_rxn = get_reaction()
+        for part in rev_rxn.participants:
+            part.coefficient = -1 * part.coefficient
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=for_rxn))
+        self.assertEqual(f.score(for_rxn, ov), 1.)
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=rev_rxn))
+        self.assertEqual(f.score(for_rxn, ov), -1.)
+
+        # reverse direction, same numbers of reactants/products
+        for_rxn = data_model.Reaction(
+            participants=[
+                data_model.ReactionParticipant(coefficient=-1, specie=data_model.Specie(structure=atp_structure)),
+                data_model.ReactionParticipant(coefficient=1, specie=data_model.Specie(structure=adp_structure)),
+            ],
+            cross_references=[
+                data_model.Resource(namespace='ec-code', id='1.1.1.1')
+            ])
+        rev_rxn = data_model.Reaction(
+            participants=[
+                data_model.ReactionParticipant(coefficient=1, specie=data_model.Specie(structure=atp_structure)),
+                data_model.ReactionParticipant(coefficient=-1, specie=data_model.Specie(structure=adp_structure)),
+            ],
+            cross_references=[
+                data_model.Resource(namespace='ec-code', id='1.1.1.1')
+            ])
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=for_rxn))
+        self.assertEqual(f.score(for_rxn, ov), 1.)
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(interaction=rev_rxn))
+        self.assertEqual(f.score(for_rxn, ov), -1.)
+
+    def test_ReactionParticipantFilter(self):
+        atp = data_model.Specie(structure=(
+            'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20'
+            '/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1'
+        ))
+        h2o = data_model.Specie(structure='InChI=1S/H2O/h1H2')
+        adp = data_model.Specie(structure=(
+            'InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20'
+            '/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/p-3/t4-,6-,7-,10-/m1/s1'
+        ))
+        pi = data_model.Specie(structure='InChI=1S/H3O4P/c1-5(2,3)4/h(H3,1,2,3,4)/p-2')
+        h = data_model.Specie(structure='InChI=1S/p+1/i/hH')
+
+        glc = data_model.Specie(structure='InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2/h2-11H,1H2/t2-,3-,4+,5-,6?/m1/s1')
+        glc_2 = data_model.Specie(structure='InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2')
+        gtp = data_model.Specie(structure=(
+            'InChI=1S/C10H16N5O14P3/c11-10-13-7-4(8(18)14-10)12-2-15(7)9-6(17)5(16)3(27-9)1-26-31(22,23)29-32(24,25)28-30(19,20)21'
+            '/h2-3,5-6,9,16-17H,1H2,(H,22,23)(H,24,25)(H2,19,20,21)(H3,11,13,14,18)/p-4/t3-,5-,6-,9-/m1/s1'
+        ))        
+        lactate = data_model.Specie(structure='InChI=1S/C3H6O3/c1-2(4)3(5)6/h2,4H,1H3,(H,5,6)/p-1')
+
+        def get_reaction(ntp=atp, glc=glc):
+            return data_model.Reaction(
+                participants=[
+                    data_model.ReactionParticipant(coefficient=-1, specie=ntp),
+                    data_model.ReactionParticipant(coefficient=-1, specie=h2o),
+                    data_model.ReactionParticipant(coefficient=1, specie=adp),
+                    data_model.ReactionParticipant(coefficient=1, specie=pi),
+                    data_model.ReactionParticipant(coefficient=1, specie=h),
+                    data_model.ReactionParticipant(coefficient=0, specie=glc),
+                ])
+
+        f = filter.ReactionParticipantFilter()
+
+        rxn_atp = get_reaction(ntp=atp)
+        rxn_gtp = get_reaction(ntp=gtp)
+        rxn_lac = get_reaction(ntp=lactate)
+        rxn_glc_2 = get_reaction(glc=glc_2)
+
+        # identical reactant
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='Km', specie=atp, interaction=rxn_atp))
+        self.assertEqual(f.score(rxn_atp, ov), 1)
+
+        # identical product
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='Ki', specie=adp, interaction=rxn_atp))
+        self.assertEqual(f.score(rxn_atp, ov), 1)
+
+        # similar modifier
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='Ki', specie=glc_2, interaction=rxn_glc_2))
+        self.assertEqual(f.score(rxn_atp, ov), 1)
+
+        # similar species
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='Km', specie=gtp, interaction=rxn_gtp))
+        numpy.testing.assert_almost_equal(f.score(rxn_atp, ov), 0.767, decimal=3)
+
+        # different species
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='Km', specie=lactate, interaction=rxn_lac))
+        self.assertEqual(f.score(rxn_atp, ov), -1)
+
+        # property without species
+        ov = data_model.ObservedValue(observable=data_model.Observable(property='kcat', interaction=rxn_atp))
+        self.assertEqual(f.score(rxn_atp, ov), 1)
 
     def test_RangeFilter(self):
         def obs_val(temperature):
@@ -194,40 +309,40 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=30.)
-        self.assertEqual(f.score(obs_val(float('nan'))), -1)
-        self.assertEqual(f.score(obs_val(10)), -1)
-        self.assertEqual(f.score(obs_val(15.0)), 1)
-        self.assertEqual(f.score(obs_val(15.01)), 1)
-        self.assertEqual(f.score(obs_val(29.99)), 1)
-        self.assertEqual(f.score(obs_val(30.0)), 1)
-        self.assertEqual(f.score(obs_val(31)), -1)
+        self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(None, obs_val(10)), -1)
+        self.assertEqual(f.score(None, obs_val(15.0)), 1)
+        self.assertEqual(f.score(None, obs_val(15.01)), 1)
+        self.assertEqual(f.score(None, obs_val(29.99)), 1)
+        self.assertEqual(f.score(None, obs_val(30.0)), 1)
+        self.assertEqual(f.score(None, obs_val(31)), -1)
 
         f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=float('nan'), max=30.)
-        self.assertEqual(f.score(obs_val(float('nan'))), -1)
-        self.assertEqual(f.score(obs_val(10)), 1)
-        self.assertEqual(f.score(obs_val(15.0)), 1)
-        self.assertEqual(f.score(obs_val(15.01)), 1)
-        self.assertEqual(f.score(obs_val(29.99)), 1)
-        self.assertEqual(f.score(obs_val(30.0)), 1)
-        self.assertEqual(f.score(obs_val(31)), -1)
+        self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(None, obs_val(10)), 1)
+        self.assertEqual(f.score(None, obs_val(15.0)), 1)
+        self.assertEqual(f.score(None, obs_val(15.01)), 1)
+        self.assertEqual(f.score(None, obs_val(29.99)), 1)
+        self.assertEqual(f.score(None, obs_val(30.0)), 1)
+        self.assertEqual(f.score(None, obs_val(31)), -1)
 
         f = filter.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=float('nan'))
-        self.assertEqual(f.score(obs_val(float('nan'))), -1)
-        self.assertEqual(f.score(obs_val(10)), -1)
-        self.assertEqual(f.score(obs_val(15.0)), 1)
-        self.assertEqual(f.score(obs_val(15.01)), 1)
-        self.assertEqual(f.score(obs_val(29.99)), 1)
-        self.assertEqual(f.score(obs_val(30.0)), 1)
-        self.assertEqual(f.score(obs_val(31)), 1)
+        self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
+        self.assertEqual(f.score(None, obs_val(10)), -1)
+        self.assertEqual(f.score(None, obs_val(15.0)), 1)
+        self.assertEqual(f.score(None, obs_val(15.01)), 1)
+        self.assertEqual(f.score(None, obs_val(29.99)), 1)
+        self.assertEqual(f.score(None, obs_val(30.0)), 1)
+        self.assertEqual(f.score(None, obs_val(31)), 1)
 
         f = filter.RangeFilter(('observation', 'environment', 'temperature', ))
-        self.assertEqual(f.score(obs_val(float('nan'))), 1)
-        self.assertEqual(f.score(obs_val(10)), 1)
-        self.assertEqual(f.score(obs_val(15.0)), 1)
-        self.assertEqual(f.score(obs_val(15.01)), 1)
-        self.assertEqual(f.score(obs_val(29.99)), 1)
-        self.assertEqual(f.score(obs_val(30.0)), 1)
-        self.assertEqual(f.score(obs_val(31)), 1)
+        self.assertEqual(f.score(None, obs_val(float('nan'))), 1)
+        self.assertEqual(f.score(None, obs_val(10)), 1)
+        self.assertEqual(f.score(None, obs_val(15.0)), 1)
+        self.assertEqual(f.score(None, obs_val(15.01)), 1)
+        self.assertEqual(f.score(None, obs_val(29.99)), 1)
+        self.assertEqual(f.score(None, obs_val(30.0)), 1)
+        self.assertEqual(f.score(None, obs_val(31)), 1)
 
     def test_TemperatureRangeFilter(self):
         def obs_val(temperature):
@@ -235,12 +350,12 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.TemperatureRangeFilter(min=15., max=30.)
-        self.assertEqual(f.score(obs_val(10)), -1)
-        self.assertEqual(f.score(obs_val(15.0)), 1)
-        self.assertEqual(f.score(obs_val(15.01)), 1)
-        self.assertEqual(f.score(obs_val(29.99)), 1)
-        self.assertEqual(f.score(obs_val(30.0)), 1)
-        self.assertEqual(f.score(obs_val(31)), -1)
+        self.assertEqual(f.score(None, obs_val(10)), -1)
+        self.assertEqual(f.score(None, obs_val(15.0)), 1)
+        self.assertEqual(f.score(None, obs_val(15.01)), 1)
+        self.assertEqual(f.score(None, obs_val(29.99)), 1)
+        self.assertEqual(f.score(None, obs_val(30.0)), 1)
+        self.assertEqual(f.score(None, obs_val(31)), -1)
 
     def test_PhRangeFilter(self):
         def obs_val(ph):
@@ -248,12 +363,12 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
 
         f = filter.PhRangeFilter(min=5., max=9.)
-        self.assertEqual(f.score(obs_val(3)), -1)
-        self.assertEqual(f.score(obs_val(5.0)), 1)
-        self.assertEqual(f.score(obs_val(5.01)), 1)
-        self.assertEqual(f.score(obs_val(8.99)), 1)
-        self.assertEqual(f.score(obs_val(9.0)), 1)
-        self.assertEqual(f.score(obs_val(10)), -1)
+        self.assertEqual(f.score(None, obs_val(3)), -1)
+        self.assertEqual(f.score(None, obs_val(5.0)), 1)
+        self.assertEqual(f.score(None, obs_val(5.01)), 1)
+        self.assertEqual(f.score(None, obs_val(8.99)), 1)
+        self.assertEqual(f.score(None, obs_val(9.0)), 1)
+        self.assertEqual(f.score(None, obs_val(10)), -1)
 
     def test_NormalFilter(self):
         def obs_val(temperature):
@@ -261,11 +376,11 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.NormalFilter(('observation', 'environment', 'temperature', ), mean=37, std=1)
-        self.assertEqual(f.score(obs_val(37)), 1)
-        numpy.testing.assert_almost_equal(f.score(obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        self.assertEqual(f.score(None, obs_val(37)), 1)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_TemperatureNormalFilter(self):
         def obs_val(temperature):
@@ -273,11 +388,11 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.TemperatureNormalFilter(mean=37, std=1)
-        self.assertEqual(f.score(obs_val(37)), 1)
-        numpy.testing.assert_almost_equal(f.score(obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        self.assertEqual(f.score(None, obs_val(37)), 1)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(35)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(39)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_PhNormalFilter(self):
         def obs_val(ph):
@@ -285,11 +400,11 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
 
         f = filter.PhNormalFilter(mean=7, std=1)
-        self.assertEqual(f.score(obs_val(7)), 1)
-        numpy.testing.assert_almost_equal(f.score(obs_val(6)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(8)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(5)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(9)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        self.assertEqual(f.score(None, obs_val(7)), 1)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(6)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(8)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(5)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(9)), 2 * scipy.stats.norm.cdf(-2), decimal=5)
 
     def test_ExponentialFilter(self):
         def obs_val(temperature):
@@ -297,10 +412,10 @@ class TestFilters(unittest.TestCase):
                 observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
 
         f = filter.ExponentialFilter(('observation', 'environment', 'temperature', ), center=1., scale=1.)
-        self.assertEqual(f.score(obs_val(1)), 1)
-        numpy.testing.assert_almost_equal(f.score(obs_val(100)), 0, decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(2)), math.exp(-1), decimal=5)
-        numpy.testing.assert_almost_equal(f.score(obs_val(3)), math.exp(-2), decimal=5)
+        self.assertEqual(f.score(None, obs_val(1)), 1)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(100)), 0, decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(2)), math.exp(-1), decimal=5)
+        numpy.testing.assert_almost_equal(f.score(None, obs_val(3)), math.exp(-2), decimal=5)
 
 
 class TestFilterResult(unittest.TestCase):
@@ -316,13 +431,12 @@ class TestFilterResult(unittest.TestCase):
         ]
         s = [0.3, 0.5]
 
-        filter_result = filter.FilterResult(ov, f, s, copy.copy(ov), copy.copy(s), [1, 2])
+        filter_result = filter.FilterResult(copy.copy(ov), copy.copy(s), [1, 2], ov, s)
         self.assertEqual(filter_result.observed_values, ov)
-        self.assertEqual(filter_result.filters, f)
         self.assertEqual(filter_result.scores, s)
-        self.assertEqual(filter_result.ordered_observed_values, ov)
-        self.assertEqual(filter_result.ordered_scores, s)
-        self.assertEqual(filter_result.ordered_observed_value_indices, [1, 2])
+        self.assertEqual(filter_result.observed_value_indices, [1, 2])
+        self.assertEqual(filter_result.all_observed_values, ov)
+        self.assertEqual(filter_result.all_scores, s)
 
 
 class TestFilterRunner(unittest.TestCase):
@@ -353,14 +467,14 @@ class TestFilterRunner(unittest.TestCase):
         ]
 
         runner = filter.FilterRunner(f[0])
-        self.assertEqual(list(runner.score(ov).ravel()), [1., 1., -1., -1., 1., 1., -1., -1.])
+        self.assertEqual(list(runner.score(None, ov).ravel()), [1., 1., -1., -1., 1., 1., -1., -1.])
 
         runner = filter.FilterRunner(f[1])
-        self.assertEqual(list(runner.score(ov).ravel()), [1., -1., 1., -1., 1., -1., 1., -1.])
+        self.assertEqual(list(runner.score(None, ov).ravel()), [1., -1., 1., -1., 1., -1., 1., -1.])
 
         runner = filter.FilterRunner(f[2])
         s = 2 * scipy.stats.norm.cdf(-1)
-        numpy.testing.assert_almost_equal(list(runner.score(ov).ravel()), [1., 1., s, s, 1., 1., s, s], decimal=5)
+        numpy.testing.assert_almost_equal(list(runner.score(None, ov).ravel()), [1., 1., s, s, 1., 1., s, s], decimal=5)
 
     def test_filter(self):
         ov = [
@@ -465,19 +579,18 @@ class TestFilterRunner(unittest.TestCase):
         runner = filter.FilterRunner(f)
 
         # return_info=True
-        result = runner.run(ov, return_info=True)
-        self.assertEqual(result.observed_values, ov)
-        self.assertEqual(result.filters, f)
+        result = runner.run(None, ov, return_info=True)
+        self.assertEqual(result.all_observed_values, ov)
         s1 = 2 * scipy.stats.norm.cdf(-1)
         s01 = 2 * scipy.stats.norm.cdf(-0.1)
         s001 = 2 * scipy.stats.norm.cdf(-0.01)
-        numpy.testing.assert_almost_equal(result.scores, numpy.array([[1., 1., s1, s1, s01, s01, s001, s001],
-                                                                      [1., -1., 1., -1., 1., -1., 1., -1.]], ndmin=2).transpose())
+        numpy.testing.assert_almost_equal(result.all_scores, numpy.array([[1., 1., s1, s1, s01, s01, s001, s001],
+                                                                          [1., -1., 1., -1., 1., -1., 1., -1.]], ndmin=2).transpose())
 
-        self.assertEqual(result.ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])
-        numpy.testing.assert_almost_equal(result.ordered_scores, numpy.array([[1., s001, s01, s1], [1., 1., 1., 1.]], ndmin=2).transpose())
-        self.assertEqual(result.ordered_observed_value_indices, [0, 6, 4, 2])
+        self.assertEqual(result.observed_values, [ov[0], ov[6], ov[4], ov[2]])
+        numpy.testing.assert_almost_equal(result.scores, numpy.array([[1., s001, s01, s1], [1., 1., 1., 1.]], ndmin=2).transpose())
+        self.assertEqual(result.observed_value_indices, [0, 6, 4, 2])
 
         # return_info=False
-        ordered_observed_values = runner.run(ov, return_info=False)
+        ordered_observed_values = runner.run(None, ov, return_info=False)
         self.assertEqual(ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])

@@ -281,30 +281,22 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
             sabiork_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction')
             if sabiork_id == '10424' and val.observable.property == 'Km':
                 break
-        self.assertEqual(val.observable.interaction.cross_references[0].namespace, 'sabiork.reaction')
-        self.assertEqual(val.observable.interaction.cross_references[0].id, '10424')
         self.assertEqual(val.observable.compartment.id, 'cytoplasm')
         self.assertEqual(val.observable.specie.name, 'D-Lactaldehyde')
         self.assertEqual(val.observable.property, 'Km')
         self.assertEqual(val.value, 7.9e-5)
         self.assertEqual(val.units, 'M')
 
-        """
-        table = []
-        for v in vals:
-            row = [v.observable.property, None, None, v.value, v.units]
-            if v.observable.specie:
-                row[1] = v.observable.specie.name
-            if v.observable.compartment:
-                row[2] = v.observable.compartment.id
-            table.append(row)
+        # self.print_observed_values(vals)
 
-        print('\n')
-        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}'.format('Parameter', 'Species', 'Compartment', 'Value', 'Units'))
-        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}'.format('=' * 9, '=' * 16, '=' * 20, '=' * 20, '=' * 5))
-        for row in table:
-            print('{:<9}  {:<16}  {:<20}  {:>20}  {:<5}'.format(row[0] or '', row[1] or '', row[2] or '', row[3] or '', row[4] or ''))
-        """
+    def test_filter_observed_values(self):
+        q = reaction_kinetics.ReactionKineticsQueryGenerator()
+        reaction = self.reaction_1_1_1_55
+        vals = q.get_observed_values(reaction)
+        filter_result = q.filter_observed_values(reaction, vals)
+        filter_result.observed_values
+
+        self.print_observed_values(filter_result.observed_values)
 
     @unittest.skip('implement me')
     def test_(self):
@@ -314,3 +306,17 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='ec-code', id=ec_number),
         ])
+
+    def print_observed_values(self, vals):
+        print('\n')
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<20}  {:<17}'.format('Parameter', 'Species', 'Compartment', 'Value', 'Units', 'SABIO-RK kinetic law', 'SABIO-RK reaction'))
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<20}  {:<17}'.format('=' * 9, '=' * 16, '=' * 20, '=' * 20, '=' * 5, '=' * 20, '=' * 17))
+        for v in vals:
+            print('{:<9}  {:<16}  {:<20}  {:>20}  {:<5}  {:>20}  {:>17}'.format(
+                v.observable.property,
+                v.observable.specie.name if v.observable.specie else '',
+                v.observable.compartment.id if v.observable.compartment else '',
+                v.value, v.units or '',                
+                next(xr.id for xr in v.observable.interaction.cross_references if xr.namespace == 'sabiork.kineticrecord'),
+                next(xr.id for xr in v.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction'),
+                ))

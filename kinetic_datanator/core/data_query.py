@@ -21,10 +21,10 @@ unit_registry = pint.UnitRegistry()
 class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents a query of a data source
 
-    1. Find observations for the exact or similar model components
+    1. Find observed values for the exact or similar model components
 
-    2. Filter out observations from disimilar genetic and environmental conditions and 
-      rank the remaing observations by their similarity to the desired genetic and environmental 
+    2. Filter out observed values from disimilar genetic and environmental conditions and 
+      rank the remaing observed values by their similarity to the desired genetic and environmental 
       conditions
 
       * Taxonomy
@@ -32,7 +32,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
       * Temperature
       * pH
 
-    3. Calculate a statistical representation of the relevant observations
+    3. Calculate a statistical representation of the relevant observed values
 
     Attributes:
         filters (:obj:`list` of :obj:`filter.Filter`): list of filters        
@@ -48,11 +48,11 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
             taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
                 This determines how quickly the score falls to zero away from zero.
-            include_variants (:obj:`bool`, optional): if :obj:`True`, also include observations from mutant taxa
+            include_variants (:obj:`bool`, optional): if :obj:`True`, also include observed values from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
-            temperature_std (:obj:`float`, optional): how much to penalize observations from other temperatures
+            temperature_std (:obj:`float`, optional): how much to penalize observed values from other temperatures
             ph (:obj:`float`, optional): desired pH to search for
-            ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
+            ph_std (:obj:`float`, optional): how much to penalize observed values from other pHs
         """
         # todo: filter media
 
@@ -73,16 +73,16 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
     def run(self, component):
         """ 
 
-        1. Find observations for the exact or similar model components and genetic and environmental conditions
+        1. Find observed values for the exact or similar model components and genetic and environmental conditions
         2. Rank the results by their similarity to the model component and the genetic and environmental conditions
-        3. Calculate a consensus statistical representation of the relevant observations
+        3. Calculate a consensus statistical representation of the relevant observed values
 
         Args:
             component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
 
         Returns:
-            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observations of 
-                :obj:`component` and the observations it was based on
+            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of 
+                :obj:`component` and the observed values it was based on
         """
         obs = self.get_observed_values(component)
         filter_result = self.filter_observed_values(component, obs)
@@ -90,45 +90,45 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def get_observed_values(self, component):
-        """ Find the observations relevant to :obj:`component`
+        """ Find the observed values relevant to :obj:`component`
 
         Args:
             observable (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
+            :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
         """
         pass
 
-    def filter_observed_values(self, component, observations):
-        """ Filter out observations from dissimilar genetic and environmental conditions and
-        order the remaining observations by their similarity to specified genetic and 
+    def filter_observed_values(self, component, observed_values):
+        """ Filter out observed values from dissimilar genetic and environmental conditions and
+        order the remaining observed values by their similarity to specified genetic and 
         environmental conditions.
 
         Args:
             component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
-            observations (:obj:`list` of :obj:`data_model.ObservedValue`): list of observations
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
 
         Returns:
             :obj:`filter.FilterResult`: filter result
         """
         return filter.FilterRunner(self.filters) \
-            .run(observations, return_info=True)
+            .run(component, observed_values, return_info=True)
 
     def get_consensus(self, component, filter_result):
-        """ Calculate a consensus statistical representation of the one or more observations
+        """ Calculate a consensus statistical representation of the one or more observed values
 
         Args:
             component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
             filter_result (:obj:`filter.FilterResult`): filter result
 
         Returns:
-            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observations of 
-                :obj:`component` and the observations it was based on
+            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of 
+                :obj:`component` and the observed values it was based on
         """
-        # group observations by their subcomponents, attributes
+        # group observed values by their subcomponents, attributes
         grouped_obs = {}
-        for obs, score in zip(filter_result.observations, filter_result.scores):
+        for obs, score in zip(filter_result.observed_values, filter_result.scores):
             if obs.attribute not in grouped_obs:
                 grouped_obs[obs.attribute] = {}
             if obs.subcomponent:
@@ -190,11 +190,11 @@ class CachedDataSourceQueryGenerator(DataQueryGenerator):
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
             taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
                 This determines how quickly the score falls to zero away from zero.
-            include_variants (:obj:`bool`, optional): if :obj:`True`, also include observations from mutant taxa
+            include_variants (:obj:`bool`, optional): if :obj:`True`, also include observed values from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
-            temperature_std (:obj:`float`, optional): how much to penalize observations from other temperatures
+            temperature_std (:obj:`float`, optional): how much to penalize observed values from other temperatures
             ph (:obj:`float`, optional): desired pH to search for
-            ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
+            ph_std (:obj:`float`, optional): how much to penalize observed values from other pHs
             data_source (:obj:`kinetic_datanator.core.data_source.CachedDataSource`, optional): cached data source
         """
         super(CachedDataSourceQueryGenerator, self).__init__(
