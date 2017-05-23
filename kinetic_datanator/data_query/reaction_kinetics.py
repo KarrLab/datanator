@@ -8,7 +8,6 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_query
-from kinetic_datanator.core import filter
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
@@ -60,8 +59,8 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ph=ph, ph_std=ph_std,
             data_source=sabio_rk.SabioRk())
 
-        self.filters.append(filter.ReactionSimilarityFilter())
-        self.filters.append(filter.ReactionParticipantFilter())
+        self.filters.append(data_query.ReactionSimilarityFilter())
+        self.filters.append(data_query.ReactionParticipantFilter())
 
     def get_observed_values(self, reaction):
         """ Find observed kinetics for the reaction or similar reactions

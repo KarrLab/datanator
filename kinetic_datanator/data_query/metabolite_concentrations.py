@@ -35,7 +35,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             ph=ph, ph_std=ph_std,
             data_source=ecmdb.Ecmdb())
 
-        self.filters.append(filter.MolecularSimilarityFilter())
+        self.filters.append(data_query.MolecularSimilarityFilter())
 
     def get_observed_values(self, specie):
         """ Find observed concentrations for the metabolite or similar metabolites
