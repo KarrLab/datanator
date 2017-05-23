@@ -12,6 +12,7 @@ from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_query import reaction_kinetics
 from kinetic_datanator.util import molecule_util
+from kinetic_datanator.util import taxonomy_util
 import unittest
 
 
@@ -279,11 +280,10 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
 
         for val in vals:
             sabiork_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction')
-            if sabiork_id == '10424' and val.observable.property == 'Km':
+            if sabiork_id == '10424' and val.observable.property == 'k_m':
                 break
         self.assertEqual(val.observable.compartment.id, 'cytoplasm')
         self.assertEqual(val.observable.specie.name, 'D-Lactaldehyde')
-        self.assertEqual(val.observable.property, 'Km')
         self.assertEqual(val.value, 7.9e-5)
         self.assertEqual(val.units, 'M')
 
@@ -294,9 +294,18 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         reaction = self.reaction_1_1_1_55
         vals = q.get_observed_values(reaction)
         filter_result = q.filter_observed_values(reaction, vals)
-        filter_result.observed_values
 
-        self.print_observed_values(filter_result.observed_values)
+        for ov in filter_result.observed_values:
+            self.assertIn(ov.observable.property, ['k_cat', 'k_i', 'k_m', 'v_max'])
+            if ov.observable.specie:
+                self.assertIn(ov.observable.specie.to_inchi(only_formula_and_connectivity=True), [
+                    'C3H6O2/c1-3(5)2-4',
+                    ('C21H30N7O17P3/c22-17-12-19(25-7-24-17)28(8-26-12)21-16(44-46(33,34)35)14(30)11(43-21)6-41-48(38,39)45-47'
+                     '(36,37)40-5-10-13(29)15(31)20(42-10)27-3-1-2-9(4-27)18(23)32'),
+                ])
+            self.assertEqual(ov.observation.genetics.variation, '')
+
+        # self.print_observed_values(filter_result.observed_values)
 
     @unittest.skip('implement me')
     def test_(self):
@@ -309,14 +318,19 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
 
     def print_observed_values(self, vals):
         print('\n')
-        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<20}  {:<17}'.format('Parameter', 'Species', 'Compartment', 'Value', 'Units', 'SABIO-RK kinetic law', 'SABIO-RK reaction'))
-        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<20}  {:<17}'.format('=' * 9, '=' * 16, '=' * 20, '=' * 20, '=' * 5, '=' * 20, '=' * 17))
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<22}  {:<9}  {:<11}  {:<3}  {:<20}  {:<17}'.format(
+            'Parameter', 'Species', 'Compartment', 'Value', 'Units', 'Taxon', 'Variation',
+            'Temperature', 'pH', 'SABIO-RK kinetic law', 'SABIO-RK reaction'))
+        print('{:<9}  {:<16}  {:<20}  {:<20}  {:<5}  {:<22}  {:<9}  {:<11}  {:<3}  {:<20}  {:<17}'.format(
+            '=' * 9, '=' * 16, '=' * 20, '=' * 20, '=' * 5, '=' * 22, '=' * 9, '=' * 11, '=' * 3, '=' * 20, '=' * 17))
         for v in vals:
-            print('{:<9}  {:<16}  {:<20}  {:>20}  {:<5}  {:>20}  {:>17}'.format(
+            print('{:<9}  {:<16}  {:<20}  {:>20}  {:<5}  {:<22}  {:<9}  {:>11}  {:>0.1f}  {:>20}  {:>17}'.format(
                 v.observable.property,
                 v.observable.specie.name if v.observable.specie else '',
                 v.observable.compartment.id if v.observable.compartment else '',
-                v.value, v.units or '',                
+                v.value, v.units or '',
+                taxonomy_util.Taxon(ncbi_id=v.observation.genetics.taxon).name, v.observation.genetics.variation or '',
+                v.observation.environment.temperature or '', v.observation.environment.ph or '',
                 next(xr.id for xr in v.observable.interaction.cross_references if xr.namespace == 'sabiork.kineticrecord'),
                 next(xr.id for xr in v.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction'),
-                ))
+            ))

@@ -164,13 +164,12 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if parameter.value is None:
                     continue
 
-                property = parameter.type
-                if property.startswith('Km'):
-                    property = 'Km'
+                if parameter.type not in sabio_rk.Parameter.TYPES:
+                    continue
 
                 observable = data_model.Observable(
                     interaction=reaction,
-                    property=property,
+                    property=sabio_rk.Parameter.TYPES[parameter.type],
                 )
 
                 if parameter.compound:

@@ -53,7 +53,6 @@ compound_compound_structure = sqlalchemy.Table(
 )
 # :obj:`sqlalchemy.Table`: Compound:CompoundStructure many-to-many association table
 
-
 kinetic_law_resource = sqlalchemy.Table(
     'kinetic_law_resource', Base.metadata,
     sqlalchemy.Column('kinetic_law__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('kinetic_law._id')),
@@ -159,6 +158,31 @@ class Parameter(Entry):
         value (:obj:`float`): value
         units (:obj:`str`): units
     """
+
+    TYPES = {
+        # 9: 'k',
+        # 16: 'k',
+        # 17: 'k',
+        25: 'k_cat',
+        27: 'k_m',
+        # 156: 'k_rev',
+        186: 'v_max',
+        # 190: n,
+        # 191: n,
+        261: 'k_i',
+        # 281: 'k_eq',
+        # 282: 'k_d',
+        # 338: 'k_d',
+        # 283: 'k_a',
+        # 337: 'k_a',
+        # 320: 'k_cat_p',
+        # 321: 'k_cat_s',
+        # 322: 'k_m_s',
+        # 323: 'k_m_p',
+        # 349: 'k_inact',
+        # 363: 'k_x',
+    }
+
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
     kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
