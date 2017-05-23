@@ -12,6 +12,7 @@ from kinetic_datanator.util import taxonomy_util
 import abc
 import itertools
 import kinetic_datanator.core.data_source
+import Levenshtein
 import math
 import numpy
 import pint
@@ -397,7 +398,7 @@ class Filter(object):
         return val
 
     def compare_observed_value_with_target_component(self, target_component, observed_value):
-        """ Transform an attribute value
+        """ Compare the observed biological component with the target component
 
         Args:
             target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
@@ -579,25 +580,59 @@ class ExponentialFilter(Filter):
         return math.exp(-(val - self.center) / self.scale)
 
 
-class SpecieMolecularSimilarityFilter(Filter):
-    """ Score similarity with observed molecules """
+class SpecieSimilarityFilter(Filter):
+    """ Proritize observed species based on their similarity to target species
 
-    def __init__(self):
+    Attributes:
+        min_similarity (:obj:`float`): minimum acceptable similarity
+    """
+
+    def __init__(self, filters, min_similarity=0.5):
         """
         Args:
-            structure (:obj:`str`): structure
+            filters (:obj:`Filter` or :obj:`list` of :obj:`Filter`): filter or list of filters
+            min_similarity (:obj:`float`, optional): minimum acceptable similarity
         """
-        super(SpecieMolecularSimilarityFilter, self).__init__(('observable', 'structure', ), )
+        super(SpecieSimilarityFilter, self).__init__(filters)
+        self.min_similarity = min_similarity
 
-    def compare_observed_value_with_target_component(self, target_component, observed_value):
-        """ Transform an attribute value
+    def score(self, target_component, observed_value):
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the sequence of the 
+        observed species match that of the target species.
 
         Args:
             target_component (:obj:`data_model.Specie`): species to find data about 
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
-            :obj:`float`: similarity between the observed and query structure
+            :obj:`float`: similarity between the observed and target structures
+        """
+        val = self.compare_observed_value_with_target_component(target_component, observed_value)
+        if val < self.min_similarity:
+            return -1
+        return val
+
+
+class SpecieStructuralSimilarityFilter(SpecieSimilarityFilter):
+    """ Proritize observed species based on their structural similarity with target species """
+
+    def __init__(self, min_similarity=0.5):
+        """
+        Args:
+            min_similarity (:obj:`float`, optional): minimum acceptable similarity
+        """
+        super(SpecieStructuralSimilarityFilter, self).__init__(('observable', 'specie', 'structure', ),
+                                                               min_similarity=min_similarity)
+
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
+        """ Compare the observed biological component with the target component
+
+        Args:
+            target_component (:obj:`data_model.Specie`): species to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`float`: similarity between the observed and target structures
         """
         target_structure = target_component.structure
         observed_structure = self.get_attribute_of_observed_value(observed_value)
@@ -606,8 +641,32 @@ class SpecieMolecularSimilarityFilter(Filter):
         return target_mol.get_similarity(observed_mol)
 
 
-class MolecularSimilarityFilter(Filter):
-    pass  # todo: implement for small molecules, sequences
+class SpecieSequenceSimilarityFilter(SpecieSimilarityFilter):
+    """ Proritize observed species based on the Levenshtein distance of their sequences to that of target species """
+
+    def __init__(self, min_similarity=0.5):
+        """
+        Args:
+            min_similarity (:obj:`float`, optional): minimum acceptable similarity
+        """
+        super(SpecieSequenceSimilarityFilter, self).__init__(('observable', 'specie', 'sequence', ),
+                                                             min_similarity=min_similarity)
+
+    def compare_observed_value_with_target_component(self, target_component, observed_value):
+        """ Compare the observed biological component with the target component
+
+        Args:
+            target_component (:obj:`data_model.Specie`): species to find data about 
+            observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
+
+        Returns:
+            :obj:`float`: similarity between the observed and target sequences
+        """
+        target_sequence = target_component.sequence
+        observed_sequence = self.get_attribute_of_observed_value(observed_value)
+
+        dist = Levenshtein.distance(target_sequence, observed_sequence)
+        return 1. - float(dist) / float(max(len(target_sequence), len(observed_sequence)))
 
 
 class ReactionSimilarityFilter(Filter):
@@ -637,7 +696,7 @@ class ReactionSimilarityFilter(Filter):
         self.scale = scale
 
     def compare_observed_value_with_target_component(self, target_component, observed_value):
-        """ Transform an attribute value
+        """ Compare the observed biological component with the target component
 
         Args:
             target_component (:obj:`data_model.Reaction`): reaction to find data about 
@@ -778,7 +837,7 @@ class ReactionParticipantFilter(Filter):
         self.min_similarity = min_similarity
 
     def compare_observed_value_with_target_component(self, target_component, observed_value):
-        """ Transform an attribute value
+        """ Compare the observed biological component with the target component
 
         Args:
             target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
@@ -876,7 +935,7 @@ class TaxonomicDistanceFilter(Filter):
         self.scale = scale
 
     def compare_observed_value_with_target_component(self, target_component, observed_value):
-        """ Transform an attribute value
+        """ Compare the observed biological component with the target component
 
         Args:
             target_component (:obj:`data_model.EntityInteractionOrProperty`): target component

@@ -1,11 +1,9 @@
 bioservices
 bs4
 cement
-python-dateutil
 enum34
 ete3
 jxmlease
-python-libsbml
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
@@ -13,6 +11,9 @@ openpyxl
 pint
 pronto
 pubchempy
+python-dateutil
+python-Levenshtein
+python-libsbml
 requests
 requests-cache
 scipy

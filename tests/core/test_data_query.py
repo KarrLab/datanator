@@ -132,18 +132,42 @@ class TestFilters(unittest.TestCase):
             observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(None, ov), -1)
 
-    def test_SpecieMolecularSimilarityFilter(self):
+    def test_SpecieStructuralSimilarityFilter(self):
         adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         atp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
         h2o = 'O'
 
-        f = data_query.SpecieMolecularSimilarityFilter()
+        # min_similarity = 0
+        f = data_query.SpecieStructuralSimilarityFilter(min_similarity=0.)
 
-        ov = data_model.ObservedValue(observable=data_model.Specie(structure=adp))
+        ov = data_model.ObservedValue(observable=data_model.Observable(specie=data_model.Specie(structure=adp)))
         numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), 0.955, decimal=3)
 
-        ov = data_model.ObservedValue(observable=data_model.Specie(structure=h2o))
+        ov = data_model.ObservedValue(observable=data_model.Observable(specie=data_model.Specie(structure=h2o)))
         numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), 0, decimal=3)
+
+        # min_similarity = 0.75
+        f = data_query.SpecieStructuralSimilarityFilter(min_similarity=0.75)
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(specie=data_model.Specie(structure=adp)))
+        numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), 0.955, decimal=3)
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(specie=data_model.Specie(structure=h2o)))
+        numpy.testing.assert_almost_equal(f.score(data_model.Specie(structure=atp), ov), -1., decimal=3)
+
+    def test_SpecieSequenceSimilarityFilter(self):
+        seq1 = 'CTAACTCTACCTCGTATGTATGGAAGTTCGTCTATCTCTGGTCGGTTGCT'
+        seq2 = 'CTAACTCTACCTCGTATTATGGAAGTTCGTCTATCTTCTGGTCGGTTGCT'
+
+        ov = data_model.ObservedValue(observable=data_model.Observable(specie=data_model.PolymerSpecie(sequence=seq1)))
+
+        # min_similarity = 0
+        f = data_query.SpecieSequenceSimilarityFilter(min_similarity=0.)
+        self.assertEqual(f.score(data_model.PolymerSpecie(sequence=seq2), ov), 0.96)
+
+        # min_similarity = 0.75
+        f = data_query.SpecieSequenceSimilarityFilter(min_similarity=0.98)
+        self.assertEqual(f.score(data_model.PolymerSpecie(sequence=seq2), ov), -1)
 
     def test_ReactionSimilarityFilter(self):
         atp_structure = (
