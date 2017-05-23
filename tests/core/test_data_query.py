@@ -27,10 +27,23 @@ class TestDataQueryGenerator(unittest.TestCase):
         def get_observed_values(self):
             pass
 
+    def test_filter_observed_values(self):
+        gen = self.ConcreteDataQueryGenerator()
+        gen.filters = [
+            data_query.TemperatureRangeFilter(min=36., max=38.),
+        ]
+        observed_values = [
+            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=36.5))),
+            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=35.0))),
+            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=37.0))),
+        ]
+        result = gen.filter_observed_values(None, observed_values)
+        self.assertEqual(set(result.observed_values), set([observed_values[0], observed_values[2]]))
+
     @unittest.skip('implement me')
     def test_get_consensus(self):
         gen = self.ConcreteDataQueryGenerator()
-        #gen.get_consensus()
+        # gen.get_consensus()
 
 
 class TestFilters(unittest.TestCase):
