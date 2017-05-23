@@ -154,7 +154,6 @@ class Parameter(Entry):
 
     Attributes:
         kinetic_law (:obj:`KineticLaw`): kinetic law
-        name (:obj:`str`): name (kcat, Km, etc.)
         type (:obj:`int`): SBO term
         compound (:obj:`Compound`): compound
         value (:obj:`float`): value
@@ -163,7 +162,6 @@ class Parameter(Entry):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
     kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
-    name = sqlalchemy.Column(sqlalchemy.String())
     type = sqlalchemy.Column(sqlalchemy.Integer())
     compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
     compound = sqlalchemy.orm.relationship(
