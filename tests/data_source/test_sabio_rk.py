@@ -124,25 +124,29 @@ class TestDownloader(unittest.TestCase):
 
         self.assertEqual(len(l.parameters), 4)
 
-        p = session.query(Parameter).filter_by(kinetic_law=l, type='kcat/Km').first()
+        p = session.query(Parameter).filter_by(kinetic_law=l, name='kcat/Km').first()
+        self.assertEqual(p.type, 302)
         self.assertEqual(p.compound, cpd_2562)
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.value, 120000.)
         self.assertEqual(p.units, 'M^(-1)*s^(-1)')
 
-        p = session.query(Parameter).filter_by(kinetic_law=l, type='kcat').first()
+        p = session.query(Parameter).filter_by(kinetic_law=l, name='kcat').first()
+        self.assertEqual(p.type, 25)
         self.assertEqual(p.compound, None)
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.value, 220.)
         self.assertEqual(p.units, 's^(-1)')
 
-        p = session.query(Parameter).filter_by(kinetic_law=l, type='Ki').first()
+        p = session.query(Parameter).filter_by(kinetic_law=l, name='Ki').first()
+        self.assertEqual(p.type, 261)
         self.assertEqual(p.compound, cpd_20035)
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.value, 9E-9)
         self.assertEqual(p.units, 'M')
 
-        p = session.query(Parameter).filter_by(kinetic_law=l, type='Km').first()
+        p = session.query(Parameter).filter_by(kinetic_law=l, name='Km').first()
+        self.assertEqual(p.type, 27)
         self.assertEqual(p.compound, cpd_2562)
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.value, 0.0019)

@@ -154,7 +154,8 @@ class Parameter(Entry):
 
     Attributes:
         kinetic_law (:obj:`KineticLaw`): kinetic law
-        type (:obj:`str`): type (kcat, Km, etc.)
+        name (:obj:`str`): name (kcat, Km, etc.)
+        type (:obj:`int`): SBO term
         compound (:obj:`Compound`): compound
         value (:obj:`float`): value
         units (:obj:`str`): units
@@ -162,7 +163,8 @@ class Parameter(Entry):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
     kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
-    type = sqlalchemy.Column(sqlalchemy.String())
+    name = sqlalchemy.Column(sqlalchemy.String())
+    type = sqlalchemy.Column(sqlalchemy.Integer())
     compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
     compound = sqlalchemy.orm.relationship(
         'Compound', uselist=False, backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compound_id])
@@ -640,7 +642,7 @@ class SabioRk(data_source.HttpDataSource):
             specie, properties = self.create_specie_from_sbml(specie_sbml)
             species.append(specie)
             specie_properties[specie_sbml.getId()] = properties
-    
+
         # kinetic laws
         reactions_sbml = model.getListOfReactions()
         if reactions_sbml.size() != len(ids):
@@ -789,7 +791,7 @@ class SabioRk(data_source.HttpDataSource):
             variant = None
             return (name, is_wildtype, variant)
 
-        raise ValueError('Cannot parse enzyme name: {}'.format(sbml))    
+        raise ValueError('Cannot parse enzyme name: {}'.format(sbml))
 
     def create_kinetic_law_from_sbml(self, id, sbml, specie_properties, functions, units):
         """ Add a kinetic law to the local sqlite database
@@ -873,12 +875,14 @@ class SabioRk(data_source.HttpDataSource):
 
             match = re.match('^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
-                type = match.group(1)
+                name = match.group(1)
                 compound, compartment = self.get_specie_reference_from_sbml(match.group(2))
             else:
-                type = param.getId()
+                name = param.getId()
                 compound = None
                 compartment = None
+
+            sbo_term = param.getSBOTerm()
 
             if param.getUnits():
                 if param.getUnits() in units:
@@ -888,7 +892,8 @@ class SabioRk(data_source.HttpDataSource):
             else:
                 param_units = None
             parameter = Parameter(
-                type=type.replace('div', '/'),
+                name=name.replace('div', '/'),
+                type=sbo_term,
                 compound=compound,
                 compartment=compartment,
                 value=param.getValue(),
