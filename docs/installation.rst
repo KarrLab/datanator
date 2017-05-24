@@ -1,9 +1,16 @@
 Installation
 ============
 
-*Install dependencies*
+Install dependencies
+--------------------
+* Open Babel
+* Python
+* Pip
 
-Install Openbabel from <http://openbabel.org/wiki/Category:Installation>::
+Install Open Babel
+^^^^^^^^^^^^^^^^^^
+
+Install Openbabel from `http://openbabel.org/wiki/Category:Installation <http://openbabel.org/wiki/Category:Installation>`_::
 
     apt-get install \
         libcairo2-dev \
@@ -23,6 +30,14 @@ Install Openbabel from <http://openbabel.org/wiki/Category:Installation>::
     make install
     ldconfig
 
-*Install kinetic_datanator*::
+Latest revision from GitHub
+---------------------------
+Run the following command to install the latest version from GitHub::
 
-    $ pip install kinetic_datanator
+    pip install git+git://github.com/KarrLab/kinetic_datanator.git#egg=kinetic_datanator
+
+Latest release From PyPI
+---------------------------
+Run the following command to install the latest release from PyPI::
+
+    pip install kinetic_datanator
