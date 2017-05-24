@@ -10,7 +10,7 @@
 import openbabel
 import pybel
 import re
-import observable_util
+from kinetic_datanator.new_database_schema.util import observable_util
 
 
 class Molecule(observable_util.Observable):

@@ -13,8 +13,8 @@ class Sub(Super):
 		Super.__init__(self, b="blue", g="green")
 
 a = Sub()
-print a.blue
-print a.green
+print(a.blue)
+print(a.green)
 
 
 
@@ -22,7 +22,7 @@ print a.green
 import openbabel
 import pybel
 import re
-import observable_util
+from kinetic_datanator.new_database_schema.util import observable_util
 
 class Molecule(observable_util.Observable):
 	""" Represents a molecule
@@ -46,13 +46,13 @@ class Molecule(observable_util.Observable):
 		Raises:
 			:obj:`ValueError`: if the structure is not valid
 		"""
-		print name
-		#print obs_type
+		print(name)
+		#print(obs_type)
 		observable_util.Observable.__init__(self, name, id, "")#self, name, id)#, "")
 		#self.id = id
 		#self.name = name
 		#self.structure = structure
 a = observable_util.Observable()
-print a.obs_type
+print(a.obs_type)
 a = Molecule()
 #a = Molecule('ATP', {"KEGG": "543543"})
