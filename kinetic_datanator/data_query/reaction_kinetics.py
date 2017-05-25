@@ -282,22 +282,31 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
         """
+        session = self.data_source.session
+
         if only_formula_and_connectivity:
             condition = sabio_rk.CompoundStructure._value_inchi_formula_connectivity == structure
         else:
             condition = sabio_rk.CompoundStructure._value_inchi == structure
 
         if role == 'reactant':
-            participant_type = sabio_rk.KineticLaw.reactants
+            participant_type = sabio_rk.ReactionParticipant.reactant_kinetic_law_id
         else:
-            participant_type = sabio_rk.KineticLaw.products
+            participant_type = sabio_rk.ReactionParticipant.product_kinetic_law_id
+
+        q_structure = session.query(sabio_rk.CompoundStructure) \
+            .filter(condition) \
+            .subquery()
 
         return self.data_source.session.query(select) \
-            .join((sabio_rk.ReactionParticipant, participant_type)) \
-            .join((sabio_rk.Compound, sabio_rk.ReactionParticipant.compound)) \
-            .join((sabio_rk.CompoundStructure, sabio_rk.Compound.structures)) \
-            .filter(condition) \
-            .distinct(sabio_rk.KineticLaw.id)
+            .join(sabio_rk.ReactionParticipant,
+                  sabio_rk.KineticLaw._id == participant_type) \
+            .join(sabio_rk.compound_compound_structure,
+                  sabio_rk.ReactionParticipant.compound_id == sabio_rk.compound_compound_structure.c.get('compound__id')) \
+            .join(q_structure,
+                  sabio_rk.compound_compound_structure.c.get('compound_structure__id') == q_structure.c._id) \
+            .filter(participant_type != None) \
+            .distinct(sabio_rk.KineticLaw._id)
 
     def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=True, select=sabio_rk.Compound):
         """ Get compounds with the same structure. Optionally, get compounds which only have
