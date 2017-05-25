@@ -34,29 +34,29 @@ Base = sqlalchemy.ext.declarative.declarative_base()
 
 entry_synonym = sqlalchemy.Table(
     'entry_synonym', Base.metadata,
-    sqlalchemy.Column('entry__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('entry._id')),
-    sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id')),
+    sqlalchemy.Column('entry__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('entry._id'), index=True),
+    sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Entry:Synonym many-to-many association table
 
 entry_resource = sqlalchemy.Table(
     'entry_resource', Base.metadata,
-    sqlalchemy.Column('entry__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('entry._id')),
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
+    sqlalchemy.Column('entry__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('entry._id'), index=True),
+    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Entry:Resource many-to-many association table
 
 compound_compound_structure = sqlalchemy.Table(
     'compound_compound_structure', Base.metadata,
-    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
-    sqlalchemy.Column('compound_structure__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound_structure._id')),
+    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
+    sqlalchemy.Column('compound_structure__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound_structure._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Compound:CompoundStructure many-to-many association table
 
 kinetic_law_resource = sqlalchemy.Table(
     'kinetic_law_resource', Base.metadata,
-    sqlalchemy.Column('kinetic_law__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('kinetic_law._id')),
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
+    sqlalchemy.Column('kinetic_law__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('kinetic_law._id'), index=True),
+    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: KineticLaw:Resource many-to-many association table
 
@@ -134,16 +134,16 @@ class ReactionParticipant(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
-    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
+    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
     compound = sqlalchemy.orm.relationship('Compound', backref=sqlalchemy.orm.backref('reaction_participants'), foreign_keys=[compound_id])
-    compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'))
+    compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
     compartment = sqlalchemy.orm.relationship('Compartment', backref=sqlalchemy.orm.backref(
         'reaction_participants'), foreign_keys=[compartment_id])
     coefficient = sqlalchemy.Column(sqlalchemy.Float())
     type = sqlalchemy.Column(sqlalchemy.String())
-    reactant_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
-    product_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
-    modifier_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
+    reactant_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'), index=True)
+    product_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'), index=True)
+    modifier_kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'), index=True)
 
     __tablename__ = 'reaction_participant'
 
@@ -185,12 +185,12 @@ class Parameter(Entry):
 
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
-    kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'))
+    kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'), index=True)
     type = sqlalchemy.Column(sqlalchemy.Integer())
-    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
+    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
     compound = sqlalchemy.orm.relationship(
         'Compound', uselist=False, backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compound_id])
-    compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'))
+    compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
     compartment = sqlalchemy.orm.relationship('Compartment', uselist=False,
                                               backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compartment_id])
     value = sqlalchemy.Column(sqlalchemy.Float())
@@ -229,9 +229,9 @@ class KineticLaw(Entry):
     products = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('product_kinetic_law'),
                                            foreign_keys=[ReactionParticipant.product_kinetic_law_id],
                                            cascade='all, delete-orphan')
-    enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'))
+    enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'), index=True)
     enzyme = sqlalchemy.orm.relationship('Enzyme', uselist=False, backref=sqlalchemy.orm.backref('kinetic_laws'), foreign_keys=[enzyme_id])
-    enzyme_compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'))
+    enzyme_compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
     enzyme_compartment = sqlalchemy.orm.relationship(
         'Compartment', uselist=False, backref=sqlalchemy.orm.backref('kinetic_laws'), foreign_keys=[enzyme_compartment_id])
     enzyme_type = sqlalchemy.Column(sqlalchemy.String())
