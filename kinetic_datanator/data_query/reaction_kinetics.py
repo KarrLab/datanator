@@ -282,7 +282,6 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
         """
-        session = self.data_source.session
 
         if only_formula_and_connectivity:
             condition = sabio_rk.CompoundStructure._value_inchi_formula_connectivity == structure
@@ -294,11 +293,13 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         else:
             participant_type = sabio_rk.ReactionParticipant.product_kinetic_law_id
 
+        session = self.data_source.session
+
         q_structure = session.query(sabio_rk.CompoundStructure) \
             .filter(condition) \
             .subquery()
 
-        return self.data_source.session.query(select) \
+        return session.query(select) \
             .join(sabio_rk.ReactionParticipant,
                   sabio_rk.KineticLaw._id == participant_type) \
             .join(sabio_rk.compound_compound_structure,

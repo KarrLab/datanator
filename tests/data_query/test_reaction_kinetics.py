@@ -144,8 +144,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         # formula and connectivity, reactant, select object
         q_law = q.get_kinetic_laws_by_compound(
             molecule_util.InchiMolecule(d_Lactaldehyde).get_formula_and_connectivity(), only_formula_and_connectivity=True,
-            role='reactant', select=sabio_rk.KineticLaw) \
-            .order_by(sabio_rk.KineticLaw.id)
+            role='reactant', select=sabio_rk.KineticLaw)
         law_ids = set([l.id for l in q_law.all()])
         self.assertGreater(len(law_ids.difference(set([22870, 22877, 22882, 38452, 44597, 50464, 50469, 50470]))), 0)
 
@@ -157,8 +156,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         # whole structure, product, select object
         q_law = q.get_kinetic_laws_by_compound(
             d_Lactaldehyde, only_formula_and_connectivity=False,
-            role='product', select=sabio_rk.KineticLaw) \
-            .order_by(sabio_rk.KineticLaw.id)
+            role='product', select=sabio_rk.KineticLaw)
         self.assertEqual([l.id for l in q_law.all()], [44603])
 
         rxn_ids = set()
@@ -308,7 +306,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         # self.print_observed_values(filter_result.observed_values)
 
     @unittest.skip('implement me')
-    def test_(self):
+    def test_get_consensus(self):
         mol = data_model.Specie(structure=inchi)
 
         ec_numbers = ['1.1.1.52', '1.1.1.55']
