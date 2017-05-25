@@ -59,7 +59,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observed values from other pHs
         """
-        # todo: filter media
+        # todo (enhancement): filter media
 
         self.filters = filters = []
 
@@ -705,7 +705,7 @@ class ReactionSimilarityFilter(Filter):
         Returns:
             :obj:`int`: transformed value
         """
-        # todo: use weights associated with predicted EC numbers
+        # todo (enhancement): use weights associated with predicted EC numbers
 
         target_reaction = target_component
         observed_reaction = self.get_attribute_of_observed_value(observed_value)

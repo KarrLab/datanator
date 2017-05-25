@@ -159,15 +159,15 @@ class CachedDataSource(DataSource):
         backup_manager = backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token)
         backup_manager.download()
 
-        files = self.get_backup_files(upload=False)
+        files = self.get_backup_files(set_metadata=False)
         backup_manager.extract(files)
         backup_manager.cleanup()
 
-    def get_backup_files(self, upload=True):
+    def get_backup_files(self, set_metadata=True):
         """ Get a list of the files to backup/unpack
 
         Args:
-            upload (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
 
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
@@ -175,7 +175,7 @@ class CachedDataSource(DataSource):
         files = []
 
         file = backup.BackupFile(self.filename, self.name + '.sqlite')
-        if upload:
+        if set_metadata:
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -246,6 +246,8 @@ class HttpDataSource(CachedDataSource):
             cache_dirname = CACHE_DIRNAME
 
         """ Request settings """
+        # todo (enhancement): avoid python version-specific requests cache; this currently is necessary because request_cache uses
+        # pickle which is not backwards compatible
         self.requests_cache_filename = os.path.join(cache_dirname, name + '.requests.py{}.sqlite'.format(sys.version_info[0]))
         self.requests_session = self.get_requests_session()
 
@@ -281,7 +283,7 @@ class HttpDataSource(CachedDataSource):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
 
-    def get_backup_files(self, upload=True):
+    def get_backup_files(self, set_metadata=True):
         """ Get a list of the files to backup/unpack
 
         Args:
@@ -290,7 +292,7 @@ class HttpDataSource(CachedDataSource):
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
         """
-        files = super(HttpDataSource, self).get_backup_files(upload=upload)
+        files = super(HttpDataSource, self).get_backup_files(set_metadata=set_metadata)
 
         requests_cache_basename_2 = self.name + '.requests.py2.sqlite'
         requests_cache_basename_3 = self.name + '.requests.py3.sqlite'
@@ -298,16 +300,16 @@ class HttpDataSource(CachedDataSource):
         requests_cache_filename_2 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_2)
         requests_cache_filename_3 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_3)
 
-        if not upload:
+        if not set_metadata:
             tar_file = tarfile.open(self.filename + '.tar.gz', "r:gz")
 
         file = backup.BackupFile(requests_cache_filename_2, requests_cache_basename_2)
-        if upload and os.path.isfile(file.filename):
+        if set_metadata and os.path.isfile(file.filename):
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
             files.append(file)
-        elif not upload:
+        elif not set_metadata:
             try:
                 tar_file.getmember(file.arcname)
                 files.append(file)
@@ -315,19 +317,19 @@ class HttpDataSource(CachedDataSource):
                 pass
 
         file = backup.BackupFile(requests_cache_filename_3, requests_cache_basename_3)
-        if upload and os.path.isfile(file.filename):
+        if set_metadata and os.path.isfile(file.filename):
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
             files.append(file)
-        elif not upload:
+        elif not set_metadata:
             try:
                 tar_file.getmember(file.arcname)
                 files.append(file)
             except KeyError:
                 pass
 
-        if not upload:
+        if not set_metadata:
             tar_file.close()
 
         return files
