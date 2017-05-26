@@ -33,9 +33,9 @@ class Consensus(obj_model.core.Model):
         value (:obj:`float`): consensus value of the attribute of the model component
         error (:obj:`float`): uncertainty of the value of the attribute of the model component
         units (:obj:`str`): units of the value of the attribute of the model component
-        method (:obj:`ConsensusMethod`): method used to calculate the consensus value and error
         evidence (:obj:`list` of :obj:`Evidence`): list of evidence which the consensus
             value is based on
+        method (:obj:`ConsensusMethod`): method used to calculate the consensus value and error
         user (:obj:`str`): user who generated the consensus
         date (:obj:`datetime.datetime`): date and time when the consensus was generated
     """
@@ -43,8 +43,8 @@ class Consensus(obj_model.core.Model):
     value = obj_model.core.FloatAttribute()
     error = obj_model.core.FloatAttribute()
     units = obj_model.core.StringAttribute()
-    method = obj_model.core.EnumAttribute(ConsensusMethod)
     evidence = obj_model.core.ManyToManyAttribute('Evidence', related_name='consensus')
+    method = obj_model.core.EnumAttribute(ConsensusMethod)
     user = obj_model.core.StringAttribute()
     date = obj_model.core.DateTimeAttribute()
 
