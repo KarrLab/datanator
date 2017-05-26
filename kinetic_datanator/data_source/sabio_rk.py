@@ -393,7 +393,7 @@ class SabioRk(data_source.HttpDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
-                 clear_requests_cache=False,
+                 clear_requests_cache=False, download_request_backup=False,
                  webservice_batch_size=250, excel_batch_size=100):
         """
         Args:
@@ -407,6 +407,7 @@ class SabioRk(data_source.HttpDataSource):
             download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
+            download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
             webservice_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO webservice
             excel_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO
                 Excel download service
@@ -418,7 +419,7 @@ class SabioRk(data_source.HttpDataSource):
                                       load_content=load_content, max_entries=max_entries,
                                       commit_intermediate_results=commit_intermediate_results,
                                       download_backup=download_backup, verbose=verbose,
-                                      clear_requests_cache=clear_requests_cache)
+                                      clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """

@@ -148,26 +148,39 @@ class CachedDataSource(DataSource):
 
     def upload_backup(self):
         """ Backup the local sqlite database to the Karr Lab server """
-        files = self.get_backup_files()
-        backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token) \
-            .create(files) \
-            .upload() \
-            .cleanup()
+        for file in self.get_backup_files(set_metadata=True):
+            backup.BackupManager(
+                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
+                file.arcname + '.tar.gz',
+                token=self.backup_server_token) \
+                .create([file]) \
+                .upload() \
+                .cleanup()
 
     def download_backup(self):
         """ Download the local sqlite database from the Karr Lab server """
-        backup_manager = backup.BackupManager(self.filename + '.tar.gz', self.name + '.sqlite.tar.gz', token=self.backup_server_token)
-        backup_manager.download()
+        for file in self.get_backup_files(download=True):
+            backup_manager = backup.BackupManager(
+                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
+                file.arcname + '.tar.gz',
+                token=self.backup_server_token)
+            backup_manager.download()
 
-        files = self.get_backup_files(set_metadata=False)
-        backup_manager.extract(files)
-        backup_manager.cleanup()
+        for file in self.get_backup_files(download=True, get_metadata=True):
+            backup_manager = backup.BackupManager(
+                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
+                file.arcname + '.tar.gz',
+                token=self.backup_server_token)
+            backup_manager.extract([file])
+            backup_manager.cleanup()
 
-    def get_backup_files(self, set_metadata=True):
+    def get_backup_files(self, download=False, get_metadata=False, set_metadata=False):
         """ Get a list of the files to backup/unpack
 
         Args:
-            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+            get_metadata (:obj:`bool`, optional): if :obj:`True`, get the metadata of the backup files
+            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
 
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
@@ -224,7 +237,7 @@ class HttpDataSource(CachedDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
-                 clear_requests_cache=False):
+                 clear_requests_cache=False, download_request_backup=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -237,6 +250,7 @@ class HttpDataSource(CachedDataSource):
             download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
+            download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
         """
 
         """ CachedDataSource settings """
@@ -253,6 +267,8 @@ class HttpDataSource(CachedDataSource):
 
         if clear_requests_cache:
             self.clear_requests_cache()
+
+        self.download_request_backup = download_request_backup
 
         """ Call superclass constructor which will optionally load content """
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
@@ -283,53 +299,39 @@ class HttpDataSource(CachedDataSource):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
 
-    def get_backup_files(self, set_metadata=True):
+    def get_backup_files(self, download=False, get_metadata=False, set_metadata=False):
         """ Get a list of the files to backup/unpack
 
         Args:
-            set_metadata (:obj:`bool`): if :obj:`True`, set the metadata of the backup files
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+            get_metadata (:obj:`bool`, optional): if :obj:`True`, get the metadata of the backup files
+            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
 
         Returns:
             :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
         """
-        files = super(HttpDataSource, self).get_backup_files(set_metadata=set_metadata)
+        files = super(HttpDataSource, self).get_backup_files(download=download, get_metadata=get_metadata, set_metadata=set_metadata)
+        if download and not self.download_request_backup:
+            return files
 
-        requests_cache_basename_2 = self.name + '.requests.py2.sqlite'
-        requests_cache_basename_3 = self.name + '.requests.py3.sqlite'
-
-        requests_cache_filename_2 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_2)
-        requests_cache_filename_3 = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename_3)
-
-        if not set_metadata:
+        if get_metadata:
             tar_file = tarfile.open(self.filename + '.tar.gz', "r:gz")
 
-        file = backup.BackupFile(requests_cache_filename_2, requests_cache_basename_2)
-        if set_metadata and os.path.isfile(file.filename):
+        requests_cache_basename = self.name + '.requests.py{}.sqlite'.format(sys.version_info[0])
+        requests_cache_filename = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename)
+        file = backup.BackupFile(requests_cache_filename, requests_cache_basename)
+        if get_metadata:
+            try:
+                tar_file.getmember(file.arcname)
+            except KeyError:
+                pass
+        elif set_metadata and os.path.isfile(file.filename):
             file.set_created_modified_time()
             file.set_username_ip()
             file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-            files.append(file)
-        elif not set_metadata:
-            try:
-                tar_file.getmember(file.arcname)
-                files.append(file)
-            except KeyError:
-                pass
+        files.append(file)
 
-        file = backup.BackupFile(requests_cache_filename_3, requests_cache_basename_3)
-        if set_metadata and os.path.isfile(file.filename):
-            file.set_created_modified_time()
-            file.set_username_ip()
-            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-            files.append(file)
-        elif not set_metadata:
-            try:
-                tar_file.getmember(file.arcname)
-                files.append(file)
-            except KeyError:
-                pass
-
-        if not set_metadata:
+        if get_metadata:
             tar_file.close()
 
         return files
