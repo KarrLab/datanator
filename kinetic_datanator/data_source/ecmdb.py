@@ -28,29 +28,29 @@ Base = sqlalchemy.ext.declarative.declarative_base()
 
 compound_compartment = sqlalchemy.Table(
     'compound_compartment', Base.metadata,
-    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
-    sqlalchemy.Column('compartment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compartment._id')),
+    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
+    sqlalchemy.Column('compartment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compartment._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Compound:Compartment many-to-many association table
 
 compound_synonym = sqlalchemy.Table(
     'compound_synonym', Base.metadata,
-    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
-    sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id')),
+    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
+    sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Compound:Synonym many-to-many association table
 
 compound_resource = sqlalchemy.Table(
     'compound_resource', Base.metadata,
-    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id')),
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
+    sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
+    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Compound:Resource many-to-many association table
 
 concentration_resource = sqlalchemy.Table(
     'concentration_resource', Base.metadata,
-    sqlalchemy.Column('concentration__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('concentration._id')),
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id')),
+    sqlalchemy.Column('concentration__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('concentration._id'), index=True),
+    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Concentration:Resource many-to-many association table
 
@@ -99,7 +99,7 @@ class Concentration(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
-    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'))
+    compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
     value = sqlalchemy.Column(sqlalchemy.Float())
     error = sqlalchemy.Column(sqlalchemy.Float())
     strain = sqlalchemy.Column(sqlalchemy.String())
