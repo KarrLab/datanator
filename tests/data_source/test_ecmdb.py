@@ -21,7 +21,7 @@ class TestEcmdbFromRemote(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         src = ecmdb.Ecmdb(cache_dirname=cls.cache_dirname, download_backup=False, load_content=False, verbose=True, max_entries=12)
-        src.load_content()        
+        src.load_content()
         src.session.close()
         src.engine.dispose()
 

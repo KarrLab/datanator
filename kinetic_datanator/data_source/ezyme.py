@@ -58,7 +58,7 @@ class Ezyme(data_source.WebserviceDataSource):
 
         Note: The order of the compounds must be the same in the reactants and products list. If you have not manually
         ordered the reactants and products, we recommend that you use the :obj:`run` method which will
-        order the reactants and products lists according to their chemical similarity.        
+        order the reactants and products lists according to their chemical similarity.
 
         Args:
             reactants (:obj:`list` of :obj:`str`): list of structures of reactants in MOL format

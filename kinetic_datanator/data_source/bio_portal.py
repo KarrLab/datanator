@@ -63,7 +63,7 @@ class BioPortal(data_source.DataSource):
         """ Download an ontology from BioPortal
 
         Args:
-            id (:obj:`str`): identifier of the ontology in BioPortal        
+            id (:obj:`str`): identifier of the ontology in BioPortal
         """
         response = requests.get(self.BIOPORTAL_DOWNLOAD_ENDPOINT.format(id),
                                 headers={'Authorization': 'apikey token=' + self.get_api_key()})

@@ -26,7 +26,7 @@ class InputReader(object):
             filename (:obj:`str`): filename of Excel workbook
 
         Returns:
-            :obj:`tuple`: 
+            :obj:`tuple`:
 
                 * :obj:`data_model.Genetics`: genetics
                 * :obj:`list` of :obj:`data_model.Compartment`: list of compartments

@@ -1,4 +1,4 @@
-""" 
+"""
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-04-06
@@ -32,7 +32,7 @@ class Datanator(object):
             min_temp (:obj:`float`, optional): minimum observed temperature
             max_temp (:obj:`float`, optional): maximum observed temperature
             min_ph (:obj:`float`, optional): minimum observed pH
-            max_ph (:obj:`float`, optional): maximum observed pH        
+            max_ph (:obj:`float`, optional): maximum observed pH
         """
         self.max_taxon_dist = max_taxon_dist
         self.include_variants = include_variants
@@ -144,7 +144,7 @@ class Datanator(object):
         return results
 
     def save_data(self, model, data, filename):
-        """ Save 
+        """ Save
 
         Args:
             model

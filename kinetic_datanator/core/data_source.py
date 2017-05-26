@@ -26,7 +26,7 @@ CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'ca
 
 
 class DataSource(six.with_metaclass(abc.ABCMeta, object)):
-    """ Represents an external data source 
+    """ Represents an external data source
 
     Attributes:
         name (:obj:`str`): name
@@ -43,7 +43,7 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
 
 
 class CachedDataSource(DataSource):
-    """ Represents an external data source that is cached locally in a sqlite database 
+    """ Represents an external data source that is cached locally in a sqlite database
 
     Attributes:
         filename (:obj:`str`): path to sqlite copy of the data source
@@ -70,7 +70,7 @@ class CachedDataSource(DataSource):
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server            
+            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
         """
 
@@ -223,7 +223,7 @@ class CachedDataSource(DataSource):
 
 
 class HttpDataSource(CachedDataSource):
-    """ An external data source which can be obtained via a HTTP interface 
+    """ An external data source which can be obtained via a HTTP interface
 
     Attributes:
         requests_cache_filename (:obj:`str`): path to cache HTTP requests

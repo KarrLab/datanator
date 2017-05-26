@@ -32,8 +32,8 @@ class Consensus(obj_model.core.Model):
         observable (:obj:`Observable`): biological component that was estimated
         value (:obj:`float`): consensus value of the attribute of the model component
         error (:obj:`float`): uncertainty of the value of the attribute of the model component
-        units (:obj:`str`): units of the value of the attribute of the model component        
-        method (:obj:`ConsensusMethod`): method used to calculate the consensus value and error        
+        units (:obj:`str`): units of the value of the attribute of the model component
+        method (:obj:`ConsensusMethod`): method used to calculate the consensus value and error
         evidence (:obj:`list` of :obj:`Evidence`): list of evidence which the consensus
             value is based on
         user (:obj:`str`): user who generated the consensus
@@ -54,7 +54,7 @@ class Evidence(obj_model.core.Model):
 
     Attributes:
         value (:obj:`ObservedValue`): observed value
-        relevance (:obj:`float`): numeric score which indicates the relevance of the observed value to the 
+        relevance (:obj:`float`): numeric score which indicates the relevance of the observed value to the
             consensus
     """
     value = obj_model.core.ManyToOneAttribute('ObservedValue', related_name='evidence')
@@ -79,7 +79,7 @@ class ObservedValue(obj_model.core.Model):
     """ Represents an observed value of a biological system
 
     Attributes:
-        observation (:obj:`Observaton`): the collection of covariate observed values        
+        observation (:obj:`Observaton`): the collection of covariate observed values
         value (:obj:`float`): observed value
         error (:obj:`float`): uncertainty of the observed value
         units (:obj:`units`): SI units of the observed value
@@ -139,7 +139,7 @@ class Specie(EntityInteractionOrProperty):
 
         Args:
             only_formula_and_connectivity (:obj:`bool`): if :obj:`True`, return only the
-                formula and connectivity layers         
+                formula and connectivity layers
 
         Returns:
             :obj:`str`: structure in InChi format or just the formula and connectivity layers
@@ -262,7 +262,7 @@ class Reaction(Interaction):
         return list(filter(lambda p: p.coefficient == 0, self.participants))
 
     def get_ordered_participants(self, collapse_repeated=True):
-        """ Get an ordered list of the participants 
+        """ Get an ordered list of the participants
 
         Args:
             collapse_repeated (:obj:`bool`): if :obj:`True`, collapse any repeated participants
@@ -307,7 +307,7 @@ class Reaction(Interaction):
     def get_reactant_product_pairs(self):
         """ Get list of pairs of similar reactants and products
 
-        Note: This requires the modeler to have ordered the reactans and products by their similarity. The modeler is required to 
+        Note: This requires the modeler to have ordered the reactans and products by their similarity. The modeler is required to
         specify this pairing because it cannot easily be computed. In particular, we have tried to use Tanitomo similarity to
         predict reactant-product pairings, but this doesn't adequately capture reaction centers.
 

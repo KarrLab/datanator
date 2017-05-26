@@ -130,7 +130,7 @@ class ReactionParticipant(Base):
         coefficient (:obj:`float`): coefficient
         type (:obj:`str`): type
         reactant_kinetic_law (:obj:`KineticLaw`): kinetic law in which the participant appears as a reactant
-        product_kinetic_law (:obj:`KineticLaw`): kinetic law in which the participant appears as a product        
+        product_kinetic_law (:obj:`KineticLaw`): kinetic law in which the participant appears as a product
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -211,7 +211,7 @@ class KineticLaw(Entry):
         enzyme_type (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
         tissue (:obj:`str`): tissue
         mechanism (:obj:`str`): mechanism of enzymatic catalysis (e.g. Michaelis-Menten)
-        equation (:obj:`str`): equation        
+        equation (:obj:`str`): equation
         parameters (:obj:`list` of :obj:`Parameter`): list of parameters
         modifiers (:obj:`list` of :obj:`ReactionParticipant`): list of modifiers
         taxon (:obj:`str`): taxon
@@ -374,7 +374,7 @@ class SabioRk(data_source.HttpDataSource):
         ENDPOINT_KINETIC_LAWS_SEARCH (:obj:`str`): URL to obtain a list of the ids of all of the kinetic laws in SABIO-Rk
         ENDPOINT_WEBSERVICE (:obj:`str`): URL for the SABIO-RK webservice
         ENDPOINT_EXCEL_EXPORT (:obj:`str`): URL to download kinetic data as a table in TSV format
-        ENDPOINT_COMPOUNDS_PAGE (:obj:`str`): URL to download information about a SABIO-RK compound        
+        ENDPOINT_COMPOUNDS_PAGE (:obj:`str`): URL to download information about a SABIO-RK compound
         SKIP_KINETIC_LAW_IDS (:obj:`tuple` of :obj:`int`): IDs of kinetic laws that should be skipped (because they cannot contained
             errors and can't be downloaded from SABIO)
         PUBCHEM_MAX_TRIES (:obj:`int`): maximum number of times to time querying PubChem before failing

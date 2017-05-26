@@ -159,7 +159,7 @@ class Taxon(object):
         """ Calculate the number of links in the NCBI taxonomic tree between two taxa and their latest common ancestor
 
         Note: This distances depends on the granularity of the lineage of the taxon. For example, there are only 7 links
-        between most bacteria species and the Bacteria superkingdom. However, there are 28 links between the Homo sapiens 
+        between most bacteria species and the Bacteria superkingdom. However, there are 28 links between the Homo sapiens
         species and the Eukaryota superkingdom.
 
         Args:

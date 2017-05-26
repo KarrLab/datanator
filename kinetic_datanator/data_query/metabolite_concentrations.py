@@ -21,7 +21,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
         Args:
             taxon (:obj:`str`, optional): target taxon
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
-            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
+            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution.
                 This determines how quickly the score falls to zero away from zero.
             include_variants (:obj:`bool`, optional): if :obj:`True`, also include observations from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
