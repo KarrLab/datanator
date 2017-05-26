@@ -6,37 +6,36 @@
 :License: MIT
 """
 
-from . import io
-from . import sabio_rk
-from .core import data_structs
-from .data_source import ezyme
-from .util import reaction_util
+from kinetic_datanator import io
+from kinetic_datanator.core import data_model
+from kinetic_datanator.data_source import ezyme
+from kinetic_datanator.data_source import sabio_rk
 
 
 class Datanator(object):
     """
     Attributes:
         max_taxon_dist (:obj:`float`, optional): maximum taxonomic distance from the target taxon to its latest common ancestor with the observed taxon
-        include_mutants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
+        include_variants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
         min_temp (:obj:`float`, optional): minimum observed temperature
         max_temp (:obj:`float`, optional): maximum observed temperature
         min_ph (:obj:`float`, optional): minimum observed pH
         max_ph (:obj:`float`, optional): maximum observed pH
     """
 
-    def __init__(self, max_taxon_dist=None, include_mutants=False,
+    def __init__(self, max_taxon_dist=None, include_variants=False,
                  min_temp=None, max_temp=None, min_ph=None, max_ph=None):
         """
         Args:
             max_taxon_dist (:obj:`float`, optional): maximum taxonomic distance from the target taxon to its latest common ancestor with the observed taxon
-            include_mutants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
+            include_variants (:obj:`bool`, optional): if :obj:`True`, include observations from mutants
             min_temp (:obj:`float`, optional): minimum observed temperature
             max_temp (:obj:`float`, optional): maximum observed temperature
             min_ph (:obj:`float`, optional): minimum observed pH
             max_ph (:obj:`float`, optional): maximum observed pH        
         """
         self.max_taxon_dist = max_taxon_dist
-        self.include_mutants = include_mutants
+        self.include_variants = include_variants
         self.min_temp = min_temp
         self.max_temp = max_temp
         self.min_ph = min_ph
@@ -96,8 +95,8 @@ class Datanator(object):
         sabio_db = sabio_rk.SabioRkUtil()
         for mol in molecules:
             for sabio_compound in sabio_db.get_compounds_by_structure(mol.to_inchi()):
-                mol.cross_references.append(data_structs.CrossReference(source='sabio-id', id=sabio_compound.id))
-                mol.cross_references.append(data_structs.CrossReference(source='sabio-name', id=sabio_compound.name))
+                mol.cross_references.append(data_model.Resource(namespace='sabio-id', id=sabio_compound.id))
+                mol.cross_references.append(data_model.Resource(namespace='sabio-name', id=sabio_compound.name))
 
     def annotate_reactions(self, model):
         """ Annotate the reactions of a model
@@ -113,10 +112,10 @@ class Datanator(object):
             if not rxn.get_ec_number():
                 for result in ezyme.Ezyme.run(rxn):
                     rxn.cross_references.append(
-                        data_structs.CrossReference(source='ec-code',
-                                                    id=result.ec_number,
-                                                    relevance=result.score,
-                                                    assignment_method=data_structs.CrossReferenceAssignmentMethod.predicted))
+                        data_model.Resource(namespace='ec-code',
+                                            id=result.ec_number,
+                                            relevance=result.score,
+                                            assignment_method=data_model.ResourceAssignmentMethod.predicted))
 
     def get_data(self, model):
         """
@@ -140,8 +139,8 @@ class Datanator(object):
 
         results = []
         for rxn in reactions:
-            results.append(sabio_rk.Query(rxn, taxon, self.max_taxon_dist, self.include_mutants,
-                                                 self.min_temp, self.max_temp, self.min_ph, self.max_ph).run())
+            results.append(sabio_rk.Query(rxn, taxon, self.max_taxon_dist, self.include_variants,
+                                          self.min_temp, self.max_temp, self.min_ph, self.max_ph).run())
         return results
 
     def save_data(self, model, data, filename):
