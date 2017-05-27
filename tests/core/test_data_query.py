@@ -644,3 +644,83 @@ class TestFilterRunner(unittest.TestCase):
         # return_info=False
         ordered_observed_values = runner.run(None, ov, return_info=False)
         self.assertEqual(ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])
+
+
+class TestConsensusGenerator(unittest.TestCase):
+
+    def test_calc_average(self):
+        gen = data_query.ConsensusGenerator()
+
+        # mean
+        values = [1, 3]
+        weights = [1, 10]
+
+        value, error, method = gen.calc_average(values, weights=None, method='mean')
+        self.assertEqual(value, 2)
+        self.assertEqual(method, data_model.ConsensusMethod.mean)
+
+        value, error, method = gen.calc_average(values, weights=weights, method='mean')
+        self.assertEqual(value, (1. * 1. + 3. * 10.) / (1. + 10.))
+        self.assertEqual(method, data_model.ConsensusMethod.weighted_mean)
+
+        # median
+        values = [1, 3, 2]
+        weights = [1, 10, 9]
+
+        value, error, method = gen.calc_average(values, weights=None, method='median')
+        self.assertEqual(value, 2)
+        self.assertEqual(method, data_model.ConsensusMethod.median)
+
+        value, error, method = gen.calc_average(values, weights=weights, method='median')
+        self.assertEqual(value, 2.5)
+        self.assertEqual(method, data_model.ConsensusMethod.weighted_median)
+
+        # mode
+        values = [1, 1, 3, 2]
+        weights = [1, 3, 10, 5]
+
+        value, error, method = gen.calc_average(values, weights=None, method='mode')
+        self.assertEqual(value, 1)
+        self.assertEqual(method, data_model.ConsensusMethod.mode)
+
+        value, error, method = gen.calc_average(values, weights=weights, method='mode')
+        self.assertEqual(value, 3)
+        self.assertEqual(method, data_model.ConsensusMethod.weighted_mode)
+
+        # error
+        values = [1, 3]
+
+        value, error, method = gen.calc_average(values, weights=None, method='mean')
+        self.assertEqual(error, numpy.std(values))
+
+        value, error, method = gen.calc_average(values, weights=[1, 1], method='mean')
+        self.assertEqual(error, numpy.std(values))
+
+        value, error, method = gen.calc_average(values, weights=[2, 2], method='mean')
+        self.assertEqual(error, numpy.std(values))
+
+        # handling nan values
+        value, error, method = gen.calc_average([1, numpy.nan], weights=None, method='mean')
+        self.assertEqual(value, 1)
+        self.assertTrue(numpy.isnan(error))
+        self.assertEqual(method, data_model.ConsensusMethod.mean)
+
+        value, error, method = gen.calc_average([1, 2, numpy.nan], weights=None, method='mean')
+        self.assertEqual(value, 1.5)
+        self.assertEqual(error, numpy.std([1, 2]))
+        self.assertEqual(method, data_model.ConsensusMethod.mean)
+
+        value, error, method = gen.calc_average([numpy.nan, numpy.nan], weights=None, method='mean')
+        self.assertTrue(numpy.isnan(value))
+        self.assertTrue(numpy.isnan(error))
+        self.assertEqual(method, None)
+
+        value, error, method = gen.calc_average([1, 1, 2], weights=[1, 1, numpy.nan], method='mean')
+        self.assertEqual(value, numpy.mean([1, 1, 2]))
+        self.assertTrue(error, numpy.std([1, 1, 2]))
+        self.assertEqual(method, data_model.ConsensusMethod.mean)
+
+        value, error, method = gen.calc_average([1, 1, 2], weights=[1, numpy.nan, numpy.nan], method='mean')
+        self.assertEqual(value, numpy.mean([1, 1, 2]))
+        self.assertTrue(error, numpy.std([1, 1, 2]))
+        self.assertEqual(method, data_model.ConsensusMethod.mean)

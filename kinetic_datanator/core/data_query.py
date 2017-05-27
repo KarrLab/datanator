@@ -6,10 +6,12 @@
 :License: MIT
 """
 
+from datetime import datetime
 from kinetic_datanator.core import data_model
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 import abc
+import getpass
 import itertools
 import kinetic_datanator.core.data_source
 import Levenshtein
@@ -18,6 +20,7 @@ import numpy
 import pint
 import scipy.stats
 import six
+import wc_utils.util.stats
 import wc_utils.util.string
 
 unit_registry = pint.UnitRegistry()
@@ -28,8 +31,8 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
 
     1. Find observed values for the exact or similar model components
 
-    2. Filter out observed values from disimilar genetic and environmental conditions and 
-      rank the remaing observed values by their similarity to the desired genetic and environmental 
+    2. Filter out observed values from disimilar genetic and environmental conditions and
+      rank the remaing observed values by their similarity to the desired genetic and environmental
       conditions
 
       * Taxonomy
@@ -40,7 +43,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
     3. Calculate a statistical representation of the relevant observed values
 
     Attributes:
-        filters (:obj:`list` of :obj:`Filter`): list of filters        
+        filters (:obj:`list` of :obj:`Filter`): list of filters
     """
 
     def __init__(self,
@@ -51,7 +54,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         Args:
             taxon (:obj:`str`, optional): target taxon
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
-            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
+            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution.
                 This determines how quickly the score falls to zero away from zero.
             include_variants (:obj:`bool`, optional): if :obj:`True`, also include observed values from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
@@ -76,7 +79,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             filters.append(PhNormalFilter(ph, ph_std))
 
     def run(self, component):
-        """ 
+        """
 
         1. Find observed values for the exact or similar model components and genetic and environmental conditions
         2. Rank the results by their similarity to the model component and the genetic and environmental conditions
@@ -86,7 +89,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
 
         Returns:
-            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of 
+            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of
                 :obj:`component` and the observed values it was based on
         """
         obs = self.get_observed_values(component)
@@ -107,7 +110,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
 
     def filter_observed_values(self, component, observed_values):
         """ Filter out observed values from dissimilar genetic and environmental conditions and
-        order the remaining observed values by their similarity to specified genetic and 
+        order the remaining observed values by their similarity to specified genetic and
         environmental conditions.
 
         Args:
@@ -128,52 +131,10 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             filter_result (:obj:`FilterResult`): filter result
 
         Returns:
-            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of 
+            :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of
                 :obj:`component` and the observed values it was based on
         """
         # group observed values by their subcomponents, attributes
-        grouped_obs = {}
-        for obs, score in zip(filter_result.observed_values, filter_result.scores):
-            if obs.attribute not in grouped_obs:
-                grouped_obs[obs.attribute] = {}
-            if obs.subcomponent:
-                if obs.subcomponent not in grouped_obs[obs.attribute]:
-                    grouped_obs[obs.attribute][obs.subcomponent] = []
-                grouped_obs[obs.attribute][obs.subcomponent].append((obs, score))
-            else:
-                if '__default__' not in grouped_obs[obs.attribute]:
-                    grouped_obs[obs.attribute]['__default__'] = []
-                grouped_obs[obs.attribute]['__default__'].append((obs, score))
-
-        # calculate weighted mean
-        consensus = []
-        for attribute, attribute_obs in grouped_obs.items():
-            for subcomponent, subcomponent_obs in attribute_obs.items():
-                obs = []
-                scores = []
-                values = []
-                errors = []
-                for ob, score in subcomponent_obs:
-                    obs.append(data_model.Evidence(observation=ob, relevance=score))
-                    scores.append(score)
-
-                    value = ob.value * unit_registry(ob.units)
-                    error = ob.error * unit_registry(ob.units)
-                    values.append(value.to_base_units().magnitude)
-                    errors.append(error.to_base_units().magnitude)
-
-                value = numpy.average(values, weights=scores)
-                error = numpy.sqrt(numpy.average(numpy.power(errors, 2), weights=scores))
-
-                consensus.append(data_model.Consensus(
-                    component=component,
-                    attribute=attribute,
-                    value=value,
-                    error=error,
-                    units=units,
-                    method=data_model.ConsensusMethod.weighted_mean,
-                    evidence=obs))
-
         return consensus
 
 
@@ -190,10 +151,10 @@ class CachedDataSourceQueryGenerator(DataQueryGenerator):
                  ph=7.5, ph_std=0.3,
                  data_source=None):
         """
-        Args:            
+        Args:
             taxon (:obj:`str`, optional): target taxon
             max_taxon_dist (:obj:`int`, optional): maximum taxonomic distance to include
-            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution. 
+            taxon_dist_scale (:obj:`float`, optional): The scale of the taxonomic distance scoring distribution.
                 This determines how quickly the score falls to zero away from zero.
             include_variants (:obj:`bool`, optional): if :obj:`True`, also include observed values from mutant taxa
             temperature (:obj:`float`, optional): desired temperature to search for
@@ -240,8 +201,8 @@ class FilterRunner(object):
         3. Order the observed values by their mean score
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values            
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
             return_info (:obj:`bool`, optional): if `True`, also return the scores and indices of the ordered observed values in the input list
 
         Returns:
@@ -272,7 +233,7 @@ class FilterRunner(object):
         """ Score observed values against the filters
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
 
         Returns:
@@ -295,7 +256,7 @@ class FilterRunner(object):
             scores (:obj:`list` of :obj:`float`): list of scores
 
         Returns:
-            :obj:`tuple`: 
+            :obj:`tuple`:
 
                 * :obj:`list` of :obj:`data_model.ObservedValue`: list of acceptable observed values (observed values without scores = -1)
                 * :obj:`list` of :obj:`float`: list of scores of the acceptable observed values
@@ -316,7 +277,7 @@ class FilterRunner(object):
             i_observations (:obj:`list` of :obj:`int`, optional): list of indices within the original list of observed values
 
         Returns:
-            :obj:`tuple`: 
+            :obj:`tuple`:
 
                 * :obj:`list` of :obj:`data_model.ObservedValue`: ordered list of observed values
                 * :obj:`list` of :obj:`float`: list of scores of the ordered observed values
@@ -350,7 +311,7 @@ class FilterResult(object):
         """
         Args:
             observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
-            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)            
+            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
             observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
             all_observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
             all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
@@ -401,7 +362,7 @@ class Filter(object):
         """ Compare the observed biological component with the target component
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -410,12 +371,12 @@ class Filter(object):
         return self.get_attribute_of_observed_value(observed_value)
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -445,12 +406,12 @@ class OptionsFilter(Filter):
         self.options = options
 
     def score(self, target_component, observed_value):
-        """ Calculate a numeric score which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a numeric score which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -485,12 +446,12 @@ class RangeFilter(Filter):
         self.max = float(max)
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -531,7 +492,7 @@ class NormalFilter(Filter):
         normal distribution (mean, std).
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -568,7 +529,7 @@ class ExponentialFilter(Filter):
         distribution (center, scale).
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -597,11 +558,11 @@ class SpecieSimilarityFilter(Filter):
         self.min_similarity = min_similarity
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the sequence of the 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the sequence of the
         observed species match that of the target species.
 
         Args:
-            target_component (:obj:`data_model.Specie`): species to find data about 
+            target_component (:obj:`data_model.Specie`): species to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -628,7 +589,7 @@ class SpecieStructuralSimilarityFilter(SpecieSimilarityFilter):
         """ Compare the observed biological component with the target component
 
         Args:
-            target_component (:obj:`data_model.Specie`): species to find data about 
+            target_component (:obj:`data_model.Specie`): species to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -656,7 +617,7 @@ class SpecieSequenceSimilarityFilter(SpecieSimilarityFilter):
         """ Compare the observed biological component with the target component
 
         Args:
-            target_component (:obj:`data_model.Specie`): species to find data about 
+            target_component (:obj:`data_model.Specie`): species to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -679,16 +640,16 @@ class ReactionSimilarityFilter(Filter):
 
     Attributes:
         reaction (:obj:`data_model.Reaction`): reaction
-        min_ec_level (:obj:`int`): minimum EC level that must be common to the observed and target reaction 
-        scale (:obj:`float`): How to exponentially scale of the scores. This determines how quickly the score 
+        min_ec_level (:obj:`int`): minimum EC level that must be common to the observed and target reaction
+        scale (:obj:`float`): How to exponentially scale of the scores. This determines how quickly the score
             falls to zero.
     """
 
     def __init__(self, min_ec_level=3, scale=2./5.):
         """
         Args:
-            min_ec_level (:obj:`int`, optional): minimum EC level that must be common to the observed and target reaction 
-            scale (:obj:`float`, optional): How to exponentially scale of the scores. This determines how quickly the score 
+            min_ec_level (:obj:`int`, optional): minimum EC level that must be common to the observed and target reaction
+            scale (:obj:`float`, optional): How to exponentially scale of the scores. This determines how quickly the score
                 falls to zero.
         """
         super(ReactionSimilarityFilter, self).__init__(('observable', 'interaction'))
@@ -699,7 +660,7 @@ class ReactionSimilarityFilter(Filter):
         """ Compare the observed biological component with the target component
 
         Args:
-            target_component (:obj:`data_model.Reaction`): reaction to find data about 
+            target_component (:obj:`data_model.Reaction`): reaction to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -803,12 +764,12 @@ class ReactionSimilarityFilter(Filter):
         return 0
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -840,7 +801,7 @@ class ReactionParticipantFilter(Filter):
         """ Compare the observed biological component with the target component
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -886,12 +847,12 @@ class ReactionParticipantFilter(Filter):
         return max(target_specie.get_similarity(observed_specie) for target_specie in target_species)
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -915,7 +876,7 @@ class TaxonomicDistanceFilter(Filter):
     def __init__(self, taxon, max=None, scale=None):
         """
         Args:
-            taxon (:obj:`str`): name of the taxon to find data for            
+            taxon (:obj:`str`): name of the taxon to find data for
             max (:obj:`float`, optional): maximum distance to the latest common ancestor with the observed taxon
             scale (:obj:`float`, optional): The scale of the distribution. This determines how quickly the score falls to zero away from the center.
         """
@@ -954,12 +915,12 @@ class TaxonomicDistanceFilter(Filter):
         return target_taxon_obj.get_distance_to_common_ancestor(obsserved_taxon_obj)
 
     def score(self, target_component, observed_value):
-        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches 
-        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and 
+        """ Calculate a scaled numeric score betwen 0 and 1 which indicates how well the observed value matches
+        one or more criteria. Please see :obj:`FilterRunner` to see how these scores are used to filter and
         order observed values.
 
         Args:
-            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about 
+            target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
             observed_value (:obj:`data_model.ObservedValue`): experimentally or computationally observed value
 
         Returns:
@@ -1025,7 +986,180 @@ class PhNormalFilter(NormalFilter):
         """
         Args:
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
-            std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score 
+            std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score
                 falls to zero away from the mean.
         """
         super(PhNormalFilter, self).__init__(('observation', 'environment', 'ph', ), mean, std)
+
+
+class ConsensusGenerator(object):
+    """ """
+
+    def run(self, observed_values, method, weighted=True):
+        """
+
+        Args:
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+                observed values
+            method (:obj:`str`): `mean`, `median`, or `mode`; desired average
+                statistic
+            weighted (:obj:`bool`, optional): if :obj:`True`, calculate the weighted
+                average value
+
+        Returns:
+            :obj:`list` of :obj:`data_model.Consensus`: list of consensus values of
+                the observed properties
+
+        Raises:
+            :obj:`ValueError`: if :obj:`method` is not one of `mean`, `median`,
+                or `mode`
+        """
+        consensuses = []
+        for observable, evidence in self.group_observed_values_by_properties(observed_values):
+            norm_values, norm_errors, weights, units = self.normalize_observed_values(evidence)
+            value, error, method = self.calc_average(norm_values, weights=weights if weighted else None, method=method)
+            consensus.append(data_model.Consensus(
+                observable=observable,
+                value=value,
+                error=error,
+                units=units,
+                evidence=evidence,
+                method=method,
+                user=getpass.getuser(),
+                date=datetime.utcnow(),
+            ))
+
+        return consensuses
+
+    def group_observed_values_by_properties(self, observed_values):
+        """ Group observed values by their observed properties
+
+        Args:
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+                observed values
+
+        Returns:
+            :obj:`list` of :obj:`tuple` of (:obj:`str`, :obj:`list` of :obj:`data_model.ObservedValue`):
+                list of observed values, grouped by the observed property
+        """
+        grouped_obs = {}
+        for obs, score in zip(filter_result.observed_values, filter_result.scores):
+            if obs.attribute not in grouped_obs:
+                grouped_obs[obs.attribute] = {}
+            if obs.subcomponent:
+                if obs.subcomponent not in grouped_obs[obs.attribute]:
+                    grouped_obs[obs.attribute][obs.subcomponent] = []
+                grouped_obs[obs.attribute][obs.subcomponent].append((obs, score))
+            else:
+                if '__default__' not in grouped_obs[obs.attribute]:
+                    grouped_obs[obs.attribute]['__default__'] = []
+                grouped_obs[obs.attribute]['__default__'].append((obs, score))
+
+    def normalize_observed_values(self, observed_values):
+        """ Normalize one or more observed values to SI units
+
+        Args:
+            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+                observed values
+
+        Returns:
+            :obj:`tuple`:
+                * :obj:`list` of :obj:`float`: normalized observed values
+                * :obj:`list` of :obj:`float`: normalized errors of the observed values
+                * :obj:`list` of :obj:`float`: weights of the observed values
+                * :obj:`str`: units of the normalized observed values
+        """
+        norm_values = []
+        norm_errors = []
+        weights = []
+        units = ''
+        for ov in observed_values:
+            value = ob.value * unit_registry(ob.units)
+            error = ob.error * unit_registry(ob.units)
+            values.append(value.to_base_units().magnitude)
+            errors.append(error.to_base_units().magnitude)
+
+            weights.append(ov.relevance)
+
+    def calc_average(self, values, weights=None, method='mean'):
+        """ Calculate the weighted or unweighted average of one of more values
+
+        Args:
+            values (:obj:`list` of :obj:`float`): list of normalized values
+            weights (:obj:`list` of :obj:`float`, optional): weights of :obj:`values`
+            method (:obj:`str`, optional): `mean`, `median`, or `mode`; the desired average of
+                :obj:`values`
+
+        Returns:
+            :obj:`tuple` of :obj:`float`, :obj:`float`, :obj:`data_model.ConsensusMethod`:
+                tuple of the average value, its uncertainty, and the method used to calculate
+                the average value
+        """
+        # convert to numpy arrays
+        values = 1. * numpy.array(values)
+        if weights is not None:
+            weights = 1. * numpy.array(weights)
+
+        # ignore nan values
+        tfs = numpy.logical_not(numpy.isnan(values))
+        if not numpy.any(tfs):
+            return (float('nan'), float('nan'), None)
+        values = numpy.extract(tfs, values)
+        if weights is not None:
+            weights = numpy.extract(tfs, weights)
+
+        # ignore weights if any are nan
+        if weights is not None:
+            if not all(w is not None and not numpy.isnan(w) for w in weights):
+                weights = None
+
+        # calculate average statistic
+        if method == 'mean':
+            if weights is None:
+                value = numpy.average(values)
+            else:
+                value = numpy.average(values, weights=weights)
+
+            if weights is None:
+                method = data_model.ConsensusMethod.mean
+            else:
+                method = data_model.ConsensusMethod.weighted_mean
+
+        elif method == 'median':
+            if weights is None:
+                value = numpy.median(values)
+            else:
+                value = wc_utils.util.stats.weighted_median(values, weights)
+
+            if weights is None:
+                method = data_model.ConsensusMethod.median
+            else:
+                method = data_model.ConsensusMethod.weighted_median
+
+        elif method == 'mode':
+            if weights is None:
+                value = scipy.stats.mode(values).mode[0]
+            else:
+                value = wc_utils.util.stats.weighted_mode(values, weights)
+
+            if weights is None:
+                method = data_model.ConsensusMethod.mode
+            else:
+                method = data_model.ConsensusMethod.weighted_mode
+
+        else:
+            raise ValueError('Unsupported consensus method `{}`'.format(method))
+
+        # calculate error
+        # todo: is this the most informative error statistic?
+        if values.size == 1:
+            error = float('nan')
+        else:
+            if weights is None:
+                error = numpy.std(values)
+            else:
+                mean = numpy.average(values, weights=weights)
+                error = numpy.sqrt(numpy.sum(weights * numpy.power(values - mean, 2) / numpy.sum(weights)))
+
+        # return calculated statistic and error
+        return (float(value), float(error), method)
