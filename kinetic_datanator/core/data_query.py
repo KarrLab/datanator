@@ -17,13 +17,10 @@ import kinetic_datanator.core.data_source
 import Levenshtein
 import math
 import numpy
-import pint
 import scipy.stats
 import six
 import wc_utils.util.stats
 import wc_utils.util.string
-
-unit_registry = pint.UnitRegistry()
 
 
 class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):

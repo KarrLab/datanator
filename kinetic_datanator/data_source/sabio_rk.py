@@ -17,10 +17,12 @@ import datetime
 import libsbml
 import math
 import os
+import pint
 import pubchempy
 import re
 import requests
 import requests_cache
+import scipy.constants
 import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -155,8 +157,18 @@ class Parameter(Entry):
         kinetic_law (:obj:`KineticLaw`): kinetic law
         type (:obj:`int`): SBO term
         compound (:obj:`Compound`): compound
-        value (:obj:`float`): value
-        units (:obj:`str`): units
+        compartment (:obj:`Compartment`): compartment
+        value (:obj:`float`): normalized value
+        error (:obj:`float`): normalized error
+        units (:obj:`str`): normalized units
+        observed_name (:obj:`str`): name
+        observed_type (:obj:`int`): SBO term
+        observed_value (:obj:`float`): observed value
+        observed_error (:obj:`float`): observed error
+        observed_units (:obj:`str`): observed units
+
+        TYPES (:obj:`dict` of :obj:`int`: :obj:`str`): dictionary of SBO terms and their canonical string symbols
+        UNITS (:obj:`dict` of :obj:`int`: :obj:`str`): dictionary of SBO terms and their canonical units
     """
 
     TYPES = {
@@ -186,7 +198,7 @@ class Parameter(Entry):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 
     kinetic_law_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('kinetic_law._id'), index=True)
-    type = sqlalchemy.Column(sqlalchemy.Integer())
+    type = sqlalchemy.Column(sqlalchemy.Integer(), index=True)
     compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
     compound = sqlalchemy.orm.relationship(
         'Compound', uselist=False, backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compound_id])
@@ -194,7 +206,14 @@ class Parameter(Entry):
     compartment = sqlalchemy.orm.relationship('Compartment', uselist=False,
                                               backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compartment_id])
     value = sqlalchemy.Column(sqlalchemy.Float())
-    units = sqlalchemy.Column(sqlalchemy.String())
+    error = sqlalchemy.Column(sqlalchemy.Float())
+    units = sqlalchemy.Column(sqlalchemy.String(), index=True)
+
+    observed_name = sqlalchemy.Column(sqlalchemy.String())
+    observed_type = sqlalchemy.Column(sqlalchemy.Integer())
+    observed_value = sqlalchemy.Column(sqlalchemy.Float())
+    observed_error = sqlalchemy.Column(sqlalchemy.Float())
+    observed_units = sqlalchemy.Column(sqlalchemy.String())
 
     __tablename__ = 'parameter'
     __mapper_args__ = {'polymorphic_identity': 'parameter'}
@@ -367,7 +386,8 @@ class SabioRk(data_source.HttpDataSource):
     """ A local sqlite copy of the SABIO-RK database
 
     Attributes:
-        webservice_batch_size (:obj:`int`): default size of batches to download kinetic information from the SABIO webservice
+        webservice_batch_size (:obj:`int`): default size of batches to download kinetic information from the SABIO webservice. Note:
+            this should be set to one because SABIO exports units incorrectly when multiple kinetic laws are requested
         excel_batch_size (:obj:`int`): default size of batches to download kinetic information from the SABIO
             Excel download service
 
@@ -394,7 +414,7 @@ class SabioRk(data_source.HttpDataSource):
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
                  clear_requests_cache=False, download_request_backup=False,
-                 webservice_batch_size=250, excel_batch_size=100):
+                 webservice_batch_size=1, excel_batch_size=100):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -476,6 +496,30 @@ class SabioRk(data_source.HttpDataSource):
 
         ##################################
         ##################################
+        # fill in missing information from Excel export
+        new_ids = list(set(new_ids).intersection(set(l.id for l in self.session.query(KineticLaw).all())))
+        new_ids.sort()
+
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(new_ids)))
+
+        self.load_missing_kinetic_law_information_from_tsv(new_ids)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
+        if self.verbose:
+            print('Normalizing {} parameter values ...'.format(len(new_ids)))
+
+        self.normalize_kinetic_laws(new_ids)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
         # infer structures for compounds with no provided structure
         compounds = self.session.query(Compound).filter(~Compound.structures.any()).all()
 
@@ -548,11 +592,12 @@ class SabioRk(data_source.HttpDataSource):
         session = self.requests_session
 
         batch_size = self.webservice_batch_size
+
         for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
-            if self.verbose:
+            if self.verbose and (i_batch % max(1, 100. / batch_size) == 0):
                 print('  Downloading kinetic laws {}-{} of {} in SBML format'.format(
                     i_batch * batch_size + 1,
-                    min(len(ids), (i_batch + 1) * batch_size),
+                    min(len(ids), (i_batch + 1) * max(100, batch_size)),
                     len(ids)))
 
             batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
@@ -580,39 +625,6 @@ class SabioRk(data_source.HttpDataSource):
             not_loaded_ids.sort()
             warnings.warn('Several kinetic laws were not found:\n  {}'.format(
                 '\n  '.join([str(id) for id in not_loaded_ids])), data_source.DataSourceWarning)
-
-        # download information from custom Excel export
-        batch_size = self.excel_batch_size
-        for i_batch in range(int(math.ceil(float(len(loaded_ids)) / batch_size))):
-            if self.verbose:
-                print('  Downloading kinetic laws {}-{} of {} in Excel format'.format(
-                    i_batch * batch_size + 1,
-                    min(len(loaded_ids), (i_batch + 1) * batch_size),
-                    len(loaded_ids)))
-
-            batch_ids = loaded_ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(loaded_ids))]
-            response = session.get(self.ENDPOINT_EXCEL_EXPORT, params={
-                'entryIDs[]': batch_ids,
-                'fields[]': [
-                    'EntryID',
-                    'KineticMechanismType',
-                    'Tissue',
-                ],
-                'preview': False,
-                'format': 'tsv',
-                'distinctRows': 'false',
-            })
-            response.raise_for_status()
-            if not response.text:
-                cache = session.cache
-                key = cache.create_key(response.request)
-                cache.delete(key)
-                raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
-
-            self.update_kinetic_laws_from_tsv(response.text)
-
-            if self.commit_intermediate_results:
-                self.session.commit()
 
     def create_kinetic_laws_from_sbml(self, ids, sbml):
         """ Add kinetic laws defined in an SBML file to the local sqlite database
@@ -673,7 +685,9 @@ class SabioRk(data_source.HttpDataSource):
         kinetic_laws = []
         for i_reaction, id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
-            kinetic_laws.append(self.create_kinetic_law_from_sbml(id, reaction_sbml, specie_properties, functions, units))
+            kinetic_law = self.create_kinetic_law_from_sbml(
+                id, reaction_sbml, specie_properties, functions, units)
+            kinetic_laws.append(kinetic_law)
 
         return (kinetic_laws, species, compartments)
 
@@ -763,9 +777,11 @@ class SabioRk(data_source.HttpDataSource):
 
         # set properties
         specie.id = id
-        if specie.name is not None and specie.name != name:
+        if specie.name is None:
+            specie.name = name
+        elif specie.name != name:
             specie._is_name_ambiguous = True
-        specie.name = name
+
         specie.cross_references = self.create_cross_references_from_sbml(sbml)
 
         # updated
@@ -898,29 +914,34 @@ class SabioRk(data_source.HttpDataSource):
 
             match = re.match('^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
-                name = match.group(1)
+                observed_name = match.group(1)
                 compound, compartment = self.get_specie_reference_from_sbml(match.group(2))
             else:
-                name = param.getId()
+                observed_name = param.getId()
                 compound = None
                 compartment = None
+            observed_name = observed_name.replace('div', '/')
 
-            sbo_term = param.getSBOTerm()
+            observed_type = param.getSBOTerm()
 
-            if param.getUnits():
-                if param.getUnits() in units:
-                    param_units = units[param.getUnits()]
+            observed_units_id = param.getUnits()
+            if observed_units_id:
+                if observed_units_id in units:
+                    observed_units = units[observed_units_id]
                 else:
-                    param_units = param.getUnits()
+                    observed_units = observed_units_id
             else:
-                param_units = None
+                observed_units = None
+
+            observed_value = param.getValue()
+
             parameter = Parameter(
-                name=name.replace('div', '/'),
-                type=sbo_term,
                 compound=compound,
                 compartment=compartment,
-                value=param.getValue(),
-                units=param_units,
+                observed_name=observed_name,
+                observed_type=observed_type,
+                observed_value=observed_value,
+                observed_units=observed_units,
                 modified=datetime.datetime.utcnow(),
             )
             self.session.add(parameter)
@@ -970,7 +991,7 @@ class SabioRk(data_source.HttpDataSource):
                 .getChild('temperatureUnit') \
                 .getChild(0) \
                 .getCharacters()
-            if temperature_units != '°C':
+            if temperature_units not in ['°C', '��C']:
                 raise ValueError('Unsupported temperature units: {}'.format(temperature_units))
             kinetic_law.temperature = temperature
 
@@ -1001,6 +1022,99 @@ class SabioRk(data_source.HttpDataSource):
         kinetic_law.modified = datetime.datetime.utcnow()
 
         return kinetic_law
+
+    def normalize_kinetic_laws(self, ids):
+        """ Normalize parameter values
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+        """
+        for id in ids:
+            law = self.session.query(KineticLaw).filter_by(id=id).first()
+            for p in law.parameters:
+                p.name, p.type, p.value, p.error, p.units = self.normalize_parameter_value(
+                    p.observed_name, p.observed_type, p.observed_value, p.observed_error, p.observed_units)
+
+        if self.commit_intermediate_results:
+            self.session.commit()
+
+    def normalize_parameter_value(self, name, type, value, error, units):
+        """
+        Args:
+            name (:obj:`str`): parameter name
+            type (:obj:`int`) parameter type (SBO term id)
+            value (:obj:`float`): observed value
+            error (:obj:`float`): observed error
+            units (:obj:`str`): observed units
+
+        Returns:
+            :obj:`tuple` of :obj:`str`, :obj:`int`, :obj:`float`, :obj:`float`, :obj:`str`: normalized name and
+                its type (SBO term), value, error, and units
+
+        Raises:
+            :obj:`ValueError`: if :obj:`units` is not a supported unit of :obj:`type`
+        """
+
+        if type not in Parameter.TYPES:
+            return (None, None, None, None, None)
+
+        if value is None:
+            return (None, None, None, None, None)
+
+        type_name = Parameter.TYPES[type]
+
+        if type_name == 'k_cat':
+            if units is None:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['katal_base']:
+                return ('k_cat', 25, value * scipy.constants.Avogadro, scipy.constants.Avogadro * error if error else None, 's^(-1)')
+
+            if units in ['s^(-1)*g^(-1)', 'mol*s^(-1)*g^(-1)', 'M']:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_m':
+            if units is None:
+                return ('k_m', 27, value, error, 'M')
+
+            if units in ['M', 'mol']:
+                return ('k_m', 27, value, error, 'M')
+
+            if units in ['mg/ml', 'M^2']:
+                return (None, None, None, None, None)
+
+        elif type_name == 'v_max':
+            if units is None:
+                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+
+            if units in ['mol/s', 'katal_base']:
+                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+
+            if units in ['M*s^(-1)', 'katal*l^(-1)']:
+                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+
+            if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['mol*s^(-1)*g^(-1)', 'M*s^(-1)*g^(-1)', 'katal*g^(-1)', 'mol*s^(-1)*m^(-1)', 'M', 'g',
+                         'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml', 'l*g^(-1)*s^(-1)',
+                         'mol/(s*M)']:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_i':
+            if units is None:
+                return ('k_i', 261, value, error, 'M')
+
+            if units in ['M']:
+                return ('k_i', 261, value, error, 'M')
+
+            if units in ['mol/mol', 'M^2', 'g']:
+                return (None, None, None, None, None)
+
+        raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
 
     def create_cross_references_from_sbml(self, sbml):
         """ Add cross references to the local sqlite database for an SBML object
@@ -1087,7 +1201,50 @@ class SabioRk(data_source.HttpDataSource):
 
         return (specie, compartment)
 
-    def update_kinetic_laws_from_tsv(self, tsv):
+    def load_missing_kinetic_law_information_from_tsv(self, ids):
+        """ Update the properties of kinetic laws in the local sqlite database based on content downloaded
+        from SABIO in TSV format.
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+        """
+        session = self.requests_session
+
+        batch_size = self.excel_batch_size
+
+        for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
+            if self.verbose:
+                print('  Downloading kinetic laws {}-{} of {} in Excel format'.format(
+                    i_batch * batch_size + 1,
+                    min(len(ids), (i_batch + 1) * batch_size),
+                    len(ids)))
+
+            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            response = session.get(self.ENDPOINT_EXCEL_EXPORT, params={
+                'entryIDs[]': batch_ids,
+                'fields[]': [
+                    'EntryID',
+                    'KineticMechanismType',
+                    'Tissue',
+                    'Parameter',
+                ],
+                'preview': False,
+                'format': 'tsv',
+                'distinctRows': 'false',
+            })
+            response.raise_for_status()
+            if not response.text:
+                cache = session.cache
+                key = cache.create_key(response.request)
+                cache.delete(key)
+                raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
+
+            self.load_missing_kinetic_law_information_from_tsv_helper(response.text)
+
+            if self.commit_intermediate_results:
+                self.session.commit()
+
+    def load_missing_kinetic_law_information_from_tsv_helper(self, tsv):
         """ Update the properties of kinetic laws in the local sqlite database based on content downloaded
         from SABIO in TSV format.
 
@@ -1100,30 +1257,126 @@ class SabioRk(data_source.HttpDataSource):
         Raises:
             :obj:`ValueError`: if a kinetic law or compartment is not contained in the local sqlite database
         """
-        law_q = self.session.query(KineticLaw)
-
+        # group properties
         tsv = tsv.split('\n')
+        laws = {}
         for row in csv.DictReader(tsv, delimiter='\t'):
+            entry_id = row['EntryID']
+            if entry_id not in laws:
+                laws[entry_id] = {
+                    'KineticMechanismType': row['KineticMechanismType'],
+                    'Tissue': row['Tissue'],
+                    'Parameters': [],
+                }
+            laws[entry_id]['Parameters'].append({
+                'type': row['parameter.type'],
+                'associatedSpecies': row['parameter.associatedSpecies'],
+                'startValue': row['parameter.startValue'],
+                'endValue': row['parameter.endValue'],
+                'standardDeviation': row['parameter.standardDeviation'],
+                'unit': row['parameter.unit'],
+            })
+
+        # update properties
+        law_q = self.session.query(KineticLaw)
+        for entry_id, properties in laws.items():
             # get kinetic law
-            l = law_q.filter_by(id=int(float(row['EntryID'])))
-            if l.count() == 0:
-                raise ValueError('No Kinetic Law with id {}'.format(row['EntryID']))
-            l = l.first()
+            q = law_q.filter_by(id=int(float(entry_id)))
+            if q.count() == 0:
+                raise ValueError('No Kinetic Law with id {}'.format(entry_id))
+            law = q.first()
 
             # mechanism
-            if row['KineticMechanismType'] == 'unknown':
-                l.mechanism = None
+            if properties['KineticMechanismType'] == 'unknown':
+                law.mechanism = None
             else:
-                l.mechanism = row['KineticMechanismType']
+                law.mechanism = properties['KineticMechanismType']
 
             # tissue
-            if row['Tissue'] == '-':
-                l.tissue = None
+            if properties['Tissue'] == '-':
+                law.tissue = None
             else:
-                l.tissue = row['Tissue']
+                law.tissue = properties['Tissue']
+
+            # parameter
+            for param_properties in properties['Parameters']:
+                param = self.get_parameter_by_properties(law, param_properties)
+                if param is None:
+                    if param_properties['type'] != 'concentration':
+                        warnings.warn('Unable to find parameter `{}:{}` for law {}'.format(
+                            param_properties['type'], param_properties['associatedSpecies'], law.id))
+                    continue
+
+                if param_properties['startValue'] == '-':
+                    param.observed_value = None
+                else:
+                    param.observed_value = float(param_properties['startValue'])
+
+                if param_properties['standardDeviation'] and param_properties['standardDeviation'] != '-':
+                    param.observed_error = float(param_properties['standardDeviation'])
+                else:
+                    param.observed_error = None
+
+                if param_properties['unit'] == '-':
+                    param.observed_units = None
+                else:
+                    param.observed_units = param_properties['unit']
 
             # updated
-            l.modified = datetime.datetime.utcnow()
+            law.modified = datetime.datetime.utcnow()
+
+    def get_parameter_by_properties(self, kinetic_law, parameter_properties):
+        """ Get the parameter of :obj:`kinetic_law` whose attribute values are equal to that of :obj:`parameter_properties`
+
+        Args:
+            kinetic_law (:obj:`KineticLaw`): kinetic law to find parameter of
+            parameter_properties (:obj:`dict`): properties of parameter to find
+
+        Returns:
+            :obj:`Parameter`: parameter with attribute values equal to values of :obj:`parameter_properties`
+        """
+        if parameter_properties['type'] == 'concentration':
+            return None
+
+        # match observed name and compound
+        def func(parameter):
+            return parameter.observed_name == parameter_properties['type'] and \
+                ((parameter.compound is None and parameter_properties['associatedSpecies'] == '') or \
+                 (parameter.compound is not None and parameter.compound.name == parameter_properties['associatedSpecies']))
+        parameters = list(filter(func, kinetic_law.parameters))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match observed name
+        def func(parameter):
+            return parameter.observed_name == parameter_properties['type']
+        parameters = list(filter(func, kinetic_law.parameters))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match compound
+        def func(parameter):
+            return (parameter.compound is None and parameter_properties['associatedSpecies'] == '') or \
+                (parameter.compound is not None and parameter.compound.name == parameter_properties['associatedSpecies'])
+        parameters = list(filter(func, kinetic_law.parameters))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match value
+        def func(parameter):
+            if parameter_properties['startValue'] == '-':
+                start_value = None
+            else:
+                start_value = float(parameter_properties['startValue'])
+            return parameter.observed_value == start_value or \
+                ((parameter.observed_value is None or math.isnan(parameter.observed_value)) and
+                 (start_value is None or math.isnan(start_value)))
+        parameters = list(filter(func, kinetic_law.parameters))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # return :obj:`None` if there is no matching parameter
+        return None
 
     def load_compounds(self, compounds=None):
         """ Download information from SABIO-RK about all of the compounds stored in the local sqlite copy of SABIO-RK
