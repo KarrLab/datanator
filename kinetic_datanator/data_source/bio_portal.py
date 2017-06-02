@@ -6,6 +6,7 @@
 """
 
 from kinetic_datanator.core import data_source
+import json
 import kinetic_datanator.config.paths
 import os
 import pronto
@@ -20,11 +21,11 @@ class BioPortal(data_source.DataSource):
 
     Attributes:
         cache_dir (:obj:`str`): directory to store local copies of ontologies
-        BIOPORTAL_DOWNLOAD_ENDPOINT (:obj:`str`): URL pattern to download ontologies
+        BIOPORTAL_ENDPOINT (:obj:`str`): URL pattern to download ontologies
         DEFAULT_CACHE_DIR (:obj:`str`): default directory to store local copies of ontologies
     """
 
-    BIOPORTAL_DOWNLOAD_ENDPOINT = 'http://data.bioontology.org/ontologies/{}/download'
+    BIOPORTAL_ENDPOINT = 'http://data.bioontology.org'
     DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
 
     def __init__(self, cache_dir=DEFAULT_CACHE_DIR):
@@ -36,7 +37,45 @@ class BioPortal(data_source.DataSource):
             os.makedirs(cache_dir)
         self.cache_dir = cache_dir
 
-    def load_ontology(self, id):
+    def get_ontologies(self):
+        """ Get list of ontologies
+
+        Returns:
+            :obj:`list`: list of ontologies
+        """
+        filename = self.get_ontologies_filename()
+        if not os.path.isfile(filename):
+            self.download_ontologies()
+
+        with open(filename, 'r') as file:
+            return json.load(file)
+
+    def get_ontologies_filename(self):
+        """ Get the local filename to store a list of the ontologies
+
+        Returns:
+            :obj:`str`: filename
+        """
+        return os.path.join(self.cache_dir, 'bio_portal.ontologies.json')
+
+    def download_ontologies(self):
+        """
+        Args:
+            :obj:`list` of :obj:`str`: list of ontologies
+        """
+        response = requests.get(self.BIOPORTAL_ENDPOINT + '/ontologies',
+                                headers={'Authorization': 'apikey token=' + self.get_api_key()})
+        response.raise_for_status()
+
+        ontologies_all = response.json()
+        ontologies_lite = {}
+        for ontology in ontologies_all:
+            ontologies_lite[ontology['acronym']] = ontology['name']
+
+        with open(self.get_ontologies_filename(), 'w') as file:
+            json.dump(ontologies_lite, file)
+
+    def get_ontology(self, id):
         """ Load ontology and download the ontology from BioPortal if neccessary
 
         Args:
@@ -56,6 +95,9 @@ class BioPortal(data_source.DataSource):
 
         Args:
             id (:obj:`str`): identifier of the ontology in BioPortal
+
+        Returns:
+            :obj:`str`: filename
         """
         return os.path.join(self.cache_dir, id + '.obo')
 
@@ -65,7 +107,7 @@ class BioPortal(data_source.DataSource):
         Args:
             id (:obj:`str`): identifier of the ontology in BioPortal
         """
-        response = requests.get(self.BIOPORTAL_DOWNLOAD_ENDPOINT.format(id),
+        response = requests.get('{}/ontologies/{}/download'.format(self.BIOPORTAL_ENDPOINT, id),
                                 headers={'Authorization': 'apikey token=' + self.get_api_key()})
         response.raise_for_status()
         with open(self.get_ontology_filename(id), 'wb') as file:
