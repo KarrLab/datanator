@@ -15,6 +15,19 @@ from kinetic_datanator.core import data_source
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
 
+sample_characteristic = sqlalchemy.Table(
+    'sample_characteristic', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('characteristic_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('characteristic._id'), index=True),
+)
+# :obj:`sqlalchemy.Table`: Sample:Characteristic one-to-many association table
+
+sample_variable = sqlalchemy.Table(
+    'sample_variable', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('variable_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('variable._id')),
+)
+# :obj:`sqlalchemy.Table`: Sample:Variable one-to-many association table
 
 
 class Characteristic(Base):
@@ -27,10 +40,9 @@ class Characteristic(Base):
     sample_id = sqlalchemy.ForeignKey('sample._id')
     name = sqlalchemy.Column(sqlalchemy.String())
     value = sqlalchemy.Column(sqlalchemy.String())
-    characteristics = synonyms = sqlalchemy.orm.relationship('Characteristic', secondary=compound_synonym, backref=sqlalchemy.orm.backref('compounds'))
 
 
-    __tablename__ = 'characteristics'
+    __tablename__ = 'characteristic'
 
 class Variable(Base):
     """ Represents an expiremental variable
@@ -44,7 +56,7 @@ class Variable(Base):
     value = sqlalchemy.Column(sqlalchemy.String())
 
 
-    __tablename__ = 'variables'
+    __tablename__ = 'variable'
 
 
 class Sample(Base):
@@ -56,7 +68,10 @@ class Sample(Base):
 
     assay_name = sqlalchemy.Column(sqlalchemy.String())
 
-    __tablename__ = 'concentration'
+    characteristics = sqlalchemy.orm.relationship('Characteristic', secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
+    variable = sqlalchemy.orm.relationship('Variable', secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
+
+    __tablename__ = 'samples'
 
 
 
