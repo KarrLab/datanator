@@ -10,6 +10,7 @@ import json
 import kinetic_datanator.config.paths
 import os
 import pronto
+import re
 import requests
 import wc_utils.config.core
 
@@ -26,6 +27,7 @@ class BioPortal(data_source.DataSource):
     """
 
     BIOPORTAL_ENDPOINT = 'http://data.bioontology.org'
+    CCO_DOWNLOAD_URL = 'http://www.bio.ntnu.no/ontology/CCO/cco.obo'
     DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
 
     def __init__(self, cache_dir=DEFAULT_CACHE_DIR):
@@ -85,8 +87,14 @@ class BioPortal(data_source.DataSource):
             :obj:`pronto.Ontology`: ontology
         """
         filename = self.get_ontology_filename(id)
-        if not os.path.isfile(filename):
+        if not os.path.isfile(filename + '.obo') and not os.path.isfile(filename + '.owl'):
             self.download_ontology(id)
+
+        if os.path.isfile(filename + '.obo'):
+            filename += '.obo'
+        elif os.path.isfile(filename + '.owl'):
+            filename += '.owl'
+
         ontology = pronto.Ontology(filename)
         return ontology
 
@@ -99,7 +107,7 @@ class BioPortal(data_source.DataSource):
         Returns:
             :obj:`str`: filename
         """
-        return os.path.join(self.cache_dir, id + '.obo')
+        return os.path.join(self.cache_dir, id)
 
     def download_ontology(self, id):
         """ Download an ontology from BioPortal
@@ -107,10 +115,17 @@ class BioPortal(data_source.DataSource):
         Args:
             id (:obj:`str`): identifier of the ontology in BioPortal
         """
-        response = requests.get('{}/ontologies/{}/download'.format(self.BIOPORTAL_ENDPOINT, id),
-                                headers={'Authorization': 'apikey token=' + self.get_api_key()})
-        response.raise_for_status()
-        with open(self.get_ontology_filename(id), 'wb') as file:
+        if id == 'CCO':
+            response = requests.get(self.CCO_DOWNLOAD_URL)  # the BioPortal download link doesn't work
+            response.raise_for_status()
+            extension = 'obo'
+        else:
+            response = requests.get('{}/ontologies/{}/download'.format(self.BIOPORTAL_ENDPOINT, id),
+                                    headers={'Authorization': 'apikey token=' + self.get_api_key()})
+            response.raise_for_status()
+            extension = re.findall('filename=".*?\.(.*?)"', response.headers['Content-Disposition'])[0]
+        filename = self.get_ontology_filename(id) + '.' + extension
+        with open(filename, 'wb') as file:
             file.write(response.content)
 
     def get_api_key(self):

@@ -38,7 +38,7 @@ class TestBioPortal(unittest.TestCase):
 
     def test_get_ontology_filename(self):
         bp = bio_portal.BioPortal(cache_dir=self.cache_dir)
-        self.assertEqual(bp.get_ontology_filename('SBO'), os.path.join(self.cache_dir, 'SBO.obo'))
+        self.assertEqual(bp.get_ontology_filename('SBO'), os.path.join(self.cache_dir, 'SBO'))
 
     def test_download_ontology(self):
         bp = bio_portal.BioPortal(cache_dir=self.cache_dir)
