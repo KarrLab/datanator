@@ -9,6 +9,7 @@
 from kinetic_datanator.data_source import bio_portal
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -44,9 +45,11 @@ class TestBioPortal(unittest.TestCase):
         bp = bio_portal.BioPortal(cache_dir=self.cache_dir)
         bp.download_ontology('SBO')
         self.assertTrue(os.path.isfile(os.path.join(self.cache_dir, 'SBO.obo')))
+        self.assertTrue(os.path.isfile(os.path.join(self.cache_dir, 'SBO.py{}.pkl'.format(sys.version_info[0]))))
 
     def test_get_ontology(self):
         bp = bio_portal.BioPortal(cache_dir=self.cache_dir)
         onto = bp.get_ontology('SBO')
         self.assertTrue(os.path.isfile(os.path.join(self.cache_dir, 'SBO.obo')))
+        self.assertTrue(os.path.isfile(os.path.join(self.cache_dir, 'SBO.py{}.pkl'.format(sys.version_info[0]))))
         self.assertEqual(onto['SBO:0000001'].name, 'rate law')

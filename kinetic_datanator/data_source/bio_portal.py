@@ -9,9 +9,11 @@ from kinetic_datanator.core import data_source
 import json
 import kinetic_datanator.config.paths
 import os
+import pickle
 import pronto
 import re
 import requests
+import sys
 import wc_utils.config.core
 
 config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
@@ -86,17 +88,12 @@ class BioPortal(data_source.DataSource):
         Returns:
             :obj:`pronto.Ontology`: ontology
         """
-        filename = self.get_ontology_filename(id)
-        if not os.path.isfile(filename + '.obo') and not os.path.isfile(filename + '.owl'):
+        filename = self.get_ontology_filename(id) + '.py' + str(sys.version_info[0]) + '.pkl'
+        if not os.path.isfile(filename):
             self.download_ontology(id)
 
-        if os.path.isfile(filename + '.obo'):
-            filename += '.obo'
-        elif os.path.isfile(filename + '.owl'):
-            filename += '.owl'
-
-        ontology = pronto.Ontology(filename)
-        return ontology
+        with open(filename, 'rb') as file:
+            return pickle.load(file)
 
     def get_ontology_filename(self, id):
         """ Get the local filename to store a copy of an ontology
@@ -115,18 +112,33 @@ class BioPortal(data_source.DataSource):
         Args:
             id (:obj:`str`): identifier of the ontology in BioPortal
         """
-        if id == 'CCO':
-            response = requests.get(self.CCO_DOWNLOAD_URL)  # the BioPortal download link doesn't work
-            response.raise_for_status()
-            extension = 'obo'
+        base_filename = self.get_ontology_filename(id)
+        # download file
+        if os.path.isfile(base_filename + '.obo'):
+            filename_onto = base_filename + '.obo'
+        elif os.path.isfile(base_filename + '.owl'):
+            filename_onto = base_filename + '.owl'
         else:
-            response = requests.get('{}/ontologies/{}/download'.format(self.BIOPORTAL_ENDPOINT, id),
-                                    headers={'Authorization': 'apikey token=' + self.get_api_key()})
-            response.raise_for_status()
-            extension = re.findall('filename=".*?\.(.*?)"', response.headers['Content-Disposition'])[0]
-        filename = self.get_ontology_filename(id) + '.' + extension
-        with open(filename, 'wb') as file:
-            file.write(response.content)
+            if id == 'CCO':
+                response = requests.get(self.CCO_DOWNLOAD_URL)  # the BioPortal download link doesn't work
+                response.raise_for_status()
+                extension = 'obo'
+            else:
+                response = requests.get('{}/ontologies/{}/download'.format(self.BIOPORTAL_ENDPOINT, id),
+                                        headers={'Authorization': 'apikey token=' + self.get_api_key()})
+                response.raise_for_status()
+                extension = re.findall('filename=".*?\.(.*?)"', response.headers['Content-Disposition'])[0]
+
+            filename_onto = base_filename + '.' + extension
+            with open(filename_onto, 'wb') as file:
+                file.write(response.content)
+
+        # parse and pickle result
+        filename_pkl = base_filename + '.py' + str(sys.version_info[0]) + '.pkl'
+        if not os.path.isfile(filename_pkl):
+            ontology = pronto.Ontology(filename_onto)
+            with open(filename_pkl, 'wb') as file:
+                pickle.dump(ontology, file)
 
     def get_api_key(self):
         """ Get BioPortal API key
