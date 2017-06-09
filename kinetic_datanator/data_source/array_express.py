@@ -30,6 +30,7 @@ sample_variable = sqlalchemy.Table(
 # :obj:`sqlalchemy.Table`: Sample:Variable many-to-many association table
 
 
+
 class Characteristic(Base):
     """ Represents an expiremental characteristic
     Attributes:
@@ -60,6 +61,7 @@ class Variable(Base):
     sqlalchemy.schema.UniqueConstraint(name, value)
 
     __tablename__ = 'variable'
+
 
 
 class Sample(Base):
@@ -95,6 +97,26 @@ class Experiment(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     id = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+    
+    organism = sqlalchemy.Column(sqlalchemy.String())
+    name = sqlalchemy.Column(sqlalchemy.String())
+    description = sqlalchemy.Column(sqlalchemy.String())
+    experiment_type = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_1 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_2 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_3 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_4 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_5 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_6 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_7 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_8 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_9 = sqlalchemy.Column(sqlalchemy.String())
+    experiment_design_10 = sqlalchemy.Column(sqlalchemy.String())
+    
+
+    #ax_accession = sqlalchemy.Column(sqlalchemy.String())
+    #samples = sqlalchemy.orm.relationship('Sample',
+     #                                             secondary=experiment_sample, backref=sqlalchemy.orm.backref('experiment'))
 
     __tablename__ = 'experiment'
 
@@ -109,20 +131,17 @@ class ArrayExpress(data_source.HttpDataSource):
     base_model = Base
     ENDPOINT_DOMAIN = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments'
     DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAIN + '/{}/samples'
+    DOWNLOAD_COMPLETE_SAMPLE_URL = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/samples'
 
-    def load_content(self):
+
+    def load_samples(self, list_experiments):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """
         db_session = self.session
         req_session = self.requests_session
 
-        list_experiments = ['E-MTAB-5775']
-
         xml_parser = jxmlease.Parser()
         for i_entry, entry in enumerate(list_experiments):
 
-            sample = Sample()
-
-            print self.DOWNLOAD_SAMPLE_URL.format(entry)
             response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(entry))
             try:
                 response.raise_for_status()
@@ -130,16 +149,69 @@ class ArrayExpress(data_source.HttpDataSource):
                 warnings.warn('Unable to download data for compound {}'.format(entry), data_source.DataSourceWarning)
                 continue
 
-            entry_details = xml_parser(response.text)  # ['compound']
-            print entry_details['experiment']['sample'][0]
-            for thing in entry_details['experiment']['sample'][0]:
-                print thing
+            entry_details = xml_parser(response.text)
 
-            print entry_details['experiment']['sample'][0]['assay']['name']
-            sample.assay_name = entry_details['experiment']['sample'][0]['assay']['name']
+            #create a sample object for each sample in the experiment 
+            for num, entry in enumerate(entry_details['experiment']['sample']):
+                sample = Sample()
+                experiment = Experiment()
+                sample.assay_name = entry_details['experiment']['sample'][num]['source']['name']
 
-            # for thing in entry_details['experiment']['sample']:
-            #   print thing
+                #create a characteristic object for each characteristic and append that to the sample's characteristic field
+                characteristics = entry_details['experiment']['sample'][num]['characteristic']
+                for entry in characteristics:
+                    new_charachteristic = Characteristic()
+                    new_charachteristic.name = entry['category']
+                    new_charachteristic.value = entry['value']
+                    sample.characteristics.append(new_charachteristic)
+
+                #create a variable object for each variable and append that to the sample's variable field
+                variables = entry_details['experiment']['sample'][num]['variable']
+                if isinstance(variables, list):
+                    for entry in variables:
+                        new_variable = Variable()
+                        new_variable.name = entry['name']
+                        new_variable.value = entry['value']
+                        sample.variables.append(new_variable)
+                else:
+                    new_variable = Variable()
+                    new_variable.name = variables['name']
+                    new_variable.value = entry['value']
+                    sample.variables.append(new_variable)
+
+                print sample.__dict__
+
+
+    def load_experiments(self):
+        db_session = self.session
+        req_session = self.requests_session
+
+        xml_parser = jxmlease.Parser()
+        response = req_session.get("https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments")
+        entry_details = xml_parser(response.text)
+
+
+        for single_entry in entry_details['experiments']['experiment']:
+            experiment = Experiment()
+            experiment.id = single_entry['accession']
+            experiment.name = single_entry['name']
+            experiment.experiment_type = single_entry['experimenttype']
+            try:
+                if isinstance(single_entry['experimentdesign'], list):
+                    for num, entry in enumerate(single_entry['experimentdesign']):
+                        experiment.__dict__["experiment_design_{}".format(num+1)] = entry
+                else:
+                    experiment.experiment_design_1 = single_entry['experimentdesign']
+            except:
+                pass
+            print experiment.__dict__
+
+
+    def load_content(self):
+        self.load_experiments
+        list_experiments = ['E-MTAB-5775']
+        self.load_samples(list_experiments)
+
 
 
 if __name__ == '__main__':
