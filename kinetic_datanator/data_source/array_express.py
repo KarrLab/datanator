@@ -30,7 +30,6 @@ sample_variable = sqlalchemy.Table(
 # :obj:`sqlalchemy.Table`: Sample:Variable many-to-many association table
 
 
-
 class Characteristic(Base):
     """ Represents an expiremental characteristic
     Attributes:
@@ -61,7 +60,6 @@ class Variable(Base):
     sqlalchemy.schema.UniqueConstraint(name, value)
 
     __tablename__ = 'variable'
-
 
 
 class Sample(Base):
@@ -97,28 +95,26 @@ class Experiment(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     id = sqlalchemy.Column(sqlalchemy.String(), unique=True)
-    
+
     organism = sqlalchemy.Column(sqlalchemy.String())
     name = sqlalchemy.Column(sqlalchemy.String())
     description = sqlalchemy.Column(sqlalchemy.String())
     experiment_type = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_1 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_2 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_3 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_4 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_5 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_6 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_7 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_8 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_9 = sqlalchemy.Column(sqlalchemy.String())
-    experiment_design_10 = sqlalchemy.Column(sqlalchemy.String())
-    
-
     #ax_accession = sqlalchemy.Column(sqlalchemy.String())
-    #samples = sqlalchemy.orm.relationship('Sample',
-     #                                             secondary=experiment_sample, backref=sqlalchemy.orm.backref('experiment'))
+    # samples = sqlalchemy.orm.relationship('Sample',
+    #                                             secondary=experiment_sample, backref=sqlalchemy.orm.backref('experiment'))
 
     __tablename__ = 'experiment'
+
+
+class ExperimentDesign(Base):
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('Experiment._id'))
+    experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref(
+        'experiment_designs'), foreign_keys=[experiment_id])
+    name = sqlalchemy.Column(sqlalchemy.String())
+
+    __tablename__ = 'experiment_design'
 
 
 class ArrayExpress(data_source.HttpDataSource):
@@ -133,31 +129,24 @@ class ArrayExpress(data_source.HttpDataSource):
     DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAIN + '/{}/samples'
     DOWNLOAD_COMPLETE_SAMPLE_URL = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/samples'
 
-
-    def load_samples(self, list_experiments):
+    def load_samples(self, experiments):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """
-        db_session = self.session
         req_session = self.requests_session
 
         xml_parser = jxmlease.Parser()
-        for i_entry, entry in enumerate(list_experiments):
+        for experiment in experiments:
 
-            response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(entry))
-            try:
-                response.raise_for_status()
-            except requests.exceptions.HTTPError:
-                warnings.warn('Unable to download data for compound {}'.format(entry), data_source.DataSourceWarning)
-                continue
-
+            response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(experiment.id))
+            response.raise_for_status()
             entry_details = xml_parser(response.text)
 
-            #create a sample object for each sample in the experiment 
+            # create a sample object for each sample in the experiment
             for num, entry in enumerate(entry_details['experiment']['sample']):
                 sample = Sample()
-                experiment = Experiment()
+                sample.experiment = experiment
                 sample.assay_name = entry_details['experiment']['sample'][num]['source']['name']
 
-                #create a characteristic object for each characteristic and append that to the sample's characteristic field
+                # create a characteristic object for each characteristic and append that to the sample's characteristic field
                 characteristics = entry_details['experiment']['sample'][num]['characteristic']
                 for entry in characteristics:
                     new_charachteristic = Characteristic()
@@ -165,7 +154,7 @@ class ArrayExpress(data_source.HttpDataSource):
                     new_charachteristic.value = entry['value']
                     sample.characteristics.append(new_charachteristic)
 
-                #create a variable object for each variable and append that to the sample's variable field
+                # create a variable object for each variable and append that to the sample's variable field
                 variables = entry_details['experiment']['sample'][num]['variable']
                 if isinstance(variables, list):
                     for entry in variables:
@@ -179,41 +168,44 @@ class ArrayExpress(data_source.HttpDataSource):
                     new_variable.value = entry['value']
                     sample.variables.append(new_variable)
 
-                print sample.__dict__
-
-
-    def load_experiments(self):
+    def load_experiments(self, experiment_ids=None):
         db_session = self.session
         req_session = self.requests_session
 
+        if experiment_ids is None:
+            url = self.ENDPOINT_DOMAIN
+        else:
+            url = self.ENDPOINT_DOMAIN + '/' + ','.join([str(id) for id in experiment_ids])
+        response = req_session.get(url)
+        response.raise_for_status()
         xml_parser = jxmlease.Parser()
-        response = req_session.get("https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments")
         entry_details = xml_parser(response.text)
-
 
         for single_entry in entry_details['experiments']['experiment']:
             experiment = Experiment()
             experiment.id = single_entry['accession']
             experiment.name = single_entry['name']
             experiment.experiment_type = single_entry['experimenttype']
-            try:
+            if 'experimentdesign' in single_entry:
                 if isinstance(single_entry['experimentdesign'], list):
-                    for num, entry in enumerate(single_entry['experimentdesign']):
-                        experiment.__dict__["experiment_design_{}".format(num+1)] = entry
+                    entries = single_entry['experimentdesign']
                 else:
-                    experiment.experiment_design_1 = single_entry['experimentdesign']
-            except:
-                pass
-            print experiment.__dict__
+                    entries = [single_entry['experimentdesign']]
 
+                for entry in single_entry['experimentdesign']:
+                    experiment.experiment_designs.append(ExperimentDesign(name=entry))
+
+            db_session.add(experiment)
 
     def load_content(self):
-        self.load_experiments
-        list_experiments = ['E-MTAB-5775']
-        self.load_samples(list_experiments)
+        db_session = self.session
 
+        # retrieve list of all experiments
+        self.load_experiments()
 
+        # retrieve the samples for all of the experiments
+        experiments = db_session.query(Experiment.id).all()
+        self.load_samples(experiments)
 
-if __name__ == '__main__':
-    blue = ArrayExpress()
-    blue.load_content()
+        # save the changes to the database file
+        session.commit()
