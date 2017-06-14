@@ -30,6 +30,10 @@ import sqlalchemy.orm
 import sys
 import time
 import warnings
+import wc_utils.util.list
+import wc_utils.workbook.core
+import wc_utils.workbook.io
+
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -497,13 +501,13 @@ class SabioRk(data_source.HttpDataSource):
         ##################################
         ##################################
         # fill in missing information from Excel export
-        new_ids = list(set(new_ids).intersection(set(l.id for l in self.session.query(KineticLaw).all())))
-        new_ids.sort()
+        loaded_new_ids = list(set(new_ids).intersection(set(l.id for l in self.session.query(KineticLaw).all())))
+        loaded_new_ids.sort()
 
         if self.verbose:
-            print('Updating {} kinetic laws ...'.format(len(new_ids)))
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_kinetic_law_information_from_tsv(new_ids)
+        self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
 
         if self.verbose:
             print('  done')
@@ -511,9 +515,9 @@ class SabioRk(data_source.HttpDataSource):
         ##################################
         ##################################
         if self.verbose:
-            print('Normalizing {} parameter values ...'.format(len(new_ids)))
+            print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
 
-        self.normalize_kinetic_laws(new_ids)
+        self.normalize_kinetic_laws(loaded_new_ids)
 
         if self.verbose:
             print('  done')
@@ -552,6 +556,9 @@ class SabioRk(data_source.HttpDataSource):
 
         # commit changes
         self.session.commit()
+
+        # calculate statistics
+        self.export_stats(self.calc_stats())
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -597,7 +604,7 @@ class SabioRk(data_source.HttpDataSource):
             if self.verbose and (i_batch % max(1, 100. / batch_size) == 0):
                 print('  Downloading kinetic laws {}-{} of {} in SBML format'.format(
                     i_batch * batch_size + 1,
-                    min(len(ids), (i_batch + 1) * max(100, batch_size)),
+                    min(len(ids), i_batch * batch_size + max(100, batch_size)),
                     len(ids)))
 
             batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
@@ -1029,8 +1036,9 @@ class SabioRk(data_source.HttpDataSource):
         Args:
             ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
         """
-        for id in ids:
-            law = self.session.query(KineticLaw).filter_by(id=id).first()
+        for i_law, law in enumerate(self.session.query(KineticLaw).filter(KineticLaw.id.in_(ids)).all()):
+            if self.verbose and (i_law % 100 == 0):
+                print('  Normalizing kinetic law {} of {}'.format(i_law + 1, len(ids)))
             for p in law.parameters:
                 p.name, p.type, p.value, p.error, p.units = self.normalize_parameter_value(
                     p.observed_name, p.observed_type, p.observed_value, p.observed_error, p.observed_units)
@@ -1064,54 +1072,69 @@ class SabioRk(data_source.HttpDataSource):
         type_name = Parameter.TYPES[type]
 
         if type_name == 'k_cat':
-            if units is None:
-                return ('k_cat', 25, value, error, 's^(-1)')
-
             if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)']:
                 return ('k_cat', 25, value, error, 's^(-1)')
 
-            if units in ['katal_base']:
+            if units in ['katal', 'katal_base']:
                 return ('k_cat', 25, value * scipy.constants.Avogadro, scipy.constants.Avogadro * error if error else None, 's^(-1)')
+
+            if units in ['M^(-1)*s^(-1)']:
+                # off by mol^(2) * liter^(-1)
+                return (None, None, None, None, None)
 
             if units in ['s^(-1)*g^(-1)', 'mol*s^(-1)*g^(-1)', 'M']:
                 return (None, None, None, None, None)
 
-        elif type_name == 'k_m':
             if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_m':
+            if units in ['M']:
                 return ('k_m', 27, value, error, 'M')
 
-            if units in ['M', 'mol']:
-                return ('k_m', 27, value, error, 'M')
+            if units in ['mol']:
+                # off by liter^(-1)
+                return (None, None, None, None, None)
 
-            if units in ['mg/ml', 'M^2']:
+            if units in ['mg/ml', 'M^2', 'mol/mol', 'katal*g^(-1)', 's^(-1)', 'mol*s^(-1)*g^(-1)', 'l*g^(-1)*s^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
                 return (None, None, None, None, None)
 
         elif type_name == 'v_max':
-            if units is None:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
-
-            if units in ['mol/s', 'katal_base']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
-
-            if units in ['M*s^(-1)', 'katal*l^(-1)']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+            if units in ['mol*s^(-1)*g^(-1)', 'katal*g^(-1)']:
+                return ('v_max', 186, value, error, 'mol*s^(-1)*g^(-1)')
 
             if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
                 return ('k_cat', 25, value, error, 's^(-1)')
 
-            if units in ['mol*s^(-1)*g^(-1)', 'M*s^(-1)*g^(-1)', 'katal*g^(-1)', 'mol*s^(-1)*m^(-1)', 'M', 'g',
-                         'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml', 'l*g^(-1)*s^(-1)',
-                         'mol/(s*M)']:
+            if units in ['mol/s', 'katal', 'katal_base']:
+                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+
+            if units in ['M*s^(-1)*g^(-1)']:
+                # has incorrect dimensionality from v_max by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['M*s^(-1)', 'katal*l^(-1)']:
+                # has incorrect dimensionality from k_cat by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['mol*s^(-1)*m^(-1)', 'M', 'g', 'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml',
+                         'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
                 return (None, None, None, None, None)
 
         elif type_name == 'k_i':
-            if units is None:
-                return ('k_i', 261, value, error, 'M')
-
             if units in ['M']:
                 return ('k_i', 261, value, error, 'M')
 
-            if units in ['mol/mol', 'M^2', 'g']:
+            if units in ['mol/mol', 'M^2', 'g', 'M^(-1)*s^(-1)', 'mol*s^(-1)*g^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
                 return (None, None, None, None, None)
 
         raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
@@ -1259,31 +1282,71 @@ class SabioRk(data_source.HttpDataSource):
         """
         # group properties
         tsv = tsv.split('\n')
-        laws = {}
+        law_properties = {}
         for row in csv.DictReader(tsv, delimiter='\t'):
-            entry_id = row['EntryID']
-            if entry_id not in laws:
-                laws[entry_id] = {
+            entry_id = int(float(row['EntryID']))
+            if entry_id not in law_properties:
+                law_properties[entry_id] = {
                     'KineticMechanismType': row['KineticMechanismType'],
                     'Tissue': row['Tissue'],
                     'Parameters': [],
                 }
-            laws[entry_id]['Parameters'].append({
-                'type': row['parameter.type'],
-                'associatedSpecies': row['parameter.associatedSpecies'],
-                'startValue': row['parameter.startValue'],
-                'endValue': row['parameter.endValue'],
-                'standardDeviation': row['parameter.standardDeviation'],
-                'unit': row['parameter.unit'],
-            })
+
+            parameter = {}
+
+            # type
+            parameter['type'] = row['parameter.type']
+
+            if row['parameter.type'] == 'kcat':
+                parameter['type_code'] = 25
+            elif row['parameter.type'] == 'Vmax':
+                parameter['type_code'] = 186
+            elif row['parameter.type'] == 'Km':
+                parameter['type_code'] = 27
+            elif row['parameter.type'] == 'Ki':
+                parameter['type_code'] = 261
+            else:
+                parameter['type_code'] = None
+
+            # associatated species
+            if row['parameter.associatedSpecies'] in ['', '-']:
+                parameter['associatedSpecies'] = None
+            else:
+                parameter['associatedSpecies'] = row['parameter.associatedSpecies']
+
+            # start value
+            if row['parameter.startValue'] in ['', '-']:
+                parameter['startValue'] = None
+            else:
+                parameter['startValue'] = float(row['parameter.startValue'])
+
+            # end value
+            if row['parameter.endValue'] in ['', '-']:
+                parameter['endValue'] = None
+            else:
+                parameter['endValue'] = float(row['parameter.endValue'])
+
+            # error
+            if row['parameter.standardDeviation'] in ['', '-']:
+                parameter['standardDeviation'] = None
+            else:
+                parameter['standardDeviation'] = float(row['parameter.standardDeviation'])
+
+            # units
+            if row['parameter.unit'] in ['', '-']:
+                parameter['unit'] = None
+            else:
+                parameter['unit'] = row['parameter.unit']
+
+            law_properties[entry_id]['Parameters'].append(parameter)
 
         # update properties
         law_q = self.session.query(KineticLaw)
-        for entry_id, properties in laws.items():
+        for id, properties in law_properties.items():
             # get kinetic law
-            q = law_q.filter_by(id=int(float(entry_id)))
+            q = law_q.filter_by(id=id)
             if q.count() == 0:
-                raise ValueError('No Kinetic Law with id {}'.format(entry_id))
+                raise ValueError('No Kinetic Law with id {}'.format(id))
             law = q.first()
 
             # mechanism
@@ -1293,7 +1356,7 @@ class SabioRk(data_source.HttpDataSource):
                 law.mechanism = properties['KineticMechanismType']
 
             # tissue
-            if properties['Tissue'] == '-':
+            if properties['Tissue'] in ['', '-']:
                 law.tissue = None
             else:
                 law.tissue = properties['Tissue']
@@ -1307,20 +1370,9 @@ class SabioRk(data_source.HttpDataSource):
                             param_properties['type'], param_properties['associatedSpecies'], law.id))
                     continue
 
-                if param_properties['startValue'] == '-':
-                    param.observed_value = None
-                else:
-                    param.observed_value = float(param_properties['startValue'])
-
-                if param_properties['standardDeviation'] and param_properties['standardDeviation'] != '-':
-                    param.observed_error = float(param_properties['standardDeviation'])
-                else:
-                    param.observed_error = None
-
-                if param_properties['unit'] == '-':
-                    param.observed_units = None
-                else:
-                    param.observed_units = param_properties['unit']
+                param.observed_value = param_properties['startValue']
+                param.observed_error = param_properties['standardDeviation']
+                param.observed_units = param_properties['unit']
 
             # updated
             law.modified = datetime.datetime.utcnow()
@@ -1340,8 +1392,8 @@ class SabioRk(data_source.HttpDataSource):
 
         # match observed name and compound
         def func(parameter):
-            return parameter.observed_name == parameter_properties['type'] and \
-                ((parameter.compound is None and parameter_properties['associatedSpecies'] == '') or \
+            return parameter.observed_type == parameter_properties['type_code'] and \
+                ((parameter.compound is None and parameter_properties['associatedSpecies'] is None) or
                  (parameter.compound is not None and parameter.compound.name == parameter_properties['associatedSpecies']))
         parameters = list(filter(func, kinetic_law.parameters))
         if len(parameters) == 1:
@@ -1349,14 +1401,14 @@ class SabioRk(data_source.HttpDataSource):
 
         # match observed name
         def func(parameter):
-            return parameter.observed_name == parameter_properties['type']
+            return parameter.observed_type == parameter_properties['type_code']
         parameters = list(filter(func, kinetic_law.parameters))
         if len(parameters) == 1:
             return parameters[0]
 
         # match compound
         def func(parameter):
-            return (parameter.compound is None and parameter_properties['associatedSpecies'] == '') or \
+            return (parameter.compound is None and parameter_properties['associatedSpecies'] is None) or \
                 (parameter.compound is not None and parameter.compound.name == parameter_properties['associatedSpecies'])
         parameters = list(filter(func, kinetic_law.parameters))
         if len(parameters) == 1:
@@ -1364,13 +1416,7 @@ class SabioRk(data_source.HttpDataSource):
 
         # match value
         def func(parameter):
-            if parameter_properties['startValue'] == '-':
-                start_value = None
-            else:
-                start_value = float(parameter_properties['startValue'])
-            return parameter.observed_value == start_value or \
-                ((parameter.observed_value is None or math.isnan(parameter.observed_value)) and
-                 (start_value is None or math.isnan(start_value)))
+            return parameter.observed_value == parameter_properties['startValue']
         parameters = list(filter(func, kinetic_law.parameters))
         if len(parameters) == 1:
             return parameters[0]
@@ -1533,3 +1579,87 @@ class SabioRk(data_source.HttpDataSource):
 
             if self.commit_intermediate_results and (i_compound % 100 == 99):
                 self.session.commit()
+
+    def calc_stats(self):
+        """ Calculate statistics about SABIO-RK
+
+        Returns:
+            :obj:`list` of :obj:`list` of :obj:`obj`: list of list of statistics
+        """
+        session = self.session
+
+        units = session \
+            .query(Parameter.units, Parameter.observed_units) \
+            .filter(Parameter.observed_type.in_(Parameter.TYPES.keys())) \
+            .distinct(Parameter.observed_units) \
+            .order_by(Parameter.units, Parameter.observed_units) \
+            .all()
+
+        row_labels = [
+            [None, None, None, None, None]
+            + [u[0] for u in units]
+            + [None, None],
+            ['SBO name', 'SBO ID', 'Entries', 'Entries with values', 'Entries without values']
+            + [u[1] for u in units]
+            + ['Total usable', 'Percent usable'],
+        ]
+
+        columns = []
+        for sbo_id, sbo_name in Parameter.TYPES.items():
+            column = [sbo_name, sbo_id]
+            columns.append(column)
+
+            n_entries = session \
+                .query(Parameter) \
+                .filter(Parameter.observed_type == sbo_id) \
+                .count()
+            n_value_entries = session \
+                .query(Parameter) \
+                .filter(Parameter.observed_type == sbo_id, Parameter.observed_value.isnot(None)) \
+                .count()
+            n_none_entries = session \
+                .query(Parameter) \
+                .filter(Parameter.observed_type == sbo_id, Parameter.observed_value == None) \
+                .count()
+            column.extend([n_entries, n_value_entries, n_none_entries])
+
+            for unit in units:
+                column.append(session
+                              .query(Parameter)
+                              .filter(Parameter.observed_type == sbo_id, Parameter.observed_units == unit[1])
+                              .count())
+
+            usable = session \
+                .query(Parameter) \
+                .filter(Parameter.observed_type == sbo_id, Parameter.value.isnot(None)) \
+                .count()
+            column.append(usable)
+            column.append(usable / n_value_entries * 100 if n_value_entries else float('nan'))
+
+            for i, val in enumerate(column):
+                if val == 0:
+                    column[i] = None
+
+        return wc_utils.util.list.transpose(row_labels + columns)
+
+    def export_stats(self, stats, filename=None):
+        """ Export statistics to an Excel workbook
+
+        Args:
+            stats (:obj:`list` of :obj:`list` of :obj:`obj`): list of list of statistics
+            filename (:obj:`str`, optional): path to export statistics
+        """
+        wb = wc_utils.workbook.core.Workbook()
+        ws = wb['Stats'] = wc_utils.workbook.core.Worksheet()
+
+        style = wc_utils.workbook.io.WorkbookStyle()
+        style['Stats'] = wc_utils.workbook.io.WorksheetStyle(
+            head_rows=2, head_columns=2,
+            head_row_font_bold=True, head_row_fill_fgcolor='CCCCCC', row_height=15)
+
+        for row in stats:
+            ws.append(wc_utils.workbook.core.Row(row))
+
+        if not filename:
+            filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
+        wc_utils.workbook.io.write(filename, wb, style=style)

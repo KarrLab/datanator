@@ -518,6 +518,42 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(param.error, None)
         self.assertEqual(param.units, None)
 
+    def test_load_missing_kinetic_law_information_from_tsv_error_1(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        session = src.session
+
+        src.load_kinetic_laws([3962])
+        src.load_compounds()
+        src.load_missing_kinetic_law_information_from_tsv([3962])
+
+        p = session.query(Parameter).filter_by(observed_name='kcat').first()
+        self.assertEqual(p.observed_value, 0.9)
+        self.assertEqual(p.observed_error, 0.6)
+        self.assertEqual(p.observed_units, 's^(-1)')
+
+        p = session.query(Parameter).filter_by(observed_name='app_kcat_MEP').first()
+        self.assertEqual(p.observed_value, 0.54)
+        self.assertEqual(p.observed_error, 0.36)
+        self.assertEqual(p.observed_units, 's^(-1)')
+
+    def test_load_missing_kinetic_law_information_from_tsv_error_2(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        session = src.session
+
+        src.load_kinetic_laws([443])
+        src.load_compounds()
+        src.load_missing_kinetic_law_information_from_tsv([443])
+
+        p = session.query(Parameter).filter_by(observed_name='kcat1').first()
+        self.assertEqual(p.observed_value, 28.3333333)
+        self.assertEqual(p.observed_error, 1.66667)
+        self.assertEqual(p.observed_units, 's^(-1)')
+
+        p = session.query(Parameter).filter_by(observed_name='kcat2').first()
+        self.assertEqual(p.observed_value, 27.6666667)
+        self.assertEqual(p.observed_error, 0.5)
+        self.assertEqual(p.observed_units, 's^(-1)')
+
     def test_normalize_parameter_value(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
 
@@ -527,13 +563,22 @@ class TestDownloader(unittest.TestCase):
                          (None, None, None, None, None))
 
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, None),
-                         ('k_cat', 25, 0.25, 0.15, 's^(-1)'))
+                         (None, None, None, None, None))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 's^(-1)'),
                          ('k_cat', 25, 0.25, 0.15, 's^(-1)'))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 'katal_base'),
                          ('k_cat', 25, 0.25 * scipy.constants.Avogadro, 0.15 * scipy.constants.Avogadro, 's^(-1)'))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'katal_base'),
                          ('k_cat', 25, 0.25 * scipy.constants.Avogadro, None, 's^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'mol*s^(-1)*g^(-1)'),
+                         (None, None, None, None, None))
+
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, None),
+                         (None, None, None, None, None))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)'),
+                         ('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 's^(-1)'),
+                         ('k_cat', 25, 0.25, None, 's^(-1)'))
 
         self.assertRaises(ValueError, src.normalize_parameter_value, 'k_cat', 25, 0.25, 0.15, 'm')
 
@@ -658,6 +703,22 @@ class TestBackupAndInstall(unittest.TestCase):
         src5 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_5, download_backup=False, load_content=False,
                                 max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
         self.assertEqual(src5.session.query(KineticLaw).count(), 0)
+
+
+class TestStats(unittest.TestCase):
+
+    def setUp(self):
+        self.dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dirname)
+
+    def test_export_stats(self):
+        src = sabio_rk.SabioRk()
+        stats = src.calc_stats()
+        filename = os.path.join(self.dirname, 'stats.xlsx')
+        src.export_stats(stats, filename=filename)
+        self.assertTrue(os.path.isfile(filename))
 
 
 class TestAll(unittest.TestCase):
