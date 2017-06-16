@@ -165,6 +165,7 @@ class ArrayExpress(data_source.HttpDataSource):
                     sample.characteristics.append(new_charachteristic)
 
                 # create a variable object for each variable and append that to the sample's variable field
+                #print sample.experiment.id
                 variables = entry_details['experiment']['sample'][num]['variable']
                 if isinstance(variables, list):
                     for entry in variables:
@@ -199,11 +200,11 @@ class ArrayExpress(data_source.HttpDataSource):
 
         for single_entry in entry_details['experiments']['experiment']:
             experiment = Experiment()
-            experiment.id = single_entry['accession']
-            experiment.name = single_entry['name']
-            experiment.experiment_type = single_entry['experimenttype']
-            experiment.organism = single_entry['organism']
-            experiment.description = single_entry['description']['text']
+            experiment.id = str(single_entry['accession'])
+            experiment.name = str(single_entry['name'])
+            experiment.experiment_type = str(single_entry['experimenttype'])
+            experiment.organism = str(single_entry['organism'])
+            experiment.description = str(single_entry['description']['text'])
             
             if 'experimentdesign' in single_entry:
                 if isinstance(single_entry['experimentdesign'], list):
@@ -214,20 +215,22 @@ class ArrayExpress(data_source.HttpDataSource):
                 for entry in entries:
                     experiment.experiment_designs.append(ExperimentDesign(name=str(entry)))
 
+            #print experiment.__dict__
+
             db_session.add(experiment)
 
-    def load_content(self):
+    def load_content(self, experiment_ids=None):
         db_session = self.session
 
         # retrieve list of all experiments
-        self.load_experiments()
+        self.load_experiments(experiment_ids)
 
         # retrieve the samples for all of the experiments
-        experiments = db_session.query(Experiment.id).all()
+        experiments = db_session.query(Experiment).all()
         self.load_samples(experiments)
 
         # save the changes to the database file
-        session.commit()
+        db_session.commit()
 
 
 
