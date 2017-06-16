@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 import dateutil.parser
 import io
@@ -75,14 +77,14 @@ class Sample(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
     experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref('samples'), foreign_keys=[experiment_id])
-    index = sqlalchemy.Column(sqlalchemy.Integer())
+    #index = sqlalchemy.Column(sqlalchemy.Integer())
     name = sqlalchemy.Column(sqlalchemy.String())
     characteristics = sqlalchemy.orm.relationship('Characteristic',
                                                   secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
     variables = sqlalchemy.orm.relationship('Variable',
                                             secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
 
-    sqlalchemy.schema.UniqueConstraint(experiment_id, index)
+    #sqlalchemy.schema.UniqueConstraint(experiment_id, index)
     sqlalchemy.schema.UniqueConstraint(experiment_id, name)
 
     __tablename__ = 'sample'
@@ -146,43 +148,46 @@ class ArrayExpress(data_source.HttpDataSource):
             for num, entry in enumerate(entry_details['experiment']['sample']):
                 sample = Sample()
                 sample.experiment = experiment
-                sample.index = str(entry_details['experiment']['sample'][num]['extract']['name'])
+                print experiment.id
+                #sample.index = str(entry_details['experiment']['sample'][num]['extract']['name'])
                 sample.name = str(entry_details['experiment']['sample'][num]['source']['name'])
 
                 # create a characteristic object for each characteristic and append that to the sample's characteristic field
-                characteristics = entry_details['experiment']['sample'][num]['characteristic']
-                if isinstance(characteristics, list):
-                    for entry in characteristics:
-                        new_charachteristic = Characteristic()
-                        new_charachteristic.name = str(entry['category'])
-                        new_charachteristic.value = str(entry['value'])
-                        sample.characteristics.append(new_charachteristic)
+                if 'characteristic' in entry_details['experiment']['sample'][num]:
+                    characteristics = entry_details['experiment']['sample'][num]['characteristic']
+                    if isinstance(characteristics, list):
+                        for entry in characteristics:
+                            new_charachteristic = Characteristic()
+                            new_charachteristic.name = str(entry['category'])
+                            new_charachteristic.value = entry['value']#.encode('utf-8')
+                            sample.characteristics.append(new_charachteristic)
 
-                else:
-                    new_charachteristic = Characteristic()
-                    new_charachteristic.name = str(characteristics['category'])
-                    new_charachteristic.value = str(characteristics['value'])
-                    sample.characteristics.append(new_charachteristic)
+                    else:
+                        new_charachteristic = Characteristic()
+                        new_charachteristic.name = str(characteristics['category'])
+                        new_charachteristic.value = characteristics['value']#.encode('utf-8')
+                        sample.characteristics.append(new_charachteristic)
 
                 # create a variable object for each variable and append that to the sample's variable field
                 #print sample.experiment.id
-                variables = entry_details['experiment']['sample'][num]['variable']
-                if isinstance(variables, list):
-                    for entry in variables:
+                if 'variable' in entry_details['experiment']['sample'][num]:
+                    variables = entry_details['experiment']['sample'][num]['variable']
+                    if isinstance(variables, list):
+                        for entry in variables:
+                            new_variable = Variable()
+                            new_variable.name = str(entry['name'])
+                            new_variable.value = entry['value']#.encode('utf-8')
+                            if "unit" in entry:
+                                new_variable.units = entry['unit']#.encode('utf-8')
+                            sample.variables.append(new_variable)
+                    else:
                         new_variable = Variable()
-                        new_variable.name = str(entry['name'])
-                        new_variable.value = str(entry['value'])
-                        if "unit" in entry:
-                            new_variable.units = str(entry['unit'])
+                        new_variable.name = variables['name']#.encode('utf-8')
+                        new_variable.value = variables['value']#.encode('utf-8')
+                        if "unit" in variables:
+                            new_variable.unit = str(variables['unit'])
                         sample.variables.append(new_variable)
-                else:
-                    new_variable = Variable()
-                    new_variable.name = str(variables['name'])
-                    new_variable.value = str(variables['value'])
-                    if "unit" in variables:
-                        new_variable.unit = str(variables['unit'])
-                    sample.variables.append(new_variable)
-                    db_session.add(sample)
+                        db_session.add(sample)
 
     def load_experiments(self, experiment_ids=None):
         db_session = self.session

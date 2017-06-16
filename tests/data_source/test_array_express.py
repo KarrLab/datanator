@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from kinetic_datanator.data_source import array_express
 import unittest
 import requests.exceptions
@@ -54,6 +55,8 @@ class TestArrayExpress(unittest.TestCase):
 			'E-MTAB-5661'
 		])
 
+
+		
 		self.assertEqual([c.name for c in q.all()], [
 			'Dynamic regulation of VEGF-inducible genes by an ERK-ERG-p300 transcriptional network', 
 			'Microarray analysis of palatal shelves from wild-type versus p63-null mouse embryos', 
@@ -61,6 +64,7 @@ class TestArrayExpress(unittest.TestCase):
 			'Global expression profiling time series of early human embryonic stem cell differentiation towards the mesoderm lineage', 
 			'Deciphering the relationship between polycomb repression and stochastic gene expression from single-cell RNA-seq data'
 		])
+		
 
 		self.assertEqual([c.experiment_type for c in q.all()], [
 			'transcription profiling by array',
@@ -101,6 +105,8 @@ class TestArrayExpress(unittest.TestCase):
 			'development or differentiation design'
 			])
 
+		session.commit()
+
 
 
 	def test_load_samples(self):
@@ -122,7 +128,7 @@ class TestArrayExpress(unittest.TestCase):
 		#session.commit()
 		#print [c.experiment_id for c in q.all()][0:10]
 
-		self.assertEqual([c.index for c in q.all()[0:10]], [
+		self.assertEqual([c.name for c in q.all()[0:10]], [
 			'MUT_41', 
 			'MUT_42', 
 			'MUT_43', 
@@ -135,7 +141,7 @@ class TestArrayExpress(unittest.TestCase):
 			'04_d1_a'
 		])
 
-		self.assertEqual([c.index for c in q.all()[0:10]], [c.name for c in q.all()[0:10]])
+		#self.assertEqual([c.index for c in q.all()[0:10]], [c.name for c in q.all()[0:10]])
 		self.assertEqual([c.experiment_id for c in q.all()[0:10]], [1, 1, 1, 1, 1, 1, 2, 2, 2, 2])
 
 
@@ -200,7 +206,7 @@ class TestArrayExpress(unittest.TestCase):
 
 		self.assertEqual([c.unit for c in q.all()[0:10]], [None, None, None, None, None, None, 'day', 'day', 'day', 'day'])
 
-
+		session.commit()
 	
 
 	def test_load_content(self):
@@ -221,7 +227,8 @@ class TestArrayExpress(unittest.TestCase):
 		]
 		src.load_experiments(experiment_ids=accesssion_nums)
 		q = session.query(array_express.Experiment)
-		#src.load_samples(q)
+		src.load_samples(q)
+		session.commit()
 		
 
 
