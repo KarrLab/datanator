@@ -1,4 +1,4 @@
-from kinetic_datanator.data_source import array_express
+from KineticDatanator.kinetic_datanator.data_source import array_express
 import unittest
 import array_express
 import requests.exceptions
