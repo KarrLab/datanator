@@ -1,32 +1,11 @@
-from kinetic_datanator.kinetic_datanator.data_source import array_express
+from kinetic_datanator.data_source import array_express
 import unittest
-import array_express
 import requests.exceptions
 import tempfile
 import os
 import shutil
 
-"""
-a = array_express.ArrayExpress()
-db_session = a.session
 
-accesssion_nums = [
-	"E-MTAB-5207",
-	"E-MTAB-5219",
-	"E-MTAB-3145",
-	"E-MTAB-5661",
-	"E-MTAB-5385",
-	"E-MTAB-5207",
-	]
-
-a.load_experiments(experiment_ids=accesssion_nums)
-experiments = db_session.query(array_express.Experiment.id).all()
-db_session.commit()
-
-
-for m in db_session.query(array_express.Experiment).all():
-	print [getattr(m, x.__str__().split('.')[1]) for x in array_express.Experiment.__table__.columns]
-"""
 
 class TestArrayExpress(unittest.TestCase):
 
@@ -63,19 +42,6 @@ class TestArrayExpress(unittest.TestCase):
 		src.load_experiments(experiment_ids=accesssion_nums)
 		q = session.query(array_express.Experiment)
 
-		"""
-		print session.query(array_express.Experiment.id).all()
-		
-		for thing in q:
-			print thing.id
-		for m in session.query(array_express.Experiment).all():
-			print [getattr(m, x.__str__().split('.')[1]) for x in array_express.Experiment.__table__.columns]
-
-		#print session.query(array_express.Experiment.id).all()
-		for thing in session.query(array_express.Experiment).\
-		filter(array_express.Experiment.id=="E-MTAB-5207"):
-			print thing.experiment_type
-		"""
 		
 			
 		self.assertEqual(q.count(), 5)
@@ -122,6 +88,7 @@ class TestArrayExpress(unittest.TestCase):
 
 		q = session.query(array_express.ExperimentDesign)
 
+
 		self.assertEqual([c.experiment_id for c in q.all()], [2, 3, 3, 3, 3, 3, 4])
 
 		self.assertEqual([c.name for c in q.all()], [
@@ -133,6 +100,7 @@ class TestArrayExpress(unittest.TestCase):
 			'disease state design', 
 			'development or differentiation design'
 			])
+
 
 
 	def test_load_samples(self):
@@ -231,6 +199,58 @@ class TestArrayExpress(unittest.TestCase):
 
 
 		self.assertEqual([c.unit for c in q.all()[0:10]], [None, None, None, None, None, None, 'day', 'day', 'day', 'day'])
+
+
+	
+
+	def test_load_content(self):
+		
+
+		src = self.src
+		session = src.session
+		accesssion_nums = [
+			"E-AFMX-1",
+			"E-AFMX-2",
+			"E-AFMX-3",
+			"E-ATMX-4",
+			"E-GEOD-885",
+			"E-CAGE-11",
+			"E-GEOD-714",
+			"E-GEOD-34087",
+			"E-GEOD-32200",
+		]
+		src.load_experiments(experiment_ids=accesssion_nums)
+		q = session.query(array_express.Experiment)
+		#src.load_samples(q)
+		
+
+
+		"""
+		src = self.src
+		session = src.session
+
+		accesssion_nums = [
+			"E-AFMX-1",
+			"E-AFMX-2",
+			"E-AFMX-3",
+			"E-ATMX-4",
+			"E-GEOD-885",
+			"E-CAGE-11",
+			"E-GEOD-714",
+			"E-GEOD-34087",
+			"E-GEOD-32200",
+		]
+		"""
+
+
+		#src.load_experiments(experiment_ids=accesssion_nums)
+
+		# retrieve the samples for all of the experiments
+		#experiments = session.query(array_express.Experiment).all()
+		#self.load_samples(experiments)
+
+		# save the changes to the database file
+#		session.commit()
 
 
 		#for m in session.query(array_express.Variable).all()[0:10]:
