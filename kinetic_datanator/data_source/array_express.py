@@ -56,6 +56,7 @@ class Variable(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String())
     value = sqlalchemy.Column(sqlalchemy.String())
+    unit = sqlalchemy.Column(sqlalchemy.String())
 
     #sqlalchemy.schema.UniqueConstraint(name, value)
 
@@ -150,10 +151,17 @@ class ArrayExpress(data_source.HttpDataSource):
 
                 # create a characteristic object for each characteristic and append that to the sample's characteristic field
                 characteristics = entry_details['experiment']['sample'][num]['characteristic']
-                for entry in characteristics:
+                if isinstance(characteristics, list):
+                    for entry in characteristics:
+                        new_charachteristic = Characteristic()
+                        new_charachteristic.name = str(entry['category'])
+                        new_charachteristic.value = str(entry['value'])
+                        sample.characteristics.append(new_charachteristic)
+
+                else:
                     new_charachteristic = Characteristic()
-                    new_charachteristic.name = str(entry['category'])
-                    new_charachteristic.value = str(entry['value'])
+                    new_charachteristic.name = str(characteristics['category'])
+                    new_charachteristic.value = str(characteristics['value'])
                     sample.characteristics.append(new_charachteristic)
 
                 # create a variable object for each variable and append that to the sample's variable field
@@ -163,11 +171,15 @@ class ArrayExpress(data_source.HttpDataSource):
                         new_variable = Variable()
                         new_variable.name = str(entry['name'])
                         new_variable.value = str(entry['value'])
+                        if "unit" in entry:
+                            new_variable.units = str(entry['unit'])
                         sample.variables.append(new_variable)
                 else:
                     new_variable = Variable()
-                    new_variable.name = variables['name']
-                    new_variable.value = entry['value']
+                    new_variable.name = str(variables['name'])
+                    new_variable.value = str(variables['value'])
+                    if "unit" in variables:
+                        new_variable.unit = str(variables['unit'])
                     sample.variables.append(new_variable)
                     db_session.add(sample)
 
@@ -215,6 +227,8 @@ class ArrayExpress(data_source.HttpDataSource):
         self.load_samples(experiments)
 
         # save the changes to the database file
-        db_session.commit()
+        session.commit()
+
+
 
 
