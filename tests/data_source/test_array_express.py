@@ -1,3 +1,4 @@
+from kinetic_datanator.data_source import arrray_express
 import unittest
 import array_express
 import requests.exceptions
@@ -170,9 +171,70 @@ class TestArrayExpress(unittest.TestCase):
 		self.assertEqual([c.experiment_id for c in q.all()[0:10]], [1, 1, 1, 1, 1, 1, 2, 2, 2, 2])
 
 
+		q = session.query(array_express.Characteristic)
 
-		#for m in session.query(array_express.Characteristic).all()[0:10]:
-		#	print [getattr(m, x.__str__().split('.')[1]) for x in array_express.Characteristic.__table__.columns]
+		self.assertEqual([c.name for c in q.all()[0:10]], [
+			'organism', 
+			'genotype', 
+			'organism part', 
+			'developmental stage', 
+			'organism', 
+			'genotype', 
+			'organism part', 
+			'developmental stage', 
+			'organism', 
+			'genotype'
+			])
+
+
+		self.assertEqual([c.value for c in q.all()[0:10]], [
+			'Mus musculus', 
+			'p63-/-', 
+			'palate', 
+			'embryonic day 14.5', 
+			'Mus musculus', 
+			'p63-/-', 
+			'palate', 
+			'embryonic day 14.5', 
+			'Mus musculus', 
+			'p63-/-'])
+
+
+		q = session.query(array_express.Variable)
+		#print [c.unit for c in q.all()][0:10]
+
+		self.assertEqual([c.name for c in q.all()[0:10]], [
+			'genotype', 
+			'genotype', 
+			'genotype', 
+			'genotype', 
+			'genotype', 
+			'genotype', 
+			'time', 
+			'time', 
+			'time', 
+			'time'
+		])
+
+		self.assertEqual([c.value for c in q.all()[0:10]], [
+			'p63-/-', 
+			'p63-/-', 
+			'p63-/-', 
+			'wild type genotype', 
+			'wild type genotype', 
+			'wild type genotype', 
+			'0', 
+			'0', 
+			'0', 
+			'1'
+		])
+
+
+		self.assertEqual([c.unit for c in q.all()[0:10]], [None, None, None, None, None, None, 'day', 'day', 'day', 'day'])
+
+
+		#for m in session.query(array_express.Variable).all()[0:10]:
+		#	print [getattr(m, x.__str__().split('.')[1]) for x in array_express.Variable.__table__.columns]
 
 		#q = session.query(array_express.Sample)
 		#print [c.name for c in q.all()][0:5]
