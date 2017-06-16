@@ -14,6 +14,7 @@ from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound
 from kinetic_datanator.util import warning_util
 import datetime
 import math
+import numpy
 import os
 import scipy.constants
 import shutil
@@ -79,6 +80,7 @@ class TestDownloader(unittest.TestCase):
         """ enzymes """
         e = session.query(Enzyme).filter_by(id=147631).first()
         self.assertEqual(e.name, 'subtilisin')
+        self.assertEqual(e.subunits, [])
         self.assertEqual(e.cross_references, [])
 
         """ reactions """
@@ -461,6 +463,143 @@ class TestDownloader(unittest.TestCase):
         self.assertNotIn(Lactaldehyde, [p.compound for p in l.reactants])
         self.assertIn(Lactaldehyde, [p.compound for p in l.products])
 
+    def test_parse_complex_subunit_structure(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+        )), {'Q59669': 1})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)*2'
+        )), {'Q59669': 2})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '('
+            '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+            '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)'
+            ')'
+        )), {'Q59669': 1, 'Q59670': 1})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '('
+            '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)*2'
+            '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)*3'
+            ')*4'
+        )), {'Q59669': 8, 'Q59670': 12})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '('
+            '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+            '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)*2'
+            ')*3'
+        )), {'Q59669': 3, 'Q59670': 6})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '<a href="http://www.uniprot.org/uniprot/P09219" target=_blank>P09219</a>; '
+            '<a href="http://www.uniprot.org/uniprot/P07677" target=_blank>P07677</a>; '
+        )), {'P09219': 1, 'P07677': 1})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '<a href="http://www.uniprot.org/uniprot/P09219" target=_blank>P09219</a>; '
+            '<a href="http://www.uniprot.org/uniprot/P07677" target=_blank>P07677</a>; '
+        )), {'P09219': 1, 'P07677': 1})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '(<a href="http://www.uniprot.org/uniprot/P19112" target=_blank>P19112</a>)*4; '
+            '<a href="http://www.uniprot.org/uniprot/Q9Z1N1" target=_blank>Q9Z1N1</a>; '
+        )), {'P19112': 4, 'Q9Z1N1': 1})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '((<a href="http://www.uniprot.org/uniprot/P16924" target="_blank">P16924</a>)*2'
+            '(<a href="http://www.uniprot.org/uniprot/P09102" target="_blank">P09102</a>)*2); '
+            '((<a href="http://www.uniprot.org/uniprot/Q5ZLK5" target="_blank">Q5ZLK5</a>)*2'
+            '(<a href="http://www.uniprot.org/uniprot/P09102" target="_blank">P09102</a>)*2);'
+        )), {'P16924': 2, 'P09102': 4, 'Q5ZLK5': 2})
+
+        self.assertEqual(src.parse_complex_subunit_structure((
+            '((<a href="http://www.uniprot.org/uniprot/Q03393" target=_blank>Q03393</a>)*3)*2); '
+        )), {'Q03393': 6})
+
+    def test_loading_enzymes(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        ids = [11021, 2139, 1645]
+        src.load_kinetic_laws(ids)
+        src.load_compounds()
+        src.load_missing_kinetic_law_information_from_tsv(ids)
+        src.load_missing_enzyme_information_from_html(ids)
+        src.calc_enzyme_molecular_weights(src.session.query(Enzyme).all())
+        src.normalize_kinetic_laws(ids)
+
+        # 11021, one subunit
+        law = src.session.query(KineticLaw).filter_by(id=11021).first()
+        self.assertEqual(len(law.enzyme.subunits), 1)
+        self.assertEqual(len(law.enzyme.subunits[0].cross_references), 1)
+        self.assertEqual(law.enzyme.subunits[0].cross_references[0].namespace, 'uniprot')
+        self.assertEqual(law.enzyme.subunits[0].cross_references[0].id, 'P19631')
+        self.assertEqual(law.enzyme.subunits[0].coefficient, 2)
+        self.assertEqual(law.enzyme.subunits[0].sequence, (
+            'STAGKVIKCKAAVLWEANKPFSLEEVEVAPPKAHEVRIKIVATGICRSDDHVVTGALAMP'
+            'FPVILGHEAAGVVESVGEKVTLLKPGDAVIPLFVPQCGECRSCLSTKGNLCIKNDLSSSP'
+            'TGLMADGTTRFTCKGKAIHHFIGTSTFTEYTVVHETAAAKIDSAAPLEKVCLIGCGFSTG'
+            'YGAVLQTAKVEPGSTCAVFGLGGVGLSVVMGCKAAGASRIIAIDINKDKFAKAKELGATE'
+            'CVNPKDFKKPIHEVLTEMTGKGVDYSFEVIGRIETMTEALASCHYNYGVSVIVGVPPAAQ'
+            'KISFDPMLIFSGRTWKGSVFGGWKSKDAVPKLVADYMKKKFVLDPLITHTLPFTKINEGF'
+            'DLLRTGKSIRTVLVL'
+        ))
+        numpy.testing.assert_approx_equal(law.enzyme.subunits[0].molecular_weight, 39810, significant=3)
+        self.assertEqual(law.enzyme.cross_references, [])
+
+        # 2139, two subunits
+        law = src.session.query(KineticLaw).filter_by(id=2139).first()
+        self.assertEqual(len(law.enzyme.subunits), 2)
+
+        subunit = next(subunit for subunit in law.enzyme.subunits if subunit.cross_references[0].id == 'P07677')
+        self.assertEqual(len(subunit.cross_references), 1)
+        self.assertEqual(subunit.cross_references[0].namespace, 'uniprot')
+        self.assertEqual(subunit.cross_references[0].id, 'P07677')
+        self.assertEqual(subunit.coefficient, 1)
+        self.assertEqual(subunit.sequence, (
+            'MTRGRVIQVMGPVVDVKFENGHLPAIYNALKIQHKARNENEVDIDLTLEVALHLGDDTVR'
+            'TIAMASTDGLIRGMEVIDTGAPISVPVGQVTLGRVFNVLGEPIDLEGDIPADARRDPIHR'
+            'PAPKFEELATEVEILETGIKVVDLLAPYIKGGKIGLFGGAGVGKTVLIQELIHNIAQEHG'
+            'GISVFAGVGERTREGNDLYHEMKDSGVISKTAMVFGQMNEPPGARMRVALTGLTMAEYFR'
+            'DEQGQDGLLFIDNIFRFTQAGSEVSALLGRMPSAIGYQPTLATEMGQLQERITSTAKGSI'
+            'TSIQAIYVPADDYTDPAPATTFSHLDATTNLERKLAEMGIYPAVDPLVSTSRALAPEIVG'
+            'EEHYQVARKVQQTLERYKELQDIIAILGMDELSDEDKLVVHRARRIQFFLSQNFHVAEQF'
+            'TGQPGSYVPVKETVRGFKEILEGKYDHLPEDRFRLVGRIEEVVEKAKAMGVEV'
+        ))
+        numpy.testing.assert_approx_equal(subunit.molecular_weight, 51950, significant=3)
+
+        subunit = next(subunit for subunit in law.enzyme.subunits if subunit.cross_references[0].id == 'P09219')
+        self.assertEqual(len(subunit.cross_references), 1)
+        self.assertEqual(subunit.cross_references[0].namespace, 'uniprot')
+        self.assertEqual(subunit.cross_references[0].id, 'P09219')
+        self.assertEqual(subunit.coefficient, 1)
+        self.assertEqual(subunit.sequence, (
+            'MSIRAEEISALIKQQIENYESQIQVSDVGTVIQVGDGIARAHGLDNVMSGEAVEFANAVM'
+            'GMALNLEENNVGIVILGPYTGIKEGDEVRRTGRIMEVPVGETLIGRVVNPLGQPVDGLGP'
+            'VETTETRPIESRAPGVMDRRSVHEPLQTGIKAIDALVPIGRGQRELIIGDRQTGKTSVAI'
+            'DTIINQKDQNMICIYVAIGQKESTVATVVETLAKHGAPDYTIVVTASASQPAPLLFLAPY'
+            'AGVAMGEYFMIMGKHVLVVIDDLSKQAAAYRQLSLLLRRPPGREAYPGDIFYLHSRLLER'
+            'AAKLSDAKGGGSLTALPFVETQAGDISAYIPTNVISITDGQIFLQSDLFFSGVRPAINAG'
+            'LSVSRVGGAAQIKAMKKVAGTLRLDLAAYRELEAFAQFGSDLDKATQANVARGARTVEVL'
+            'KQDLHQPIPVEKQVLIIYALTRGFLDDIPVEDVRRFEKEFYLWLDQNGQHLLEHIRTTKD'
+            'LPNEDDLNQAIEAFKKTFVVSQ'
+        ))
+        numpy.testing.assert_approx_equal(subunit.molecular_weight, 54600, significant=3)
+
+        self.assertEqual(law.enzyme.cross_references, [])
+
+        # 1645, one subunit not in SBML
+        law = src.session.query(KineticLaw).filter_by(id=1645).first()
+        self.assertEqual(len(law.enzyme.subunits), 1)
+        self.assertEqual(len(law.enzyme.subunits[0].cross_references), 1)
+        self.assertEqual(law.enzyme.subunits[0].cross_references[0].namespace, 'uniprot')
+        self.assertEqual(law.enzyme.subunits[0].cross_references[0].id, 'Q70GK9')
+        self.assertEqual(law.enzyme.subunits[0].coefficient, 1)
+        self.assertEqual(law.enzyme.cross_references, [])
+
     def test_load_kinetic_laws_check_units(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
         session = src.session
@@ -557,30 +696,38 @@ class TestDownloader(unittest.TestCase):
     def test_normalize_parameter_value(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
 
-        self.assertEqual(src.normalize_parameter_value('k_d', 282, 0.25, 0.15, None),
+        self.assertEqual(src.normalize_parameter_value('k_d', 282, 0.25, 0.15, None, None),
                          (None, None, None, None, None))
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, None, None, 's^(-1)'),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, None, None, 's^(-1)', None),
                          (None, None, None, None, None))
 
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, None),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, None, None),
                          (None, None, None, None, None))
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 's^(-1)'),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 's^(-1)', None),
                          ('k_cat', 25, 0.25, 0.15, 's^(-1)'))
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 'katal_base'),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 'katal_base', None),
                          ('k_cat', 25, 0.25 * scipy.constants.Avogadro, 0.15 * scipy.constants.Avogadro, 's^(-1)'))
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'katal_base'),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'katal_base', None),
                          ('k_cat', 25, 0.25 * scipy.constants.Avogadro, None, 's^(-1)'))
-        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'mol*s^(-1)*g^(-1)'),
+        self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'mol*s^(-1)*g^(-1)', None),
                          (None, None, None, None, None))
 
-        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, None),
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, None, 500),
                          (None, None, None, None, None))
-        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)'),
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)', 500),
+                         ('k_cat', 25, 0.25 * 500, None, 's^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)', None),
                          ('v_max', 186, 0.25, None, 'mol*s^(-1)*g^(-1)'))
-        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 's^(-1)'),
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, 0.15, 'mol*s^(-1)*g^(-1)', 500),
+                         ('k_cat', 25, 0.25 * 500, 0.15 * 500, 's^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, 0.15, 'mol*s^(-1)*g^(-1)', None),
+                         ('v_max', 186, 0.25, 0.15, 'mol*s^(-1)*g^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 's^(-1)', 500),
+                         ('k_cat', 25, 0.25, None, 's^(-1)'))
+        self.assertEqual(src.normalize_parameter_value('v_max', 186, 0.25, None, 's^(-1)', None),
                          ('k_cat', 25, 0.25, None, 's^(-1)'))
 
-        self.assertRaises(ValueError, src.normalize_parameter_value, 'k_cat', 25, 0.25, 0.15, 'm')
+        self.assertRaises(ValueError, src.normalize_parameter_value, 'k_cat', 25, 0.25, 0.15, 'm', None)
 
     def test_infer_compound_structures_from_names(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)

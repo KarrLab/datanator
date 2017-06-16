@@ -11,6 +11,8 @@
 from kinetic_datanator.core import data_source
 from kinetic_datanator.util import molecule_util
 from xml import etree
+import Bio.Alphabet
+import Bio.SeqUtils
 import bs4
 import csv
 import datetime
@@ -33,7 +35,6 @@ import warnings
 import wc_utils.util.list
 import wc_utils.workbook.core
 import wc_utils.workbook.io
-
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -366,12 +367,36 @@ class Enzyme(Entry):
     """ Represents an enzyme in the SABIO-RK database
 
     Attributes:
+        subunits (:obj:`list` of :obj:`EnzymeSubunit`): list of subunits
         kinetic_laws (:obj:`list` of :obj:`KineticLaw`): list of kinetic laws
+        molecular_weight (:obj:`float`): molecular weight in Daltons
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
+    molecular_weight = sqlalchemy.Column(sqlalchemy.Float())
 
     __tablename__ = 'enzyme'
     __mapper_args__ = {'polymorphic_identity': 'enzyme'}
+
+
+class EnzymeSubunit(Entry):
+    """ Represents an enzyme in the SABIO-RK database
+
+    Attributes:
+        enzyme (:obj:`Enzyme`): enzyme
+        coefficient (:obj:`int`): stoichiometry of the subunit in the enzyme
+        sequence (:obj:`str`): amino acid sequence
+        molecular_weight (:obj:`float`): molecular weight in Daltons
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
+    enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'), index=True)
+    enzyme = sqlalchemy.orm.relationship('Enzyme', uselist=False, backref=sqlalchemy.orm.backref(
+        'subunits', cascade='all, delete-orphan'), foreign_keys=[enzyme_id])
+    coefficient = sqlalchemy.Column(sqlalchemy.Integer())
+    sequence = sqlalchemy.Column(sqlalchemy.Text())
+    molecular_weight = sqlalchemy.Column(sqlalchemy.Float())
+
+    __tablename__ = 'enzyme_subunit'
+    __mapper_args__ = {'polymorphic_identity': 'enzyme_subunit'}
 
 
 class Compartment(Entry):
@@ -406,11 +431,15 @@ class SabioRk(data_source.HttpDataSource):
     """
 
     base_model = Base
-    ENDPOINT_DOMAIN = 'http://sabiork.h-its.org'
-    ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAIN + '/sabioRestWebServices/searchKineticLaws/entryIDs'
-    ENDPOINT_WEBSERVICE = ENDPOINT_DOMAIN + '/sabioRestWebServices/kineticLaws'
-    ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAIN + '/entry/exportToExcelCustomizable'
-    ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAIN + '/compdetails.jsp'
+    ENDPOINT_DOMAINS = {
+        'sabio_rk': 'http://sabiork.h-its.org',
+        'uniprot': 'http://www.uniprot.org',
+    }
+    ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAINS['sabio_rk'] + '/sabioRestWebServices/searchKineticLaws/entryIDs'
+    ENDPOINT_WEBSERVICE = ENDPOINT_DOMAINS['sabio_rk'] + '/sabioRestWebServices/kineticLaws'
+    ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAINS['sabio_rk'] + '/entry/exportToExcelCustomizable'
+    ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + '/compdetails.jsp'
+    ENDPOINT_KINETIC_LAWS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + '/kindatadirectiframe.jsp'
     SKIP_KINETIC_LAW_IDS = (51286,)
     PUBCHEM_MAX_TRIES = 10
     PUBCHEM_TRY_DELAY = 0.25
@@ -514,16 +543,6 @@ class SabioRk(data_source.HttpDataSource):
 
         ##################################
         ##################################
-        if self.verbose:
-            print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
-
-        self.normalize_kinetic_laws(loaded_new_ids)
-
-        if self.verbose:
-            print('  done')
-
-        ##################################
-        ##################################
         # infer structures for compounds with no provided structure
         compounds = self.session.query(Compound).filter(~Compound.structures.any()).all()
 
@@ -554,6 +573,45 @@ class SabioRk(data_source.HttpDataSource):
         if self.verbose:
             print('  done')
 
+        ##################################
+        ##################################
+        # fill in missing information from HTML pages
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+
+        self.load_missing_enzyme_information_from_html(loaded_new_ids)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
+        # calculate enzyme molecular weights
+        enzymes = self.session \
+            .query(Enzyme) \
+            .filter_by(molecular_weight=None) \
+            .all()
+
+        if self.verbose:
+            print('Calculating {} enzyme molecular weights ...'.format(len(enzymes)))
+
+        self.calc_enzyme_molecular_weights(enzymes)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
+        if self.verbose:
+            print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
+
+        self.normalize_kinetic_laws(loaded_new_ids)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
         # commit changes
         self.session.commit()
 
@@ -789,7 +847,18 @@ class SabioRk(data_source.HttpDataSource):
         elif specie.name != name:
             specie._is_name_ambiguous = True
 
-        specie.cross_references = self.create_cross_references_from_sbml(sbml)
+        # cross references
+        cross_references = self.create_cross_references_from_sbml(sbml)
+        if type == 'SPC':
+            specie.cross_references = cross_references
+        elif type == 'ENZ':
+            specie.subunits = []
+            specie.cross_references = []
+            for cross_reference in cross_references:
+                if cross_reference.namespace == 'uniprot':
+                    specie.subunits.append(EnzymeSubunit(cross_references=[cross_reference]))
+                else:
+                    specie.cross_references.append(cross_reference)
 
         # updated
         specie.modified = datetime.datetime.utcnow()
@@ -1039,14 +1108,21 @@ class SabioRk(data_source.HttpDataSource):
         for i_law, law in enumerate(self.session.query(KineticLaw).filter(KineticLaw.id.in_(ids)).all()):
             if self.verbose and (i_law % 100 == 0):
                 print('  Normalizing kinetic law {} of {}'.format(i_law + 1, len(ids)))
+
+            if law.enzyme:
+                enzyme_molecular_weight = law.enzyme.molecular_weight
+            else:
+                enzyme_molecular_weight = None
+
             for p in law.parameters:
                 p.name, p.type, p.value, p.error, p.units = self.normalize_parameter_value(
-                    p.observed_name, p.observed_type, p.observed_value, p.observed_error, p.observed_units)
+                    p.observed_name, p.observed_type, p.observed_value, p.observed_error, p.observed_units,
+                    enzyme_molecular_weight)
 
         if self.commit_intermediate_results:
             self.session.commit()
 
-    def normalize_parameter_value(self, name, type, value, error, units):
+    def normalize_parameter_value(self, name, type, value, error, units, enzyme_molecular_weight):
         """
         Args:
             name (:obj:`str`): parameter name
@@ -1054,6 +1130,7 @@ class SabioRk(data_source.HttpDataSource):
             value (:obj:`float`): observed value
             error (:obj:`float`): observed error
             units (:obj:`str`): observed units
+            enzyme_molecular_weight (:obj:`float`): enzyme molecular weight
 
         Returns:
             :obj:`tuple` of :obj:`str`, :obj:`int`, :obj:`float`, :obj:`float`, :obj:`str`: normalized name and
@@ -1104,7 +1181,11 @@ class SabioRk(data_source.HttpDataSource):
 
         elif type_name == 'v_max':
             if units in ['mol*s^(-1)*g^(-1)', 'katal*g^(-1)']:
-                return ('v_max', 186, value, error, 'mol*s^(-1)*g^(-1)')
+                if enzyme_molecular_weight:
+                    f = enzyme_molecular_weight
+                    return ('k_cat', 25, value * float(f) if value else None, error * float(f) if error else None, 's^(-1)')
+                else:
+                    return ('v_max', 186, value, error, 'mol*s^(-1)*g^(-1)')
 
             if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
                 return ('k_cat', 25, value, error, 's^(-1)')
@@ -1177,7 +1258,8 @@ class SabioRk(data_source.HttpDataSource):
                         resource = Resource(namespace=namespace, id=id)
                         self.session.add(resource)
 
-                x_refs.append(resource)
+                if resource not in x_refs:
+                    x_refs.append(resource)
 
         return x_refs
 
@@ -1345,7 +1427,7 @@ class SabioRk(data_source.HttpDataSource):
         for id, properties in law_properties.items():
             # get kinetic law
             q = law_q.filter_by(id=id)
-            if q.count() == 0:
+            if not q.count():
                 raise ValueError('No Kinetic Law with id {}'.format(id))
             law = q.first()
 
@@ -1580,6 +1662,160 @@ class SabioRk(data_source.HttpDataSource):
             if self.commit_intermediate_results and (i_compound % 100 == 99):
                 self.session.commit()
 
+    def load_missing_enzyme_information_from_html(self, ids):
+        """ Loading enzyme subunit information from html
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+        """
+        db_session = self.session
+        req_session = self.requests_session
+
+        kinetic_laws = db_session \
+            .query(KineticLaw) \
+            .filter(KineticLaw.enzyme_id.isnot(None), KineticLaw.id.in_(ids)) \
+            .all()
+
+        for i_kinetic_law, kinetic_law in enumerate(kinetic_laws):
+            if self.verbose and (i_kinetic_law % 100 == 0):
+                print('  Loading enzyme information for {} of {} kinetic laws'.format(i_kinetic_law + 1, len(kinetic_laws)))
+
+            response = req_session.get(self.ENDPOINT_KINETIC_LAWS_PAGE, params={'kinlawid': kinetic_law.id, 'newinterface': 'true'})
+            response.raise_for_status()
+
+            enzyme = kinetic_law.enzyme
+            subunits = enzyme.subunits
+            for subunit in subunits:
+                subunit.coefficient = None
+
+            doc = bs4.BeautifulSoup(response.text, 'html.parser')
+            td = doc.find('td', text='Modifier-Catalyst')
+            tr = td.parent
+            td = tr.find_all('td')[-1]
+            inner_html = td.decode_contents(formatter='html').strip() + ' '
+            if inner_html == '- ':
+                continue
+
+            try:
+                subunit_coefficients = self.parse_complex_subunit_structure(inner_html)
+            except Exception as error:
+                six.reraise(
+                    ValueError,
+                    ValueError('Subunit structure for kinetic law {} could not be parsed: {}\n\t{}'.format(
+                        kinetic_law.id, inner_html, str(error).replace('\n', '\n\t'))),
+                    sys.exc_info()[2])
+
+            enzyme.subunits = []
+            for subunit_id, coefficient in subunit_coefficients.items():
+                q = db_session.query(Resource).filter_by(namespace='uniprot', id=subunit_id)
+                if q.count():
+                    xref = q.first()
+                else:
+                    xref = Resource(namespace='uniprot', id=subunit_id)
+                subunit = EnzymeSubunit(coefficient=coefficient, cross_references=[xref])
+                enzyme.subunits.append(subunit)
+
+    def parse_complex_subunit_structure(self, text):
+        """ Parse the subunit structure of complex into a dictionary of subunit coefficients
+
+        Args:
+            text (:obj:`str`): subunit structure described with nested parentheses
+
+        Returns:
+            :obj:`dict` of :obj:`str`, :obj:`int`: dictionary of subunit coefficients
+        """
+        # try adding missing parentheses
+        n_open = text.count('(')
+        n_close = text.count(')')
+        if n_open > n_close:
+            text += ')' * (n_open - n_close)
+        elif n_open < n_close:
+            text = '(' * (n_close - n_open) + text
+
+        # for convenenice, add parenthesis at the beginning and end of the string and before and after each subunit
+        if text[0] != '(':
+            text = '(' + text + ')'
+        text = text.replace('<a ', '(<a ').replace('</a>', '</a>)')
+
+        # parse the nested subunit structure
+        i = 0
+        stack = [{'subunits': {}}]
+        while i < len(text):
+            if text[i] == '(':
+                stack.append({'start': i, 'subunits': {}})
+                i += 1
+            elif text[i] == ')':
+                tmp = stack.pop()
+                start = tmp['start']
+                end = i
+
+                subunits = tmp['subunits']
+                if not subunits:
+                    matches = re.findall('<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text[start+1:end])
+                    for match in matches:
+                        subunits[match] = 1
+
+                match = re.match('^\)\*(\d+)', text[i:])
+                if match:
+                    i += len(match.group(0))
+                    coefficient = int(float(match.group(1)))
+                else:
+                    i += 1
+                    coefficient = 1
+
+                for id in subunits.keys():
+                    if id not in stack[-1]['subunits']:
+                        stack[-1]['subunits'][id] = 0
+                    stack[-1]['subunits'][id] += subunits[id] * coefficient
+
+            else:
+                i += 1
+
+        # check that all subunits were extracted
+        matches = re.findall('<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text)
+        if len(set(matches)) != len(stack[0]['subunits'].keys()):
+            raise ValueError('Subunit structure could not be parsed: {}'.format(text))
+
+        return stack[0]['subunits']
+
+    def calc_enzyme_molecular_weights(self, enzymes):
+        """ Calculate the molecular weight of each enzyme 
+
+        Args:
+            enzymes (:obj:`list` of :obj:`Enzyme`): list of enzymes
+        """
+        letters = Bio.Alphabet.IUPAC.IUPACProtein.letters
+        mean_aa_mw = Bio.SeqUtils.molecular_weight(letters, seq_type='protein') / len(letters)
+
+        for i_enzyme, enzyme in enumerate(enzymes):
+            if self.verbose and i_enzyme % 100 == 0:
+                print('  Calculating molecular weight of enzyme {} of {}'.format(i_enzyme + 1, len(enzymes)))
+
+            enzyme_molecular_weight = 0
+            for subunit in enzyme.subunits:
+                for xref in subunit.cross_references:
+                    if xref.namespace == 'uniprot':
+                        response = self.requests_session.get(
+                            self.ENDPOINT_DOMAINS['uniprot'] + '/uniprot/?query={}&columns=id,sequence&format=tab'.format(xref.id))
+                        response.raise_for_status()
+                        seqs = list(csv.DictReader(response.text.split('\n'), delimiter='\t'))
+                        if seqs:
+                            subunit.sequence = next((seq['Sequence'] for seq in seqs if seq['Entry'] == xref.id), seqs[0]['Sequence'])
+                            iupac_seq = re.sub('[^' + Bio.Alphabet.IUPAC.IUPACProtein.letters + ']', '', subunit.sequence)
+                            subunit.molecular_weight = \
+                                + Bio.SeqUtils.molecular_weight(iupac_seq, seq_type='protein') \
+                                + (len(subunit.sequence) - len(iupac_seq)) * mean_aa_mw
+                            enzyme_molecular_weight += (subunit.coefficient or float('nan')) * subunit.molecular_weight
+                        else:
+                            subunit.sequence = None
+                            subunit.molecular_weight = None
+                            enzyme_molecular_weight = float('nan')
+
+            if not enzyme_molecular_weight or math.isnan(enzyme_molecular_weight):
+                enzyme.molecular_weight = None
+            else:
+                enzyme.molecular_weight = enzyme_molecular_weight
+
     def calc_stats(self):
         """ Calculate statistics about SABIO-RK
 
@@ -1589,9 +1825,9 @@ class SabioRk(data_source.HttpDataSource):
         session = self.session
 
         units = session \
-            .query(Parameter.units, Parameter.observed_units) \
+            .query(Parameter.units, Parameter.observed_units, sqlalchemy.func.count(Parameter._id)) \
             .filter(Parameter.observed_type.in_(Parameter.TYPES.keys())) \
-            .distinct(Parameter.observed_units) \
+            .group_by(Parameter.units, Parameter.observed_units) \
             .order_by(Parameter.units, Parameter.observed_units) \
             .all()
 
@@ -1626,7 +1862,7 @@ class SabioRk(data_source.HttpDataSource):
             for unit in units:
                 column.append(session
                               .query(Parameter)
-                              .filter(Parameter.observed_type == sbo_id, Parameter.observed_units == unit[1])
+                              .filter(Parameter.observed_type == sbo_id, Parameter.units == unit[0], Parameter.observed_units == unit[1])
                               .count())
 
             usable = session \

@@ -125,8 +125,10 @@ class ArrayExpress(data_source.HttpDataSource):
     """
 
     base_model = Base
-    ENDPOINT_DOMAIN = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments'
-    DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAIN + '/{}/samples'
+    ENDPOINT_DOMAINS = {
+        'array_express': 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments',
+        }
+    DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAINS['array_express'] + '/{}/samples'
     DOWNLOAD_COMPLETE_SAMPLE_URL = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/samples'
 
     def load_samples(self, experiments):
@@ -173,9 +175,9 @@ class ArrayExpress(data_source.HttpDataSource):
         req_session = self.requests_session
 
         if experiment_ids is None:
-            url = self.ENDPOINT_DOMAIN
+            url = self.ENDPOINT_DOMAINS['array_express']
         else:
-            url = self.ENDPOINT_DOMAIN + '/' + ','.join([str(id) for id in experiment_ids])
+            url = self.ENDPOINT_DOMAINS['array_express'] + '/' + ','.join([str(id) for id in experiment_ids])
         response = req_session.get(url)
         response.raise_for_status()
         xml_parser = jxmlease.Parser()

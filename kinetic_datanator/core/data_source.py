@@ -228,11 +228,11 @@ class HttpDataSource(CachedDataSource):
     Attributes:
         requests_cache_filename (:obj:`str`): path to cache HTTP requests
         requests_session (:obj:`requests_cache.core.CachedSession`): cache-enabled HTTP request session
-        ENDPOINT_DOMAIN (:obj:`str`): domains to retry
+        ENDPOINT_DOMAINS (:obj:`dict` of :obj:`str`, :obj:`str`): dictionary of domains to retry
         MAX_HTTP_RETRIES (:obj:`int`): maximum number of times to retry each HTTP request
     """
 
-    ENDPOINT_DOMAIN = ''
+    ENDPOINT_DOMAINS = {}
     MAX_HTTP_RETRIES = 5
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
@@ -290,8 +290,8 @@ class HttpDataSource(CachedDataSource):
         session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
 
         # setup retrying
-        if self.ENDPOINT_DOMAIN:
-            session.mount(self.ENDPOINT_DOMAIN, requests.adapters.HTTPAdapter(max_retries=self.MAX_HTTP_RETRIES))
+        for source_name, endpoint_domain in self.ENDPOINT_DOMAINS.items():
+            session.mount(endpoint_domain, requests.adapters.HTTPAdapter(max_retries=self.MAX_HTTP_RETRIES))
 
         return session
 
