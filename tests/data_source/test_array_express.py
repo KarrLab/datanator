@@ -260,7 +260,6 @@ class TestArrayExpress(unittest.TestCase):
 			])
 
 		q = session.query(array_express.Experiment)
-		print [c.id for c in q.all()]
 
 		self.assertEqual([c.id for c in q.all()], [
 			'E-GEOD-34087', 
