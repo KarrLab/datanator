@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from kinetic_datanator.data_source import array_express
 import unittest
 import requests.exceptions
@@ -55,8 +54,6 @@ class TestArrayExpress(unittest.TestCase):
 			'E-MTAB-5661'
 		])
 
-
-		
 		self.assertEqual([c.name for c in q.all()], [
 			'Dynamic regulation of VEGF-inducible genes by an ERK-ERG-p300 transcriptional network', 
 			'Microarray analysis of palatal shelves from wild-type versus p63-null mouse embryos', 
@@ -64,15 +61,16 @@ class TestArrayExpress(unittest.TestCase):
 			'Global expression profiling time series of early human embryonic stem cell differentiation towards the mesoderm lineage', 
 			'Deciphering the relationship between polycomb repression and stochastic gene expression from single-cell RNA-seq data'
 		])
-		
 
-		self.assertEqual([c.experiment_type for c in q.all()], [
+		"""
+		self.assertEqual([c.experiment_types for c in q.all()], [
 			'transcription profiling by array',
 			'transcription profiling by array', 
 			'transcription profiling by array', 
 			'transcription profiling by array', 
 			'RNA-seq of coding RNA from single cells'
 		])
+		"""
 
 		self.assertEqual([c.organism for c in q.all()], [
 			'Homo sapiens', 
@@ -104,8 +102,15 @@ class TestArrayExpress(unittest.TestCase):
 			'disease state design', 
 			'development or differentiation design'
 			])
+		q = session.query(array_express.ExperimentType)
 
-		session.commit()
+		self.assertEqual([c.name for c in q.all()], [
+			'transcription profiling by array',
+			'transcription profiling by array', 
+			'transcription profiling by array', 
+			'transcription profiling by array', 
+			'RNA-seq of coding RNA from single cells'
+		])
 
 
 
@@ -125,10 +130,22 @@ class TestArrayExpress(unittest.TestCase):
 		src.load_samples(exp)
 
 		q = session.query(array_express.Sample)
-		#session.commit()
-		#print [c.experiment_id for c in q.all()][0:10]
 
-		self.assertEqual([c.name for c in q.all()[0:10]], [
+		self.assertEqual([c.extract for c in q.all()[0:10]], [
+		'MUT_41',
+		'MUT_42', 
+		'MUT_43', 
+		'WT_40', 
+		'WT_45', 
+		'WT_49', 
+		'01_d0_a', 
+		'02_d0_b', 
+		'03_d0_c', 
+		'04_d1_a',
+		])
+
+
+		self.assertEqual([c.index for c in q.all()[0:10]], [
 			'MUT_41', 
 			'MUT_42', 
 			'MUT_43', 
@@ -141,7 +158,7 @@ class TestArrayExpress(unittest.TestCase):
 			'04_d1_a'
 		])
 
-		#self.assertEqual([c.index for c in q.all()[0:10]], [c.name for c in q.all()[0:10]])
+		self.assertEqual([c.index for c in q.all()[0:10]], [c.name for c in q.all()[0:10]])
 		self.assertEqual([c.experiment_id for c in q.all()[0:10]], [1, 1, 1, 1, 1, 1, 2, 2, 2, 2])
 
 
@@ -206,11 +223,10 @@ class TestArrayExpress(unittest.TestCase):
 
 		self.assertEqual([c.unit for c in q.all()[0:10]], [None, None, None, None, None, None, 'day', 'day', 'day', 'day'])
 
-		session.commit()
+
 	
 
 	def test_load_content(self):
-		
 
 		src = self.src
 		session = src.session
@@ -225,29 +241,63 @@ class TestArrayExpress(unittest.TestCase):
 			"E-GEOD-34087",
 			"E-GEOD-32200",
 		]
-		src.load_experiments(experiment_ids=accesssion_nums)
+		#E-CAGE-11 is causing all the integrity errors. It does not contain a single unique identefier
+		src.load_content(experiment_ids=accesssion_nums)
+
+		q = session.query(array_express.Sample)
+
+		self.assertEqual([c.name for c in q.all()[20:30]], [
+			'GSM797846 2', 
+			'GSM797846 1', 
+			'GSM797845 1', 
+			'GSM797845 2', 
+			'GSM797844 1', 
+			'GSM797844 2', 
+			'GSM797843 1', 
+			'GSM797843 2', 
+			'BioSource:s2', 
+			'BioSource:s3'
+			])
+
 		q = session.query(array_express.Experiment)
-		src.load_samples(q)
-		session.commit()
+		print [c.id for c in q.all()]
+
+		self.assertEqual([c.id for c in q.all()], [
+			'E-GEOD-34087', 
+			'E-GEOD-32200', 
+			'E-AFMX-1', 
+			'E-AFMX-2', 
+			'E-ATMX-4', 
+			'E-AFMX-3', 
+			'E-GEOD-885', 
+			'E-CAGE-11', 
+			'E-GEOD-714'
+			])
+		self.tearDown()
+		shutil.rmtree(src.cache_dirname)
+
+	def test_load_content2(self):
+
+		src = self.src
+		session = src.session
+		accesssion_nums = [
+			"E-GEOD-57644",
+			"E-GEOD-62916",
+			"E-MTAB-4782",
+			"E-GEOD-72049",
+			"E-GEOD-69149",
+			"E-GEOD-68753",
+			"E-GEOD-84542",
+			"E-GEOD-77636",
+			"E-GEOD-73109",
+		]
+		#E-CAGE-11 is causing all the integrity errors. It does not contain a single unique identefier
+		src.load_content(experiment_ids=accesssion_nums)
+		self.tearDown()
+		shutil.rmtree(src.cache_dirname)
 		
 
 
-		"""
-		src = self.src
-		session = src.session
-
-		accesssion_nums = [
-			"E-AFMX-1",
-			"E-AFMX-2",
-			"E-AFMX-3",
-			"E-ATMX-4",
-			"E-GEOD-885",
-			"E-CAGE-11",
-			"E-GEOD-714",
-			"E-GEOD-34087",
-			"E-GEOD-32200",
-		]
-		"""
 
 
 		#src.load_experiments(experiment_ids=accesssion_nums)
