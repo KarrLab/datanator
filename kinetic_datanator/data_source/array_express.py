@@ -150,6 +150,7 @@ class ArrayExpress(data_source.HttpDataSource):
 	ENDPOINT_DOMAIN = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments'
 	DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAIN + '/{}/samples'
 	DOWNLOAD_COMPLETE_SAMPLE_URL = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/samples'
+	SAMPLE_EXCLUDE = ['E-GEOD-7812']
 
 	def load_samples(self, experiments):
 		""" """
@@ -210,19 +211,19 @@ class ArrayExpress(data_source.HttpDataSource):
 		xml_parser = jxmlease.Parser()
 		for experiment in experiments:
 			try:
+				if experiment.id not in self.SAMPLE_EXCLUDE:
+					response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(experiment.id))
+					response.raise_for_status()
+					entry_details = xml_parser(response.text)
 
-				response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(experiment.id))
-				response.raise_for_status()
-				entry_details = xml_parser(response.text)
+					if isinstance(entry_details['experiment']['sample'], list):
+						for num, entry in enumerate(entry_details['experiment']['sample']):
+							load_single_sample(entry_details['experiment']['sample'][num])
 
-				if isinstance(entry_details['experiment']['sample'], list):
-					for num, entry in enumerate(entry_details['experiment']['sample']):
-						load_single_sample(entry_details['experiment']['sample'][num])
-
-				if isinstance(entry_details['experiment']['sample'], dict): #in case there is only one sample
-					load_single_sample(entry_details['experiment']['sample'])
+					if isinstance(entry_details['experiment']['sample'], dict): #in case there is only one sample
+						load_single_sample(entry_details['experiment']['sample'])
 			
-			except TypeError or KeyError, e:
+			except TypeError or KeyError or requests.exceptions.RequestException, e:
 				#print e
 				error = Error()
 				error.exp_samp_id = experiment.id
@@ -249,40 +250,48 @@ class ArrayExpress(data_source.HttpDataSource):
 		entry_details = xml_parser(response.text)
 
 		for single_entry in entry_details['experiments']['experiment']:
-			experiment = Experiment()
-			experiment.id = self.get_node_text(single_entry['accession'])
-			print(experiment.id)
-			experiment.name = self.get_node_text(single_entry['name'])
-			#experiment.experiment_type = self.get_node_text(single_entry['experimenttype'])
-			if 'organism' in single_entry:
-				if isinstance(single_entry['organism'], list):
-					pass
-				else:
-					experiment.organism = self.get_node_text(single_entry['organism'])
-			if 'description' in single_entry: 
-				experiment.description = self.get_node_text(single_entry['description']['text'])
-			
-			if 'experimenttype' in single_entry:
-				if isinstance(single_entry['experimenttype'], list):
-					entries = single_entry['experimenttype']
+			try:
+				experiment = Experiment()
+				experiment.id = self.get_node_text(single_entry['accession'])
+				print(experiment.id)
+				experiment.name = self.get_node_text(single_entry['name'])
+				#experiment.experiment_type = self.get_node_text(single_entry['experimenttype'])
+				if 'organism' in single_entry:
+					if isinstance(single_entry['organism'], list):
+						pass
+					else:
+						experiment.organism = self.get_node_text(single_entry['organism'])
+				if 'description' in single_entry: 
+					experiment.description = self.get_node_text(single_entry['description']['text'])
+				
+				if 'experimenttype' in single_entry:
+					if isinstance(single_entry['experimenttype'], list):
+						entries = single_entry['experimenttype']
 
-				else:
-					entries = [single_entry['experimenttype']]
-				for entry in entries:
-					experiment.experiment_types.append(ExperimentType(name=self.get_node_text(entry)))
+					else:
+						entries = [single_entry['experimenttype']]
+					for entry in entries:
+						experiment.experiment_types.append(ExperimentType(name=self.get_node_text(entry)))
 
-			if 'experimentdesign' in single_entry:
-				if isinstance(single_entry['experimentdesign'], list):
-					entries = single_entry['experimentdesign']
+				if 'experimentdesign' in single_entry:
+					if isinstance(single_entry['experimentdesign'], list):
+						entries = single_entry['experimentdesign']
 
-				else:
-					entries = [single_entry['experimentdesign']]
-				for entry in entries:
-					experiment.experiment_designs.append(ExperimentDesign(name=self.get_node_text(entry)))
+					else:
+						entries = [single_entry['experimentdesign']]
+					for entry in entries:
+						experiment.experiment_designs.append(ExperimentDesign(name=self.get_node_text(entry)))
 
-			#print experiment.__dict__
+				#print experiment.__dict__
 
-			db_session.add(experiment)
+				db_session.add(experiment)
+			except TypeError or KeyError or requests.exceptions.RequestException, e:
+				#print e
+				error = Error()
+				error.exp_samp_id = experiment.id
+				error.error_message = "{}".format(e)
+				db_session.add(error)
+
 
 	def load_content(self, experiment_ids=None, test_url=""):
 		db_session = self.session
@@ -337,7 +346,10 @@ class ArrayExpress(data_source.HttpDataSource):
 if __name__ == '__main__':
 	a = ArrayExpress()
 	a.load_content_in_chunks()
-	#a.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/E-MEXP-18,E-MTAB-5678")
+	#a.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/E-GEOD-7812,E-MTAB-1234")
+	#becuase of E-GEOD-7812, add in http requests exceptions
+
+
 
 
 
