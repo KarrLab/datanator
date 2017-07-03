@@ -195,6 +195,7 @@ class TestArrayExpress(unittest.TestCase):
 		q = session.query(array_express.Variable)
 		#print [c.unit for c in q.all()][0:10]
 
+
 		self.assertEqual([c.name for c in q.all()[0:10]], [
 			'genotype', 
 			'genotype', 
@@ -208,19 +209,20 @@ class TestArrayExpress(unittest.TestCase):
 			'time'
 		])
 
+		
 		self.assertEqual([c.value for c in q.all()[0:10]], [
-			'p63-/-', 
-			'p63-/-', 
-			'p63-/-', 
-			'wild type genotype', 
-			'wild type genotype', 
-			'wild type genotype', 
-			'0', 
-			'0', 
-			'0', 
-			'1'
+			u'p63-/-', 
+			u'p63-/-', 
+			u'p63-/-', 
+			u'wild type genotype', 
+			u'wild type genotype', 
+			u'wild type genotype', 
+			0, 
+			0, 
+			0, 
+			1
 		])
-
+		
 
 		self.assertEqual([c.unit for c in q.all()[0:10]], [None, None, None, None, None, None, 'day', 'day', 'day', 'day'])
 
