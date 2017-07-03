@@ -147,10 +147,10 @@ class ArrayExpress(data_source.HttpDataSource):
 	"""
 
 	base_model = Base
-	ENDPOINT_DOMAIN = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments'
+	ENDPOINT_DOMAIN = 'https://www.ebi.ac.uk/arrayexpress/json/v3/experiments'
 	DOWNLOAD_SAMPLE_URL = ENDPOINT_DOMAIN + '/{}/samples'
 	DOWNLOAD_COMPLETE_SAMPLE_URL = 'https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/samples'
-	SAMPLE_EXCLUDE = ['E-GEOD-7812']
+	SAMPLE_EXCLUDE = ['E-GEOD-7812', 'E-GEOD-7264']
 
 	def load_samples(self, experiments):
 		""" """
@@ -160,8 +160,9 @@ class ArrayExpress(data_source.HttpDataSource):
 			sample.experiment = experiment
 			print("Sample: {}".format(experiment.id))
 			#sample.index = self.get_node_text(entry_details['experiment']['sample'][num]['extract']['name'])
-			if 'source' in self.get_node_text(sample_jxmlease_object):
-				sample.name = self.get_node_text(sample_jxmlease_object['source']['name'])
+			print sample_jxmlease_object['source']['name']
+			if 'source' in sample_jxmlease_object:
+				sample.name = sample_jxmlease_object['source']['name']
 			if 'extract' in self.get_node_text(sample_jxmlease_object):
 				sample.extract = self.get_node_text(sample_jxmlease_object['extract']['name'])
 			if 'assay' in self.get_node_text(sample_jxmlease_object):
@@ -170,51 +171,37 @@ class ArrayExpress(data_source.HttpDataSource):
 			# create a characteristic object for each characteristic and append that to the sample's characteristic field
 			if 'characteristic' in sample_jxmlease_object:
 				characteristics = self.get_node_text(sample_jxmlease_object['characteristic'])
-				if isinstance(characteristics, list):
-					for entry in characteristics:
-						new_charachteristic = Characteristic()
-						new_charachteristic.name = self.get_node_text(entry['category'])
-						new_charachteristic.value = self.get_node_text(entry['value'])
-						sample.characteristics.append(new_charachteristic)
-
-				else:
+				for entry in characteristics:
 					new_charachteristic = Characteristic()
-					new_charachteristic.name = self.get_node_text(characteristics['category'])
-					new_charachteristic.value = self.get_node_text(characteristics['value'])
+					new_charachteristic.name = entry['category']
+					new_charachteristic.value = entry['value']
 					sample.characteristics.append(new_charachteristic)
+
 
 			# create a variable object for each variable and append that to the sample's variable field
 			#print sample.experiment.id
 			if 'variable' in sample_jxmlease_object:
 				variables = sample_jxmlease_object['variable']
-				if isinstance(variables, list):
-					for entry in variables:
-						new_variable = Variable()
-						new_variable.name = self.get_node_text(entry['name'])
-						new_variable.value = self.get_node_text(entry['value'])
-						if "unit" in entry:
-							new_variable.units = self.get_node_text(entry['unit'])
-						sample.variables.append(new_variable)
-				else:
+				for entry in variables:
 					new_variable = Variable()
-					new_variable.name = self.get_node_text(variables['name'])
-					new_variable.value = self.get_node_text(variables['value'])
-					if "unit" in variables:
-						new_variable.unit = self.get_node_text(variables['unit'])
+					new_variable.name = entry['name']
+					new_variable.value = entry['value']
+					if "unit" in entry:
+						new_variable.unit = entry['unit']
 					sample.variables.append(new_variable)
-				db_session.add(sample)
+			db_session.add(sample)
 
 
 		req_session = self.requests_session
 		db_session = self.session
 
-		xml_parser = jxmlease.Parser()
+		#xml_parser = jxmlease.Parser()
 		for experiment in experiments:
 			try:
 				if experiment.id not in self.SAMPLE_EXCLUDE:
 					response = req_session.get(self.DOWNLOAD_SAMPLE_URL.format(experiment.id))
 					response.raise_for_status()
-					entry_details = xml_parser(response.text)
+					entry_details = json.loads(response.text)#xml_parser(response.text)
 
 					if isinstance(entry_details['experiment']['sample'], list):
 						for num, entry in enumerate(entry_details['experiment']['sample']):
@@ -223,12 +210,13 @@ class ArrayExpress(data_source.HttpDataSource):
 					if isinstance(entry_details['experiment']['sample'], dict): #in case there is only one sample
 						load_single_sample(entry_details['experiment']['sample'])
 			
-			except TypeError or KeyError or requests.exceptions.RequestException, e:
+			except (requests.exceptions.HTTPError, KeyError, TypeError) as e:# TypeError or KeyError or requests.exceptions.HTTPError as e:
 				#print e
 				error = Error()
 				error.exp_samp_id = experiment.id
 				error.error_message = "{}".format(e)
 				db_session.add(error)
+			
 
 
 
@@ -247,50 +235,59 @@ class ArrayExpress(data_source.HttpDataSource):
 		response.raise_for_status()
 		xml_parser = jxmlease.Parser()
 
-		entry_details = xml_parser(response.text)
+
+		entry_details = json.loads(response.text)#xml_parser(response.text)
+		#print xml_parser(response.text)
+		#print entry_details
+
 
 		for single_entry in entry_details['experiments']['experiment']:
 			try:
 				experiment = Experiment()
-				experiment.id = self.get_node_text(single_entry['accession'])
-				print(experiment.id)
-				experiment.name = self.get_node_text(single_entry['name'])
+				#experiment.id = self.get_node_text(single_entry['accession'])
+				experiment.id = single_entry['accession']
+				#experiment.name = self.get_node_text(single_entry['name'])
+				experiment.name = single_entry['name']
+
 				#experiment.experiment_type = self.get_node_text(single_entry['experimenttype'])
 				if 'organism' in single_entry:
-					if isinstance(single_entry['organism'], list):
+					if len(single_entry['organism'])>1:
 						pass
 					else:
-						experiment.organism = self.get_node_text(single_entry['organism'])
-				if 'description' in single_entry: 
-					experiment.description = self.get_node_text(single_entry['description']['text'])
+						experiment.organism = single_entry['organism'][0]
+				if 'description' in single_entry:
+					experiment.description = single_entry['description'][0]['text']
 				
 				if 'experimenttype' in single_entry:
-					if isinstance(single_entry['experimenttype'], list):
-						entries = single_entry['experimenttype']
+					#if isinstance(single_entry['experimenttype'], list):
+					entries = single_entry['experimenttype']
 
-					else:
-						entries = [single_entry['experimenttype']]
+					#else:
+					#	entries = [single_entry['experimenttype']]
 					for entry in entries:
-						experiment.experiment_types.append(ExperimentType(name=self.get_node_text(entry)))
+						experiment.experiment_types.append(ExperimentType(name=entry))
 
 				if 'experimentdesign' in single_entry:
-					if isinstance(single_entry['experimentdesign'], list):
-						entries = single_entry['experimentdesign']
-
-					else:
-						entries = [single_entry['experimentdesign']]
+					#if isinstance(single_entry['experimentdesign'], list):
+					entries = single_entry['experimentdesign']
+					
+					#else:
+					#	entries = [single_entry['experimentdesign']]
 					for entry in entries:
-						experiment.experiment_designs.append(ExperimentDesign(name=self.get_node_text(entry)))
+						experiment.experiment_designs.append(ExperimentDesign(name=entry))
+					
 
 				#print experiment.__dict__
 
 				db_session.add(experiment)
-			except TypeError or KeyError or requests.exceptions.RequestException, e:
+			
+			except TypeError or KeyError or requests.exceptions.HTTPError, e:
 				#print e
 				error = Error()
 				error.exp_samp_id = experiment.id
 				error.error_message = "{}".format(e)
 				db_session.add(error)
+			
 
 
 	def load_content(self, experiment_ids=None, test_url=""):
@@ -316,15 +313,15 @@ class ArrayExpress(data_source.HttpDataSource):
 		"""
 
 
-		self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments?date=[2001-06-31+2002-01-01]")
+		self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2001-06-31+2001-12-30]")
 
 		i = 2002
 		current_year = datetime.datetime.now().year
 		while i <= datetime.datetime.now().year:
 			winter_spring = "[{}-01-01+{}-06-31]".format(i,i)
-			summer_fall = "[{}-07-01+{}-11-30]".format(i,i)
-			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments?date={}".format(winter_spring))
-			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments?date={}".format(summer_fall))
+			summer_fall = "[{}-07-01+{}-12-30]".format(i,i)
+			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date={}".format(winter_spring))
+			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date={}".format(summer_fall))
 			i = i + 1
 
 
@@ -348,6 +345,7 @@ if __name__ == '__main__':
 	a.load_content_in_chunks()
 	#a.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/E-GEOD-7812,E-MTAB-1234")
 	#becuase of E-GEOD-7812, add in http requests exceptions
+
 
 
 
