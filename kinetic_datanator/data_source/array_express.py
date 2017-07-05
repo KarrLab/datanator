@@ -11,6 +11,11 @@ import warnings
 import zipfile
 from kinetic_datanator.core import data_source
 
+import sys  
+
+reload(sys)  
+sys.setdefaultencoding('utf8')
+
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -103,6 +108,7 @@ class Experiment(Base):
 
 	organism = sqlalchemy.Column(sqlalchemy.String())
 	name = sqlalchemy.Column(sqlalchemy.String())
+	name2 = sqlalchemy.Column(sqlalchemy.String())
 	description = sqlalchemy.Column(sqlalchemy.String())
 	experiment_type = sqlalchemy.Column(sqlalchemy.String())
 	# samples = sqlalchemy.orm.relationship('Sample',
@@ -160,7 +166,7 @@ class ArrayExpress(data_source.HttpDataSource):
 			sample.experiment = experiment
 			print("Sample: {}".format(experiment.id))
 			#sample.index = self.get_node_text(entry_details['experiment']['sample'][num]['extract']['name'])
-			print sample_jxmlease_object['source']['name']
+			print(sample_jxmlease_object['source']['name'])
 			if 'source' in sample_jxmlease_object:
 				sample.name = sample_jxmlease_object['source']['name']
 			if 'extract' in self.get_node_text(sample_jxmlease_object):
@@ -221,65 +227,70 @@ class ArrayExpress(data_source.HttpDataSource):
 
 
 
-	def load_experiments(self, experiment_ids=None, test_url=""):
+	def load_experiments(self, experiment_ids=None, test_url="", json_object=None):
 		db_session = self.session
 		req_session = self.requests_session
 
-		if test_url:
-			url = test_url
-		elif experiment_ids is None:
-			url = self.ENDPOINT_DOMAIN
+
+		if json_object==None:
+			if test_url:
+				url = test_url
+			elif experiment_ids is None:
+				url = self.ENDPOINT_DOMAIN
+			elif experiment_ids is not None:
+				url = self.ENDPOINT_DOMAIN + '/' + ','.join([str(id) for id in experiment_ids])
+			response = req_session.get(url)
+			response.raise_for_status()
+			entry_details = json.loads(response.text)
 		else:
-			url = self.ENDPOINT_DOMAIN + '/' + ','.join([str(id) for id in experiment_ids])
-		response = req_session.get(url)
-		response.raise_for_status()
-		xml_parser = jxmlease.Parser()
+			entry_details=json_object
 
-
-		entry_details = json.loads(response.text)#xml_parser(response.text)
-		#print xml_parser(response.text)
-		#print entry_details
 
 
 		for single_entry in entry_details['experiments']['experiment']:
-			try:
-				experiment = Experiment()
-				#experiment.id = self.get_node_text(single_entry['accession'])
-				experiment.id = single_entry['accession']
-				#experiment.name = self.get_node_text(single_entry['name'])
+			#try:
+			experiment = Experiment()
+			#experiment.id = self.get_node_text(single_entry['accession'])
+			experiment.id = single_entry['accession']
+			#experiment.name = self.get_node_text(single_entry['name'])
+			if type(single_entry['name']) is list:
+				experiment.name  = single_entry['name'][0]
+				experiment.name2 = single_entry['name'][1]
+			else:		
 				experiment.name = single_entry['name']
 
-				#experiment.experiment_type = self.get_node_text(single_entry['experimenttype'])
-				if 'organism' in single_entry:
-					if len(single_entry['organism'])>1:
-						pass
-					else:
-						experiment.organism = single_entry['organism'][0]
-				if 'description' in single_entry:
-					experiment.description = single_entry['description'][0]['text']
+			#experiment.experiment_type = self.get_node_text(single_entry['experimenttype'])
+			if 'organism' in single_entry:
+				if len(single_entry['organism'])>1:
+					pass
+				else:
+					experiment.organism = single_entry['organism'][0]
+			if 'description' in single_entry:
+				experiment.description = single_entry['description'][0]['text']
+			
+			if 'experimenttype' in single_entry:
+				#if isinstance(single_entry['experimenttype'], list):
+				entries = single_entry['experimenttype']
+
+				#else:
+				#	entries = [single_entry['experimenttype']]
+				for entry in entries:
+					experiment.experiment_types.append(ExperimentType(name=entry))
+
+			if 'experimentdesign' in single_entry:
+				#if isinstance(single_entry['experimentdesign'], list):
+				entries = single_entry['experimentdesign']
 				
-				if 'experimenttype' in single_entry:
-					#if isinstance(single_entry['experimenttype'], list):
-					entries = single_entry['experimenttype']
+				#else:
+				#	entries = [single_entry['experimentdesign']]
+				for entry in entries:
+					experiment.experiment_designs.append(ExperimentDesign(name=entry))
+				
 
-					#else:
-					#	entries = [single_entry['experimenttype']]
-					for entry in entries:
-						experiment.experiment_types.append(ExperimentType(name=entry))
+			#print experiment.__dict__
 
-				if 'experimentdesign' in single_entry:
-					#if isinstance(single_entry['experimentdesign'], list):
-					entries = single_entry['experimentdesign']
-					
-					#else:
-					#	entries = [single_entry['experimentdesign']]
-					for entry in entries:
-						experiment.experiment_designs.append(ExperimentDesign(name=entry))
-					
-
-				#print experiment.__dict__
-
-				db_session.add(experiment)
+			db_session.add(experiment)
+			"""
 			
 			except TypeError or KeyError or requests.exceptions.HTTPError, e:
 				#print e
@@ -287,6 +298,7 @@ class ArrayExpress(data_source.HttpDataSource):
 				error.exp_samp_id = experiment.id
 				error.error_message = "{}".format(e)
 				db_session.add(error)
+			"""
 			
 
 
@@ -312,9 +324,15 @@ class ArrayExpress(data_source.HttpDataSource):
 		Iterate through the dates and use load_content() to download everything to database in chunks
 		"""
 
+		db_session = self.session
+		#self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2001-06-31+2001-12-30]")
 
-		self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2001-06-31+2001-12-30]")
+		for year in range(2002,2018):
+			print(year)
+			self.load_experiments(json_object=json.loads(open("AX_Json_Objects/{}.txt".format(year), 'r').read().encode('utf8')))
 
+		db_session.commit()
+		"""
 		i = 2002
 		current_year = datetime.datetime.now().year
 		while i <= datetime.datetime.now().year:
@@ -323,6 +341,7 @@ class ArrayExpress(data_source.HttpDataSource):
 			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date={}".format(winter_spring))
 			self.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date={}".format(summer_fall))
 			i = i + 1
+		"""
 
 
 
@@ -345,6 +364,10 @@ if __name__ == '__main__':
 	a.load_content_in_chunks()
 	#a.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/xml/v3/experiments/E-GEOD-7812,E-MTAB-1234")
 	#becuase of E-GEOD-7812, add in http requests exceptions
+
+
+
+
 
 
 
