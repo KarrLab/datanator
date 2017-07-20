@@ -6,16 +6,13 @@
 :License: MIT
 """
 
-
-##TODO: Figure out dependencies for this module -- kinetic_datanator -> wc_util -> libgit2?
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UnicodeText, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 
-engine = create_engine('sqlite:///jaspar_prac.db')
+engine = create_engine('sqlite:///jaspar.db')
 Base = declarative_base()
 # :obj:`Base`: base model for local sqlite database
-
 
 
 class MatrixObservation(Base):
@@ -34,17 +31,13 @@ class MatrixObservation(Base):
     tf_name = Column(String(255))
     jaspar_collection = Column(String(255))
 
-    data = relationship('BindingMatrix', backref = 'observation')
-    references = relationship('Resources', backref = 'observation')
-    type_info = relationship('Type', backref = 'observation')
-    family_info = relationship('Family', backref = 'observation')
-    class_info = relationship('Class', backref = 'observation')
-    transcriptionfactor = relationship('TranscriptionFactor', backref = 'observation')
-    # resource_relation = relationship('Resources', backref = backref('matrix_relation'))
-    # type_relation = relationship('Type', backref = backref('matrix_relation'))
-    # tf_relation = relationship('TranscriptionFactor', backref = backref('matrix_relation'))
-    # family_relation = relationship('Family', backref = backref('matrix_relation'))
-    # class_relation = relationship('Class', backref = backref('matrix_relation'))
+    data = relationship('BindingMatrix', backref = 'matrixobservation')
+    references = relationship('Resources', backref = 'matrixobservation')
+    type_info = relationship('Type', backref = 'matrixobservation')
+    family_info = relationship('Family', backref = 'matrixobservation')
+    class_info = relationship('Class', backref = 'matrixobservation')
+    tf = relationship('TranscriptionFactor', backref = 'matrixobservation')
+    species = relationship('Species', backref = 'matrixobservation')
 
 class BindingMatrix(Base):
     """ Represents the Matrix based transcription factor binding profile
@@ -58,16 +51,14 @@ class BindingMatrix(Base):
         jaspar_matrix_ID (:obj:`int`): ID of Matrix
     """
     __tablename__ = 'bindingmatrix'
-
-
-    position = Column(Integer, primary_key = True)
+    id = Column(Integer, primary_key = True )
+    position = Column(Integer)
     frequency_A = Column(Numeric)
     frequency_C = Column(Numeric)
     frequency_G = Column(Numeric)
     frequency_T = Column(Numeric)
 
     jaspar_matrix_ID = Column(Integer, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    # matrix_relation = relationship('MatrixObservation', backref= 'binding_relation', foreign_keys = [jaspar_matrix_ID])
 
 
 class Type(Base):
@@ -83,7 +74,6 @@ class Type(Base):
     type_name = Column(String(255))
 
     jaspar_matrix_ID = Column(Integer, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    # matrix_relation = relationship('MatrixObservation', backref=backref('type'), foreign_keys = [jaspar_matrix_ID])
 
 class Family(Base):
     """ Represents protein family
@@ -98,7 +88,7 @@ class Family(Base):
     family_name = Column(UnicodeText(64))
 
     jaspar_matrix_ID = Column(String, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    matrix_relation = relationship('MatrixObservation', backref = backref('family'), foreign_keys= [jaspar_matrix_ID])
+    # matrix_relation = relationship('MatrixObservation', backref = backref('family'), foreign_keys= [jaspar_matrix_ID])
 
 ## TODO: Figure out if there are any other attributes within the family (Ex. global IDS)
 
@@ -116,7 +106,23 @@ class Class(Base):
     class_name = Column(String(255))
 
     jaspar_matrix_ID = Column(String, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    # matrix_relation = relationship('MatrixObservation', backref = backref('class'), foreign_keys= [jaspar_matrix_ID])
+
+
+class Species(Base):
+    """ Represents Species of Observation
+
+    Attributes:
+        NCBI_id (:obj:`int`): NCBI species ID from which TF was found
+        jaspar_matrix_ID (:obj:`int`): ID of Matrix
+
+    """
+
+    __tablename__ = 'species'
+
+    id = Column(Integer, primary_key = True)
+    NCBI_id = Column(String(255))
+
+    jaspar_matrix_ID = Column(Integer, ForeignKey('matrixobservation.jaspar_matrix_ID'))
 
 
 class Resources(Base):
@@ -133,14 +139,12 @@ class Resources(Base):
     medline_id = Column(String(255))
 
     jaspar_matrix_ID = Column(Integer, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    # matrix_relation = relationship('MatrixObservation', backref=backref('resource'), foreign_keys= [jaspar_matrix_ID])
 
 class TranscriptionFactor(Base):
     """ Represents a Transcription Factor from Jaspar Database
 
     Attributes:
         uniprot_id (:obj:`str`): uniprot id
-        NCBI_id (:obj:`int`): NCBI species ID from which TF was found
 
         jaspar_matrix_ID (:obj:`int`): ID of Matrix
         tf_name (:obj:`str`): transcription factor name (standardized Entrez gene symbols)
@@ -149,11 +153,8 @@ class TranscriptionFactor(Base):
 
     id = Column(Integer, primary_key = True)
     uniprot_id = Column(String(255))
-    NCBI_id = Column(String(255))
 
     jaspar_matrix_ID = Column(Integer, ForeignKey('matrixobservation.jaspar_matrix_ID'))
-    # matrix_relation = relationship('MatrixObservation', backref=backref('transcriptionfactor'),
-    #                                 foreign_keys = [jaspar_matrix_ID])
 
 Base.metadata.drop_all(engine)
 Base.metadata.create_all(engine)
