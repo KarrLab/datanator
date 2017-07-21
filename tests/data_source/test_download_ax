@@ -4,49 +4,68 @@ import os
 import shutil
 import json
 
+reload(sys)  
+sys.setdefaultencoding('utf8')
 
-class TestDownloadExperiments(unittest.TestCase):
+class DownloadExperiments():
 
+	def download_single_year(self, year):
+		"""
+		Gets a JSON of all queries for a single year. Saves it into a directory called
+		"AllSamples". Creates this directory if it doesn't exist.
 
-	def tearDown(self):
-		shutil.rmtree(os.path.join('.', 'AllExperiments'))
+		Args:
+			year (obj:'int':) the year that is being collected
+		"""
+		directory = os.path.join('.', 'AllExperiments')
+		if not os.path.exists(directory):
+			os.makedirs(directory)
+		file = open('./AllExperiments/{}.txt'.format(year), 'w')
+
+		file.write(requests.get("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[{}-01-01+{}-12-31]"
+			.format(year, year)).text)
+
+	def download_all_experiments(self, start_year, end_year):
+		"""
+		Downloads all experiments by iterating through the years and calling "donload_single_year"
+		"""
+		for year in range(start_year, end_year+1):
+			print(year)
+			self.download_single_year(year)
 		
-	def test_download_single_year(self):
-		#self.assertTrue(os.path.isdir('./AllSamples'))
-		de = download_ax.DownloadExperiments()
-		de.download_single_year(2003)
-		self.assertTrue(os.path.isdir('./AllExperiments'))
-		self.assertTrue(os.path.isfile('./AllExperiments/2003.txt'))
-		data = json.loads(open(os.path.join('.', 'AllExperiments/2003.txt'), 'r').read())
-		self.assertEqual(data['experiments']['total'], 71)
-		self.assertEqual(data['experiments']['total-samples'], 4906)
 
-class TestDownloadSamples(unittest.TestCase):
+class DownloadSamples():
 
-	def tearDown(self):
-		shutil.rmtree(os.path.join('.', 'AllSamples'))
+	def download_single_sample(self, ax_num):
+		"""
+		Gets a JSON of all samples in a single experiment. Saves it into a directory called
+		"AllSamples". Creates this directory if it doesn't exist.
 
-	def test_download_single_sample(self):
-		ds = download_ax.DownloadSamples()
-		ax_num = 'E-GEOD-662'
-		ds.download_single_sample(ax_num)
-		self.assertTrue(os.path.isdir('./AllSamples'))
-		self.assertTrue(os.path.isfile('./AllSamples/{}.txt'.format(ax_num)))
-		data = json.loads(open(os.path.join('./AllSamples', "{}.txt".format(ax_num)), 'r').read())
-		self.assertEqual(data['experiment']['accession'], ax_num)
+		Args:
+			ax_num (obj:'str':) accession number of the experiment
+		"""
 
-class TestDownloadAllMetadata(unittest.TestCase):
-	def tearDown(self):
-		shutil.rmtree(os.path.join('.', 'AllExperiments'))
-		shutil.rmtree(os.path.join('.', 'AllSamples'))
+		directory = os.path.join('.', 'AllSamples')
+		if not os.path.exists(directory):
+			os.makedirs(directory)
+		file = open('./AllSamples/{}.txt'.format(ax_num), 'w')
+		file.write(requests.get("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}/samples".format(ax_num)).text)
 
-	def test_download_all_metadata(self):
-		download_ax.download_all_metadata(download_range=2003)
 
-		ax_nums =[u'E-GEOD-10', u'E-GEOD-8', u'E-GEOD-6', u'E-GEOD-92', u'E-GEOD-110', u'E-GEOD-74', u'E-SNGR-7', u'E-SNGR-6', u'E-SNGR-5', u'E-SNGR-4', u'E-SNGR-3', u'E-SNGR-2', u'E-GEOD-42', u'E-GEOD-62', u'E-GEOD-61', u'E-GEOD-60', u'E-GEOD-53', u'E-GEOD-50', u'E-GEOD-49', u'E-GEOD-48', u'E-GEOD-54', u'E-MEXP-18', u'E-GEOD-31', u'E-GEOD-29', u'E-GEOD-23', u'E-GEOD-20']
+def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year):
+	"""
+	Downloads all medatata from array exrpess on their samples and experiments. The metadata
+	is saved as the text file. Within the text files, the data is stored as a json object. 
+	"""
+	DownloadExperiments().download_all_experiments(2001, end_year)
 
-		for num in ax_nums:
-			self.assertTrue(os.path.isfile('./AllSamples/{}.txt'.format(num)))
+	all_ax_nums = []
+	for year in range(start_year, end_year+1):
+		metadata = json.loads(open("./AllExperiments/{}.txt".format(year), 'r').read().encode('utf8'))
+		for entry in metadata['experiments']['experiment']:
+			all_ax_nums.append(entry['accession'])
+	for num in all_ax_nums:
+		DownloadSamples().download_single_sample(num)
 
 
 
