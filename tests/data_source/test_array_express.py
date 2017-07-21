@@ -1,9 +1,9 @@
-import array_express
+from kinetic_datanator.data_source import array_express
 import unittest
 import tempfile
 import os
 import shutil
-import download_ax
+from kinetic_datanator.data_source import download_ax
 import collections
 
 class QuickTestArrayExpress(unittest.TestCase):
