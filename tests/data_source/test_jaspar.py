@@ -11,8 +11,7 @@ This code tests all aspects of jaspar.py
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import jaspar
-from jaspar import Base
+from kinetic_datanator.data_source import jaspar
 import random
 
 
@@ -22,7 +21,7 @@ class TestStructure(unittest.TestCase):
         self.engine = create_engine('sqlite:///:memory:')
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
-        Base.metadata.create_all(self.engine)
+        jaspar.Base.metadata.create_all(self.engine)
         #Create instance
         self.type = jaspar.Type(type_name = 'SELEX', jaspar_matrix_ID = 1)
         self.session.add(self.type)
@@ -63,7 +62,7 @@ class TestStructure(unittest.TestCase):
         self.session.commit()
 
     def tearDown(self):
-        Base.metadata.drop_all(self.engine)
+        jaspar.Base.metadata.drop_all(self.engine)
 
     def test_structure_matrixobservation(self):
         #test whatever you need to test by comparing expected to result and assert ifequal
@@ -117,18 +116,15 @@ class TestQuery(unittest.TestCase):
         self.engine.raw_connection().connection.text_factory = str
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
-        Base.metadata.drop_all(self.engine)
-        Base.metadata.create_all(self.engine)
+        jaspar.Base.metadata.drop_all(self.engine)
+        jaspar.Base.metadata.create_all(self.engine)
         database_url = 'http://jaspar.genereg.net/html/DOWNLOAD/database/'
         jaspar.parse_Jaspar_db(self.session, database_url)
         self.session.commit()
-        print 'Succesfully Committed'
-
-
 
     def test_query(self):
         self.z = self.session.query(jaspar.MatrixObservation).get(9436)
-        self.assertEqual(self.z.tf_name,'schlank\n')
+        self.assertEqual(self.z.tf_name,'schlank')
         self.assertEqual(self.z.jaspar_collection,'CORE')
         self.assertEqual(self.z.jaspar_tf_ID, 'MA0193')
         self.assertEqual(self.z.version, 1)
@@ -160,7 +156,7 @@ class TestQuery(unittest.TestCase):
         self.assertEqual(self.data.frequency_T, 0)
 
     def tearDown(self):
-        Base.metadata.drop_all(self.engine)
+        jaspar.Base.metadata.drop_all(self.engine)
 
 
 if __name__ == '__main__':

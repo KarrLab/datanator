@@ -11,10 +11,12 @@ This code takes jaspar database text files from webiste and implements them into
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UnicodeText, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
-from csv import reader
+from unicodecsv import reader
 from itertools import groupby
 from operator import itemgetter
-from urllib2 import urlopen
+from six import BytesIO
+import requests
+import six
 
 """ - - - - - - - - - - - - - - - - - -  Table Definition Classes - - - - - - - - - - - - - - - - """
 
@@ -255,21 +257,27 @@ def call_Data(key_list, data_list, jid):
 def parse_Jaspar_db(session, database_url):
     """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB"""
 
-    f = urlopen(database_url+'MATRIX_PROTEIN.txt')
+    response = requests.get(database_url+'MATRIX_PROTEIN.txt')
+    response.raise_for_status()
+    f = BytesIO(response.content)
     uniprots = reader(f, delimiter = '\t')
     uniprots = make_jaspar_int(uniprots)
     sortedlist = sort(uniprots)
     uniprots, key_uniprot = group_by_jaspar_id(sortedlist)
-    print 'Collected Uniprot Data'
+    print('Collected Uniprot Data')
 
-    f = urlopen(database_url+'MATRIX_SPECIES.txt')
+    response = requests.get(database_url+'MATRIX_SPECIES.txt')
+    response.raise_for_status()
+    f = BytesIO(response.content)
     NCBI = reader(f, delimiter = '\t')
     NCBI = make_jaspar_int(NCBI)
     sortedlist = sort(NCBI)
     NCBI, key_NCBI = group_by_jaspar_id(sortedlist)
-    print 'Collected Species Data'
+    print('Collected Species Data')
 
-    f = urlopen(database_url+'MATRIX_ANNOTATION.txt')
+    response = requests.get(database_url+'MATRIX_ANNOTATION.txt')
+    response.raise_for_status()
+    f = BytesIO(response.content)
     annots = reader(f, delimiter = '\t')
     annots = make_jaspar_int(annots)
     sortedlist = sort(annots)
@@ -290,9 +298,11 @@ def parse_Jaspar_db(session, database_url):
     fam_info, key_fam = group_by_jaspar_id(fam_info)
     med_info, key_med = group_by_jaspar_id(med_info)
     type_info, key_type = group_by_jaspar_id(type_info)
-    print 'Collected Annotation Data'
+    print('Collected Annotation Data')
 
-    f = urlopen(database_url+'MATRIX_DATA.txt')
+    response = requests.get(database_url+'MATRIX_DATA.txt')
+    response.raise_for_status()
+    f = BytesIO(response.content)
     matrix_data = reader(f, delimiter = '\t')
     matrix_data = make_data_int(matrix_data)
     sortedlist = sort(matrix_data)
@@ -300,64 +310,65 @@ def parse_Jaspar_db(session, database_url):
     for i in range(0,len(matrix_data)):
         matrix_data[i] = sorted(matrix_data[i], key=itemgetter(2), reverse=False)
         matrix_data[i] = group_by_position(matrix_data[i])
-    print 'Collected Matrix Binding Data'
+    print('Collected Matrix Binding Data')
 
-    f = urlopen(database_url+'MATRIX.txt')
-    lines = f.readlines()
-    print 'Table Creation Started'
+    response = requests.get(database_url+'MATRIX.txt')
+    response.raise_for_status()
+    f = BytesIO(response.content)
+    lines = list(reader(f, delimiter = '\t'))
+    print('Table Creation Started')
     for i in range(0, len(lines)):
-        unit = lines[i].split('\t')
+        unit = lines[i]
 
         jaspar_matrix_ID = int(unit[0])
         assert isinstance(jaspar_matrix_ID, int)
 
         jaspar_tf_ID = unit[2]
-        assert isinstance(jaspar_tf_ID, str)
+        assert isinstance(jaspar_tf_ID, six.string_types)
 
         version = int(unit[3])
         assert isinstance(version, int)
 
         tf_name = unit[4]
-        assert isinstance(tf_name, str)
+        assert isinstance(tf_name, six.string_types)
 
         jaspar_collection = unit[1]
-        assert isinstance(jaspar_collection, str)
+        assert isinstance(jaspar_collection, six.string_types)
 
         uniprot_id, key_uniprot, uniprots = call_Attribute(key_uniprot, uniprots, jaspar_matrix_ID)
         NCBI_id, key_NCBI, NCBI = call_Attribute(key_NCBI, NCBI, jaspar_matrix_ID)
 
         for n in range(0,len(uniprot_id)):
-            assert isinstance(uniprot_id[n], str)
+            assert isinstance(uniprot_id[n], six.string_types)
             transcriptionfactor = TranscriptionFactor(uniprot_id = uniprot_id[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(transcriptionfactor)
 
         for n in range(0,len(NCBI_id)):
-            assert isinstance(NCBI_id[n], str)
+            assert isinstance(NCBI_id[n], six.string_types)
             species = Species(NCBI_id = NCBI_id[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(species)
 
         class_name, key_class, class_info = call_Attribute(key_class, class_info, jaspar_matrix_ID)
         for n in range(0,len(class_name)):
-            assert isinstance(class_name[n], str)
+            assert isinstance(class_name[n], six.string_types)
             proteinclass = Class(class_name = class_name[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(proteinclass)
 
         fam_name, key_fam, fam_info = call_Attribute(key_fam, fam_info, jaspar_matrix_ID)
         for n in range(0,len(fam_name)):
-            u = unicode(fam_name[n], 'utf-8')
-            assert isinstance(u, unicode)
-            family = Family(family_name = u, jaspar_matrix_ID = jaspar_matrix_ID)
+            assert isinstance(fam_name[n], six.string_types)
+            family = Family(family_name = fam_name[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(family)
 
         medline_id, key_med, med_info = call_Attribute(key_med, med_info, jaspar_matrix_ID)
         for n in range(0,len(medline_id)):
-            assert isinstance(medline_id[n], str)
+            assert isinstance(medline_id[n], six.string_types)
             resources = Resources(medline_id = medline_id[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(resources)
 
         type_name, key_type, type_info = call_Attribute(key_type, type_info, jaspar_matrix_ID)
         for n in range(0,len(type_name)):
-            assert isinstance(type_name[n], str)
+            assert isinstance(type_name[n], six.string_types)
             type_ = Type(type_name = type_name[n], jaspar_matrix_ID = jaspar_matrix_ID)
             session.add(type_)
 
@@ -396,7 +407,7 @@ class Jaspar():
     """
     def create_DB(db_name):
         #Create Engine and Session
-        print 'Creating Session...'
+        print('Creating Session...')
         engine = create_engine('sqlite:///jaspar.db')
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -408,10 +419,10 @@ class Jaspar():
         parse_Jaspar_db(session, database_url)
 
         #Commiting and Closing Session
-        print 'Finished parsing files, committing to DB.'
+        print('Finished parsing files, committing to DB.')
         session.commit()
         session.close()
-        print 'Successful Creation... Done...'
+        print('Successful Creation... Done...')
 
 
 
