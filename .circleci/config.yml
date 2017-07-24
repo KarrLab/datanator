@@ -28,14 +28,13 @@ jobs:
             - /usr/local/lib/python3.6/site-packages
 
       - run: pip2 install -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-      - run: |
-          set +e
-          karr-lab-build-utils-2 run-tests tests --with-xunit --with-coverage
+      - run:
+          command: karr-lab-build-utils-2 run-tests tests --with-xunit --with-coverage
 
       - run: pip3 install -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-      - run: |
-          set +e
-          karr-lab-build-utils-3 run-tests tests --with-xunit --with-coverage
+      - run:
+          command: karr-lab-build-utils-3 run-tests tests --with-xunit --with-coverage
+          when: always
 
       - store_test_results:
           path: /root/project/tests/reports
@@ -46,7 +45,9 @@ jobs:
           path: /root/project/.coverage.3.6.1
           destination: .coverage.3.6.1
       
-      - run: karr-lab-build-utils make-and-archive-reports
+      - run:
+          command: karr-lab-build-utils make-and-archive-reports
+          when: always
       - store_artifacts:
           path: /root/project/docs/_build/html
           destination: docs
