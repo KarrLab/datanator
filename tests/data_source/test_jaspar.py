@@ -158,7 +158,13 @@ class TestQuery(unittest.TestCase):
     def tearDown(self):
         jaspar.Base.metadata.drop_all(self.engine)
 
+class TestJasparClass(unittest.TestCase):
 
+    def setUp(self):
+        self.src = jaspar.Jaspar(name = 'Jaspar')
+
+    def test_create_DB(self):
+        self.src.create_DB()
 
 
 if __name__ == '__main__':

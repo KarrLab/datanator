@@ -445,7 +445,7 @@ def parse_Jaspar_db(session, database_url):
     return
 
 
-class Jaspar(data_source.HttpDataSource):
+class Jaspar(data_source.DataSource):
     """ A local sqlite copy of the ECMDB database
 
     """
