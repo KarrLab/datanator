@@ -166,14 +166,25 @@ class TranscriptionFactor(Base):
 """ - - - - - - - Iterative Sorting and Data Type Functions Used for Parsing - - - - - - - - - """
 
 def make_jaspar_int(data):
-    """ Converts first column of jaspar_matrix_IDs into ints"""
+    """ Converts first column of jaspar_matrix_IDs into ints
+
+    Returns:
+        :obj:`list`: list of jaspar matrix IDs converted to int
+
+    """
+
     data = list(data)
     for i in range(0,len(data)):
         data[i][0] = int(data[i][0])
     return data
 
 def make_data_int(data):
-    """ Converts jaspar_matrix_ID and position into ints and frequency into floats"""
+    """ Converts jaspar_matrix_ID and position into ints and frequency into floats
+
+    Returns:
+        :obj:`list`: list of jaspar_matrix_IDs and position converted to int and frequency converted to float
+
+    """
     data = list(data)
     for i in range(0,len(data)):
         data[i][0] = int(data[i][0])
@@ -182,12 +193,21 @@ def make_data_int(data):
     return data
 
 def sort(data):
-    """ Sorts data by jaspar_matrix_ID"""
+    """ Sorts data by jaspar_matrix_ID
+
+    Returns:
+        :obj:`list`: sorted list by jaspar_matrix_ID
+    """
     sortedlist = sorted(data,  key=itemgetter(0), reverse=False)
     return sortedlist
 
 def group_by_jaspar_id(data):
-    """ Groups list by jaspar_matrix_ID """
+    """ Groups list by jaspar_matrix_ID
+
+    Returns:
+        :obj:`list`: grouped by jaspar_matrix_ID
+
+    """
     group = []
     key = []
     for k, g in groupby(data, lambda x: x[0]):
@@ -196,7 +216,12 @@ def group_by_jaspar_id(data):
     return group, key
 
 def group_by_position(data):
-    """ Groups data post-jaspar_matrix_ID group by position """
+    """ Groups data post-jaspar_matrix_ID group by position
+
+    Returns:
+        :obj:`list`: grouped by position
+
+    """
     group = []
     for k, g in groupby(data, lambda x: x[2]):
         group.append(list(g))
@@ -205,7 +230,15 @@ def group_by_position(data):
 """ - - - - - - - - - - - - - - - - - -  Retrieval Functions - - - - - - - - - - - - - - - - - - """
 
 def call_Attribute(key_list, data_list, jid):
-    """ Calls relevant attribute from jaspar_matrix_ID. Returns data point and keylist"""
+    """ Calls relevant attribute from jaspar_matrix_ID. Returns data point and keylist
+
+    Returns:
+        :obj:`str`: designated attribute for a given jaspar_matrix_ID
+        :obj:`list`: list of keys remaining after calling for an attribute
+        :obj:`list`: list of data remaining after calling for an attribute
+
+
+    """
     answer = []
     ind = 0
     while True:
@@ -224,7 +257,17 @@ def call_Attribute(key_list, data_list, jid):
             break
 
 def call_Data(key_list, data_list, jid):
-    """ Calls data by jaspar_matrix_ID """
+    """ Calls data by jaspar_matrix_ID
+
+    Returns:
+        :obj:`list`: frequency of A given ajaspar_matrix_ID
+        :obj:`list`: frequency of C given ajaspar_matrix_ID
+        :obj:`list`: frequency of G given ajaspar_matrix_ID
+        :obj:`list`: frequency of T given ajaspar_matrix_ID
+        :obj:`list`: list of keys remaining after calling for an attribute
+        :obj:`list`: list of data remaining after calling for an attribute
+
+    """
     A = []
     C = []
     G = []
@@ -255,7 +298,7 @@ def call_Data(key_list, data_list, jid):
 """ - - - -  Collecting and Parsing Data From Website then Adding to Session DB - -  - - """
 
 def parse_Jaspar_db(session, database_url):
-    """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB"""
+    """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB """
 
     response = requests.get(database_url+'MATRIX_PROTEIN.txt')
     response.raise_for_status()
@@ -401,7 +444,7 @@ def parse_Jaspar_db(session, database_url):
     return
 
 
-class Jaspar():
+class Jaspar(data_source.HttpDataSource):
     """ A local sqlite copy of the ECMDB database
 
     """
