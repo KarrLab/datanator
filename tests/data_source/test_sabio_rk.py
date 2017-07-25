@@ -152,7 +152,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(p.compound, cpd_20035)
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.observed_type, 261)
-        self.assertEqual(p.observed_value, 9E-9)
+        self.assertEqual(p.observed_value, 1.8E-8)
         self.assertEqual(p.observed_error, None)
         self.assertEqual(p.observed_units, 'M')
 
@@ -317,12 +317,12 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(p.compartment, None)
         self.assertEqual(p.observed_type, 261)
         self.assertEqual(p.observed_value, 1.8E-8)
-        self.assertEqual(p.observed_error, 0.0)
+        self.assertEqual(p.observed_error, None)
         self.assertEqual(p.observed_units, 'M')
         self.assertEqual(p.name, 'k_i')
         self.assertEqual(p.type, 261)
         self.assertEqual(p.value, 1.8E-8)
-        self.assertEqual(p.error, 0.0)
+        self.assertEqual(p.error, None)
         self.assertEqual(p.units, 'M')
 
         p = session.query(Parameter).filter_by(kinetic_law=l, observed_name='Km').first()
