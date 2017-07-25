@@ -13,8 +13,6 @@ from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source import download_ax
 import os
 import sys
-#reload(sys)
-#sys.setdefaultencoding('utf8')
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()

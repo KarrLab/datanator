@@ -4,9 +4,6 @@ import sys
 import datetime
 import demjson
 
-#reload(sys)
-#sys.setdefaultencoding('utf8')
-
 ENDPOINT = 'https://www.ebi.ac.uk/arrayexpress/json/v3/experiments'
 
 class DownloadExperiments(object):	
