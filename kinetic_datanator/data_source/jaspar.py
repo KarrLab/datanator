@@ -11,6 +11,7 @@ This code takes jaspar database text files from webiste and implements them into
 from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, UnicodeText, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
+from kinetic_datanator.core import data_source
 from unicodecsv import reader
 from itertools import groupby
 from operator import itemgetter
@@ -448,6 +449,7 @@ class Jaspar(data_source.HttpDataSource):
     """ A local sqlite copy of the ECMDB database
 
     """
+
     def create_DB(db_name):
         #Create Engine and Session
         print('Creating Session...')

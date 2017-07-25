@@ -159,5 +159,7 @@ class TestQuery(unittest.TestCase):
         jaspar.Base.metadata.drop_all(self.engine)
 
 
+
+
 if __name__ == '__main__':
     unittest.main()
