@@ -298,28 +298,27 @@ def call_Data(key_list, data_list, jid):
 
 """ - - - -  Collecting and Parsing Data From Website then Adding to Session DB - -  - - """
 
-def parse_Jaspar_db(session, database_url):
+def parse_Jaspar_db(session, req, database_url):
     """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB """
-
-    response = requests.get(database_url+'MATRIX_PROTEIN.txt')
+    response = req.get(database_url+'MATRIX_PROTEIN.txt')
     response.raise_for_status()
     f = BytesIO(response.content)
     uniprots = reader(f, delimiter = '\t')
     uniprots = make_jaspar_int(uniprots)
     sortedlist = sort(uniprots)
     uniprots, key_uniprot = group_by_jaspar_id(sortedlist)
-    print('Collected Uniprot Data')
+    print('Collected Uniprot Data...')
 
-    response = requests.get(database_url+'MATRIX_SPECIES.txt')
+    response = req.get(database_url+'MATRIX_SPECIES.txt')
     response.raise_for_status()
     f = BytesIO(response.content)
     NCBI = reader(f, delimiter = '\t')
     NCBI = make_jaspar_int(NCBI)
     sortedlist = sort(NCBI)
     NCBI, key_NCBI = group_by_jaspar_id(sortedlist)
-    print('Collected Species Data')
+    print('Collected Species Data...')
 
-    response = requests.get(database_url+'MATRIX_ANNOTATION.txt')
+    response = req.get(database_url+'MATRIX_ANNOTATION.txt')
     response.raise_for_status()
     f = BytesIO(response.content)
     annots = reader(f, delimiter = '\t')
@@ -342,9 +341,9 @@ def parse_Jaspar_db(session, database_url):
     fam_info, key_fam = group_by_jaspar_id(fam_info)
     med_info, key_med = group_by_jaspar_id(med_info)
     type_info, key_type = group_by_jaspar_id(type_info)
-    print('Collected Annotation Data')
+    print('Collected Annotation Data...')
 
-    response = requests.get(database_url+'MATRIX_DATA.txt')
+    response = req.get(database_url+'MATRIX_DATA.txt')
     response.raise_for_status()
     f = BytesIO(response.content)
     matrix_data = reader(f, delimiter = '\t')
@@ -354,13 +353,13 @@ def parse_Jaspar_db(session, database_url):
     for i in range(0,len(matrix_data)):
         matrix_data[i] = sorted(matrix_data[i], key=itemgetter(2), reverse=False)
         matrix_data[i] = group_by_position(matrix_data[i])
-    print('Collected Matrix Binding Data')
+    print('Collected Matrix Binding Data...')
 
-    response = requests.get(database_url+'MATRIX.txt')
+    response = req.get(database_url+'MATRIX.txt')
     response.raise_for_status()
     f = BytesIO(response.content)
     lines = list(reader(f, delimiter = '\t'))
-    print('Table Creation Started')
+    print('Table Creation Started...')
     for i in range(0, len(lines)):
         unit = lines[i]
 
@@ -445,29 +444,43 @@ def parse_Jaspar_db(session, database_url):
     return
 
 
-class Jaspar(data_source.DataSource):
+class Jaspar(data_source.HttpDataSource):
     """ A local sqlite copy of the ECMDB database
 
     """
+    base_model = Base
+    ENDPOINT_DOMAINS = {
+        'jaspar': 'http://jaspar.genereg.net/html/DOWNLOAD/database/',
+        }
 
-    def create_DB(db_name):
-        #Create Engine and Session
+    def load_content(self):
         print('Creating Session...')
-        engine = create_engine('sqlite:///jaspar.db')
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        Base.metadata.drop_all(engine)
-        Base.metadata.create_all(engine)
-
-        #Parse and Add to DB
-        database_url = 'http://jaspar.genereg.net/html/DOWNLOAD/database/'
-        parse_Jaspar_db(session, database_url)
-
-        #Commiting and Closing Session
-        print('Finished parsing files, committing to DB.')
-        session.commit()
-        session.close()
+        db_session = self.session
+        req_session = self.requests_session
+        parse_Jaspar_db(db_session, req_session, self.ENDPOINT_DOMAINS['jaspar'])
+        print('Parsing Done.. Committing...')
+        db_session.commit()
+        db_session.close()
         print('Successful Creation... Done...')
+
+    # def create_DB(db_name):
+    #     #Create Engine and Session
+    #     print('Creating Session...')
+    #     engine = create_engine('sqlite:///jaspar.db')
+    #     Session = sessionmaker(bind=engine)
+    #     session = Session()
+    #     Base.metadata.drop_all(engine)
+    #     Base.metadata.create_all(engine)
+    #
+    #     #Parse and Add to DB
+    #     database_url = 'http://jaspar.genereg.net/html/DOWNLOAD/database/'
+    #     parse_Jaspar_db(session, database_url)
+    #
+    #     #Commiting and Closing Session
+    #     print('Finished parsing files, committing to DB.')
+    #     session.commit()
+    #     session.close()
+    #     print('Successful Creation... Done...')
 
 
 

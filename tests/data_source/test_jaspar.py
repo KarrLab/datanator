@@ -13,6 +13,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from kinetic_datanator.data_source import jaspar
 import random
+import tempfile
+import shutil
+import requests
 
 
 class TestStructure(unittest.TestCase):
@@ -119,7 +122,7 @@ class TestQuery(unittest.TestCase):
         jaspar.Base.metadata.drop_all(self.engine)
         jaspar.Base.metadata.create_all(self.engine)
         database_url = 'http://jaspar.genereg.net/html/DOWNLOAD/database/'
-        jaspar.parse_Jaspar_db(self.session, database_url)
+        jaspar.parse_Jaspar_db(self.session, requests, database_url)
         self.session.commit()
 
     def test_query(self):
@@ -158,14 +161,31 @@ class TestQuery(unittest.TestCase):
     def tearDown(self):
         jaspar.Base.metadata.drop_all(self.engine)
 
+
 class TestJasparClass(unittest.TestCase):
 
+    # With data_source.HttpDataSource
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        src = jaspar.Jaspar(name = 'jaspar', clear_content = True)
+        src.load_content()
+        src.engine.dispose()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
+
     def setUp(self):
-        self.src = jaspar.Jaspar(name = 'Jaspar')
+        self.src = jaspar.Jaspar(name = 'jaspar',  clear_content = True)
 
-    def test_create_DB(self):
-        self.src.create_DB()
 
+    def test_load_content(self):
+        self.src.load_content()
+
+    def tearDown(self):
+        self.src.engine.dispose()
 
 if __name__ == '__main__':
     unittest.main()
