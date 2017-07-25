@@ -1,9 +1,11 @@
 bioservices
 bs4
 cement
+demjson
 enum34
 ete3
 jxmlease
+natsort
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel

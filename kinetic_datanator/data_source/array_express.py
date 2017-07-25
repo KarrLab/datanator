@@ -1,7 +1,7 @@
 import datetime
 import dateutil.parser
+import demjson
 import io
-import json
 import jxmlease
 import requests.exceptions
 import sqlalchemy
@@ -10,11 +10,11 @@ import sqlalchemy.orm
 import warnings
 import zipfile
 from kinetic_datanator.core import data_source
+from kinetic_datanator.data_source import download_ax
 import os
 import sys
-import download_ax
-reload(sys)  
-sys.setdefaultencoding('utf8')
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -261,7 +261,7 @@ class ArrayExpress(data_source.HttpDataSource):
 		"""
 		db_session = self.session
 		for filename in os.listdir('AllExperiments'):
-			self.load_experiments(json_object=json.loads(open("AllExperiments/{}".format(filename), 'r').read().encode('utf8')))
+			self.load_experiments(json_object=demjson.decode_file(os.path.join('AllExperiments', filename), encoding='utf-8'))
 		db_session.commit()
 
 
@@ -311,14 +311,14 @@ class ArrayExpress(data_source.HttpDataSource):
 		and return it. This method can only be used if there is an orm table explicitely created
 		"""
 		existing_object = self.session.query(db_class)
-		for key, value in filters.iteritems():
+		for key, value in filters.items():
 			existing_object = existing_object.filter(db_class.__dict__[key]==value)
 		existing_object = existing_object.first()
 		if existing_object is not None:
 			return existing_object
 		else:
 			new_object = db_class()
-			for key, value in filters.iteritems():
+			for key, value in filters.items():
 				setattr(new_object, key, value) 
 			return new_object
 
@@ -334,7 +334,7 @@ class ArrayExpress(data_source.HttpDataSource):
 
 		for filename in os.listdir('AllSamples'):
 			if filename[:-4] not in self.EXCLUSIONS:
-				entry_details =  json.loads(open("AllSamples/{}".format(filename), 'r').read())
+				entry_details = demjson.decode_file(os.path.join('AllSamples', filename), encoding='utf-8')
 				i = 1
 				if 'sample' in entry_details['experiment']:
 							if isinstance(entry_details['experiment']['sample'], list):

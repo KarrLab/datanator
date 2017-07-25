@@ -2,12 +2,14 @@ import requests
 import os
 import sys
 import datetime
-import json
+import demjson
 
-reload(sys)  
-sys.setdefaultencoding('utf8')
+#reload(sys)
+#sys.setdefaultencoding('utf8')
 
-class DownloadExperiments():
+ENDPOINT = 'https://www.ebi.ac.uk/arrayexpress/json/v3/experiments'
+
+class DownloadExperiments(object):	
 
 	def download_single_year(self, year):
 		"""
@@ -17,13 +19,13 @@ class DownloadExperiments():
 		Args:
 			year (obj:'int':) the year that is being collected
 		"""
-		directory = os.path.join('.', 'AllExperiments')
+		directory = 'AllExperiments'
 		if not os.path.exists(directory):
 			os.makedirs(directory)
-		file = open('./AllExperiments/{}.txt'.format(year), 'w')
-
-		file.write(requests.get("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[{}-01-01+{}-12-31]"
-			.format(year, year)).text)
+		response = requests.get(ENDPOINT + '?date=[{}-01-01+{}-12-31]'.format(year, year))
+		response.raise_for_status()
+		with open(os.path.join(directory, '{}.txt'.format(year)), 'wb') as file:
+			file.write(response.content)
 
 	def download_all_experiments(self, start_year, end_year):
 		"""
@@ -45,11 +47,13 @@ class DownloadSamples():
 			ax_num (obj:'str':) accession number of the experiment
 		"""
 
-		directory = os.path.join('.', 'AllSamples')
+		directory = 'AllSamples'
 		if not os.path.exists(directory):
 			os.makedirs(directory)
-		file = open('./AllSamples/{}.txt'.format(ax_num), 'w')
-		file.write(requests.get("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}/samples".format(ax_num)).text)
+		response = requests.get(ENDPOINT + "/{}/samples".format(ax_num))
+		response.raise_for_status()
+		with open(os.path.join(directory, '{}.txt'.format(ax_num)), 'wb') as file:
+			file.write(response.content)
 
 
 def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year):
@@ -61,7 +65,7 @@ def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year
 
 	all_ax_nums = []
 	for year in range(start_year, end_year+1):
-		metadata = json.loads(open("./AllExperiments/{}.txt".format(year), 'r').read().encode('utf8'))
+		metadata = demjson.decode_file(os.path.join('AllExperiments', '{}.txt'.format(year)), encoding='utf-8')
 		for entry in metadata['experiments']['experiment']:
 			all_ax_nums.append(entry['accession'])
 	for num in all_ax_nums:
