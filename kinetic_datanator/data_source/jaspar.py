@@ -25,6 +25,8 @@ Base = declarative_base()
 
 class MatrixObservation(Base):
     """ Represents the identification of the binding profile matrix and transcription factor found in Jaspar
+
+    Attributes:
         jaspar_matrix_ID (:obj:`int`): ID of Matrix (INTEGER)
         jaspar_tf_ID (:obj:`str`): ID of Transcription Factor (STRING)
         version (:obj:`int`): Jaspar version of given matrix
@@ -169,6 +171,9 @@ class TranscriptionFactor(Base):
 def make_jaspar_int(data):
     """ Converts first column of jaspar_matrix_IDs into ints
 
+    Args:
+        data (:obj:`list`): A list with jaspar_matrix_ID as first column
+
     Returns:
         :obj:`list`: list of jaspar matrix IDs converted to int
 
@@ -181,6 +186,9 @@ def make_jaspar_int(data):
 
 def make_data_int(data):
     """ Converts jaspar_matrix_ID and position into ints and frequency into floats
+
+    Args:
+        data (:obj:`list`): Matrix binding data
 
     Returns:
         :obj:`list`: list of jaspar_matrix_IDs and position converted to int and frequency converted to float
@@ -196,6 +204,9 @@ def make_data_int(data):
 def sort(data):
     """ Sorts data by jaspar_matrix_ID
 
+    Args:
+        data (:obj:`list`): A list with jaspar_matrix_ID as first column
+
     Returns:
         :obj:`list`: sorted list by jaspar_matrix_ID
     """
@@ -204,6 +215,9 @@ def sort(data):
 
 def group_by_jaspar_id(data):
     """ Groups list by jaspar_matrix_ID
+
+    Args:
+        data (:obj:`list`): List of sorted matrix binding data
 
     Returns:
         :obj:`list`: grouped by jaspar_matrix_ID
@@ -219,6 +233,9 @@ def group_by_jaspar_id(data):
 def group_by_position(data):
     """ Groups data post-jaspar_matrix_ID group by position
 
+    Args:
+        data (:obj:`list`): List of sorted matrix binding data
+
     Returns:
         :obj:`list`: grouped by position
 
@@ -232,6 +249,11 @@ def group_by_position(data):
 
 def call_Attribute(key_list, data_list, jid):
     """ Calls relevant attribute from jaspar_matrix_ID. Returns data point and keylist
+
+    Args:
+        key_list (:obj:`list`): List of jaspar_matrix_ID keys for attribute
+        data_list (:obj:`list`): Grouped list by jaspar_matrix_ID of attribute (Ex. Uniprot ID)
+        jid (:obj:`int`): jaspar_matrix_ID used to locate corresponding attribute
 
     Returns:
         :obj:`str`: designated attribute for a given jaspar_matrix_ID
@@ -260,11 +282,16 @@ def call_Attribute(key_list, data_list, jid):
 def call_Data(key_list, data_list, jid):
     """ Calls data by jaspar_matrix_ID
 
+    Args:
+        key_list (:obj:`list`): List of jaspar_matrix_ID keys for data
+        data_list (:obj:`list`): Grouped list by jaspar_matrix_ID of transcription binding matrix frequencies and positions
+        jid (:obj:`int`): jaspar_matrix_ID used to locate binding matrix data
+
     Returns:
-        :obj:`list`: frequency of A given ajaspar_matrix_ID
-        :obj:`list`: frequency of C given ajaspar_matrix_ID
-        :obj:`list`: frequency of G given ajaspar_matrix_ID
-        :obj:`list`: frequency of T given ajaspar_matrix_ID
+        :obj:`list`: frequency of A given a jaspar_matrix_ID
+        :obj:`list`: frequency of C given a jaspar_matrix_ID
+        :obj:`list`: frequency of G given a jaspar_matrix_ID
+        :obj:`list`: frequency of T given a jaspar_matrix_ID
         :obj:`list`: list of keys remaining after calling for an attribute
         :obj:`list`: list of data remaining after calling for an attribute
 
@@ -299,7 +326,14 @@ def call_Data(key_list, data_list, jid):
 """ - - - -  Collecting and Parsing Data From Website then Adding to Session DB - -  - - """
 
 def parse_Jaspar_db(session, req, database_url):
-    """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB """
+    """ Collects and Parses all data from jaspar DB website and adds to SQLlite DB
+
+    Args:
+        session (:obj:`session object`): SQLAlchemy session object
+        req (:obj:`requests object`): Requests session object
+        database_url (:obj:`str`): Base URL of jaspar DB
+
+    """
     response = req.get(database_url+'MATRIX_PROTEIN.txt')
     response.raise_for_status()
     f = BytesIO(response.content)

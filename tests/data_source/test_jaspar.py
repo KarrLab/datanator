@@ -169,7 +169,7 @@ class TestJasparClass(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        src = jaspar.Jaspar(name = 'jaspar', clear_content = True)
+        src = jaspar.Jaspar( cache_dirname=cls.cache_dirname, clear_content = True)
         src.load_content()
         src.engine.dispose()
 
@@ -178,7 +178,7 @@ class TestJasparClass(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     def setUp(self):
-        self.src = jaspar.Jaspar(name = 'jaspar',  clear_content = True)
+        self.src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content = True)
 
 
     def test_load_content(self):
