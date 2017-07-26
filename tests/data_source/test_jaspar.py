@@ -2,7 +2,7 @@
 This code tests all aspects of jaspar.py
 
 :Author: Saahith Pochiraju <saahith116@gmail.com>
-:Date: 2017 July 24th
+:Date: 2017-07-24
 :Copyright: 2017, Karr Lab
 :License: MIT
 
@@ -21,171 +21,138 @@ import requests
 class TestStructure(unittest.TestCase):
 
     def setUp(self):
-        self.engine = create_engine('sqlite:///:memory:')
-        self.Session = sessionmaker(bind=self.engine)
-        self.session = self.Session()
-        jaspar.Base.metadata.create_all(self.engine)
-        #Create instance
-        self.type = jaspar.Type(type_name = 'SELEX', jaspar_matrix_ID = 1)
-        self.session.add(self.type)
-        self.family = jaspar.Family(family_name = u'pochiraju', jaspar_matrix_ID = 1)
-        self.session.add(self.family)
-        self.classes = jaspar.Class(class_name = 'Zinc-Fingers', jaspar_matrix_ID = 1)
-        self.session.add(self.classes)
-        self.resources = jaspar.Resources(medline_id = '0123456789', jaspar_matrix_ID = 1)
-        self.session.add(self.resources)
-        self.species = jaspar.Species(NCBI_id = '12342345', jaspar_matrix_ID = 1)
-        self.session.add(self.species)
-        self.tf = jaspar.TranscriptionFactor(uniprot_id = 'P612034', jaspar_matrix_ID = 1)
-        self.session.add(self.tf)
-        self.data = jaspar.BindingMatrix(
-                    position = 1,
-                    frequency_A = 0.0,
-                    frequency_C = 42.0,
-                    frequency_G = 12.0,
-                    frequency_T = 1.0,
-                    jaspar_matrix_ID = 1
-                )
-        self.session.add(self.data)
-        self.matrixobservation = jaspar.MatrixObservation(
-                    jaspar_matrix_ID = 1,
-                    jaspar_tf_ID = 'MA0437',
-                    version = 1,
-                    tf_name = 'YPR196W',
-                    jaspar_collection = 'CORE',
-                    data = [self.data],
-                    references = [self.resources],
-                    type_info = [self.type],
-                    class_info = [self.classes],
-                    family_info = [self.family],
-                    tf = [self.tf],
-                    species = [self.species]
-                )
-        self.session.add(self.matrixobservation)
-        self.session.commit()
+        engine = self.engine = create_engine('sqlite:///:memory:')
+        session = self.session = sessionmaker(bind=engine)()
+        jaspar.Base.metadata.create_all(engine)
+        # Create instance
+
+        tf = self.tf = jaspar.TranscriptionFactor(id='MA0035', name='Gata1')
+        session.add(tf)
+
+        tf.species = jaspar.Species(id=12342345)
+
+        tf.subunits.append(jaspar.Subunit(uniprot_id='P17679'))
+        tf.subunits.append(jaspar.Subunit(uniprot_id='P17679-2'))
+
+        tf.classes.append(jaspar.Class(name='Zinc-coordinating'))
+        tf.classes.append(jaspar.Class(name='Zinc-coordinating-2'))
+
+        tf.families.append(jaspar.Family(name='GATA'))
+        tf.families.append(jaspar.Family(name='GATA-2'))
+
+        tf.collection = jaspar.Collection(name='CORE')
+
+        matrix = jaspar.Matrix(transcription_factor=tf, version=1)
+        matrix.type = jaspar.Type(name='SELEX')
+
+        matrix.references.append(jaspar.Resource(id=8321207))
+        matrix.references.append(jaspar.Resource(id=83212072))
+
+        matrix.positions.append(jaspar.MatrixPosition(
+            position=1,
+            frequency_a=0,
+            frequency_c=42,
+            frequency_g=12,
+            frequency_t=1,
+        ))
 
     def tearDown(self):
         jaspar.Base.metadata.drop_all(self.engine)
 
-    def test_structure_matrixobservation(self):
-        #test whatever you need to test by comparing expected to result and assert ifequal
-        expected = [self.matrixobservation.jaspar_matrix_ID]
-        result = self.session.query(jaspar.MatrixObservation.jaspar_matrix_ID).all()
-        ## Outputs list of tuple. Convert to int ##
-        result = [i[0] for i in result]
-        self.assertEqual(result, expected)
+    def test_structure_matrix_observation(self):
+        # test whatever you need to test by comparing expected to result and assert ifequal
+        results = self.session.query(jaspar.TranscriptionFactor).all()
 
-    ## Run other tests for Querying such as taking a piece of real DB nand seeing if it works
+        self.assertEqual(results, [self.tf])
+
+        tf = results[0]
+        self.assertEqual(tf.id, 'MA0035')
+        self.assertEqual(tf.name, 'Gata1')
+
+        self.assertEqual(set([s.uniprot_id for s in tf.subunits]), set(['P17679', 'P17679-2']))
+        self.assertEqual(tf.subunits[0].transcription_factors, [tf])
+
+    # Run other tests for Querying such as taking a piece of real DB nand seeing if it works
+
 
 class TestParseFunctions(unittest.TestCase):
 
     def test_make_jaspar_int(self):
-        self.data1 = [['1','a'],['2','b'],['3','c']]
+        self.data1 = [['1', 'a'], ['2', 'b'], ['3', 'c']]
         result = jaspar.make_jaspar_int(self.data1)
-        for i in range(0,len(result)):
+        for i in range(0, len(result)):
             self.assertIsInstance(result[i][0], int)
 
     def test_make_data_int(self):
-        self.data2 = [['1','a','4','7'],['2','b','5','8'],['3','c','6','9'],['4','d','7','10']]
+        self.data2 = [['1', 'a', '4', '7'], ['2', 'b', '5', '8'], ['3', 'c', '6', '9'], ['4', 'd', '7', '10']]
         result = jaspar.make_data_int(self.data2)
-        for i in range(0,len(result)):
-            self.assertIsInstance(result[i][0],int)
-            self.assertIsInstance(result[i][2],int)
-            self.assertIsInstance(result[i][3],float)
+        for i in range(0, len(result)):
+            self.assertIsInstance(result[i][0], int)
+            self.assertIsInstance(result[i][2], int)
+            self.assertIsInstance(result[i][3], float)
 
     def test_sort(self):
         random.seed()
-        self.data3 = [[random.random()*100,random.random()*100], [random.random()*100,random.random()*100]]
+        self.data3 = [[random.random()*100, random.random()*100], [random.random()*100, random.random()*100]]
         result = jaspar.sort(self.data3)
-        self.assertLess(result[0][0],result[1][0])
+        self.assertLess(result[0][0], result[1][0])
 
     def test_group_by_jaspar_id(self):
-        self.data4 = [[4,'this'],[4,'is'],[4,'a'],[4,'test']]
+        self.data4 = [[4, 'this'], [4, 'is'], [4, 'a'], [4, 'test']]
         group_result, key_result = jaspar.group_by_jaspar_id(self.data4)
-        self.assertEqual(group_result[0][0][0],key_result[0])
+        self.assertEqual(group_result[0][0][0], key_result[0])
+
 
 class TestCallFunctions(unittest.TestCase):
+
     def test_call_Attribute(self):
-        self.key_attribute = [1,2,3]
-        self.data_attribute = [[[1,'at1']],[[2,'at2']],[[3,'at3']]]
+        self.key_attribute = [1, 2, 3]
+        self.data_attribute = [[[1, 'at1']], [[2, 'at2']], [[3, 'at3']]]
         result_answer, result_key_list, result_data_list = jaspar.call_Attribute(self.key_attribute, self.data_attribute, 2)
         self.assertEqual(result_answer, ['at2'])
 
 
 class TestQuery(unittest.TestCase):
+
     def setUp(self):
-        self.engine = create_engine('sqlite:///:memory:')
-        ## Change from uniprot to strings
-        self.engine.raw_connection().connection.text_factory = str
-        self.Session = sessionmaker(bind=self.engine)
-        self.session = self.Session()
-        jaspar.Base.metadata.drop_all(self.engine)
-        jaspar.Base.metadata.create_all(self.engine)
-        database_url = 'http://jaspar.genereg.net/html/DOWNLOAD/database/'
-        jaspar.parse_Jaspar_db(self.session, requests, database_url)
-        self.session.commit()
+        self.cache_dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dirname)
 
     def test_query(self):
-        self.z = self.session.query(jaspar.MatrixObservation).get(9436)
-        self.assertEqual(self.z.tf_name,'schlank')
-        self.assertEqual(self.z.jaspar_collection,'CORE')
-        self.assertEqual(self.z.jaspar_tf_ID, 'MA0193')
-        self.assertEqual(self.z.version, 1)
-        self.assertEqual(self.z.jaspar_matrix_ID, 9436)
+        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content=True, load_content=False, download_backup=False)
+        src.parse_db()
+        session = src.session
 
-        self.type = self.session.query(jaspar.Type).filter(jaspar.Type.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.type.type_name, 'bacterial 1-hybrid')
+        z = session.query(jaspar.MatrixObservation).get(9436)
+        self.assertEqual(z.tf_name, 'schlank')
+        self.assertEqual(z.collection.name, 'CORE')
+        self.assertEqual(z.tf_id, 'MA0193')
+        self.assertEqual(z.version, 1)
+        self.assertEqual(z.matrix_id, 9436)
 
-        self.family = self.session.query(jaspar.Family).filter(jaspar.Family.jaspar_matrix_ID == 9433).first()
-        self.assertEqual(self.family.family_name, 'Paired-related HD factors')
+        type = session.query(jaspar.Type).filter(jaspar.Type.matrix_id == 9436).first()
+        self.assertEqual(type.name, 'bacterial 1-hybrid')
 
-        self.class_ = self.session.query(jaspar.Class).filter(jaspar.Class.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.class_.class_name, 'Homeo domain factors')
+        family = session.query(jaspar.Family).filter(jaspar.Family.matrix_id == 9433).first()
+        self.assertEqual(family.name, 'Paired-related HD factors')
 
-        self.resource = self.session.query(jaspar.Resources).filter(jaspar.Resources.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.resource.medline_id, '18332042')
+        class_ = session.query(jaspar.Class).filter(jaspar.Class.matrix_id == 9436).first()
+        self.assertEqual(class_.name, 'Homeo domain factors')
 
-        self.species = self.session.query(jaspar.Species).filter(jaspar.Species.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.species.NCBI_id,'7227')
+        resource = session.query(jaspar.Resource).filter(jaspar.Resource.matrix_id == 9436).first()
+        self.assertEqual(resource.medline_id, '18332042')
 
-        self.tf = self.session.query(jaspar.TranscriptionFactor).filter(jaspar.TranscriptionFactor.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.tf.uniprot_id, 'Q9W423')
+        species = session.query(jaspar.Species).filter(jaspar.Species.matrix_id == 9436).first()
+        self.assertEqual(species.ncbi_id, '7227')
 
-        self.data = self.session.query(jaspar.BindingMatrix).filter(jaspar.BindingMatrix.jaspar_matrix_ID == 9436).first()
-        self.assertEqual(self.data.position, 1)
-        self.assertEqual(self.data.frequency_A, 0)
-        self.assertEqual(self.data.frequency_C, 19)
-        self.assertEqual(self.data.frequency_G, 0)
-        self.assertEqual(self.data.frequency_T, 0)
+        tf = session.query(jaspar.TranscriptionFactorSubunit).filter(jaspar.TranscriptionFactorSubunit.matrix_id == 9436).first()
+        self.assertEqual(tf.uniprot_id, 'Q9W423')
 
-    def tearDown(self):
-        jaspar.Base.metadata.drop_all(self.engine)
-
-
-class TestJasparClass(unittest.TestCase):
-
-    # With data_source.HttpDataSource
-
-    @classmethod
-    def setUpClass(cls):
-        cls.cache_dirname = tempfile.mkdtemp()
-        src = jaspar.Jaspar( cache_dirname=cls.cache_dirname, clear_content = True)
-        src.load_content()
-        src.engine.dispose()
-
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.cache_dirname)
-
-    def setUp(self):
-        self.src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content = True)
-
-
-    def test_load_content(self):
-        self.src.load_content()
-
-    def tearDown(self):
-        self.src.engine.dispose()
-
-if __name__ == '__main__':
-    unittest.main()
+        matrix = session.query(jaspar.BindingMatrix).filter(jaspar.BindingMatrix.matrix_id == 9436).first()
+        self.assertEqual(matrix.position, 1)
+        self.assertEqual(matrix.frequency_A, 0)
+        self.assertEqual(matrix.frequency_C, 19)
+        self.assertEqual(matrix.frequency_G, 0)
+        self.assertEqual(matrix.frequency_T, 0)
