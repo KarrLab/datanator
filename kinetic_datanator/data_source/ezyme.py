@@ -24,9 +24,10 @@ class Ezyme(data_source.WebserviceDataSource):
         RETRIEVAL_URL (:obj:`str`): URL to retrieve Ezyme results
         EC_PREDICTION_URL (:obj:`str`): URL where predicted EC number is encoded
     """
-    REQUEST_URL = 'http://www.genome.jp/tools-bin/predict_view'
-    RETRIEVAL_URL = 'http://www.genome.jp/tools-bin/e-zyme2/result.cgi'
-    EC_PREDICTION_URL = 'http://www.genome.jp/kegg-bin/get_htext?htext=ko01000.keg&query='
+    ENDPOINT_DOMAINS = {'ezyme': 'http://www.genome.jp'}
+    REQUEST_URL = ENDPOINT_DOMAINS['ezyme'] + '/tools-bin/predict_view'
+    RETRIEVAL_URL = ENDPOINT_DOMAINS['ezyme'] + '/tools-bin/e-zyme2/result.cgi'
+    EC_PREDICTION_URL = ENDPOINT_DOMAINS['ezyme'] + '/kegg-bin/get_htext?htext=ko01000.keg&query='
 
     def run(self, reaction):
         """ Use Ezyme to predict the first three digits of the EC number of a reaction.
@@ -73,7 +74,7 @@ class Ezyme(data_source.WebserviceDataSource):
             return None
 
         # Request Ezyme to predict the EC number
-        response = requests.post(self.REQUEST_URL, data={
+        response = self.requests_session.post(self.REQUEST_URL, data={
             'QUERY_MODE': 'MULTI',
             'S_MOLTEXT': reactants,
             'P_MOLTEXT': products,
@@ -82,7 +83,7 @@ class Ezyme(data_source.WebserviceDataSource):
         file = re.findall('<input type=hidden name=file value="(.*?)">', response.text)[0]
 
         # retrieve the predicted EC number(s)
-        response = requests.post(self.RETRIEVAL_URL, data={
+        response = self.requests_session.post(self.RETRIEVAL_URL, data={
             'file': file,
             'name': ''.join(':' + str(i) for i, c in enumerate(itertools.chain(reactants, products)))
         })

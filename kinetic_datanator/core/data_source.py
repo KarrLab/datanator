@@ -290,7 +290,7 @@ class HttpDataSource(CachedDataSource):
         session = requests_cache.core.CachedSession(name, backend='sqlite', expire_after=None)
 
         # setup retrying
-        for source_name, endpoint_domain in self.ENDPOINT_DOMAINS.items():
+        for endpoint_domain in self.ENDPOINT_DOMAINS.values():
             session.mount(endpoint_domain, requests.adapters.HTTPAdapter(max_retries=self.MAX_HTTP_RETRIES))
 
         return session
@@ -338,8 +338,21 @@ class HttpDataSource(CachedDataSource):
 
 
 class WebserviceDataSource(DataSource):
-    """ A data source that is a webservice """
-    pass
+    """ A data source that is a webservice 
+
+    Attributes:
+        requests_session (:obj:`requests.Session`): cache-enabled HTTP request session
+        ENDPOINT_DOMAINS (:obj:`dict` of :obj:`str`, :obj:`str`): dictionary of domains to retry
+        MAX_HTTP_RETRIES (:obj:`int`): maximum number of times to retry each HTTP request
+    """
+
+    ENDPOINT_DOMAINS = {}
+    MAX_HTTP_RETRIES = 5
+    
+    def __init__(self):
+        self.requests_session = requests.Session()
+        for endpoint_domain in self.ENDPOINT_DOMAINS.values():
+            self.requests_session.mount(endpoint_domain, requests.adapters.HTTPAdapter(max_retries=self.MAX_HTTP_RETRIES))
 
 
 class DataSourceWarning(UserWarning):
