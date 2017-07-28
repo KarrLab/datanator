@@ -77,9 +77,9 @@ class TestStructure(unittest.TestCase):
 
 class TestParseFunctions(unittest.TestCase):
 
-    def test_make_jaspar_int(self):
+    def test_make_first_col_ints(self):
         self.data1 = [['1', 'a'], ['2', 'b'], ['3', 'c']]
-        result = jaspar.make_jaspar_int(self.data1)
+        result = jaspar.make_first_col_ints(self.data1)
         for i in range(0, len(result)):
             self.assertIsInstance(result[i][0], int)
 
@@ -89,7 +89,7 @@ class TestParseFunctions(unittest.TestCase):
         for i in range(0, len(result)):
             self.assertIsInstance(result[i][0], int)
             self.assertIsInstance(result[i][2], int)
-            self.assertIsInstance(result[i][3], float)
+            self.assertIsInstance(result[i][3], float) ##change to int
 
     def test_sort(self):
         random.seed()
@@ -97,19 +97,19 @@ class TestParseFunctions(unittest.TestCase):
         result = jaspar.sort(self.data3)
         self.assertLess(result[0][0], result[1][0])
 
-    def test_group_by_jaspar_id(self):
-        self.data4 = [[4, 'this'], [4, 'is'], [4, 'a'], [4, 'test']]
-        group_result, key_result = jaspar.group_by_jaspar_id(self.data4)
-        self.assertEqual(group_result[0][0][0], key_result[0])
+    def test_group(self):
+        self.data4 = [[4, 'this', 2], [4, 'is', 3], [4, 'a', 1], [4, 'test',7]]
+        returned = jaspar.group(self.data4,1)
+        self.assertEqual(returned[4][0], ['this', 2])
+        self.assertEqual(returned[4][3], ['test',7])
 
+        self.data5 = [[4, 'A', 1, 100], [4, 'C' , 1, 123], [4, 'A', 2, 423], [4, 'C', 2, 999]]
+        returned = jaspar.group(self.data5,1)
+        returned[4] = jaspar.group(returned[4] , 2)
+        self.assertEqual(returned[4][1][0][1] , 100)
+        self.assertEqual(returned[4][1][0][0] , 'A')
 
-class TestCallFunctions(unittest.TestCase):
-
-    def test_call_Attribute(self):
-        self.key_attribute = [1, 2, 3]
-        self.data_attribute = [[[1, 'at1']], [[2, 'at2']], [[3, 'at3']]]
-        result_answer, result_key_list, result_data_list = jaspar.call_Attribute(self.key_attribute, self.data_attribute, 2)
-        self.assertEqual(result_answer, ['at2'])
+        self.assertRaises(TypeError , jaspar.group(returned[4],3))
 
 
 class TestQuery(unittest.TestCase):
@@ -121,38 +121,37 @@ class TestQuery(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
     def test_query(self):
-        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content=True, load_content=False, download_backup=False)
-        src.parse_db()
+        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content = False, load_content=False, download_backup=False, verbose = True)
+        src.load_content()
         session = src.session
 
-        z = session.query(jaspar.MatrixObservation).get(9436)
-        self.assertEqual(z.tf_name, 'schlank')
-        self.assertEqual(z.collection.name, 'CORE')
-        self.assertEqual(z.tf_id, 'MA0193')
+        z = session.query(jaspar.Matrix).get(9436)
+        self.assertEqual(str(z.transcription_factor_id), 'MA0193')
         self.assertEqual(z.version, 1)
-        self.assertEqual(z.matrix_id, 9436)
+        self.assertEqual(z.type_id, 5)
 
-        type = session.query(jaspar.Type).filter(jaspar.Type.matrix_id == 9436).first()
+        y = session.query(jaspar.TranscriptionFactor).get(3)
+        self.assertEqual(str(y.id), 'MA0003')
+        self.assertEqual(y.name, 'TFAP2A')
+        self.assertEqual(y.species_id, 9606)
+        self.assertEqual(y.collection_id, 1)
+
+        x = session.query(jaspar.MatrixPosition).get(7)
+        self.assertEqual(x.position, 7)
+        self.assertEqual(x.frequency_a, 65)
+        self.assertEqual(x.frequency_c, 5)
+        self.assertEqual(x.frequency_g, 5)
+        self.assertEqual(x.frequency_t, 22)
+        self.assertEqual(x.matrix_id, 9229)
+
+        type = session.query(jaspar.Type).filter(jaspar.Type.id == 5).first()
         self.assertEqual(type.name, 'bacterial 1-hybrid')
 
-        family = session.query(jaspar.Family).filter(jaspar.Family.matrix_id == 9433).first()
+        family = session.query(jaspar.Family).filter(jaspar.Family.id == 44).first()
         self.assertEqual(family.name, 'Paired-related HD factors')
 
-        class_ = session.query(jaspar.Class).filter(jaspar.Class.matrix_id == 9436).first()
+        class_ = session.query(jaspar.Class).filter(jaspar.Class.id == 16).first()
         self.assertEqual(class_.name, 'Homeo domain factors')
 
-        resource = session.query(jaspar.Resource).filter(jaspar.Resource.matrix_id == 9436).first()
-        self.assertEqual(resource.medline_id, '18332042')
-
-        species = session.query(jaspar.Species).filter(jaspar.Species.matrix_id == 9436).first()
-        self.assertEqual(species.ncbi_id, '7227')
-
-        tf = session.query(jaspar.TranscriptionFactorSubunit).filter(jaspar.TranscriptionFactorSubunit.matrix_id == 9436).first()
-        self.assertEqual(tf.uniprot_id, 'Q9W423')
-
-        matrix = session.query(jaspar.BindingMatrix).filter(jaspar.BindingMatrix.matrix_id == 9436).first()
-        self.assertEqual(matrix.position, 1)
-        self.assertEqual(matrix.frequency_A, 0)
-        self.assertEqual(matrix.frequency_C, 19)
-        self.assertEqual(matrix.frequency_G, 0)
-        self.assertEqual(matrix.frequency_T, 0)
+        tf = session.query(jaspar.Subunit).filter(jaspar.Subunit.id == 5).first()
+        self.assertEqual(tf.uniprot_id, 'P17839')
