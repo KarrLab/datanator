@@ -338,7 +338,7 @@ class Jaspar(data_source.HttpDataSource):
         response.raise_for_status()
         f = BytesIO(response.content)
         subunits = reader(f, delimiter='\t')
-        print subunits
+        subunits = make_first_col_ints(subunits)
         sorted_list = sort(subunits)
         subunits = group(sorted_list,1)
         if self.verbose:
@@ -420,7 +420,6 @@ class Jaspar(data_source.HttpDataSource):
             # append transcription factors and matrices to the database
             tf = self.get_or_create_object(TranscriptionFactor, id=tf_id, name=tf_name)
             tf.collection = self.get_or_create_object(Collection, name=collection_name)
-
 
             if matrix_id in subunits:
                 for uniprot_id in subunits[matrix_id]:

@@ -153,5 +153,5 @@ class TestQuery(unittest.TestCase):
         class_ = session.query(jaspar.Class).filter(jaspar.Class.id == 16).first()
         self.assertEqual(class_.name, 'Homeo domain factors')
 
-        tf = session.query(jaspar.Subunit).filter(jaspar.Subunit.id == 5).first()
-        self.assertEqual(tf.uniprot_id, 'P17839')
+        subunit = session.query(jaspar.Subunit).filter(jaspar.Subunit.id == 5).first()
+        self.assertEqual(subunit.uniprot_id, 'P17839')

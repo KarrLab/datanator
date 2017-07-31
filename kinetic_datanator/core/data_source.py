@@ -338,7 +338,7 @@ class HttpDataSource(CachedDataSource):
 
 
 class WebserviceDataSource(DataSource):
-    """ A data source that is a webservice 
+    """ A data source that is a webservice
 
     Attributes:
         requests_session (:obj:`requests.Session`): cache-enabled HTTP request session
@@ -348,7 +348,7 @@ class WebserviceDataSource(DataSource):
 
     ENDPOINT_DOMAINS = {}
     MAX_HTTP_RETRIES = 5
-    
+
     def __init__(self):
         self.requests_session = requests.Session()
         for endpoint_domain in self.ENDPOINT_DOMAINS.values():
