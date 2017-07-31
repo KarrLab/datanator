@@ -50,12 +50,11 @@ matrix_resource = Table(
     Column('resource_id', Integer, ForeignKey('resource.id'), index=True),
 )
 # :obj:`Table`: Matrix:Resource many-to-many association table
-
-# transcription_factor_species = Table(
-#     'transcription_factor_species', Base.metadata,
-#     Column('transcription_factor__id', Integer, ForeignKey('transcription_factor._id'), index=True),
-#     Column('species_id', Integer, ForeignKey('species.id'), index=True),
-# )
+transcription_factor_species = Table(
+    'transcription_factor_species', Base.metadata,
+    Column('transcription_factor__id', Integer, ForeignKey('transcription_factor._id'), index=True),
+    Column('species_id', Integer, ForeignKey('species.id'), index=True),
+)
 # :obj:`Table`: TranscriptionFactor:Class many-to-many association table
 
 class TranscriptionFactor(Base):
@@ -76,8 +75,7 @@ class TranscriptionFactor(Base):
 
     subunits = relationship('Subunit', secondary=transcription_factor_subunit, backref='transcription_factors')
 
-    species_id = Column(Integer, ForeignKey('species.id'))
-    species = relationship('Species', backref='transcription_factors')
+    species = relationship('Species', secondary = transcription_factor_species, backref='transcription_factors')
 
     classes = relationship('Class', secondary=transcription_factor_class, backref='transcription_factors')
     families = relationship('Family', secondary=transcription_factor_family, backref='transcription_factors')
@@ -200,6 +198,7 @@ class Species(Base):
     __tablename__ = 'species'
 
     id = Column(Integer, primary_key=True)
+    ncbi_id = Column(Integer)
 
 
 class Resource(Base):
@@ -432,7 +431,7 @@ class Jaspar(data_source.HttpDataSource):
                     if ncbi[0] != '-':
                         ncbi[0] = int(ncbi[0])
                         assert isinstance(ncbi[0], six.integer_types)
-                        tf.species = self.get_or_create_object(Species, id = ncbi[0])
+                        tf.species.append(self.get_or_create_object(Species, ncbi_id = ncbi[0]))
                 species.pop(matrix_id)
 
             if matrix_id in cls:

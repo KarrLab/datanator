@@ -29,7 +29,7 @@ class TestStructure(unittest.TestCase):
         tf = self.tf = jaspar.TranscriptionFactor(id='MA0035', name='Gata1')
         session.add(tf)
 
-        tf.species = jaspar.Species(id=12342345)
+        tf.species.append(jaspar.Species(ncbi_id=12342345))
 
         tf.subunits.append(jaspar.Subunit(uniprot_id='P17679'))
         tf.subunits.append(jaspar.Subunit(uniprot_id='P17679-2'))
@@ -125,6 +125,7 @@ class TestQuery(unittest.TestCase):
         src.load_content()
         session = src.session
 
+
         z = session.query(jaspar.Matrix).get(9436)
         self.assertEqual(str(z.transcription_factor_id), 'MA0193')
         self.assertEqual(z.version, 1)
@@ -133,7 +134,6 @@ class TestQuery(unittest.TestCase):
         y = session.query(jaspar.TranscriptionFactor).get(3)
         self.assertEqual(str(y.id), 'MA0003')
         self.assertEqual(y.name, 'TFAP2A')
-        self.assertEqual(y.species_id, 9606)
         self.assertEqual(y.collection_id, 1)
 
         x = session.query(jaspar.MatrixPosition).get(7)
