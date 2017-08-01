@@ -107,9 +107,6 @@ class Subunit(Base):
     complex       = relationship('Complex', backref=backref('subunits'), foreign_keys=[complex_id])
 
 
-
-
-
 def find_ncbi_id(swissprot_id):
     # an embarassing solution, but works for now
     if swissprot_id == 'Neovison vison (American mink) (Mustela vison)':
@@ -154,6 +151,10 @@ SU - subunit; CMT - comment; dsc - description
 
 class Corum(data_source.HttpDataSource):
 
+    """ A local sqlite copy of the Corum database
+
+    """
+
     base_model = Base
     ENDPOINT_DOMAINS = {
         'corum': 'http://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
@@ -161,6 +162,9 @@ class Corum(data_source.HttpDataSource):
 
     def load_content(self):
 
+        """ Collects and Parses all data from Corum DB website and adds to SQLlite DB
+
+        """
         database_url = self.ENDPOINT_DOMAINS['corum']
         req = self.requests_session
         session = self.session

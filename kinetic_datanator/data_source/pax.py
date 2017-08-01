@@ -17,6 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
 import os, zipfile
+from operator import itemgetter
 from six import BytesIO
 
 Base = declarative_base()
@@ -33,7 +34,6 @@ class Taxon(Base):
     ncbi_id      = Column(Integer,primary_key=True)
     species_name = Column(String(255))
 
-""" -------------------------------------------------------------------------"""
 class Dataset(Base):
     """  Represents a given dataset (typically results form a single paper)
     Attributes:
@@ -56,7 +56,6 @@ class Dataset(Base):
     taxon_ncbi_id = Column(Integer, ForeignKey('taxon.ncbi_id'))
     taxon         = relationship('Taxon', backref=backref('datasets'), foreign_keys=[taxon_ncbi_id])
 
-""" -------------------------------------------------------------------------"""
 class Protein(Base):
     """  Represents a protein
     Attributes:
@@ -68,7 +67,6 @@ class Protein(Base):
     protein_id = Column(Integer, primary_key=True)
     string_id  = Column(String(255))
 
-""" -------------------------------------------------------------------------"""
 class Observation(Base):
     """  Represents a protein
     Attributes:
@@ -88,18 +86,30 @@ class Observation(Base):
 
     #FORMAT: foreign_table = relationship('foreign_class',backref=backref('self_table'),foreign_keys=[self_column])
 
-""" ----------------------- Method for Finding Files ---------------------------------"""
+""" ------------------------ Method for Finding Files ---------------------------------"""
 
 def find_files(path):
-    """ Scan a directory (and its subdirectories) for files
-    Attributes:
-        path (:obj:`str`): folder to be scanned
+    """ Scan a directory (and its subdirectories) for files and sort by ncbi_id
+
+    Args:
+        path (:obj:`str`): Path containing the data_files
+
+    Returns:
+        :obj:`list`: list of files to add to DB
+
     """
 
     data_files = []
+    temp = []
     for path, subdirs, files in os.walk(path):
+        temp = subdirs
+        break
+    subdir = sorted([int(x) for x in temp])
+    for items in subdir:
+        compound = path + '/' + str(items)
+        files = [f for f in os.listdir(compound)]
         for filename in files:
-            f = os.path.join(path, filename)
+            f = os.path.join(compound, filename)
             data_files.append(f)
     return data_files
 
@@ -108,7 +118,7 @@ def find_files(path):
 
 
 class Pax(data_source.HttpDataSource):
-    """ A local sqlite copy of the ECMDB database
+    """ A local sqlite copy of the Pax database
 
     """
 
@@ -118,6 +128,11 @@ class Pax(data_source.HttpDataSource):
     }
 
     def load_content(self):
+        """ Collects and Parses all data from Pax DB website and adds to SQLlite DB
+
+        Args:
+            req (:obj:`requests object`): Requests session object
+        """
 
         database_url = self.ENDPOINT_DOMAINS['pax']
         req = self.requests_session
@@ -127,11 +142,14 @@ class Pax(data_source.HttpDataSource):
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
 
+
         self.cwd = self.cache_dirname+'/paxdb-abundance-files-v4.0'
         self.data_files = find_files(self.cwd)
         n_files = round(self.fraction*len(self.data_files),0)
 
-        self.report = open('report.txt', 'w+')
+        new_file = '/report.txt'
+        new_path = self.cache_dirname + '/report.txt'
+        self.report = open(new_path, 'w+')
         self.report.write('Errors found:\n')
 
         # Find data and parse individual files
