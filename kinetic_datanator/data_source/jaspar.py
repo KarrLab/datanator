@@ -474,4 +474,5 @@ class Jaspar(data_source.HttpDataSource):
                         frequency_t = freq[3][1], matrix = matrix)
                 matrix_data.pop(matrix_id)
 
-        print('Done.')
+        if self.verbose:
+            print('Done.')
