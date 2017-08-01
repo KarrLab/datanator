@@ -4,7 +4,7 @@
 
 :Author: Balazs Szigeti <balazs.szigeti@mssm.edu>
 :Author: Saahith Pochiraju <saahith116@gmail.com>
-:Date: 2017-07-31
+:Date: 2017-08-1
 :Copyright: 2017, Karr Lab
 :License: MIT
 """
@@ -31,10 +31,8 @@ class TestQuery(unittest.TestCase):
             session = src.session
 
 
-            z = session.query(pax.Dataset).get(2)
-            self.assertEqual(round(z.score,2), 8.22)
-            self.assertEqual(z.coverage, 44)
-            self.assertEqual(z.taxon_ncbi_id, 10090)
+            z = session.query(pax.Dataset).filter(pax.Dataset.score == 9.76).first()
+            self.assertEqual(z.file_name, '10090/10090-Adrenal_gland_geiger_2013.txt')
 
             y = session.query(pax.Observation).get(658)
             self.assertEqual(round(y.abundance,2), 0.34)

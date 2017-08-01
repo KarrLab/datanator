@@ -153,10 +153,12 @@ class Pax(data_source.HttpDataSource):
             data_folder (:obj:`str`): root folder of the database
         """
         file_path = self.data_files[self.file_id]
+        if self.verbose:
+            print(file_path)
 
         # Get NCBI taxonomy ID from file name
         start  = file_path.find('/',len(self.cwd)-1)+1
-        finish = file_path.find('/',len(self.cwd)+2)
+        finish = file_path.find('/',len(self.cwd)+4)
         ncbi_id = int(file_path[start:finish])
 
         # Get file_name
