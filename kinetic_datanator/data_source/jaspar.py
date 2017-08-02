@@ -400,8 +400,9 @@ class Jaspar(data_source.HttpDataSource):
             print('  Downloaded and parsed transcription factor data.')
 
         # add transcription factors to the SQLite database
+        matrices = matrices[0:min(len(matrices), self.max_entries)]
         if self.verbose:
-            print('  Loading transcription factors into the SQLite database ...')
+            print('  Loading {} transcription factors into the SQLite database ...'.format(len(matrices)))
         for id, collection, tf_id, version, tf_name in matrices:
             id = int(id)
 

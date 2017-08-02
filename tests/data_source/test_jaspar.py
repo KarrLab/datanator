@@ -158,8 +158,44 @@ class TestLoadContent(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    def test(self):
-        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, clear_content=False, load_content=False, download_backup=False, verbose=True)
+    def test_import_a_few_tfs(self):
+        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, load_content=False, download_backup=False, max_entries=10)
+        src.load_content()
+        session = src.session
+
+        matrix = session.query(jaspar.Matrix).get(9234)
+        self.assertEqual(matrix.version, 1)
+        self.assertEqual(matrix.type.name, 'SELEX')
+        self.assertEqual(len(matrix.references), 1)
+        self.assertEqual(matrix.references[0].id, 7592839)
+
+        tf = matrix.transcription_factor
+        self.assertEqual(tf.id, 'MA0006')
+        self.assertEqual(tf.name, 'Ahr::Arnt')
+        self.assertEqual(tf.collection.name, 'CORE')
+
+        self.assertEqual(set([subunit.uniprot_id for subunit in tf.subunits]), set(['P30561', 'P53762']))
+
+        self.assertEqual(len(tf.classes), 1)
+        self.assertEqual(tf.classes[0].name, 'Basic helix-loop-helix factors (bHLH)')
+
+        self.assertEqual(len(tf.families), 1)
+        self.assertEqual(tf.families[0].name, 'PAS domain factors')
+
+        self.assertEqual(len(tf.species), 1)
+        self.assertEqual(tf.species[0].ncbi_id, 10090)
+
+        self.assertEqual(len(matrix.positions), 6)
+
+        self.assertEqual(len(matrix.positions), 6)
+        pos = next(pos for pos in matrix.positions if pos.position == 3)
+        self.assertEqual(pos.frequency_a, 0)
+        self.assertEqual(pos.frequency_c, 23)
+        self.assertEqual(pos.frequency_g, 0)
+        self.assertEqual(pos.frequency_t, 1)
+
+    def test_import_all(self):
+        src = jaspar.Jaspar(cache_dirname=self.cache_dirname, load_content=False, download_backup=False)
         src.load_content()
         session = src.session
 
