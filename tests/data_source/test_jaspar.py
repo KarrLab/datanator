@@ -186,8 +186,6 @@ class TestLoadContent(unittest.TestCase):
         self.assertEqual(tf.species[0].ncbi_id, 10090)
 
         self.assertEqual(len(matrix.positions), 6)
-
-        self.assertEqual(len(matrix.positions), 6)
         pos = next(pos for pos in matrix.positions if pos.position == 3)
         self.assertEqual(pos.frequency_a, 0)
         self.assertEqual(pos.frequency_c, 23)
@@ -199,32 +197,31 @@ class TestLoadContent(unittest.TestCase):
         src.load_content()
         session = src.session
 
-        q = session.query(jaspar.Matrix).get(9436)
-        self.assertEqual(str(q.transcription_factor_id), 'MA0193')
-        self.assertEqual(q.version, 1)
-        self.assertEqual(q.type_id, 5)
+        matrix = session.query(jaspar.Matrix).get(9436)
+        self.assertEqual(matrix.version, 1)
+        self.assertEqual(matrix.type.name, 'bacterial 1-hybrid')
+        self.assertEqual(len(matrix.references), 1)
+        self.assertEqual(matrix.references[0].id, 18332042)
 
-        q = session.query(jaspar.TranscriptionFactor).get(3)
-        self.assertEqual(str(q.id), 'MA0003')
-        self.assertEqual(q.name, 'TFAP2A')
-        self.assertEqual(q.collection_id, 1)
+        tf = matrix.transcription_factor
+        self.assertEqual(tf.id, 'MA0193')
+        self.assertEqual(tf.name, 'schlank')
+        self.assertEqual(tf.collection.name, 'CORE')
 
-        q = session.query(jaspar.MatrixPosition).get(7)
-        self.assertEqual(q.position, 7)
-        self.assertEqual(q.frequency_a, 65)
-        self.assertEqual(q.frequency_c, 5)
-        self.assertEqual(q.frequency_g, 5)
-        self.assertEqual(q.frequency_t, 22)
-        self.assertEqual(q.matrix_id, 9229)
+        self.assertEqual(len(tf.subunits), 1)
+        self.assertEqual(tf.subunits[0].uniprot_id, 'Q9W423')
 
-        type = session.query(jaspar.Type).filter(jaspar.Type.id == 5).first()
-        self.assertEqual(type.name, 'bacterial 1-hybrid')
+        self.assertEqual(len(tf.classes), 1)
+        self.assertEqual(tf.classes[0].name, 'Homeo domain factors')
 
-        family = session.query(jaspar.Family).filter(jaspar.Family.id == 44).first()
-        self.assertEqual(family.name, 'Paired-related HD factors')
+        self.assertEqual(len(tf.families), 0)
 
-        class_ = session.query(jaspar.Class).filter(jaspar.Class.id == 16).first()
-        self.assertEqual(class_.name, 'Homeo domain factors')
+        self.assertEqual(len(tf.species), 1)
+        self.assertEqual(tf.species[0].ncbi_id, 7227)
 
-        subunit = session.query(jaspar.Subunit).filter(jaspar.Subunit.id == 5).first()
-        self.assertEqual(subunit.uniprot_id, 'P17839')
+        self.assertEqual(len(matrix.positions), 7)
+        pos = next(pos for pos in matrix.positions if pos.position == 7)
+        self.assertEqual(pos.frequency_a, 12)
+        self.assertEqual(pos.frequency_c, 0)
+        self.assertEqual(pos.frequency_g, 4)
+        self.assertEqual(pos.frequency_t, 3)
