@@ -15,15 +15,38 @@ from sqlalchemy.orm import sessionmaker
 import tempfile
 import shutil
 
-class TestQuery(unittest.TestCase):
+class TestCorumDBCreation(unittest.TestCase):
         def setUp(self):
             self.cache_dirname = tempfile.mkdtemp()
 
         def tearDown(self):
             shutil.rmtree(self.cache_dirname)
 
-        def test_query(self):
-            src = corum.Corum(cache_dirname = self.cache_dirname, clear_content = False, load_content=False, download_backup=False, verbose = False)
+        def test_load_some_content(self):
+            src = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True, verbose = False, max_entries = 10)
+            src.load_content()
+            session = src.session
+
+            subunit = session.query(corum.Subunit).get(3)
+            self.assertEqual(subunit.su_uniprot, 'P41182')
+            self.assertEqual(str(subunit.protein_name), 'B-cell lymphoma 6 protein ')
+
+            complx = subunit.complex
+
+            self.assertEqual(complx.complex_id, 2)
+            self.assertEqual(complx.complex_name, 'BCL6-HDAC5 complex')
+
+            obs = complx.observation
+            self.assertEqual(obs.id,2)
+            self.assertEqual(obs.pubmed_id, 11929873)
+
+            tax = obs.taxon
+
+            self.assertEqual(tax.swissprot_id, 'Homo sapiens (Human)')
+
+
+        def test_load_all_content(self):
+            src = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True, verbose = False)
             src.load_content()
             session = src.session
 

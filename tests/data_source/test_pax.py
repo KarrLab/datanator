@@ -15,31 +15,34 @@ import tempfile
 import shutil
 
 
-
-
-class TestQuery(unittest.TestCase):
+class TestPaxDBCreation(unittest.TestCase):
         def setUp(self):
             self.cache_dirname = tempfile.mkdtemp()
 
         def tearDown(self):
             shutil.rmtree(self.cache_dirname)
 
-        def test_query(self):
-            src = pax.Pax(cache_dirname = self.cache_dirname, clear_content = False, load_content=False, download_backup=False, verbose = True)
-            ## Fraction of DB to load
-            src.fraction = .005
+        def test_load_some_content(self):
+            src = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True, verbose = True, max_entries= 5)
             src.load_content()
             session = src.session
 
+            obs = session.query(pax.Observation).get(2)
+            self.assertIsInstance(obs.abundance, float)
+            self.assertIsInstance(obs.dataset_id, int)
 
-            z = session.query(pax.Dataset).get(2)
-            self.assertIsInstance(z.score, float)
-            self.assertIsInstance(z.taxon_ncbi_id, int)
-            self.assertEqual(z.score, 0.03)
+            data = obs.dataset
 
-            y = session.query(pax.Observation).get(5)
-            self.assertIsInstance(y.abundance, float)
-            self.assertEqual(y.dataset_id, 1)
+            self.assertEqual(data.taxon_ncbi_id, 882)
+            self.assertIsInstance(data.score, float)
+            self.assertIsInstance(data.weight, int)
+            self.assertIsInstance(data.coverage, int)
 
-            x = session.query(pax.Taxon).get(882)
-            self.assertEqual(x.species_name, 'D.vulgaris')
+            prot = obs.protein
+
+            self.assertEqual(prot.protein_id, obs.protein_id)
+
+            refined_data = session.query(pax.Dataset).filter(pax.Dataset.file_name == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first()
+            self.assertEqual(refined_data.score, 2.47)
+            self.assertEqual(refined_data.weight, 100)
+            self.assertEqual(refined_data.taxon_ncbi_id, 882)

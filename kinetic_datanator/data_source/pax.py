@@ -22,7 +22,7 @@ from six import BytesIO
 
 Base = declarative_base()
 
-""" --------------------------- Defining Tables ----------------------------------"""
+""" --------------------------- Table Definitions ----------------------------------"""
 class Taxon(Base):
     """  Represents a species
     Attributes:
@@ -137,27 +137,26 @@ class Pax(data_source.HttpDataSource):
         database_url = self.ENDPOINT_DOMAINS['pax']
         req = self.requests_session
 
-        # Extract All Files and Save to Current Directory
+        # Extract All Files and Save to Cache Directory
         response = req.get(database_url)
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
-
-
         self.cwd = self.cache_dirname+'/paxdb-abundance-files-v4.0'
         self.data_files = find_files(self.cwd)
-        n_files = round(self.fraction*len(self.data_files),0)
 
+        # Insert Error Report in Cache
         new_file = '/report.txt'
         new_path = self.cache_dirname + '/report.txt'
         self.report = open(new_path, 'w+')
         self.report.write('Errors found:\n')
 
         # Find data and parse individual files
-        for self.file_id in range(int(n_files)):
+        for self.file_id in range(int(self.max_entries)):
             if self.verbose:
-                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(int(n_files))+'; '+str(round(100*self.file_id/n_files,2))+'%'+' already done)')
+                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(int(self.max_entries))+'; '+str(round(100*self.file_id/self.max_entries,2))+'%'+' already done)')
             self.parse_paxDB_files()
 
+        # Commit Session
         if self.verbose:
           print('Finished parsing files, committing to DB.')
         self.session.commit()
@@ -180,7 +179,7 @@ class Pax(data_source.HttpDataSource):
         ncbi_id = int(file_path[start:finish])
 
         # Get file_name
-        start     = file_path.find('/',len(self.cwd))+1
+        start   = file_path.find('/',len(self.cwd))+1
         file_name = file_path[start:]
 
         with open(file_path,'r') as f:

@@ -18,7 +18,7 @@ from six import BytesIO
 
 Base  = declarative_base()
 
-""" -------------------------------------------------------------------------"""
+""" --------------------------- Table Definitions ----------------------------------"""
 class Taxon(Base):
     """  Represents a species
     Attributes:
@@ -30,7 +30,6 @@ class Taxon(Base):
     ncbi_id       = Column(Integer,primary_key=True)
     swissprot_id  = Column(String(255))
 
-""" -------------------------------------------------------------------------"""
 class Observation(Base):
     """  Represents an observation (entries in the original DB)
     Attributes:
@@ -52,7 +51,6 @@ class Observation(Base):
     taxon            = relationship('Taxon', backref=backref('observation'), foreign_keys=[taxon_ncbi_id])
     #FORMAT: foreign_table = relationship('foreign_class',backref=backref('self_table'),foreign_keys=[self_column])
 
-""" -------------------------------------------------------------------------"""
 class Complex(Base):
     """  Represents a protein complex
     Attributes:
@@ -82,7 +80,6 @@ class Complex(Base):
     observation_id = Column(Integer, ForeignKey('observation.id'))
     observation    = relationship('Observation', backref=backref('complex'), foreign_keys=[observation_id])
 
-""" -------------------------------------------------------------------------"""
 class Subunit(Base):
     """  Represents subunits of complexes
     Attributes:
@@ -106,6 +103,7 @@ class Subunit(Base):
     complex_id    = Column(Integer, ForeignKey('complex.complex_id'))
     complex       = relationship('Complex', backref=backref('subunits'), foreign_keys=[complex_id])
 
+""" ------------------------- Assignment Function ---------------------------------------"""
 
 def find_ncbi_id(swissprot_id):
     # an embarassing solution, but works for now
@@ -138,7 +136,8 @@ def find_ncbi_id(swissprot_id):
     return int(ncbi_id)
 
 """
--------------------------------------------------------------------------------
+-------------------- Extracting Content and adding to DB -------------------
+
 Column headers:
  [0]: ComplexID      [1]: ComplexName         [2]: Organism          [3]: Synonyms
  [4]: Cell line      [5]: SUs(UniProt)        [6]: SUs(Entrezs)      [7]: Complex purification method
@@ -177,7 +176,8 @@ class Corum(data_source.HttpDataSource):
 
 
         with open(self.cwd,'r') as f:
-            lines            = f.readlines()
+            lines = f.readlines()
+            lines = lines[0:min(len(lines),self.max_entries)]
             column_headers   = lines[0].split('\t')
             unique_organisms = []
 
