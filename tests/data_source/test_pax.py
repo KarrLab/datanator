@@ -23,7 +23,7 @@ class TestPaxDBCreation(unittest.TestCase):
             shutil.rmtree(self.cache_dirname)
 
         def test_load_some_content(self):
-            src = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True, verbose = True, max_entries= 5)
+            src = pax.Pax(cache_dirname = self.cache_dirname, load_content=False, download_backup=False, verbose = True, max_entries= 5)
             src.load_content()
             session = src.session
 

@@ -23,7 +23,7 @@ class TestCorumDBCreation(unittest.TestCase):
             shutil.rmtree(self.cache_dirname)
 
         def test_load_some_content(self):
-            src = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True, verbose = False, max_entries = 10)
+            src = corum.Corum(cache_dirname = self.cache_dirname, load_content=False, download_backup=False, max_entries = 10)
             src.load_content()
             session = src.session
 
@@ -46,7 +46,7 @@ class TestCorumDBCreation(unittest.TestCase):
 
 
         def test_load_all_content(self):
-            src = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True, verbose = False)
+            src = corum.Corum(cache_dirname = self.cache_dirname, load_content=False, download_backup=False, verbose = False)
             src.load_content()
             session = src.session
 
