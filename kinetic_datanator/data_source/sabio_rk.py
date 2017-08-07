@@ -238,7 +238,7 @@ class KineticLaw(Entry):
         equation (:obj:`str`): equation
         parameters (:obj:`list` of :obj:`Parameter`): list of parameters
         modifiers (:obj:`list` of :obj:`ReactionParticipant`): list of modifiers
-        taxon (:obj:`str`): taxon
+        ncbi_id (:obj:`str`): ncbi_id
         taxon_wildtype (:obj:`bool`): if :obj:`True`, the taxon represent the wild type
         taxon_variant (:obj:`str`): variant of the taxon
         temperature (:obj:`float`): temperature in C
@@ -267,7 +267,7 @@ class KineticLaw(Entry):
     modifiers = sqlalchemy.orm.relationship('ReactionParticipant', backref=sqlalchemy.orm.backref('modifier_kinetic_law'),
                                             foreign_keys=[ReactionParticipant.modifier_kinetic_law_id],
                                             cascade='all, delete-orphan')
-    taxon = sqlalchemy.Column(sqlalchemy.Integer())
+    ncbi_id = sqlalchemy.Column(sqlalchemy.Integer())
     taxon_wildtype = sqlalchemy.Column(sqlalchemy.Boolean())
     taxon_variant = sqlalchemy.Column(sqlalchemy.UnicodeText())
     temperature = sqlalchemy.Column(sqlalchemy.Float())
@@ -1046,7 +1046,7 @@ class SabioRk(data_source.HttpDataSource):
                 kinetic_law.taxon_variant = specie_properties[modifier_id]['variant']
 
         # taxon
-        kinetic_law.taxon = next((int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'taxonomy'), None)
+        kinetic_law.ncbi_id = next((int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'taxonomy'), None)
 
         """ conditions """
         conditions = law \
@@ -1779,7 +1779,7 @@ class SabioRk(data_source.HttpDataSource):
         return stack[0]['subunits']
 
     def calc_enzyme_molecular_weights(self, enzymes):
-        """ Calculate the molecular weight of each enzyme 
+        """ Calculate the molecular weight of each enzyme
 
         Args:
             enzymes (:obj:`list` of :obj:`Enzyme`): list of enzymes
@@ -1897,5 +1897,6 @@ class SabioRk(data_source.HttpDataSource):
             ws.append(wc_utils.workbook.core.Row(row))
 
         if not filename:
-            filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
+            filename = os.getcwd() + '/kinetic_datanator/data_source/cache/' + '.summary.xlsx'
+            #filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
         wc_utils.workbook.io.write(filename, wb, style=style)

@@ -177,7 +177,7 @@ class Corum(data_source.HttpDataSource):
 
         with open(self.cwd,'r') as f:
             lines = f.readlines()
-            lines = lines[0:min(len(lines),self.max_entries)]
+            lines = lines[0:min(len(lines),self.max_entries+1)]
             column_headers   = lines[0].split('\t')
             unique_organisms = []
 

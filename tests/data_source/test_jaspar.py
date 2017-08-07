@@ -49,8 +49,8 @@ class TestStructure(unittest.TestCase):
         matrix = jaspar.Matrix(transcription_factor=tf, version=1)
         matrix.type = jaspar.Type(name='SELEX')
 
-        matrix.references.append(jaspar.Resource(id=8321207))
-        matrix.references.append(jaspar.Resource(id=83212072))
+        matrix.references.append(jaspar.Resource(pubmed_id=8321207))
+        matrix.references.append(jaspar.Resource(pubmed_id=83212072))
 
         matrix.positions.append(jaspar.MatrixPosition(
             position=1,
@@ -167,7 +167,7 @@ class TestLoadContent(unittest.TestCase):
         self.assertEqual(matrix.version, 1)
         self.assertEqual(matrix.type.name, 'SELEX')
         self.assertEqual(len(matrix.references), 1)
-        self.assertEqual(matrix.references[0].id, 7592839)
+        self.assertEqual(matrix.references[0].pubmed_id, 7592839)
 
         tf = matrix.transcription_factor
         self.assertEqual(tf.id, 'MA0006')
@@ -201,7 +201,7 @@ class TestLoadContent(unittest.TestCase):
         self.assertEqual(matrix.version, 1)
         self.assertEqual(matrix.type.name, 'bacterial 1-hybrid')
         self.assertEqual(len(matrix.references), 1)
-        self.assertEqual(matrix.references[0].id, 18332042)
+        self.assertEqual(matrix.references[0].pubmed_id, 18332042)
 
         tf = matrix.transcription_factor
         self.assertEqual(tf.id, 'MA0193')

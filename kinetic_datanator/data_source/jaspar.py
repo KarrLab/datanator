@@ -48,7 +48,7 @@ transcription_factor_class = Table(
 matrix_resource = Table(
     'matrix_resource', Base.metadata,
     Column('matrix_id', Integer, ForeignKey('matrix.id'), index=True),
-    Column('resource_id', Integer, ForeignKey('resource.id'), index=True),
+    Column('resource_pubmed_id', Integer, ForeignKey('resource.pubmed_id'), index=True),
 )
 # :obj:`Table`: Matrix:Resource many-to-many association table
 
@@ -156,7 +156,7 @@ class Collection(Base):
 
 
 class Type(Base):
-    """ Represents a methodology used to construct a binding profile matrix such as 
+    """ Represents a methodology used to construct a binding profile matrix such as
     SELEX, metamodel, or phylogenetic.
 
     Attributes:
@@ -171,7 +171,7 @@ class Type(Base):
 
 
 class Family(Base):
-    """ Represents a structural sub-class of transcription factors, based on the `TFClass system 
+    """ Represents a structural sub-class of transcription factors, based on the `TFClass system
     <http://tfclass.bioinf.med.uni-goettingen.de/tfclass>`_
 
     Attributes:
@@ -187,7 +187,7 @@ class Family(Base):
 
 
 class Class(Base):
-    """ Represents a structural class of transcription factors, based on the `TFClass system 
+    """ Represents a structural class of transcription factors, based on the `TFClass system
     <http://tfclass.bioinf.med.uni-goettingen.de/tfclass>`_
 
     Attributes:
@@ -225,7 +225,7 @@ class Resource(Base):
     """
     __tablename__ = 'resource'
 
-    id = Column(BigInteger, primary_key=True)
+    pubmed_id = Column(BigInteger, primary_key=True)
 
 
 class Subunit(Base):
@@ -441,7 +441,7 @@ class Jaspar(data_source.HttpDataSource):
             if id in references:
                 for ref in references[id]:
                     if ref[0] not in ['-', 'unpublished']:
-                        matrix.references.append(self.get_or_create_object(Resource, id=int(ref[0])))
+                        matrix.references.append(self.get_or_create_object(Resource, pubmed_id=int(ref[0])))
 
             for position, freqs in matrix_data[id].items():
                 matrix_position = MatrixPosition(matrix=matrix, position=position)

@@ -4,7 +4,7 @@ import os
 import shutil
 import json
 
-reload(sys)  
+reload(sys)
 sys.setdefaultencoding('utf8')
 
 class DownloadExperiments():
@@ -32,7 +32,7 @@ class DownloadExperiments():
 		for year in range(start_year, end_year+1):
 			print(year)
 			self.download_single_year(year)
-		
+
 
 class DownloadSamples():
 
@@ -55,7 +55,7 @@ class DownloadSamples():
 def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year):
 	"""
 	Downloads all medatata from array exrpess on their samples and experiments. The metadata
-	is saved as the text file. Within the text files, the data is stored as a json object. 
+	is saved as the text file. Within the text files, the data is stored as a json object.
 	"""
 	DownloadExperiments().download_all_experiments(2001, end_year)
 
@@ -66,7 +66,3 @@ def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year
 			all_ax_nums.append(entry['accession'])
 	for num in all_ax_nums:
 		DownloadSamples().download_single_sample(num)
-
-
-
-
