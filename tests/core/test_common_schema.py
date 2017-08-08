@@ -23,9 +23,15 @@ class TestCommonSchema(unittest.TestCase):
 
     def test_working(self):
         cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False)
-        # cs = CommonSchema(name = 'aggregate', clear_content = True, load_content=False, download_backup=False)
+        # cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True, load_content=False, download_backup=False)
         cs.load_content()
         session = cs.session
+
+        entry =  session.query(common_schema.Entry).filter_by(taxon_id = 9606).first()
+        self.assertEqual(entry.name, 'protein complex')
+
+        subunit = session.query(common_schema.Subunit).filter_by(uniprot_id = 'P41182').first()
+        self.assertEqual(subunit.entrez_id, 604)
 
         taxon = session.query(common_schema.Taxon).get(882)
         self.assertEqual(taxon.species_name, 'D.vulgaris')
