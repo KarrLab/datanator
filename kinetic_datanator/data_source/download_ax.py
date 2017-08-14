@@ -53,6 +53,25 @@ class DownloadSamples():
 			file.write(response.content)
 
 
+class DownloadProtocol():
+	
+	def download_single_protocol(self, ax_num):
+		"""
+		Gets a JSON of the protocol in a single experiment. Saves it into a directory called
+		"AllProtocol". Creates this directory if it doesn't exist.
+
+		Args:
+			ax_num (obj:'str':) experiment accession number relating to the protocol
+		"""
+		directory = 'AllProtocol'
+		if not os.path.exists(directory):
+			os.makedirs(directory)
+		response = requests.get(ENDPOINT + "/{}/protocols".format(ax_num))
+		response.raise_for_status()
+		with open(os.path.join(directory, '{}.txt'.format(ax_num)), 'wb') as file:
+			file.write(response.content)
+
+
 def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year):
 	"""
 	Downloads all medatata from array exrpess on their samples and experiments. The metadata
@@ -67,4 +86,5 @@ def download_all_metadata(start_year=2001, end_year=datetime.datetime.now().year
 			all_ax_nums.append(entry['accession'])
 	for num in all_ax_nums:
 		DownloadSamples().download_single_sample(num)
+		DownloadProtocol().download_single_protocol(num)
 
