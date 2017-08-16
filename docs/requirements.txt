@@ -2,6 +2,7 @@ cement
 configparser
 demjson
 ete3
+jxmlease
 # openbabel
 python-dateutil
 robpol86-sphinxcontrib-googleanalytics
