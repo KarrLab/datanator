@@ -1,4 +1,11 @@
+cement
 configparser
+demjson
+ete3
+# openbabel
+python-dateutil
 robpol86-sphinxcontrib-googleanalytics
 Sphinx
 sphinx_rtd_theme
+sqlalchemy
+git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
