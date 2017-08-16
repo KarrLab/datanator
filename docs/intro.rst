@@ -1,98 +1,70 @@
-Introduction
+Overview
 ================
 
-What Is kinetic_datanator
+What is kinetic_datanator 
 -------------------------
 
-**Target Audience**
+Kinetic_datanator is a software tool allowing biomodelers to automatically set biological parameter values from experimental data and prediction tools. 
 
-Scientists who would like to aggregate kinetic data (Vmax and Km) for a particular species. kinetic_datanator is especially useful 
-for dynamical modelers as it allows for large-scale data collection tailored to the species being modelled. 
-
-**What Does kinetic_datanator Do?**
-
-kinetic_datanator takes inputted reaction information, searches through Sabio-RK's kinetic database, and returns the most relevant kinetic results. 
-
-**What Are The Input and Outputs?**
-
-The input is an excel sheet containing rection information. The output is an excel sheet containing kinetic information associated with each reaction. 
-
-**What will I Need To Generate The Input File?**
-
-In order to generate the input file, you will need two sets of information:
-
-1. A stoichiometric string for each reaction
-2. Structural information (either an Inchi or SMILES string) for each metabolite that participates in your reactions
-
-(I should site some databases where people can look these up)
-
-
-
+A user can query kinetic_datanator with a list of biological parameters (e.g. the intracellular concentration of a ATP, ADP, and AMP) and a list of filters tailored to the model’s conditions (e.g. Organism: Bacillus subtilis, pH: 6.7, Temp: 23 °C). For each parameter, kinetic_datanator outputs a consensus value and the underlying data or prediction tools used to calculate the consensus.  
 
 Motivation
 ----------
 
-Dynamical modelers rely on expiremental data to set kinetic parameters. Becuase these biological models are species specific, the expiremental entries must be tailored to the particular species being modelled. Current kinetic databases do not provide modellers with search tools to tailor the kinetic data. Furthermore, modellers must somehow find the most relevant kinetic value from a varied list of expiremental values.
+Many biological applications, such as personalized therapy and rational microbial engineering, require large-scale models. Construction of these large-scale models requires extensive heterogeneous data. The modeler is tasked with:
 
-Kinetic Datanator seeks to overcome these problems by providing scientists three tools:
+1. aggregating and merging heterogeneous data
+2. identifying the most relevant subset of data for his model conditions
+3. selecting a single value from the experimental distribution to describe each parameter
+4. recording the provenance of the aggregated data. 
 
-1. Software to automate the search process
-2. A default methodolgy for parsing through large quantities of kinetic data to create customized "species-specific" kinetic values
-3. Tools for the scientist to define his own search methodology
+Performing the data-collection process manually is slow. The need to cross reference distinct databases further slows data collection. For example, a modeler must consult a taxonomic database to identify the relatedness of experimental organisms in a reaction kinetics database. This time cost restricts the possible size of biomodels. Furthermore, provenance is tedious to record for manually aggregated data. 
 
-We hope that by automating and systematizing the search process, scientists can design biological models more efficiently and accurately.
+To solve these problems, kinetic_datanator automates the data-collection process and records provenance.
 
+kinetic_datanator's data-selection process
+-------------------------------------------
 
+**1. Aggregating and merging heterogenous data**
 
-Searching Methodology
----------------------
+Kinetic_datanator integrates heterogeneous data types by downloading multiple data sources to a central database, unifying the biological definitions, and normalizing the units. 
 
-kinetic_datanator creates customised kinetic data in four steps
+**2. Identifying the most relevant data for a given model**
 
-1. A query string is generated from the reaction information and used to search Sabio-RK's reaction database
-2. The expiremental results found in Sabio-RK are narrowed to include only the expiremental entries most closely related to the species being modelled.
-3. From the narrowed set of entries, the most relevant kinetic values are highlighted to the user.
-4. If after step 1 no results were found, then kinetic_datanator searches for similar reactions, and repeates steps 2 and 3
+Kinetic_datanator filters to the most relevant data data based on the user’s specifications. 
 
+Possible filters include: 
 
+a. biological similarity - identify experiments with organisms most closely related to the model’s organism 
+b. chemical similarity - identify experiments with the most similar reaction mechanism 
+c. environmental similarity - identify the experiments with the closest pH, temperature, and growth media to the model’s environmental conditions. 
 
-Step 1 - Formulating a Reaction Query
--------------------------------------
+The user can control how the filters are weighted.
 
-kinetic_datanator searches for kinetic data using the structural information (inchi or SMILES) of the metabolites involved in a reaction. In general, searching with structural information is difficult becuase varying protonation states can differentiate otherwise identical molecules. kinetic_datanator solves this by exploiting a unique characteristic of Inchi strings: all of their protonation information is stored at the end and is clearly delinated with a "/h" tag. Removal of the protonation information allows for the creation "generic inchi's" while keeping the necessary structural information.
+**3. Reducing the distribution of data to a single consensus value**
 
-For example, here are two potential Inchi strings for ATP::
+Kinetic_datanator reduces the distribution of data to a single consensus value. The user has the option to specify how the distribution should be reduced. 
 
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1
-    
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)(H2,18,19,20)/p-4/t4-,6-,7-,10-/m1/s1
+**4. Recording the provenance of the data**
 
-Notice how the end of the strings vary. 
-
-However, if all the protonation information is removed, the two Inchi strings are identical::
-
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20
-    
-    InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20
-
-kinetic_datanator can be used with Inchi or SMILES. If metabolites are defined with SMILES, the program will simply convert it to Inchi string. 
+For each parameter value, kinetic_datanator records the underlying data-sources and recommended consensus value. The user has the option to review the recommendations and modify them. Kinetic_datanator also records the entirety of the query to allow reproducible and updateable model construction.  
 
 
-Step 2 - Narrowing Expiremental Results By Taxonomic Proximity  
---------------------------------------------------------------
+Advantages to using kinetic_datanator:
+--------------------------------------
+1. Kinetic_datanator enables the creation of large-scale models by accelerating the data-collection process 
+2. kinetic_datanator automatically tracks provenance
+3. Models queried in kinetic_datanator are able to be easily reproduced with the same data or updated to incorporate new experiments. 
+4. Models queried in kinetic_datanator are able to be easily studied under different conditions (e.g. analyzing the same biological parameters in a different organism).
+5. By making the parameter selection process explicit,  we hope a methodology on parameter selection can emerge.
 
+Data sources currently in kinetic_datanator
+-----------------------------------------------------
 
-kinetic_datanator uses the NCBI taxonomic tree to judge proximity of species. When a reaction query is made, kinetic_datanator assigns a “proximity” to each entry. The proximity corresponds to the number of nodes one needs to go up on the taxonomic tree to get to the  lowest common node between the model’s species, and the experimental entries species. For example…
+**Databases**
 
+SABIO-RK, JASPAR, ECMDB, YMBD, HMBD, Pax-DB, NCBI-Taxonomy
 
-Step 3 - Finding Most Relevant Values Among Entries
-----------------------------------------------------
+**Prediction tools**
 
-
-
-
-
-Databases Used
---------------
-
-Sabio. Kegg. NCBI
+Kegg E-zyme, openbabel
