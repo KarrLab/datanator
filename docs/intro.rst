@@ -1,10 +1,10 @@
 Overview
 ================
 
-What is kinetic_datanator 
+What is ``kinetic_datanator``
 -------------------------
 
-Kinetic_datanator is a software tool allowing biomodelers to automatically set biological parameter values from experimental data and prediction tools. 
+``kinetic_datanator`` is a software tool that helps biomodelers find relevant experimental data for building and calibating dynamical models of cellular biochemistry. ``kinetic_datanator`` is particularly useful for large models, such as whole-cell models, that require large amounts of data to constrain large numbers of parameters.
 
 A user can query kinetic_datanator with a list of biological parameters (e.g. the intracellular concentration of a ATP, ADP, and AMP) and a list of filters tailored to the model’s conditions (e.g. Organism: Bacillus subtilis, pH: 6.7, Temp: 23 °C). For each parameter, kinetic_datanator outputs a consensus value and the underlying data or prediction tools used to calculate the consensus.  
 
@@ -63,8 +63,15 @@ Data sources currently in kinetic_datanator
 
 **Databases**
 
-SABIO-RK, JASPAR, ECMDB, YMBD, HMBD, Pax-DB, NCBI-Taxonomy
+* Metabolite concentrations: `ECMDB <http://www.ecmdb.ca>`_ and `YMBD <http://www.ymdb.ca>`_
+* RNA abundance: `ArrayExpress <https://www.ebi.ac.uk/arrayexpress>`_
+* Protein abundance: `PaxDb <http://pax-db.org>`_
+* Protein complex composition: `CORUM <http://mips.helmholtz-muenchen.de/corum>`_
+* Transcription factor binding motifs: `JASPAR <http://jaspar.genereg.net>`_
+* Reaction kinetics: `SABIO-RK <http://sabio.h-its.org>`_
+* Taxonomy: `NCBI Taxonomy <https://www.ncbi.nlm.nih.gov/taxonomy>`_
 
 **Prediction tools**
 
-Kegg E-zyme, openbabel
+* Protonation: `Open Babel <http://openbabel.org>`_
+* EC number: `E-zyme <http://www.genome.jp/tools/e-zyme>`_
