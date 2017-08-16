@@ -6,7 +6,7 @@ Install dependencies
 --------------------
 First, please install the following dependencies:
 
-* `Git <https://git-scm.com>`
+* `Git <https://git-scm.com>`_
 * `Open Babel <http://openbabel.org>`_
 * `Python <https://www.python.org>`_
 * `Pip <https://pip.pypa.io>`_
