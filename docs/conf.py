@@ -57,7 +57,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'kinetic_datanator'
 copyright = u'2017, Karr Lab'
-author = u'Yosef Roth'
+author = u'Karr Lab'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -147,7 +147,12 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'collapse_navigation': False,
+    'display_version': True,
+    'navigation_depth': 4,
+    'canonical_url': 'http://kinetic_datanator.readthedocs.io/en/latest/',
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
