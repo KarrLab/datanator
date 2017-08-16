@@ -14,7 +14,7 @@ import tempfile
 import shutil
 
 
-class TestCommonSchema(unittest.TestCase):
+class ShortTestCommonSchema(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
 
@@ -22,16 +22,41 @@ class TestCommonSchema(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
     def test_working(self):
-        cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False)
-        # cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True, load_content=False, download_backup=False)
+        cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True,
+            load_content=False, download_backup=False, max_entries = 5)
+        # cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True,
+        #                                 load_content=False, download_backup=False,
+        #                                 max_entries = 5)
         cs.load_content()
         session = cs.session
 
-        entry =  session.query(common_schema.Entry).filter_by(taxon_id = 9606).first()
-        self.assertEqual(entry.name, 'protein complex')
+        #TODO: Build More Tests
 
-        subunit = session.query(common_schema.Subunit).filter_by(uniprot_id = 'P41182').first()
+        subunit = session.query(common_schema.ProteinSubunit).filter_by(uniprot_id = 'P41182').first()
         self.assertEqual(subunit.entrez_id, 604)
 
         taxon = session.query(common_schema.Taxon).get(882)
-        self.assertEqual(taxon.species_name, 'D.vulgaris')
+        self.assertEqual(taxon.name, 'D.vulgaris')
+
+
+# class LongTestCommonSchema(unittest.TestCase):
+#     def setUp(self):
+#         self.cache_dirname = tempfile.mkdtemp()
+#
+#     def tearDown(self):
+#         shutil.rmtree(self.cache_dirname)
+#
+#     def test_working(self):
+#         # cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False)
+#         cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True,
+#                                         load_content=False, download_backup=False
+#                                         max_entries = 20)
+#         cs.load_content()
+#         session = cs.session
+#
+#
+#         subunit = session.query(common_schema.Subunit).filter_by(uniprot_id = 'P41182').first()
+#         self.assertEqual(subunit.entrez_id, 604)
+#
+#         taxon = session.query(common_schema.Taxon).get(882)
+#         self.assertEqual(taxon.species_name, 'D.vulgaris')
