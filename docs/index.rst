@@ -26,6 +26,6 @@ Contents
 
    intro
    installation
-   tutorial
+   .. tutorial
    API documentation <source/modules.rst>
    about
