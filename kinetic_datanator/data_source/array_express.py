@@ -10,6 +10,7 @@
 import datetime
 import dateutil.parser
 import pkg_resources
+import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
@@ -266,7 +267,7 @@ class Protocol(Base):
     hardware = sqlalchemy.Column(sqlalchemy.String())
     software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
-    
+
     __tablename__ = 'protocol'
 
 
@@ -486,9 +487,7 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
-    
     def load_experiment_protocols(self, experiment):
-
         """ Load the protocols for an experiment
 
         Args:
@@ -517,9 +516,7 @@ class ArrayExpress(data_source.HttpDataSource):
         for protocol in protocols:
             self.load_experiment_protocol(experiment, protocol)
 
-
     def load_experiment_protocol(self, experiment, protocol_json):
-        
         """ Load the protocols for an experiment
 
         Args:
@@ -528,7 +525,7 @@ class ArrayExpress(data_source.HttpDataSource):
         """
 
         db_session = self.session
-        
+
         protocol = Protocol()
 
         if 'accession' not in protocol_json:
@@ -539,7 +536,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'type' in protocol_json:
             protocol.protocol_type = protocol_json['type']
         if 'text' in protocol_json:
-            if not(isinstance(protocol_json['text'], list) or isinstance(protocol_json['text'], dict)):
+            if isinstance(protocol_json['text'], six.string_types):
                 protocol.text = protocol_json['text']
             if isinstance(protocol_json['text'], list):
                 details = ""
@@ -558,7 +555,6 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
 
-        
         protocol.experiments.append(experiment)
 
     def get_or_create_object(self, cls, **kwargs):
