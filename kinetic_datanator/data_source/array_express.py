@@ -1,355 +1,568 @@
+""" Downloads and parses the ArrayExpress database
+
+:Author: Yosef Roth <yosefdroth@gmail.com>
+:Author: Jonathan Karr <jonrkarr@gmail.com>
+:Date: 2017-08-16
+:Copyright: 2017, Karr Lab
+:License: MIT
+"""
+
 import datetime
 import dateutil.parser
-import demjson
-import io
-import jxmlease
-import requests.exceptions
+import pkg_resources
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-import warnings
-import zipfile
 from kinetic_datanator.core import data_source
-from kinetic_datanator.data_source import download_ax
-import os
-import sys
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
 
 sample_characteristic = sqlalchemy.Table(
-	'sample_characteristic', Base.metadata,
-	sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
-	sqlalchemy.Column('characteristic_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('characteristic._id'), index=True),
+    'sample_characteristic', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('characteristic__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('characteristic._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Sample:Characteristic many-to-many association table
 
 sample_variable = sqlalchemy.Table(
-	'sample_variable', Base.metadata,
-	sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
-	sqlalchemy.Column('variable_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('variable._id'), index=True),
+    'sample_variable', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('variable__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('variable._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Sample:Variable many-to-many association table
 
 experiment_organism = sqlalchemy.Table(
-	'experiment_organism', Base.metadata,
-	sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
-	sqlalchemy.Column('organism__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('organism_._id'), index=True),
+    'experiment_organism', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('organism__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('organism._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Experiment:Organism many-to-many association table
 
-experiment_experiment_type= sqlalchemy.Table(
-	'experiment_experiment_type', Base.metadata,
-	sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
-	sqlalchemy.Column('experiment_type_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment_type._id'), index=True),
+experiment_experiment_type = sqlalchemy.Table(
+    'experiment_experiment_type', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('experiment_type__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment_type._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Experiment:ExperimentType many-to-many association table
 
-experiment_experiment_design= sqlalchemy.Table(
-	'experiment_experiment_design', Base.metadata,
-	sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
-	sqlalchemy.Column('experiment_design_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment_design._id'), index=True),
+experiment_experiment_design = sqlalchemy.Table(
+    'experiment_experiment_design', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('experiment_design__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment_design._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Experiment:ExperimentDesign many-to-many association table
 
 experiment_data_format = sqlalchemy.Table(
-	'experiment_data_format', Base.metadata,
-	sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
-	sqlalchemy.Column('data_format_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('data_format._id'), index=True),
+    'experiment_data_format', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('data_format__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('data_format._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Experiment:DataFormat many-to-many association table
 
+extract_sample = sqlalchemy.Table(
+    'extract_sample', Base.metadata,
+    sqlalchemy.Column('extract__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('extract._id'), index=True),
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+)
+# :obj:`sqlalchemy.Table`: Extract:Sample many-to-many association table
+
+experiment_protocol = sqlalchemy.Table(
+    'experiment_protocol', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('protocol_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('protocol._id'), index=True),
+)
+# :obj:`sqlalchemy.Table`: Experiment:Protocol many-to-many association table
+
+
 class Characteristic(Base):
-	""" Represents an expiremental characteristic
-	Attributes:
-		samples
-		name (:obj:`str`): name of the characteristic (e.g. organism)
-		value (:obj:`str`): value of characteristic (e.g Mus musculus)
-	"""
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	value = sqlalchemy.Column(sqlalchemy.String())
+    """ Represents an experimental characteristic
 
-	sqlalchemy.schema.UniqueConstraint(name, value)
+    Attributes:
+        _id (:obj:`int`): unique id
+        category (:obj:`str`): name of the characteristic (e.g. organism)
+        value (:obj:`str`): value of characteristic (e.g. Mus musculus)
+        samples (:obj:`list` of :obj:`Sample`): samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    category = sqlalchemy.Column(sqlalchemy.String())
+    value = sqlalchemy.Column(sqlalchemy.String())
 
-	__tablename__ = 'characteristic'
+    sqlalchemy.schema.UniqueConstraint(category, value)
+
+    __tablename__ = 'characteristic'
 
 
 class Variable(Base):
-	""" Represents an expiremental variable
-	Attributes:
-		samples
-		name (:obj:`str`): name of the variable (e.g. genotype)
-		value (:obj:`str`): value of variable (e.g control)
-		unit (:obj:`str`): units of value (e.g control). This field is not always filled. 
-	"""
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	value = sqlalchemy.Column(sqlalchemy.String())
-	unit = sqlalchemy.Column(sqlalchemy.String())
+    """ Represents an experimental variable
 
-	#sqlalchemy.schema.UniqueConstraint(name, value)
+    Attributes:
+        _id (:obj:`int`): unique id
+        name (:obj:`str`): name of the variable (e.g. genotype)
+        value (:obj:`str`): value of variable (e.g control)
+        unit (:obj:`str`): units of value (e.g control). This field is not always filled. 
+        samples (:obj:`list` of :obj:`Sample`): samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String())
+    value = sqlalchemy.Column(sqlalchemy.String())
+    unit = sqlalchemy.Column(sqlalchemy.String())
 
-	__tablename__ = 'variable'
+    sqlalchemy.schema.UniqueConstraint(name, value, unit)
+
+    __tablename__ = 'variable'
 
 
 class Sample(Base):
-	""" Represents an observed concentration
-	Attributes:
-		experiment_id: (:obj:`str`): the accesion number of the experiment
-		index(:obj:`str`): name of the extract of the sample
-		name (:obj:`str`): name of the source of the sample
+    """ Represents an observed concentration
 
-		characteristics (:obj:`list` of :obj:`Characteristic'):
-		variables (:obj:`list` of :obj:`Variable'):
-	"""
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
-	experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref('samples'), foreign_keys=[experiment_id])
-	#index = sqlalchemy.Column(sqlalchemy.Integer())
-	name = sqlalchemy.Column(sqlalchemy.String())
-	assay = sqlalchemy.Column(sqlalchemy.String())
-	extract = sqlalchemy.Column(sqlalchemy.String())
-	characteristics = sqlalchemy.orm.relationship('Characteristic',
-												  secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
-	variables = sqlalchemy.orm.relationship('Variable',
-											secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
+    Attributes:
+        _id (:obj:`int`): unique id
+        experiment_id: (:obj:`int`): the accesion number of the experiment
+        experiment (:obj:`Experiment`): experiment that the sample belongs to
+        index (:obj:`int`): index of the sample within the experiment
+        name (:obj:`str`): name of the source of the sample
+        assay (:obj:`str`): assay
+        characteristics (:obj:`list` of :obj:`Characteristic'): characteristics
+        variables (:obj:`list` of :obj:`Variable'): variables
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
+    experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref('samples'), foreign_keys=[experiment_id])
+    index = sqlalchemy.Column(sqlalchemy.Integer())
+    name = sqlalchemy.Column(sqlalchemy.String())
+    assay = sqlalchemy.Column(sqlalchemy.String())
+    characteristics = sqlalchemy.orm.relationship(
+        'Characteristic', secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
+    variables = sqlalchemy.orm.relationship('Variable', secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
 
-	#sqlalchemy.schema.UniqueConstraint(experiment_id, index)
-	#sqlalchemy.schema.UniqueConstraint(experiment_id, name)
-	#sqlalchemy.schema.UniqueConstraint(experiment_id, extract, index, name)
+    sqlalchemy.schema.UniqueConstraint(experiment_id, index)
 
-	__tablename__ = 'sample'
+    __tablename__ = 'sample'
 
 
 class Experiment(Base):
-	"""
-	Attributes:
-		id
-		samples
-	"""
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	id = sqlalchemy.Column(sqlalchemy.String(), unique=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	name2 = sqlalchemy.Column(sqlalchemy.String())
-	description = sqlalchemy.Column(sqlalchemy.String())
-	organism_ = sqlalchemy.orm.relationship('Organism', secondary=experiment_organism, backref=sqlalchemy.orm.backref('experiments'))
-	experiment_types = sqlalchemy.orm.relationship('ExperimentType', secondary=experiment_experiment_type, backref=sqlalchemy.orm.backref('experiments'))
-	experiment_designs = sqlalchemy.orm.relationship('ExperimentDesign', secondary=experiment_experiment_design, backref=sqlalchemy.orm.backref('experiments'))
-	submission_date = sqlalchemy.Column(sqlalchemy.String())
-	release_date = sqlalchemy.Column(sqlalchemy.String())
-	data_formats = sqlalchemy.orm.relationship('DataFormat', secondary=experiment_data_format, backref=sqlalchemy.orm.backref('experiments'))
+    """ Represents an experiment
 
-	__tablename__ = 'experiment'
+    Attributes:
+        _id (:obj:`int`): unique id
+        id (:obj:`str`): unique string identifier assigned by ArrayExpress
+        name (:obj:`str`): name
+        name_2 (:obj:`str`): second name
+        description (:obj:`str`): description
+        organisms (:obj:`list` of :obj:`Organism`): list of organisms
+        types (:obj:`list` of :obj:`ExperimentType`): list of experiment types
+        designs (:obj:`list` of :obj:`ExperimentDesign`): list of experimental designs
+        submission_date (:obj:`datetime.date`): submission date
+        release_date (:obj:`datetime.date`): release date
+        data_formats (:obj:`list` of :obj:`DataFormat`): list of data formats
+        samples (:obj:`list` of :obj:`Sample`): list of samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.String(), unique=True, index=True)
+    name = sqlalchemy.Column(sqlalchemy.String())
+    name_2 = sqlalchemy.Column(sqlalchemy.String())
+    description = sqlalchemy.Column(sqlalchemy.String())
+    organisms = sqlalchemy.orm.relationship('Organism', secondary=experiment_organism, backref=sqlalchemy.orm.backref('experiments'))
+    types = sqlalchemy.orm.relationship('ExperimentType', secondary=experiment_experiment_type,
+                                        backref=sqlalchemy.orm.backref('experiments'))
+    designs = sqlalchemy.orm.relationship('ExperimentDesign', secondary=experiment_experiment_design,
+                                          backref=sqlalchemy.orm.backref('experiments'))
+    submission_date = sqlalchemy.Column(sqlalchemy.Date())
+    release_date = sqlalchemy.Column(sqlalchemy.Date())
+    data_formats = sqlalchemy.orm.relationship('DataFormat', secondary=experiment_data_format,
+                                               backref=sqlalchemy.orm.backref('experiments'))
+
+    __tablename__ = 'experiment'
 
 
 class ExperimentDesign(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	sqlalchemy.schema.UniqueConstraint(name)
+    """ Represents and experimental design
 
-	__tablename__ = 'experiment_design'
+    Attributes:
+        _id (:obj:`int`): unique id
+        name (:obj:`str`): name
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+
+    __tablename__ = 'experiment_design'
+
 
 class ExperimentType(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	sqlalchemy.schema.UniqueConstraint(name)
+    """ Represents a type of experiment
 
-	__tablename__ = 'experiment_type'
+    Attributes:
+        _id (:obj:`int`): unique id
+        name (:obj:`str`): name
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+
+    __tablename__ = 'experiment_type'
+
 
 class DataFormat(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'))
-	#experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref(
-	#	'data_format'), foreign_keys=[experiment_id])
-	name = sqlalchemy.Column(sqlalchemy.String())
+    """ Represents a data format
 
-	__tablename__ = 'data_format'
+    Attributes:
+        _id (:obj:`int`): unique id    
+        name (:obj:`str`): name
+        experiments (:obj:`list` of :obj:`Experiment`): list of experiments
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+
+    __tablename__ = 'data_format'
 
 
 class Organism(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	name = sqlalchemy.Column(sqlalchemy.String())
-	sqlalchemy.schema.UniqueConstraint(name)
+    """ Represents an organism
 
-	__tablename__ = 'organism_'
+    Attributes:
+        _id (:obj:`int`): unique id
+        name (:obj:`str`): name
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+
+    __tablename__ = 'organism'
+
 
 class Extract(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	sample_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('sample._id'))
-	sample = sqlalchemy.orm.relationship('Sample', backref=sqlalchemy.orm.backref(
-		'extracts'), foreign_keys=[sample_id])
-	name = sqlalchemy.Column(sqlalchemy.String())
+    """ Represents an extract of a sample
 
-	__tablename__ = 'sample_extract'
+    Attributes:
+        _id (:obj:`int`): unique id
+        name (:obj:`str`): name
+        samples (:obj:`list` of :obj:`Sample`): list of samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+    samples = sqlalchemy.orm.relationship('Sample', secondary=extract_sample, backref=sqlalchemy.orm.backref('extracts'))
 
-
-class Error(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	exp_samp_id = sqlalchemy.Column(sqlalchemy.String())
-	error_message = sqlalchemy.Column(sqlalchemy.String())
-
-	__tablename__ = 'error'
+    __tablename__ = 'extract'
 
 
+class Protocol(Base):
+    """ Represents a protocol for an experiment
+
+    Attributes:
+        _id (:obj:`int`): unique id
+        protocol_accession (:obj:`str`): array express identifier for protocol
+        protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
+        text (:obj:`str`): description the protocol
+        experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    protocol_accession = sqlalchemy.Column(sqlalchemy.String())
+    protocol_type = sqlalchemy.Column(sqlalchemy.String())
+    text = sqlalchemy.Column(sqlalchemy.String())
+    experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
+    
+    __tablename__ = 'protocol'
 
 
 class ArrayExpress(data_source.HttpDataSource):
-	""" A local sqlite copy of the ECMDB database
-	Attributes:
-		DOWNLOAD_INDEX_URL (:obj:`str`): URL to download an index of array express experiments
-		DOWNLOAD_COMPOUND_URL (:obj:`str`): URL pattern to download samples of a single experiment
-	"""
+    """ A local sqlite copy of the ArrayExpress database
 
-	base_model = Base
+    Attributes:
+        EXCLUDED_DATASET_IDS (:obj:`list` of :obj:`str`): list of IDs of datasets to exclude
+    """
 
-	EXCLUSIONS = [u'E-MEXP-21', u'E-GEOD-714', u'E-MANP-2', u'E-NASC-6', u'E-NASC-10', u'E-GEOD-678', u'E-GEOD-652', u'E-GEOD-537', u'E-MAXD-1', u'E-GEOD-2109', u'E-MAXD-10', u'E-TABM-114', u'E-GEOD-7264', u'E-GEOD-7260', u'E-GEOD-8737', u'E-GEOD-8653', u'E-TABM-76', u'E-GEOD-8251', u'E-GEOD-7812', u'E-TABM-1', u'E-GEOD-10645', u'E-GEOD-9376', u'E-GEOD-8858', u'E-GEOD-7740', u'E-MTAB-27', u'E-GEOD-13317', u'E-GEOD-14559', u'E-MTAB-28', u'E-GEOD-16752', u'E-GEOD-16393', u'E-GEOD-15907', u'E-TABM-3', u'E-GEOD-11202', u'E-GEOD-15292', u'E-GEOD-26284', u'E-GEOD-21264', u'E-GEOD-25906', u'E-GEOD-25249', u'E-GEOD-25248', u'E-GEOD-21925', u'E-TABM-930', u'E-GEOD-18906', u'E-GEOD-25045', u'E-GEOD-25025', u'E-GEOD-22162', u'E-GEOD-24565', u'E-GEOD-20624', u'E-GEOD-23853', u'E-GEOD-23537', u'E-GEOD-19491', u'E-MTAB-62', u'E-GEOD-22778', u'E-TABM-887', u'E-TABM-475', u'E-MEXP-2637', u'E-GEOD-2415', u'E-GEOD-21478', u'E-GEOD-2295', u'E-GEOD-1981', u'E-GEOD-1714', u'E-GEOD-1366', u'E-GEOD-1361', u'E-GEOD-1356', u'E-GEOD-1342', u'E-GEOD-1290', u'E-GEOD-14774', u'E-GEOD-13870', u'E-GEOD-13056', u'E-GEOD-12821', u'E-GEOD-12727', u'E-GEOD-12717', u'E-GEOD-12354', u'E-GEOD-12322', u'E-GEOD-12263', u'E-GEOD-12249', u'E-GEOD-12238', u'E-GEOD-12157', u'E-GEOD-11500', u'E-GEOD-11444', u'E-GEOD-11255', u'E-GEOD-11248', u'E-GEOD-11247', u'E-GEOD-17762', u'E-GEOD-18700', u'E-MEXP-1995', u'E-MTAB-686', u'E-MTAB-622', u'E-MTAB-570', u'E-MTAB-510', u'E-MTAB-291', u'E-GEOD-27130', u'E-GEOD-26095', u'E-GEOD-34448', u'E-GEOD-26494', u'E-GEOD-33518', u'E-GEOD-32648', u'E-GEOD-31381', u'E-GEOD-32658', u'E-GEOD-31210', u'E-GEOD-33321', u'E-GEOD-25219', u'E-GEOD-33213', u'E-GEOD-25192', u'E-GEOD-32970', u'E-GEOD-32517', u'E-GEOD-32465', u'E-GEOD-27480', u'E-MTAB-365', u'E-GEOD-32019', u'E-GEOD-31946', u'E-GEOD-26331', u'E-GEOD-31908', u'E-GEOD-31548', u'E-GEOD-31863', u'E-GEOD-27317', u'E-GEOD-31477', u'E-GEOD-24837', u'E-GEOD-24693', u'E-GEOD-31038', u'E-GEOD-31039', u'E-GEOD-30725', u'E-GEOD-30567', u'E-GEOD-19301', u'E-GEOD-29619', u'E-GEOD-28919', u'E-GEOD-27491', u'E-GEOD-28791', u'E-GEOD-30263', u'E-GEOD-23143', u'E-GEOD-26338', u'E-GEOD-27923', u'E-GEOD-29174', u'E-GEOD-28884', u'E-GEOD-29692', u'E-GEOD-29611', u'E-TABM-1140', u'E-GEOD-26367', u'E-GEOD-26022', u'E-GEOD-25869', u'E-GEOD-28631', u'E-GEOD-24836', u'E-GEOD-25066', u'E-GEOD-25055', u'E-GEOD-28746', u'E-GEOD-24710', u'E-GEOD-26500', u'E-GEOD-20964', u'E-GEOD-20140', u'E-GEOD-39677', u'E-GEOD-34200', u'E-GEOD-33072', u'E-GEOD-37074', u'E-GEOD-41258', u'E-GEOD-40869', u'E-GEOD-35583', u'E-GEOD-35734', u'E-GEOD-36030', u'E-GEOD-35239', u'E-GEOD-31437', u'E-GEOD-48017', u'E-GEOD-47990', u'E-GEOD-47951', u'E-GEOD-47845', u'E-GEOD-47542', u'E-GEOD-34665', u'E-GEOD-53261', u'E-GEOD-47983', u'E-ERAD-186', u'E-GEOD-49905', u'E-GEOD-45463', u'E-GEOD-44874', u'E-GEOD-49530', u'E-GEOD-49527', u'E-GEOD-36369', u'E-GEOD-39672', u'E-GEOD-48417', u'E-GEOD-48415', u'E-GEOD-48405', u'E-GEOD-48377', u'E-GEOD-48310', u'E-GEOD-48279', u'E-GEOD-40967', u'E-GEOD-46712', u'E-GEOD-46517', u'E-GEOD-45892', u'E-GEOD-44777', u'E-GEOD-36889', u'E-GEOD-39518', u'E-GEOD-36796', u'E-GEOD-45468', u'E-GEOD-45159', u'E-GEOD-45149', u'E-GEOD-44944', u'E-GEOD-45480', u'E-GEOD-14217', u'E-ERAD-321', u'E-ERAD-319', u'E-GEOD-63341', u'E-GEOD-56047', u'E-GEOD-56045', u'E-GEOD-49417', u'E-GEOD-51341', u'E-GEOD-51338', u'E-GEOD-62992', u'E-GEOD-62564', u'E-GEOD-44722', u'E-ERAD-305', u'E-GEOD-54470', u'E-GEOD-60863', u'E-GEOD-60341', u'E-ERAD-287', u'E-GEOD-59923', u'E-GEOD-59913', u'E-GEOD-59905', u'E-GEOD-55347', u'E-GEOD-53348', u'E-GEOD-41119', u'E-GEOD-59150', u'E-GEOD-57611', u'E-GEOD-59097', u'E-GEOD-53643', u'E-GEOD-53080', u'E-GEOD-57530', u'E-GEOD-57822', u'E-GEOD-57815', u'E-GEOD-57542', u'E-MTAB-2067', u'E-GEOD-53165', u'E-GEOD-75685', u'E-GEOD-75268', u'E-GEOD-73103', u'E-GEOD-50410', u'E-MTAB-3732', u'E-ERAD-374', u'E-GEOD-39332', u'E-ERAD-412', u'E-GEOD-64844', u'E-GEOD-65858', u'E-GEOD-69597', u'E-GEOD-69498', u'E-GEOD-63120', u'E-GEOD-57739', u'E-GEOD-52903', u'E-GEOD-69180', u'E-MTAB-2919', u'E-GEOD-69004', u'E-GEOD-68984', u'E-GEOD-68972', u'E-MTAB-2617', u'E-GEOD-62625', u'E-GEOD-60836', u'E-MTAB-2325', u'E-GEOD-62372', u'E-GEOD-56749', u'E-GEOD-64763', u'E-GEOD-45218', u'E-GEOD-63429', u'E-GEOD-63246', u'E-GEOD-63042', u'E-GEOD-62734', u'E-GEOD-62292', u'E-GEOD-61635', u'E-GEOD-61628', u'E-GEOD-61626', u'E-GEOD-61582', u'E-MTAB-5214', u'E-GEOD-73518', u'E-GEOD-73515', u'E-GEOD-84422', u'E-MTAB-4888', u'E-GEOD-83951', u'E-GEOD-70936', u'E-GEOD-82549', u'E-GEOD-82545', u'E-GEOD-82543', u'E-GEOD-82539', u'E-GEOD-82537', u'E-GEOD-82534', u'E-GEOD-82532', u'E-GEOD-83160', u'E-GEOD-75330', u'E-GEOD-60690', u'E-GEOD-73290', u'E-GEOD-63467', u'E-MTAB-4032', u'E-GEOD-65391', u'E-GEOD-75220', u'E-GEOD-69979', u'E-GEOD-70185', u'E-GEOD-62044', u'E-GEOD-70774', u'E-GEOD-69872', u'E-GEOD-76809', u'E-MTAB-3947', u'E-GEOD-71585', u'E-MTAB-5522', u'E-MTAB-4547', u'E-GEOD-57362', u'E-MTAB-4388']
+    base_model = Base
 
-	def load_experiments(self, json_object=None):
-		db_session = self.session
-		req_session = self.requests_session
+    ENDPOINT_DOMAINS = {
+        'array_express': 'https://www.ebi.ac.uk/arrayexpress/json/v3/experiments',
+    }
 
-		entry_details=json_object
+    def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
+                 commit_intermediate_results=False, download_backup=True, verbose=False,
+                 clear_requests_cache=False, download_request_backup=False):
+        """
+        Args:
+            name (:obj:`str`, optional): name
+            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
+            clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
+            load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
+            max_entries (:obj:`float`, optional): maximum number of entries to save locally
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
+            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
+            download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
+        """
+        super(ArrayExpress, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
+                                           load_content=load_content, max_entries=max_entries,
+                                           commit_intermediate_results=commit_intermediate_results,
+                                           download_backup=download_backup, verbose=verbose,
+                                           clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
-		for single_entry in entry_details['experiments']['experiment']:
-			experiment = Experiment()
-			experiment.id = single_entry['accession']
-			if type(single_entry['name']) is list:
-				experiment.name  = single_entry['name'][0]
-				experiment.name2 = single_entry['name'][1]
-			else:		
-				experiment.name = single_entry['name']
+        with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+            self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
-			if 'organism' in single_entry:
-				for org in single_entry['organism']:
-					experiment.organism_.append(self.return_relevant_object(Organism, {"name":org}))
-			if 'description' in single_entry:
-				experiment.description = single_entry['description'][0]['text']
-			
-			if 'experimenttype' in single_entry:
-				entries = single_entry['experimenttype']
-				for entry in entries:
-					experiment.experiment_types.append(self.return_relevant_object(ExperimentType, {'name':entry}))
+    def load_content(self, start_year=2001, end_year=None):
+        """
+        Downloads all medatata from array exrpess on their samples and experiments. The metadata
+        is saved as the text file. Within the text files, the data is stored as a JSON object. 
 
-			if 'experimentdesign' in single_entry:
-				entries = single_entry['experimentdesign']
-				for entry in entries:
-					experiment.experiment_designs.append(self.return_relevant_object(ExperimentDesign, {'name':entry}))
+        Args:
+            start_year (:obj:`int`, optional): the first year to retrieve experiments for
+            end_year (:obj:`int`, optional): the last year to retrieve experiments for
+        """
+        if not end_year:
+            end_year = datetime.datetime.now().year
 
-			if 'bioassaydatagroup' in single_entry:
-				for entry in single_entry['bioassaydatagroup']:
-					experiment.data_formats.append(self.return_relevant_object(DataFormat, {'name': entry['dataformat']}))
+        session = self.session
 
-			if 'submissiondate' in single_entry:
-				experiment.submission_date = single_entry['submissiondate']
+        # download and parse experiment ids
+        if self.verbose:
+            print('Loading metadata for experiments ...')
 
-			if 'releasedate' in single_entry:
-				experiment.release_date = single_entry['releasedate']
+        self.load_experiment_metadata(start_year, end_year)
 
-			db_session.add(experiment)
+        if self.verbose:
+            print('  done.')
+
+        # download and parse experiments
+        n_experiments = session.query(Experiment).count()
+
+        if self.verbose:
+            print('Loading samples and protocols for experiments ...')
+
+        for i_experiment, experiment in enumerate(session.query(Experiment).all()):
+            if self.verbose and i_experiment % 500 == 0:
+                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, n_experiments))
+
+            self.load_experiment_samples(experiment)
+            self.load_experiment_protocols(experiment)
+
+        if self.verbose:
+            print('  done.')
+
+        self.session.commit()
+
+    def load_experiment_metadata(self, start_year=2001, end_year=None):
+        """ Get a list of accession identifiers for the experiments from the year :obj:`start_year` to year :obj:`end_year`
+
+        Args:
+            start_year (:obj:`int`, optional): the first year to retrieve experiment acession ids for
+            end_year (:obj:`int`, optional): the last year to retrieve experiment acession ids for
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of experiment accession identifiers
+        """
+        if not end_year:
+            end_year = datetime.datetime.now().year
+
+        db_session = self.session
+
+        for year in range(start_year, end_year + 1):
+            response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
+            response.raise_for_status()
+            for expt_json in response.json()['experiments']['experiment']:
+
+                id = expt_json['accession']
+                if id in self.EXCLUDED_DATASET_IDS:
+                    continue
+
+                experiment = self.get_or_create_object(Experiment, id=id)
+
+                if isinstance(expt_json['name'], list):
+                    experiment.name = expt_json['name'][0]
+                    experiment.name_2 = expt_json['name'][1]
+                else:
+                    experiment.name = expt_json['name']
+
+                if 'organism' in expt_json:
+                    for organism_name in expt_json['organism']:
+                        experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name))
+
+                if 'description' in expt_json:
+                    experiment.description = expt_json['description'][0]['text']
+
+                if 'experimenttype' in expt_json:
+                    entries = expt_json['experimenttype']
+                    for entry in entries:
+                        experiment.types.append(self.get_or_create_object(ExperimentType, name=entry))
+
+                if 'experimentdesign' in expt_json:
+                    entries = expt_json['experimentdesign']
+                    for entry in entries:
+                        experiment.designs.append(self.get_or_create_object(ExperimentDesign, name=entry))
+
+                if 'bioassaydatagroup' in expt_json:
+                    for entry in expt_json['bioassaydatagroup']:
+                        experiment.data_formats.append(self.get_or_create_object(DataFormat, name=entry['dataformat']))
+
+                if 'submissiondate' in expt_json:
+                    experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
+
+                if 'releasedate' in expt_json:
+                    experiment.release_date = dateutil.parser.parse(expt_json['releasedate']).date()
+
+                db_session.add(experiment)
+
+    def load_experiment_samples(self, experiment):
+        """ Load the samples for an experiment
+
+        Args:
+            experiment (:obj:`Experiment`): experiment
+        """
+        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id))
+        response.raise_for_status()
+        json = response.json()
+
+        if 'experiment' not in json:
+            return
+        experiment_json = json['experiment']
+
+        if 'sample' not in experiment_json:
+            return
+        samples = experiment_json['sample']
+
+        session = self.session
+
+        if not isinstance(samples, list):
+            samples = [samples]
+
+        for i_sample, sample in enumerate(samples):
+            self.load_experiment_sample(experiment, sample, i_sample)
+
+    def load_experiment_sample(self, experiment, sample_json, index):
+        """ Load the samples for an experiment
+
+        Args:
+            experiment (:obj:`Experiment`): experiment
+            sample_json (:obj:`dict`): sample
+            index (:obj:`int`): index of the sample within the experiment
+        """
+        sample = Sample()
+
+        experiment.samples.append(sample)
+        sample.index = index
+
+        if 'source' in sample_json:
+            source = sample_json['source']
+            if isinstance(source, list):
+                sample.name = source[0]['name']
+            else:
+                sample.name = source['name']
+
+        if 'extract' in sample_json:
+            extracts = sample_json['extract']
+            if not isinstance(extracts, list):
+                extracts = [extracts]
+            for extract in extracts:
+                sample.extracts.append(self.get_or_create_object(Extract, name=extract['name']))
+
+        if 'assay' in sample_json:
+            sample.assay = sample_json['assay']['name']
+
+        if 'characteristic' in sample_json:
+            characteristics = sample_json['characteristic']
+            if not isinstance(characteristics, list):
+                characteristics = [characteristics]
+            for characteristic in characteristics:
+                sample.characteristics.append(self.get_or_create_object(
+                    Characteristic, category=characteristic['category'], value=characteristic['value']))
+
+        if 'variable' in sample_json:
+            variables = sample_json['variable']
+            if not isinstance(variables, list):
+                variables = [variables]
+            for variable in variables:
+                unit = None
+                if "unit" in variable:
+                    unit = variable['unit']
+                sample.variables.append(self.get_or_create_object(
+                    Variable, name=variable['name'], value=variable['value'], unit=unit))
+
+    
+    def load_experiment_protocols(self, experiment):
+
+        """ Load the protocols for an experiment
+
+        Args:
+            experiment (:obj:`Experiment`): experiment
+        """
+        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
+        response.raise_for_status()
+        json = response.json()
+
+        session = self.session
+        # todo: implement
+
+        if 'protocols' not in json:
+            return
+        protocol_json = json['protocols']
+
+        if 'protocol' not in protocol_json:
+            return
+        protocols = protocol_json['protocol']
+
+        session = self.session
+
+        if not isinstance(protocols, list):
+            protocols = [protocols]
+
+        for protocol in protocols:
+            self.load_experiment_protocol(experiment, protocol)
 
 
-	def load_content(self, experiment_ids=None, test_url=""):
-		pass
+    def load_experiment_protocol(self, experiment, protocol_json):
+        
+        """ Load the protocols for an experiment
 
-	def load_experiments_from_text(self):
-		"""
-		Iterate through the dates and use load_content() to download everything to database in chunks
-		"""
-		db_session = self.session
-		for filename in os.listdir('AllExperiments'):
-			self.load_experiments(json_object=demjson.decode_file(os.path.join('AllExperiments', filename), encoding='utf-8'))
-		db_session.commit()
+        Args:
+            experiment (:obj:`Experiment`): experiment
+            protocol_json (:obj:`dict`): sample
+        """
 
+        db_session = self.session
+        
+        protocol = Protocol()
 
-	def load_single_sample(self, sample_jxmlease_object, ax_num):
-		db_session = self.session
-		sample = Sample()
-		sample.experiment_id = ax_num
-		sample.experiment = db_session.query(Experiment).filter_by(id = ax_num).first()
-		if 'source' in sample_jxmlease_object:
-			if ax_num not in ['E-MTAB-2067', 'E-MTAB-2617', 'E-MTAB-2325']:
-				sample.name = sample_jxmlease_object['source']['name']
-			else: #'E-MTAB-2067', 'E-MTAB-2617', 'E-MTAB-2325' has an error where the source is a list of two duplicates
-				sample.name = sample_jxmlease_object['source'][0]['name']
-		
-		if 'extract' in sample_jxmlease_object:
-			entries = sample_jxmlease_object['extract']
-			if type(entries) is not list:
-				entries = [entries]
-			for entry in entries:
-				sample.extracts.append(Extract(name=entry['name']))
+        if 'accession' not in protocol_json:
+            return
+        protocol_accession = protocol_json['accession']
+        protocol = self.get_or_create_object(Protocol, protocol_accession=protocol_accession)
 
-		if 'assay' in sample_jxmlease_object:
-			sample.assay = sample_jxmlease_object['assay']['name']
+        if 'type' in protocol_json:
+            protocol.protocol_type = protocol_json['type']
+        if 'text' in protocol_json:
+            if isinstance(protocol_json['text'], str):
+                protocol.text = protocol_json['text']
+            if isinstance(protocol_json['text'], list):
+                details = ""
+                for item in protocol_json['text']:
+                    if isinstance(item, unicode):
+                        if item[-1:] == ',':
+                            item = item[:-1]
+                        details = details + item + "\n"
+                if details:
+                    details = details[:-1]
+                protocol.text = details
+        
+        protocol.experiments.append(experiment)
 
-		# create a characteristic object for each characteristic and append that to the sample's characteristic field
-		if 'characteristic' in sample_jxmlease_object:
-			characteristics = sample_jxmlease_object['characteristic']
-			for entry in characteristics:
-				sample.characteristics.append(self.return_relevant_object(Characteristic, {'name': entry['category'], 'value':entry['value']}))
+    def get_or_create_object(self, cls, **kwargs):
+        """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
+        if there is no instance with the property-values pairs described by kwargs
 
+        Args:
+            cls (:obj:`class`): type of object to find or create
+            **kwargs: values of the properties of the object
 
-		# create a variable object for each variable and append that to the sample's variable field
-		#print sample.experiment.id
-		if 'variable' in sample_jxmlease_object:
-			variables = sample_jxmlease_object['variable']
-			for entry in variables:
-				unit = None
-				if "unit" in entry:
-					unit = entry['unit']
-				sample.variables.append(self.return_relevant_object(Variable, {'name': entry['name'], "value": entry['value'], 'unit':unit}))
-		db_session.add(sample)
+        Returns:
+            :obj:`Base`: instance of :obj:`cls` hat has the property-values pairs described by kwargs
+        """
+        q = self.session.query(cls).filter_by(**kwargs)
+        if self.session.query(q.exists()).scalar():
+            return q.first()
 
-	def return_relevant_object(self, db_class, filters):
-		"""
-		For classes that have unique constraints. This method checks to see if an object
-		already exists. If it does, then it return that object. If not, it creates a new object
-		and return it. This method can only be used if there is an orm table explicitely created
-		"""
-		existing_object = self.session.query(db_class)
-		for key, value in filters.items():
-			existing_object = existing_object.filter(db_class.__dict__[key]==value)
-		existing_object = existing_object.first()
-		if existing_object is not None:
-			return existing_object
-		else:
-			new_object = db_class()
-			for key, value in filters.items():
-				setattr(new_object, key, value) 
-			return new_object
-
-		
-
-
-	def load_samples_from_text(self):
-		"""
-		Iterate through the dates and use load_content() to download everything to database in chunks
-		"""
-
-		db_session = self.session
-
-		for filename in os.listdir('AllSamples'):
-			if filename[:-4] not in self.EXCLUSIONS:
-				entry_details = demjson.decode_file(os.path.join('AllSamples', filename), encoding='utf-8')
-				i = 1
-				if 'sample' in entry_details['experiment']:
-							if isinstance(entry_details['experiment']['sample'], list):
-								for num, entry in enumerate(entry_details['experiment']['sample']):
-									self.load_single_sample(entry_details['experiment']['sample'][num],filename[:-4])
-
-							if isinstance(entry_details['experiment']['sample'], dict): #in case there is only one sample
-								self.load_single_sample(entry_details['experiment']['sample'], filename[:-4])
-				if i % 500 == 0:
-					db_session.commit()
-					print("COMMIT")
-				i +=1
-		db_session.commit()
-
-
-def download_and_load_all_metadata():
-	download_ax.download_all_metadata()
-	src = array_express.ArrayExpress(download_backup=True)
-	src.load_experiments_from_text()
-	src.load_samples_from_text()
+        obj = cls(**kwargs)
+        self.session.add(obj)
+        return obj
