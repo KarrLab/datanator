@@ -94,16 +94,24 @@ class QuickTest(unittest.TestCase):
             session.query(array_express.Variable).filter_by(name='sampling interval', value='1', unit=None).first()
         ])
 
-    @unittest.skip('todo: implement')
     def test_load_experiment_protocols(self):
         src = self.src
         session = src.session
 
-        src.load_experiment_metadata(2001, 2001)
-        experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-10').first()
-        src.load_experiment_protocols(experiment)
+        src.load_experiment_metadata(2001, 2002)
 
-        # todo: test
+        # E-GEOD-10
+        experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-6').first()
+        src.load_experiment_protocols(experiment)
+        self.assertEqual(len(experiment.protocols), 2)
+        self.assertEqual(set([protocol.protocol_accession for protocol in experiment.protocols]), set(['P-GSE6-1', 'P-GSE6-2',]))
+
+        q = session.query(array_express.Protocol)
+        protocol = session.query(array_express.Protocol).filter_by(protocol_accession='P-GSE6-1').first()
+        text = "ID_REF = \nCH1B_MEAN = mean channel 1 background\nCH1B_MEDIAN = median channel 1 background\nCH1D_MEAN = difference between CH1I_MEAN and CH1B_MEAN\nCH2I_MEAN = mean channel 2 signal\nCH2D_MEAN = difference of CH2I_MEAN and CH2B_MEAN\nCH2B_MEAN = mean of channel 2 background\nCH2B_MEDIAN = median of channel 2 background\nCH2BN_MEDIAN = normalized CH2B_MEDIAN\nCH2DN_MEAN = normalized CH2D_MEAN\nCH2IN_MEAN = normalized CH2I_MEAN\nCORR = simple correlation coefficient of channel 1 and channel 2 pixels\nFLAG = user defined flag (default=0)\nVALUE = same as UNF_VALUE but with flagged values removed\nPIX_RAT2_MEDIAN =  \nPERGTBCH1I_1SD = standard deviation of fraction of pixels greater than CH1B_MEAN\nPERGTBCH2I_1SD = standard deviation of fraction of pixels greater than CH2B_MEAN\nRAT1_MEAN = ratio of CH1D_MEAN to CH2D_MEAN\nRAT1N_MEAN = ratio of CH1DN_MEAN to CH2DN_MEAN\nRAT2_MEAN = ratio of CH2D_MEAN to CH1D_MEAN\nRAT2N_MEAN = ratio of CH2DN_MEAN and CH1DN_MEAN\nREGR = slope of the simple regression line of channel 2 to channel 1 pixels\nTOT_BPIX = total number of background pixels\nTOT_SPIX = total number of signal (spot) pixels\nTOP = vertical, short-axis spot ellipse minimum pixel coordinate\nBOT = vertical, short-axis spot ellipse maximum pixel coordinate\nLEFT = horizontal, long-axis spot ellipse minimum pixel coordinate\nRIGHT = horizontal, long-axis spot ellipse maximum pixel coordinate\nUNF_VALUE = aka LOG_RAT2N_MEAN, or log2 of ratio of CH2DN_MEAN and CH1DN_MEAN"
+        self.assertEqual(protocol.text, text)
+
+
 
     def test_load_content(self):
         src = self.src
