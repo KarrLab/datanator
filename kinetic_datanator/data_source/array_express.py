@@ -538,7 +538,7 @@ class ArrayExpress(data_source.HttpDataSource):
             if isinstance(protocol_json['text'], list):
                 details = ""
                 for item in protocol_json['text']:
-                    if isinstance(item, str):
+                    if not(isinstance(item, list) or isinstance(item, dict)):
                         if item[-1:] == ',':
                             item = item[:-1]
                         details = details + item + "\n"
