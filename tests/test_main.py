@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import tempfile
-import time
 import unittest
 
 warning_util.disable_warnings()
@@ -57,15 +56,13 @@ class TestWithoutTempFile(unittest.TestCase):
 
     def test_taxonomy_get_rank(self):
         with App(argv=['taxonomy', 'get-rank', '2097']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "species")
 
         with App(argv=['taxonomy', 'get-rank', 'Mycoplasma genitalium']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "species")
 
         with App(argv=['taxonomy', 'get-rank', 'Mycoplasma genitalium XXX']) as app:
@@ -73,9 +70,8 @@ class TestWithoutTempFile(unittest.TestCase):
 
     def test_taxonomy_get_parents(self):
         with App(argv=['taxonomy', 'get-parents', 'bacteria']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), "root\ncellular organisms")
 
         with App(argv=['taxonomy', 'get-parents', 'XXX']) as app:
@@ -83,20 +79,18 @@ class TestWithoutTempFile(unittest.TestCase):
 
     def test_taxonomy_get_common_ancestor(self):
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), 'Mycoplasma')
 
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 self.assertRaises(ValueError, lambda: app.run())
 
     def test_taxonomy_get_distance_to_common_ancestor(self):
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(float(capturer.get_text()), 1.)
 
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
@@ -104,9 +98,8 @@ class TestWithoutTempFile(unittest.TestCase):
 
     def test_taxonomy_get_distance_to_root(self):
         with App(argv=['taxonomy', 'get-distance-to-root', 'bacteria']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(float(capturer.get_text()), 2.)
 
         with App(argv=['taxonomy', 'get-distance-to-root', 'XXX']) as app:
@@ -115,7 +108,7 @@ class TestWithoutTempFile(unittest.TestCase):
     def test_molecule_get_structure(self):
         name = 'water'
         with App(argv=['molecule', 'get-structure', '--by-name', name]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertEqual(re.split('  +', capturer.get_text().split('\n')
                                           [-1]), ['water', 'pubchem.compound', '962', 'InChI=1S/H2O/h1H2'])
@@ -123,7 +116,7 @@ class TestWithoutTempFile(unittest.TestCase):
         namespace = 'chebi'
         id = '15377'
         with App(argv=['molecule', 'get-structure', '--by-id', '--namespace', namespace, id]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertEqual(re.split('  +', capturer.get_text().split('\n')[-1]), ['', 'chebi', '15377', 'InChI=1S/H2O/h1H2'])
 
@@ -136,9 +129,8 @@ class TestWithoutTempFile(unittest.TestCase):
 
     def test_molecule_convert_structure(self):
         with App(argv=['molecule', 'convert-structure', 'O', 'can']) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
-                time.sleep(0.1)
                 self.assertEqual(capturer.get_text(), 'O')
 
     def test_get_ec_number(self):
@@ -147,24 +139,24 @@ class TestWithoutTempFile(unittest.TestCase):
 
         reaction = 'Deoxyribose 1-phosphate --> Deoxyribose-5-P'
         with App(argv=['reaction', 'get-ec-number', reaction]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertEqual(re.split('  +', capturer.get_text().split('\n')[2]), ['5.4.2', '16.00'])
 
         reaction = '{} --> {}'.format(dr1p, dr5p)
         with App(argv=['reaction', 'get-ec-number', reaction]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertEqual(re.split('  +', capturer.get_text().split('\n')[2]), ['5.4.2', '16.00'])
 
         reaction = '{} > {}'.format(dr1p, dr5p)
         with App(argv=['reaction', 'get-ec-number', reaction]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertEqual(capturer.get_text(), 'The reaction is ill-formed')
 
         reaction = 'xxxxxxxxx --> Deoxyribose-5-P'
         with App(argv=['reaction', 'get-ec-number', reaction]) as app:
-            with CaptureOutput() as capturer:
+            with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertTrue(capturer.get_text().startswith('Unable to interpret participants:\n'))
