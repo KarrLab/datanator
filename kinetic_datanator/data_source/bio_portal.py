@@ -1,4 +1,5 @@
-"""
+""" Downloads ontologies from BioPortal
+
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-05-23
 :Copyright: 2017, Karr Lab
