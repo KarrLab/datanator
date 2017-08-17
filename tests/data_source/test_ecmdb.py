@@ -84,7 +84,7 @@ class TestEcmdbFromRemote(unittest.TestCase):
 
         self.assertEqual(compound.created, dateutil.parser.parse('2012-05-31 09:55:11 -0600').replace(tzinfo=None))
         #self.assertEqual(compound.updated, dateutil.parser.parse('2015-06-03 15:00:41 -0600').replace(tzinfo=None))
-        self.assertLess((datetime.datetime.utcnow() - compound.downloaded).total_seconds(), 300)
+        self.assertLess((datetime.datetime.utcnow() - compound.downloaded).total_seconds(), 3000)
 
         # compound with multiple compartments
         compound = session.query(ecmdb.Compound).filter_by(id='M2MDB000002').first()
