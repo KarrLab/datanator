@@ -60,6 +60,7 @@ setup(
         'kinetic_datanator': [
             'config/schema.cfg',
             'config/default.cfg',
+            'data_source/*.txt',
             'data/*.txt',
             'data/*.xlsx',
         ],

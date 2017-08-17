@@ -7,5 +7,8 @@ include requirements.txt
 # configuration
 recursive-include kinetic_datanator/config *.cfg
 
+# data source configurations
+recursive-include kinetic_datanator/data_source *.txt
+
 # data files
 recursive-include kinetic_datanator/data *.txt *.xlsx

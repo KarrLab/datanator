@@ -1,18 +1,29 @@
+""" Downloads and parses the ArrayExpress database
+
+:Author: Yosef Roth <yosefdroth@gmail.com>
+:Author: Jonathan Karr <jonrkarr@gmail.com>
+:Date: 2017-08-16
+:Copyright: 2017, Karr Lab
+:License: MIT
+"""
+
+
 import datetime
 import dateutil.parser
 import demjson
 import io
 import jxmlease
+import os
+import pkg_resources
 import requests.exceptions
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
+import sys
 import warnings
 import zipfile
 from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source import download_ax
-import os
-import sys
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -59,6 +70,7 @@ experiment_data_format = sqlalchemy.Table(
 	sqlalchemy.Column('data_format_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('data_format._id'), index=True),
 )
 # :obj:`sqlalchemy.Table`: Experiment:DataFormat many-to-many association table
+
 
 class Characteristic(Base):
 	""" Represents an expiremental characteristic
@@ -151,12 +163,14 @@ class ExperimentDesign(Base):
 
 	__tablename__ = 'experiment_design'
 
+
 class ExperimentType(Base):
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 	name = sqlalchemy.Column(sqlalchemy.String())
 	sqlalchemy.schema.UniqueConstraint(name)
 
 	__tablename__ = 'experiment_type'
+
 
 class DataFormat(Base):
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -174,6 +188,7 @@ class Organism(Base):
 	sqlalchemy.schema.UniqueConstraint(name)
 
 	__tablename__ = 'organism_'
+
 
 class Extract(Base):
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -193,18 +208,40 @@ class Error(Base):
 	__tablename__ = 'error'
 
 
-
-
 class ArrayExpress(data_source.HttpDataSource):
-	""" A local sqlite copy of the ECMDB database
+	""" A local sqlite copy of the ArrayExpress database
+
 	Attributes:
-		DOWNLOAD_INDEX_URL (:obj:`str`): URL to download an index of array express experiments
-		DOWNLOAD_COMPOUND_URL (:obj:`str`): URL pattern to download samples of a single experiment
+		EXCLUDED_DATASET_IDS (:obj:`list` of :obj:`str`): list of IDs of datasets to exclude
 	"""
 
 	base_model = Base
 
-	EXCLUSIONS = [u'E-MEXP-21', u'E-GEOD-714', u'E-MANP-2', u'E-NASC-6', u'E-NASC-10', u'E-GEOD-678', u'E-GEOD-652', u'E-GEOD-537', u'E-MAXD-1', u'E-GEOD-2109', u'E-MAXD-10', u'E-TABM-114', u'E-GEOD-7264', u'E-GEOD-7260', u'E-GEOD-8737', u'E-GEOD-8653', u'E-TABM-76', u'E-GEOD-8251', u'E-GEOD-7812', u'E-TABM-1', u'E-GEOD-10645', u'E-GEOD-9376', u'E-GEOD-8858', u'E-GEOD-7740', u'E-MTAB-27', u'E-GEOD-13317', u'E-GEOD-14559', u'E-MTAB-28', u'E-GEOD-16752', u'E-GEOD-16393', u'E-GEOD-15907', u'E-TABM-3', u'E-GEOD-11202', u'E-GEOD-15292', u'E-GEOD-26284', u'E-GEOD-21264', u'E-GEOD-25906', u'E-GEOD-25249', u'E-GEOD-25248', u'E-GEOD-21925', u'E-TABM-930', u'E-GEOD-18906', u'E-GEOD-25045', u'E-GEOD-25025', u'E-GEOD-22162', u'E-GEOD-24565', u'E-GEOD-20624', u'E-GEOD-23853', u'E-GEOD-23537', u'E-GEOD-19491', u'E-MTAB-62', u'E-GEOD-22778', u'E-TABM-887', u'E-TABM-475', u'E-MEXP-2637', u'E-GEOD-2415', u'E-GEOD-21478', u'E-GEOD-2295', u'E-GEOD-1981', u'E-GEOD-1714', u'E-GEOD-1366', u'E-GEOD-1361', u'E-GEOD-1356', u'E-GEOD-1342', u'E-GEOD-1290', u'E-GEOD-14774', u'E-GEOD-13870', u'E-GEOD-13056', u'E-GEOD-12821', u'E-GEOD-12727', u'E-GEOD-12717', u'E-GEOD-12354', u'E-GEOD-12322', u'E-GEOD-12263', u'E-GEOD-12249', u'E-GEOD-12238', u'E-GEOD-12157', u'E-GEOD-11500', u'E-GEOD-11444', u'E-GEOD-11255', u'E-GEOD-11248', u'E-GEOD-11247', u'E-GEOD-17762', u'E-GEOD-18700', u'E-MEXP-1995', u'E-MTAB-686', u'E-MTAB-622', u'E-MTAB-570', u'E-MTAB-510', u'E-MTAB-291', u'E-GEOD-27130', u'E-GEOD-26095', u'E-GEOD-34448', u'E-GEOD-26494', u'E-GEOD-33518', u'E-GEOD-32648', u'E-GEOD-31381', u'E-GEOD-32658', u'E-GEOD-31210', u'E-GEOD-33321', u'E-GEOD-25219', u'E-GEOD-33213', u'E-GEOD-25192', u'E-GEOD-32970', u'E-GEOD-32517', u'E-GEOD-32465', u'E-GEOD-27480', u'E-MTAB-365', u'E-GEOD-32019', u'E-GEOD-31946', u'E-GEOD-26331', u'E-GEOD-31908', u'E-GEOD-31548', u'E-GEOD-31863', u'E-GEOD-27317', u'E-GEOD-31477', u'E-GEOD-24837', u'E-GEOD-24693', u'E-GEOD-31038', u'E-GEOD-31039', u'E-GEOD-30725', u'E-GEOD-30567', u'E-GEOD-19301', u'E-GEOD-29619', u'E-GEOD-28919', u'E-GEOD-27491', u'E-GEOD-28791', u'E-GEOD-30263', u'E-GEOD-23143', u'E-GEOD-26338', u'E-GEOD-27923', u'E-GEOD-29174', u'E-GEOD-28884', u'E-GEOD-29692', u'E-GEOD-29611', u'E-TABM-1140', u'E-GEOD-26367', u'E-GEOD-26022', u'E-GEOD-25869', u'E-GEOD-28631', u'E-GEOD-24836', u'E-GEOD-25066', u'E-GEOD-25055', u'E-GEOD-28746', u'E-GEOD-24710', u'E-GEOD-26500', u'E-GEOD-20964', u'E-GEOD-20140', u'E-GEOD-39677', u'E-GEOD-34200', u'E-GEOD-33072', u'E-GEOD-37074', u'E-GEOD-41258', u'E-GEOD-40869', u'E-GEOD-35583', u'E-GEOD-35734', u'E-GEOD-36030', u'E-GEOD-35239', u'E-GEOD-31437', u'E-GEOD-48017', u'E-GEOD-47990', u'E-GEOD-47951', u'E-GEOD-47845', u'E-GEOD-47542', u'E-GEOD-34665', u'E-GEOD-53261', u'E-GEOD-47983', u'E-ERAD-186', u'E-GEOD-49905', u'E-GEOD-45463', u'E-GEOD-44874', u'E-GEOD-49530', u'E-GEOD-49527', u'E-GEOD-36369', u'E-GEOD-39672', u'E-GEOD-48417', u'E-GEOD-48415', u'E-GEOD-48405', u'E-GEOD-48377', u'E-GEOD-48310', u'E-GEOD-48279', u'E-GEOD-40967', u'E-GEOD-46712', u'E-GEOD-46517', u'E-GEOD-45892', u'E-GEOD-44777', u'E-GEOD-36889', u'E-GEOD-39518', u'E-GEOD-36796', u'E-GEOD-45468', u'E-GEOD-45159', u'E-GEOD-45149', u'E-GEOD-44944', u'E-GEOD-45480', u'E-GEOD-14217', u'E-ERAD-321', u'E-ERAD-319', u'E-GEOD-63341', u'E-GEOD-56047', u'E-GEOD-56045', u'E-GEOD-49417', u'E-GEOD-51341', u'E-GEOD-51338', u'E-GEOD-62992', u'E-GEOD-62564', u'E-GEOD-44722', u'E-ERAD-305', u'E-GEOD-54470', u'E-GEOD-60863', u'E-GEOD-60341', u'E-ERAD-287', u'E-GEOD-59923', u'E-GEOD-59913', u'E-GEOD-59905', u'E-GEOD-55347', u'E-GEOD-53348', u'E-GEOD-41119', u'E-GEOD-59150', u'E-GEOD-57611', u'E-GEOD-59097', u'E-GEOD-53643', u'E-GEOD-53080', u'E-GEOD-57530', u'E-GEOD-57822', u'E-GEOD-57815', u'E-GEOD-57542', u'E-MTAB-2067', u'E-GEOD-53165', u'E-GEOD-75685', u'E-GEOD-75268', u'E-GEOD-73103', u'E-GEOD-50410', u'E-MTAB-3732', u'E-ERAD-374', u'E-GEOD-39332', u'E-ERAD-412', u'E-GEOD-64844', u'E-GEOD-65858', u'E-GEOD-69597', u'E-GEOD-69498', u'E-GEOD-63120', u'E-GEOD-57739', u'E-GEOD-52903', u'E-GEOD-69180', u'E-MTAB-2919', u'E-GEOD-69004', u'E-GEOD-68984', u'E-GEOD-68972', u'E-MTAB-2617', u'E-GEOD-62625', u'E-GEOD-60836', u'E-MTAB-2325', u'E-GEOD-62372', u'E-GEOD-56749', u'E-GEOD-64763', u'E-GEOD-45218', u'E-GEOD-63429', u'E-GEOD-63246', u'E-GEOD-63042', u'E-GEOD-62734', u'E-GEOD-62292', u'E-GEOD-61635', u'E-GEOD-61628', u'E-GEOD-61626', u'E-GEOD-61582', u'E-MTAB-5214', u'E-GEOD-73518', u'E-GEOD-73515', u'E-GEOD-84422', u'E-MTAB-4888', u'E-GEOD-83951', u'E-GEOD-70936', u'E-GEOD-82549', u'E-GEOD-82545', u'E-GEOD-82543', u'E-GEOD-82539', u'E-GEOD-82537', u'E-GEOD-82534', u'E-GEOD-82532', u'E-GEOD-83160', u'E-GEOD-75330', u'E-GEOD-60690', u'E-GEOD-73290', u'E-GEOD-63467', u'E-MTAB-4032', u'E-GEOD-65391', u'E-GEOD-75220', u'E-GEOD-69979', u'E-GEOD-70185', u'E-GEOD-62044', u'E-GEOD-70774', u'E-GEOD-69872', u'E-GEOD-76809', u'E-MTAB-3947', u'E-GEOD-71585', u'E-MTAB-5522', u'E-MTAB-4547', u'E-GEOD-57362', u'E-MTAB-4388']
+	def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
+                 commit_intermediate_results=False, download_backup=True, verbose=False,
+                 clear_requests_cache=False, download_request_backup=False):
+        """
+        Args:
+            name (:obj:`str`, optional): name
+            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
+            clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
+            load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
+            max_entries (:obj:`float`, optional): maximum number of entries to save locally
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
+            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
+            download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
+        """
+		super(ArrayExpress, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
+	                                       load_content=load_content, max_entries=max_entries,
+	                                       commit_intermediate_results=commit_intermediate_results,
+	                                       download_backup=download_backup, verbose=verbose,
+	                                       clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
+
+		with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+			self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
 	def load_experiments(self, json_object=None):
 		db_session = self.session
@@ -261,7 +298,6 @@ class ArrayExpress(data_source.HttpDataSource):
 		for filename in os.listdir('AllExperiments'):
 			self.load_experiments(json_object=demjson.decode_file(os.path.join('AllExperiments', filename), encoding='utf-8'))
 		db_session.commit()
-
 
 	def load_single_sample(self, sample_jxmlease_object, ax_num):
 		db_session = self.session
@@ -320,9 +356,6 @@ class ArrayExpress(data_source.HttpDataSource):
 				setattr(new_object, key, value) 
 			return new_object
 
-		
-
-
 	def load_samples_from_text(self):
 		"""
 		Iterate through the dates and use load_content() to download everything to database in chunks
@@ -331,7 +364,7 @@ class ArrayExpress(data_source.HttpDataSource):
 		db_session = self.session
 
 		for filename in os.listdir('AllSamples'):
-			if filename[:-4] not in self.EXCLUSIONS:
+			if filename[:-4] not in self.EXCLUDED_DATASET_IDS:
 				entry_details = demjson.decode_file(os.path.join('AllSamples', filename), encoding='utf-8')
 				i = 1
 				if 'sample' in entry_details['experiment']:
