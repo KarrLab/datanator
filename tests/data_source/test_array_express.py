@@ -27,10 +27,6 @@ class QuickTest(unittest.TestCase):
         src = self.src
         session = src.session
 
-        src.load_experiment_metadata(2001, 2001)
-        q = session.query(array_express.Experiment)
-        self.assertEqual([e.id for e in q.order_by('id')], ['E-GEOD-10', 'E-GEOD-6', 'E-GEOD-8'])
-
         src.load_experiment_metadata(2001, 2002)
         q = session.query(array_express.Experiment)
         self.assertGreater(q.count(), 3)

@@ -316,6 +316,8 @@ class ArrayExpress(data_source.HttpDataSource):
         if self.verbose:
             print('  done.')
 
+        self.session.commit()
+
     def load_experiment_metadata(self, start_year=2001, end_year=None):
         """ Get a list of accession identifiers for the experiments from the year :obj:`start_year` to year :obj:`end_year`
 
