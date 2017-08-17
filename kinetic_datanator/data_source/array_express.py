@@ -68,6 +68,13 @@ extract_sample = sqlalchemy.Table(
 )
 # :obj:`sqlalchemy.Table`: Extract:Sample many-to-many association table
 
+experiment_protocol = sqlalchemy.Table(
+    'experiment_protocol', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('protocol_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('protocol._id'), index=True),
+)
+# :obj:`sqlalchemy.Table`: Experiment:Protocol many-to-many association table
+
 
 class Characteristic(Base):
     """ Represents an experimental characteristic
@@ -236,6 +243,25 @@ class Extract(Base):
     samples = sqlalchemy.orm.relationship('Sample', secondary=extract_sample, backref=sqlalchemy.orm.backref('extracts'))
 
     __tablename__ = 'extract'
+
+
+class Protocol(Base):
+    """ Represents a protocol for an experiment
+
+    Attributes:
+        _id (:obj:`int`): unique id
+        protocol_accession (:obj:`str`): array express identifier for protocol
+        protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
+        text (:obj:`str`): description the protocol
+        experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    protocol_accession = sqlalchemy.Column(sqlalchemy.String())
+    protocol_type = sqlalchemy.Column(sqlalchemy.String())
+    text = sqlalchemy.Column(sqlalchemy.String())
+    experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
+    
+    __tablename__ = 'protocol'
 
 
 class ArrayExpress(data_source.HttpDataSource):
@@ -454,19 +480,73 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
+    
     def load_experiment_protocols(self, experiment):
+
         """ Load the protocols for an experiment
 
         Args:
             experiment (:obj:`Experiment`): experiment
         """
-
         response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
         response.raise_for_status()
-        protocols_json = response.json()
+        json = response.json()
 
         session = self.session
         # todo: implement
+
+        if 'protocols' not in json:
+            return
+        protocol_json = json['protocols']
+
+        if 'protocol' not in protocol_json:
+            return
+        protocols = protocol_json['protocol']
+
+        session = self.session
+
+        if not isinstance(protocols, list):
+            protocols = [protocols]
+
+        for protocol in protocols:
+            self.load_experiment_protocol(experiment, protocol)
+
+
+    def load_experiment_protocol(self, experiment, protocol_json):
+        
+        """ Load the protocols for an experiment
+
+        Args:
+            experiment (:obj:`Experiment`): experiment
+            protocol_json (:obj:`dict`): sample
+        """
+
+        db_session = self.session
+        
+        protocol = Protocol()
+
+        if 'accession' not in protocol_json:
+            return
+        protocol_accession = protocol_json['accession']
+        protocol = self.get_or_create_object(Protocol, protocol_accession=protocol_accession)
+
+        if 'type' in protocol_json:
+            protocol.protocol_type = protocol_json['type']
+        if 'text' in protocol_json:
+            if isinstance(protocol_json['text'], str):
+                protocol.text = protocol_json['text']
+            if isinstance(protocol_json['text'], list):
+                details = ""
+                for item in protocol_json['text']:
+                    if isinstance(item, unicode):
+                        if item[-1:] == ',':
+                            item = item[:-1]
+                        details = details + item + "\n"
+                if details:
+                    details = details[:-1]
+                protocol.text = details
+        
+        protocol.experiments.append(experiment)
 
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
