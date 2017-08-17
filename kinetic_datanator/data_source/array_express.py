@@ -253,12 +253,18 @@ class Protocol(Base):
         protocol_accession (:obj:`str`): array express identifier for protocol
         protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
         text (:obj:`str`): description the protocol
+        performer (:obj:`str`): name of the person who did the experiment 
+        hardware (:obj:`str`): hardware (usually detection instruments) used in protocol
+        software (:obj:`str`): software (usually for analyzing and normalizing the data)
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     protocol_accession = sqlalchemy.Column(sqlalchemy.String())
     protocol_type = sqlalchemy.Column(sqlalchemy.String())
     text = sqlalchemy.Column(sqlalchemy.String())
+    performer = sqlalchemy.Column(sqlalchemy.String())
+    hardware = sqlalchemy.Column(sqlalchemy.String())
+    software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
     
     __tablename__ = 'protocol'
@@ -533,7 +539,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'type' in protocol_json:
             protocol.protocol_type = protocol_json['type']
         if 'text' in protocol_json:
-            if isinstance(protocol_json['text'], str):
+            if not(isinstance(protocol_json['text'], list) or isinstance(protocol_json['text'], dict)):
                 protocol.text = protocol_json['text']
             if isinstance(protocol_json['text'], list):
                 details = ""
@@ -545,6 +551,13 @@ class ArrayExpress(data_source.HttpDataSource):
                 if details:
                     details = details[:-1]
                 protocol.text = details
+        if 'performer' in protocol_json:
+            protocol.performer = protocol_json['performer']
+        if 'hardware' in protocol_json:
+            protocol.hardware = protocol_json['hardware']
+        if 'software' in protocol_json:
+            protocol.software = protocol_json['software']
+
         
         protocol.experiments.append(experiment)
 
