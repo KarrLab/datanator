@@ -11,7 +11,7 @@ This code is a common schema for all the kinetic_datanator modules
 
 ##TODO: Create the definition of tables for the format and then include with the query function in sql
 
-from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table, create_engine, Numeric
+from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table, create_engine, Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source import corum, pax, jaspar, array_express, ecmdb, sabio_rk
@@ -38,7 +38,7 @@ _metadata_method = Table(
 _metadata_resource = Table(
     '_metadata_resource', Base.metadata,
     Column('_metadata_id', Integer, ForeignKey('_metadata.id'), index=True),
-    Column('resource_id', Integer, ForeignKey('resource._id'), index=True),
+    Column('resource_id', Integer, ForeignKey('resource.id'), index=True),
 )
     # :obj:`Table`: Metadata:Resource many-to-many association table
 
@@ -73,6 +73,11 @@ _metadata_compartment = Table(
 
 class Observation(Base):
     """
+    Represents an Observation of a Physical Entity or Property in the Common Schema
+
+    Attributes:
+        id (:obj:`int`): Common Schema Observation Identifier
+        _metadata_id (:obj:`int` of :obj:`Metadata`): Related Metadata ID
 
     """
 
@@ -86,7 +91,12 @@ class Observation(Base):
 
 class PhysicalEntity(Observation):
     """
+    Represents a Physical Entity in the Common Schema
 
+    Attributes:
+        observation_id (:obj:`int`): Common Schema Observation Identifier
+        type (:obj:`str`): Type of Physical Entity (Ex. Compound)
+        name (:obj:`str`): Name of the Physical Entity (Ex. Water )
     """
 
     __tablename__ = 'physical_entity'
@@ -98,8 +108,22 @@ class PhysicalEntity(Observation):
 
 class ProteinSubunit(PhysicalEntity):
     """
+    Represents a Protein Subunit - An instance of Physical Entity
 
+    Attributes:
+        subunit_id (:obj:`int`): Common Schema Observation Identifier
+        subunit_name (:obj:`str`): Name of the Protein Subunit
+        uniprot_id  (:obj:`str`): Uniprot ID for the Subunit
+        entrez_id (:obj:`int`): Entrez ID for the Subunit
+        gene_name (:obj:`str`): Name of Gene which subunit is derived
+        gene_syn (:obj:`str`): Synonym of Gene
+        class_name (:obj:`str`): Class Name of Subunit
+        family_name (:obj:`str`): Family Name of Subunit
+        coefficient (:obj:`str`): Number of units required for complex
+        sequence (:obj:`str`): Sequence of Subunit
+        molecular_weight (:obj:`float`): Molecular weight of subunit
     """
+
     __tablename__ = 'protein_subunit'
     __mapper_args__ = {'polymorphic_identity': 'protein_subunit'}
 
@@ -107,12 +131,10 @@ class ProteinSubunit(PhysicalEntity):
     subunit_name = Column(String(255))
     uniprot_id = Column(String(255))
     entrez_id = Column(Integer)
-    ensembl_id = Column(String(255), unique = True)
     gene_name = Column(String(255))
     gene_syn  = Column(String(255))
     class_name = Column(String(255))
     family_name = Column(String(255))
-    sequence = Column(String(255), unique = True)
     coefficient = Column(Integer)
     sequence = Column(String(255))
     molecular_weight = Column(Float)
@@ -122,7 +144,21 @@ class ProteinSubunit(PhysicalEntity):
 
 class ProteinComplex(PhysicalEntity):
     """
+    Represents a Protein Complex - An instance of Physical Entity
 
+    Attributes:
+        complex_id (:obj:`int`): Common Schema Observation Identifier
+        complex_name(:obj:`str`): Name of the Protein Complex
+        go_id (:obj:`str`): GO functional annotation
+        go_dsc (:obj:`str`): Description of the annotation
+        funcat_id (:obj:`str`): FUNCAT functional annotation
+        funcat_dsc (:obj:`str`): Description of the annotation
+        su_cmt (:obj:`str`): Subunit comments
+        complex_cmt (:obj:`str`): Compex comments
+        disease_cmt (:obj:`str`): Disease comments
+        class_name (:obj:`str`): Class Name of Subunit
+        family_name (:obj:`str`): Family Name of Subunit
+        molecular_weight (:obj:`float`): Molecular weight of subunit
     """
     __tablename__ = 'protein_complex'
     __mapper_args__ = {'polymorphic_identity': 'protein_complex'}
@@ -138,10 +174,18 @@ class ProteinComplex(PhysicalEntity):
     disease_cmt = Column(String(255))
     class_name = Column(String(255))
     family_name = Column(String(255))
+    molecular_weight = Column(Float)
 
 
 class Compound(PhysicalEntity):
     """
+    Represents a Compound - An instance of Physical Entity
+
+    compound_id
+    compound_name
+    description
+    comment = Column(String(255))
+    _is_name_ambiguous = Column(Boolean)
 
     """
     __tablename__ = 'compound'
@@ -151,6 +195,7 @@ class Compound(PhysicalEntity):
     compound_name = Column(String(255), unique = True)
     description = Column(String(255))
     comment = Column(String(255))
+    _is_name_ambiguous = Column(Boolean)
 
     structure_id = Column(Integer, ForeignKey('structure.struct_id'))
     structure = relationship('Structure', backref = 'compound')
@@ -177,7 +222,8 @@ class Structure(PhysicalProperty):
     __mapper_args__ = {'polymorphic_identity': 'structure'}
 
     struct_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
-    structure = Column(String(255))
+    _value_smiles= Column(String(255))
+    _value_inchi = Column(String(255))
     _structure_formula_connectivity = Column(String(255))
 
 # class Reaction(PhysicalProperty):
@@ -195,6 +241,63 @@ class Concentration(PhysicalProperty):
     concentration_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
     value = Column(Float)
     error = Column(Float)
+
+class KineticLaw(PhysicalProperty):
+    __tablename__ = 'kinetic_law'
+    __mapper_args__ = {'polymorphic_identity': 'kinetic_law'}
+
+    kineticlaw_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
+
+    enzyme_id = Column(Integer, ForeignKey('protein_complex.complex_id'), index = True)
+    enzyme = relationship(ProteinComplex, backref = 'kinetic_law')
+
+    enzyme_type = Column(String(255))
+    tissue = Column(String(255))
+    mechanism = Column(String(255))
+    equation = Column(String(255))
+
+class Reaction(Base):
+    __tablename__ = 'reaction'
+    # __mapper_args__ = {'polymorphic_identity': 'reaction'}
+
+    reaction_id = Column(Integer, primary_key = True)
+    compound_id = Column(Integer, ForeignKey('compound.compound_id'))
+    compound = relationship(Compound, backref = 'reaction' )
+    coefficient = Column(Float)
+    _is_reactant = Column(Boolean)
+    _is_product = Column(Boolean)
+    _is_modifier = Column(Boolean)
+    rxn_type = Column(String(255))
+
+    kinetic_law_id = Column(Integer, ForeignKey('kinetic_law.kineticlaw_id'))
+
+class Parameter(Base):
+    """
+
+    """
+
+    __tablename__ = 'parameter'
+    # __mapper_args__ = {'polymorphic_identity': 'parameter'}
+
+    parameter_id = Column(Integer, primary_key = True)
+
+    kinetic_law_id = Column(Integer, ForeignKey('kinetic_law.kineticlaw_id') )
+    kinetic_law = relationship(KineticLaw, backref = 'parameter')
+
+    sabio_type = Column(Integer, index=True)
+    compound_id = Column(Integer, ForeignKey('compound.compound_id'), index=True)
+    compound = relationship(Compound, backref= 'parameter')
+
+    value = Column(Float)
+    error = Column(Float)
+    units = Column(String(255), index=True)
+
+    observed_name = Column(String(255))
+    observed_sabio_type = Column(Integer)
+    observed_value = Column(Float)
+    observed_error = Column(Float)
+    observed_units = Column(String(255))
+
 
 
 class AbundanceDataSet(PhysicalProperty):
@@ -339,6 +442,7 @@ class Conditions(Base):
     growth_status = Column(String(255))
     media = Column(String(255))
     temperature = Column(Float)
+    ph = Column(Float)
     growth_system = Column(String(255))
 
     __tablename__ = 'conditions'
@@ -387,13 +491,10 @@ class CommonSchema(data_source.CachedDataSource):
         ecmDB.load_content()
         self.ecmdb_session = ecmDB.session
 
-        # # # sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        # sabiodb = sabio_rk.SabioRk(name = 'sabio', clear_content = True, load_content=False, download_backup=False, max_entries = 10)
-        # sabiodb.load_content()
-        # self.sabio_session = sabiodb.session
-
-        """ NOT WORKING """
-        #TODO: AE needs 1. normalization to schema(max_entries implementation/working functions) 2. working tests
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        # sabiodb = sabio_rk.SabioRk(name = 'sabio', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        sabiodb.load_content()
+        self.sabio_session = sabiodb.session
 
         # arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False, max_entries = 5)
         # arrayexpressdb.load_experiments_from_text()
@@ -405,7 +506,7 @@ class CommonSchema(data_source.CachedDataSource):
         observation = Observation()
         observation.physical_entity = PhysicalEntity()
         observation.physical_property = PhysicalProperty()
-
+        #TODO: Go back and do joining to save lines
         # # Pax --- DONE
         pax_dataset = self.pax_session.query(pax.Dataset).all()
 
@@ -542,25 +643,108 @@ class CommonSchema(data_source.CachedDataSource):
                     observation.physical_property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name,
                         value = rows.value, error = rows.error, _metadata = metadata)
             observation.physical_property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
-            structure = item.structure, _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
+                _value_inchi = item.structure,
+               _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
             observation.physical_entity.compound = self.get_or_create_object(Compound, type = 'Compound', name = item.name,
                 compound_name = item.name, description = item.description, comment = item.comment, structure = observation.physical_property.structure,
                 _metadata = metadata)
 
-        # # SabioRk
-        # entry = self.sabio_session.query(sabio_rk.Entry).all()
-        #
-        # for item in sabio_entry:
-        #     if item._type == 'compound':
-        #         structure = self.sabio_session.query(sabio_rk.compound_compound_structure).filter_by(item._id).all()
-        #         for shape in structure:
-        #             struct = self.sabio_session.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
-        #             compound = self.get_or_create_object(Compound, name = item.name,
-        #                 _is_name_ambiguous = self.sabio_session.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous)
-        #             compound.structure = self.get_or_create_object(CompoundStructure, value = struct.value,
-        #                 format = struct.format, _structure_formula_connectivity = struct._value_inchi_formula_connectivity)
-        #             compound.biomolecule = self.get_or_create_object(BioMolecule, type = item._type, name = item.name)
-
+        # SabioRk
+        sabio_entry = self.sabio_session.query(sabio_rk.Entry).all()
+        counter = 1
+        for item in sabio_entry:
+            if item.name:
+                metadata = self.get_or_create_object(Metadata, name = item.name)
+            elif item._type == 'kinetic_law':
+                metadata = self.get_or_create_object(Metadata, name = 'Kinetic Law ' + str(counter))
+                counter += 1
+            syn = self.sabio_session.query(sabio_rk.entry_synonym).filter_by(entry__id = item._id).all()
+            res = self.sabio_session.query(sabio_rk.entry_resource).filter_by(entry__id = item._id).all()
+            for synonyms in syn:
+                syns = self.sabio_session.query(sabio_rk.Synonym).get(synonyms.synonym__id)
+                metadata.synonym.append(self.get_or_create_object(Synonym, name = syns.name))
+            for docs in res:
+                resource = self.sabio_session.query(sabio_rk.Resource).get(docs.resource__id)
+                if resource.namespace == 'taxonomy':
+                    metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = resource.id))
+                elif resource.namespace == 'uniprot':
+                    uniprot = resource.id
+                else:
+                    metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace,
+                        _id = resource.id))
+            if item._type == 'compound':
+                structure = self.sabio_session.query(sabio_rk.compound_compound_structure).filter_by(compound__id = item._id).all()
+                if structure:
+                    for shape in structure:
+                        struct = self.sabio_session.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
+                        if struct.format == 'smiles':
+                            observation.physical_property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
+                            _value_smiles = struct.value, _value_inchi = struct._value_inchi,
+                            _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)
+                            break
+                else:
+                    observation.physical_property.structure = None
+                observation.physical_entity.compound = self.get_or_create_object(Compound, type = 'Compound',
+                    name = item.name, compound_name = item.name,
+                    _is_name_ambiguous = self.sabio_session.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
+                    structure = observation.physical_property.structure, _metadata = metadata)
+            elif item._type == 'enzyme':
+                complx = self.sabio_session.query(sabio_rk.Enzyme).get(item._id)
+                observation.physical_entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Enzyme' ,
+                    name = item.name , complex_name = item.name,
+                    molecular_weight = complx.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
+            elif item._type == 'enzyme_subunit':
+                subunit = self.sabio_session.query(sabio_rk.EnzymeSubunit).get(item._id)
+                complx = self.sabio_session.query(sabio_rk.Entry).get(subunit.enzyme_id)
+                result = self.session.query(ProteinComplex).filter_by(complex_name = complx.name).first()
+                observation.physical_entity.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
+                    name = item.name, subunit_name = item.name,
+                    uniprot_id = uniprot, coefficient = subunit.coefficient,
+                    sequence = subunit.coefficient, molecular_weight = subunit.molecular_weight,
+                    proteincomplex = result, _metadata = metadata)
+            elif item._type == 'kinetic_law':
+                res = self.sabio_session.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
+                law = self.sabio_session.query(sabio_rk.KineticLaw).get(item._id)
+                entry = self.sabio_session.query(sabio_rk.Entry).get(law.enzyme_id)
+                result = self.session.query(ProteinComplex).filter_by(complex_name = entry.name).first()
+                for docs in res:
+                    resource = self.sabio_session.query(sabio_rk.Resource).get(docs.resource__id)
+                    metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
+                metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = law.taxon))
+                metadata.cell_line.append(self.get_or_create_object(CellLine, name = law.taxon_variant))
+                metadata.conditions.append(self.get_or_create_object(Conditions, temperature = law.temperature, ph = law.ph, media = law.media))
+                observation.physical_property.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = result,
+                    enzyme_type = law.enzyme_type, tissue = law.tissue, mechanism = law.mechanism, equation = law.equation, _metadata = metadata)
+                rxn = self.sabio_session.query(sabio_rk.ReactionParticipant).filter(or_(sabio_rk.ReactionParticipant.reactant_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.product_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.modifier_kinetic_law_id == law._id)).all()
+                for row in rxn:
+                    compound_name = self.sabio_session.query(sabio_rk.Entry).get(row.compound_id).name
+                    _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
+                    if row.reactant_kinetic_law_id:
+                        reaction = Reaction(compound = _compound,
+                            coefficient = row.coefficient, _is_reactant = 1, rxn_type = row.type,
+                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                    elif row.product_kinetic_law_id:
+                        reaction = Reaction( compound = _compound,
+                            coefficient = row.coefficient, _is_product = 1, rxn_type = row.type,
+                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                    elif row.modifier_kinetic_law_id:
+                        reaction = Reaction(compound = _compound,
+                            coefficient = row.coefficient, _is_modifier = 1, rxn_type = row.type,
+                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                total_param = self.sabio_session.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()
+                for param in total_param:
+                    if param.compound_id:
+                        compound_name = self.sabio_session.query(sabio_rk.Entry).get(param.compound_id).name
+                        _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
+                        parameter = Parameter( sabio_type = param.type, value = param.value, error = param.error,
+                            units = param.units, observed_name = param.observed_name, kinetic_law = observation.physical_property.kinetic_law,
+                            observed_sabio_type = param.observed_type, observed_value = param.observed_value, compound = _compound,
+                            observed_error = param.observed_error, observed_units = param.observed_units)
+                    else:
+                        parameter = Parameter( sabio_type = param.type, value = param.value, error = param.error,
+                            units = param.units, observed_name = param.observed_name, kinetic_law = observation.physical_property.kinetic_law,
+                            observed_sabio_type = param.observed_type, observed_value = param.observed_value,
+                            observed_error = param.observed_error, observed_units = param.observed_units)
 
         if self.verbose:
             print('Comitting')
