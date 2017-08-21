@@ -148,7 +148,7 @@ class ProteinComplex(PhysicalEntity):
 
     Attributes:
         complex_id (:obj:`int`): Common Schema Observation Identifier
-        complex_name(:obj:`str`): Name of the Protein Complex
+        complex_name (:obj:`str`): Name of the Protein Complex
         go_id (:obj:`str`): GO functional annotation
         go_dsc (:obj:`str`): Description of the annotation
         funcat_id (:obj:`str`): FUNCAT functional annotation
@@ -181,8 +181,8 @@ class Compound(PhysicalEntity):
     """
     Represents a Compound - An instance of Physical Entity
 
-    compound_id
-    compound_name
+    compound_id (:obj:`int`): Common Schema Observation Identifier
+    compound_name (:obj:`str`): Name of the Compound
     description
     comment = Column(String(255))
     _is_name_ambiguous = Column(Boolean)
@@ -468,46 +468,37 @@ class CommonSchema(data_source.CachedDataSource):
     base_model = Base
 
     def load_content(self):
+        observation = Observation()
+        observation.physical_entity = PhysicalEntity()
+        self.obs_pe = observation.physical_entity
+        observation.physical_property = PhysicalProperty()
+        self.obs_pp = observation.physical_property
 
-        session = self.session
+        ## Add all DBs
+        self.add_all()
 
-        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
-        # paxdb = pax.Pax(name = 'pax', clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
+    def add_all(self):
+        self.add_paxdb()
+        self.add_corumdb()
+        self.add_jaspardb()
+        self.add_ecmdb()
+        self.add_sabiodb()
+
+    def add_paxdb(self):
+        if self._is_local:
+            paxdb = pax.Pax(name = 'pax', clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
+        else:
+            paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
         paxdb.load_content()
         self.pax_session = paxdb.session
 
-        corumdb = corum.Corum(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        # corumdb = corum.Corum(name = 'corum', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        corumdb.load_content()
-        self.corum_session = corumdb.session
+        obs_pe = self.obs_pe
+        obs_pp = self.obs_pp
 
-        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        # jaspardb = jaspar.Jaspar(name = 'jaspar', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        jaspardb.load_content()
-        self.jaspar_session = jaspardb.session
-
-        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        # ecmDB = ecmdb.Ecmdb(name = 'ecmdb', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        ecmDB.load_content()
-        self.ecmdb_session = ecmDB.session
-
-        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        # sabiodb = sabio_rk.SabioRk(name = 'sabio', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        sabiodb.load_content()
-        self.sabio_session = sabiodb.session
-
-        # arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False, max_entries = 5)
-        # arrayexpressdb.load_experiments_from_text()
-        # array_session = arrayexpressdb.session
-
-        self.add_content_to_db()
-
-    def add_content_to_db(self):
-        observation = Observation()
-        observation.physical_entity = PhysicalEntity()
-        observation.physical_property = PhysicalProperty()
-        #TODO: Go back and do joining to save lines
-        # # Pax --- DONE
         pax_dataset = self.pax_session.query(pax.Dataset).all()
 
         for item in pax_dataset:
@@ -515,50 +506,68 @@ class CommonSchema(data_source.CachedDataSource):
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon_ncbi_id,
                 name = self.pax_session.query(pax.Taxon).get(item.taxon_ncbi_id).species_name))
             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = item.publication))
-            observation.physical_property.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
+            obs_pp.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
                 name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata )
             abundance = self.pax_session.query(pax.Observation).filter_by(dataset_id = item.id).all()
             for data in abundance:
                 ## TODO: May have to do some IF exists in this. Also give names to the physical entities
                 uniprot_id = self.pax_session.query(pax.Protein).get(data.protein_id).uniprot_id
-                observation.physical_entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
+                obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit,
                     type = 'Protein Subunit', name = uniprot_id, uniprot_id = uniprot_id,
                     _metadata = metadata)
                 abundance_data = (self.get_or_create_object(AbundanceData,
-                    abundance = data.abundance, dataset = observation.physical_property.abundance_dataset,
-                    subunit = observation.physical_entity.protein_subunit))
+                    abundance = data.abundance, dataset = obs_pp.abundance_dataset,
+                    subunit = obs_pe.protein_subunit))
 
-        # # Corum --- DONE
+    def add_corumdb(self):
+        if self._is_local:
+            corumdb = corum.Corum(name = 'corum', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        else:
+            corumdb = corum.Corum(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        corumdb.load_content()
+        self.corum_session = corumdb.session
+
+        obs_pe = self.obs_pe
+        obs_pp = self.obs_pp
+
         corum_complex = self.corum_session.query(corum.Complex).all()
         corum_subunit = self.corum_session.query(corum.Subunit).all()
 
-        for item in corum_complex:
-            obs = self.corum_session.query(corum.Observation).get(item.observation_id)
-            metadata = self.get_or_create_object(Metadata, name = item.complex_name )
-            metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = obs.taxon_ncbi_id,
-                name = self.corum_session.query(corum.Taxon).get(obs.taxon_ncbi_id).swissprot_id))
-            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = obs.pubmed_id))
-            metadata.method.append(self.get_or_create_object(Method, name = 'purification', comments = obs.pur_method))
-            metadata.cell_line.append(self.get_or_create_object(CellLine, name = obs.cell_line))
-            observation.physical_entity.protein_complex = self.get_or_create_object(ProteinComplex,
-                type = 'Protein Complex', name = item.complex_name, complex_name = item.complex_name, go_id = item.go_id,
-                go_dsc = item.go_dsc, funcat_id = item.funcat_id, funcat_dsc = item.funcat_dsc, su_cmt = item.su_cmt,
-                complex_cmt = item.complex_cmt, disease_cmt = item.disease_cmt,  _metadata = metadata)
+        for row in corum_complex:
+            entry = self.corum_session.query(corum.Observation).get(row.observation_id)
+            metadata = self.get_or_create_object(Metadata, name = row.complex_name)
+            metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = entry.taxon_ncbi_id,
+                name = self.corum_session.query(corum.Taxon).get(entry.taxon_ncbi_id).swissprot_id))
+            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = str(entry.pubmed_id)))
+            metadata.method.append(self.get_or_create_object(Method, name = 'purification', comments = entry.pur_method))
+            metadata.cell_line.append(self.get_or_create_object(CellLine, name = entry.cell_line))
+            obs_pe.protein_complex = self.get_or_create_object(ProteinComplex,
+                type = 'Protein Complex', name = row.complex_name, complex_name = row.complex_name, go_id = row.go_id,
+                go_dsc = row.go_dsc, funcat_id = row.funcat_id, funcat_dsc = row.funcat_dsc, su_cmt = row.su_cmt,
+                complex_cmt = row.complex_cmt, disease_cmt = row.disease_cmt,  _metadata = metadata)
 
-        for item in corum_subunit:
-            cmplx = self.corum_session.query(corum.Complex).get(item.complex_id)
-            result = self.session.query(ProteinComplex).filter_by(complex_name = cmplx.complex_name).first()
-            obs = self.session.query(Observation).get(result.complex_id)
-            observation.physical_entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
-                type = 'Protein Subunit', uniprot_id = item.su_uniprot,
-                entrez_id = item.su_entrezs, name = item.protein_name, subunit_name = item.protein_name, gene_name=item.gene_name,
-                gene_syn = item.gene_syn, proteincomplex = result, _metadata = self.session.query(Metadata).get(obs._metadata_id))
+        for row in corum_subunit:
+            corum_cmplx = self.corum_session.query(corum.Complex).get(row.complex_id)
+            complex_ = self.session.query(ProteinComplex).filter_by(complex_name = corum_cmplx.complex_name).first()
+            entry = self.session.query(Observation).get(complex_.complex_id)
+            obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit,
+                type = 'Protein Subunit', uniprot_id = row.su_uniprot,
+                entrez_id = row.su_entrezs, name = row.protein_name, subunit_name = row.protein_name, gene_name=row.gene_name,
+                gene_syn = row.gene_syn, proteincomplex = complex_, _metadata = self.session.query(Metadata).get(entry._metadata_id))
 
+    def add_jaspardb(self):
+        if self._is_local:
+            jaspardb = jaspar.Jaspar(name = 'jaspar', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        else:
+            jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        jaspardb.load_content()
+        self.jaspar_session = jaspardb.session
 
-        # Jaspar -- DONE
+        obs_pe = self.obs_pe
+        obs_pp = self.obs_pp
+
         jaspar_matrix = self.jaspar_session.query(jaspar.Matrix).all()
         jaspar_matrixposition = self.jaspar_session.query(jaspar.MatrixPosition).all()
-        jaspar_transcription_factor = self.jaspar_session.query(jaspar.TranscriptionFactor).all()
 
         for item in jaspar_matrix:
             temp_tf = self.jaspar_session.query(jaspar.TranscriptionFactor).filter_by(id = item.transcription_factor_id).first()
@@ -584,14 +593,14 @@ class CommonSchema(data_source.CachedDataSource):
                         metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = ncbi))
                         metadata.method.append(self.get_or_create_object(Method, name = type_name))
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = doc))
-                        observation.physical_entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = temp_tf.name,
+                        obs_pe.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = temp_tf.name,
                             complex_name = temp_tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
-                        observation.physical_property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
-                            version = item.version, tf = observation.physical_entity.protein_complex, _metadata = metadata)
+                        obs_pp.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
+                            version = item.version, tf = obs_pe.protein_complex, _metadata = metadata)
                         for pos in jaspar_matrixposition:
                             data = self.get_or_create_object(DNABindingData, position = pos.position,
                             frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-                            frequency_t = pos.frequency_t, dataset = observation.physical_property.dna_binding_dataset)
+                            frequency_t = pos.frequency_t, dataset = obs_pp.dna_binding_dataset)
                     else:
                         sub_id = self.jaspar_session.query(jaspar.transcription_factor_subunit).filter_by(transcription_factor__id = temp_tf._id).first().subunit_id
                         uniprot_id = self.jaspar_session.query(jaspar.Subunit).get(sub_id).uniprot_id
@@ -599,19 +608,27 @@ class CommonSchema(data_source.CachedDataSource):
                         metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = ncbi))
                         metadata.method.append(self.get_or_create_object(Method, name = type_name))
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = doc))
-                        observation.physical_entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
+                        obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
                             name = temp_tf.name, subunit_name = temp_tf.name, gene_name = temp_tf.name,
                             class_name = class_name, family_name = fam_name, _metadata = metadata)
-                        observation.physical_property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
-                            version = item.version, subunit = observation.physical_entity.protein_subunit, _metadata = metadata)
+                        obs_pp.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
+                            version = item.version, subunit = obs_pe.protein_subunit, _metadata = metadata)
                         for pos in jaspar_matrixposition:
                             data = self.get_or_create_object(DNABindingData, position = pos.position,
                             frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-                            frequency_t = pos.frequency_t, dataset = observation.physical_property.dna_binding_dataset)
+                            frequency_t = pos.frequency_t, dataset = obs_pp.dna_binding_dataset)
 
+    def add_ecmdb(self):
+        if self._is_local:
+            ecmDB = ecmdb.Ecmdb(name = 'ecmdb', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        else:
+            ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        ecmDB.load_content()
+        self.ecmdb_session = ecmDB.session
 
+        obs_pe = self.obs_pe
+        obs_pp = self.obs_pp
 
-        #ECMDB -- DONE
         ##TODO: Figure out a connection between concentration and compound
         ecmdb_compound = self.ecmdb_session.query(ecmdb.Compound).all()
 
@@ -640,16 +657,26 @@ class CommonSchema(data_source.CachedDataSource):
                     for docs in refs:
                         resource = self.ecmdb_session.query(ecmdb.Resource).get(docs.resource__id)
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
-                    observation.physical_property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name,
+                    obs_pp.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name,
                         value = rows.value, error = rows.error, _metadata = metadata)
-            observation.physical_property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
+            obs_pp.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
                 _value_inchi = item.structure,
                _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
-            observation.physical_entity.compound = self.get_or_create_object(Compound, type = 'Compound', name = item.name,
-                compound_name = item.name, description = item.description, comment = item.comment, structure = observation.physical_property.structure,
+            obs_pe.compound = self.get_or_create_object(Compound, type = 'Compound', name = item.name,
+                compound_name = item.name, description = item.description, comment = item.comment, structure = obs_pp.structure,
                 _metadata = metadata)
 
-        # SabioRk
+    def add_sabiodb(self):
+        if self._is_local:
+            sabiodb = sabio_rk.SabioRk(name = 'sabio', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        else:
+            sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
+        sabiodb.load_content()
+        self.sabio_session = sabiodb.session
+
+        obs_pe = self.obs_pe
+        obs_pp = self.obs_pp
+
         sabio_entry = self.sabio_session.query(sabio_rk.Entry).all()
         counter = 1
         for item in sabio_entry:
@@ -678,26 +705,26 @@ class CommonSchema(data_source.CachedDataSource):
                     for shape in structure:
                         struct = self.sabio_session.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
                         if struct.format == 'smiles':
-                            observation.physical_property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
+                            obs_pp.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
                             _value_smiles = struct.value, _value_inchi = struct._value_inchi,
                             _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)
                             break
                 else:
-                    observation.physical_property.structure = None
-                observation.physical_entity.compound = self.get_or_create_object(Compound, type = 'Compound',
+                    obs_pp.structure = None
+                obs_pe.compound = self.get_or_create_object(Compound, type = 'Compound',
                     name = item.name, compound_name = item.name,
                     _is_name_ambiguous = self.sabio_session.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
-                    structure = observation.physical_property.structure, _metadata = metadata)
+                    structure = obs_pp.structure, _metadata = metadata)
             elif item._type == 'enzyme':
                 complx = self.sabio_session.query(sabio_rk.Enzyme).get(item._id)
-                observation.physical_entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Enzyme' ,
+                obs_pe.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Enzyme' ,
                     name = item.name , complex_name = item.name,
                     molecular_weight = complx.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
             elif item._type == 'enzyme_subunit':
                 subunit = self.sabio_session.query(sabio_rk.EnzymeSubunit).get(item._id)
                 complx = self.sabio_session.query(sabio_rk.Entry).get(subunit.enzyme_id)
                 result = self.session.query(ProteinComplex).filter_by(complex_name = complx.name).first()
-                observation.physical_entity.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
+                obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
                     name = item.name, subunit_name = item.name,
                     uniprot_id = uniprot, coefficient = subunit.coefficient,
                     sequence = subunit.coefficient, molecular_weight = subunit.molecular_weight,
@@ -713,7 +740,7 @@ class CommonSchema(data_source.CachedDataSource):
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = law.taxon))
                 metadata.cell_line.append(self.get_or_create_object(CellLine, name = law.taxon_variant))
                 metadata.conditions.append(self.get_or_create_object(Conditions, temperature = law.temperature, ph = law.ph, media = law.media))
-                observation.physical_property.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = result,
+                obs_pp.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = result,
                     enzyme_type = law.enzyme_type, tissue = law.tissue, mechanism = law.mechanism, equation = law.equation, _metadata = metadata)
                 rxn = self.sabio_session.query(sabio_rk.ReactionParticipant).filter(or_(sabio_rk.ReactionParticipant.reactant_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.product_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.modifier_kinetic_law_id == law._id)).all()
                 for row in rxn:
@@ -722,30 +749,31 @@ class CommonSchema(data_source.CachedDataSource):
                     if row.reactant_kinetic_law_id:
                         reaction = Reaction(compound = _compound,
                             coefficient = row.coefficient, _is_reactant = 1, rxn_type = row.type,
-                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                            kinetic_law_id = obs_pp.kinetic_law.kineticlaw_id)
                     elif row.product_kinetic_law_id:
                         reaction = Reaction( compound = _compound,
                             coefficient = row.coefficient, _is_product = 1, rxn_type = row.type,
-                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                            kinetic_law_id = obs_pp.kinetic_law.kineticlaw_id)
                     elif row.modifier_kinetic_law_id:
                         reaction = Reaction(compound = _compound,
                             coefficient = row.coefficient, _is_modifier = 1, rxn_type = row.type,
-                            kinetic_law_id = observation.physical_property.kinetic_law.kineticlaw_id)
+                            kinetic_law_id = obs_pp.kinetic_law.kineticlaw_id)
                 total_param = self.sabio_session.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()
                 for param in total_param:
                     if param.compound_id:
                         compound_name = self.sabio_session.query(sabio_rk.Entry).get(param.compound_id).name
                         _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
                         parameter = Parameter( sabio_type = param.type, value = param.value, error = param.error,
-                            units = param.units, observed_name = param.observed_name, kinetic_law = observation.physical_property.kinetic_law,
+                            units = param.units, observed_name = param.observed_name, kinetic_law = obs_pp.kinetic_law,
                             observed_sabio_type = param.observed_type, observed_value = param.observed_value, compound = _compound,
                             observed_error = param.observed_error, observed_units = param.observed_units)
                     else:
-                        parameter = Parameter( sabio_type = param.type, value = param.value, error = param.error,
-                            units = param.units, observed_name = param.observed_name, kinetic_law = observation.physical_property.kinetic_law,
+                        parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
+                            units = param.units, observed_name = param.observed_name, kinetic_law = obs_pp.kinetic_law,
                             observed_sabio_type = param.observed_type, observed_value = param.observed_value,
                             observed_error = param.observed_error, observed_units = param.observed_units)
 
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
+    # def add_arrayexpressdb(self):
+        # arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False, max_entries = 5)
+        # arrayexpressdb.load_experiments_from_text()
+        # array_session = arrayexpressdb.session
