@@ -39,10 +39,6 @@ class ShortTestCommonSchema(unittest.TestCase):
         dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first()
         self.assertEqual(dataset.score , 2.47)
 
-        subunit = session.query(common_schema.ProteinSubunit).filter_by(uniprot_id = 'Q72DH8').first()
-        abundance = session.query(common_schema.AbundanceData).filter_by(subunit_id = subunit.subunit_id).first()
-        self.assertEqual(abundance.abundance, 78.0)
-
         metadata = session.query(common_schema.Metadata).filter_by(name = '882/882-Desulfo_Lac_Exp_SC_zhang_2006.txt').first()
         taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
         self.assertEqual(taxon.taxon_id, 882)

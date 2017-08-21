@@ -760,7 +760,7 @@ class CommonSchema(data_source.CachedDataSource):
                     if param.compound_id:
                         compound_name = self.sabio_session.query(sabio_rk.Entry).get(param.compound_id).name
                         _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
-                        parameter = Parameter( sabio_type = param.type, value = param.value, error = param.error,
+                        parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
                             units = param.units, observed_name = param.observed_name, kinetic_law = obs_pp.kinetic_law,
                             observed_sabio_type = param.observed_type, observed_value = param.observed_value, compound = _compound,
                             observed_error = param.observed_error, observed_units = param.observed_units)
