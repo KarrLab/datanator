@@ -26,11 +26,11 @@ class ShortTestCommonSchema(unittest.TestCase):
         if self._is_local:
             cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True,
                                             load_content=False, download_backup=False,
-                                            max_entries = 3)
+                                            max_entries = 5)
             cs._is_local = True
         else:
             cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True,
-                load_content= False, download_backup=False, max_entries = 3)
+                load_content= False, download_backup=False, max_entries = 5)
             cs._is_local = False
 
         cs.load_content()

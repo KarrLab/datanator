@@ -9,8 +9,6 @@ This code is a common schema for all the kinetic_datanator modules
 :License: MIT
 """
 
-##TODO: Create the definition of tables for the format and then include with the query function in sql
-
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table, create_engine, Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
@@ -510,7 +508,6 @@ class CommonSchema(data_source.CachedDataSource):
                 name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata )
             abundance = self.pax_session.query(pax.Observation).filter_by(dataset_id = item.id).all()
             for data in abundance:
-                ## TODO: May have to do some IF exists in this. Also give names to the physical entities
                 uniprot_id = self.pax_session.query(pax.Protein).get(data.protein_id).uniprot_id
                 obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit,
                     type = 'Protein Subunit', name = uniprot_id, uniprot_id = uniprot_id,
