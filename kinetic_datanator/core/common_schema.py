@@ -16,6 +16,7 @@ from kinetic_datanator.data_source import corum, pax, jaspar, array_express, ecm
 import sqlalchemy.ext.declarative
 from six import BytesIO
 import six
+from bioservices import UniProt
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -457,7 +458,7 @@ class CellCompartment(Base):
     name = Column(String(255), unique = True, index = True)
 
 
-class CommonSchema(data_source.CachedDataSource):
+class CommonSchema(data_source.HttpDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
@@ -475,9 +476,29 @@ class CommonSchema(data_source.CachedDataSource):
         ## Add all DBs
         self.add_all()
 
+        ## Add missing subunit information
+        self.fill_missing_subunit_info()
+
         if self.verbose:
             print('Comitting')
         self.session.commit()
+
+    def fill_missing_subunit_info(self):
+        u = UniProt(verbose = False)
+
+        subunits = self.session.query(ProteinSubunit).all()
+        uni = []
+        for items in subunits:
+            uni.append(str(items.uniprot_id))
+        entrez_dict = u.mapping('ACC', 'P_ENTREZGENEID', uni)
+        genename_dict = u.mapping('ACC', 'GENENAME', uni)
+
+        for protein in subunits:
+            if protein.entrez_id == None:
+                if entrez_dict[protein.uniprot_id]:
+                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+            if protein.gene_name == None:
+                protein.gene_name = str(genename_dict[protein.uniprot_id][0])
 
     def add_all(self):
         self.add_paxdb()
@@ -487,28 +508,24 @@ class CommonSchema(data_source.CachedDataSource):
         self.add_sabiodb()
 
     def add_paxdb(self):
-        if self._is_local:
-            paxdb = pax.Pax(name = 'pax', clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
-        else:
-            paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True,  load_content=False, download_backup=False, max_entries = self.max_entries)
-        paxdb.load_content()
-        self.pax_session = paxdb.session
+        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True,
+            load_content= True, download_backup= False, max_entries = self.max_entries)
+        pax_ses = paxdb.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
-        pax_dataset = self.pax_session.query(pax.Dataset).all()
-
+        pax_dataset = pax_ses.query(pax.Dataset).all()
         for item in pax_dataset:
             metadata = self.get_or_create_object(Metadata, name = item.file_name)
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon_ncbi_id,
-                name = self.pax_session.query(pax.Taxon).get(item.taxon_ncbi_id).species_name))
+                name = pax_ses.query(pax.Taxon).get(item.taxon_ncbi_id).species_name))
             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = item.publication))
             obs_pp.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
                 name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata )
-            abundance = self.pax_session.query(pax.Observation).filter_by(dataset_id = item.id).all()
+            abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = item.id).all()
             for data in abundance:
-                uniprot_id = self.pax_session.query(pax.Protein).get(data.protein_id).uniprot_id
+                uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id
                 obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit,
                     type = 'Protein Subunit', name = uniprot_id, uniprot_id = uniprot_id,
                     _metadata = metadata)
@@ -517,24 +534,21 @@ class CommonSchema(data_source.CachedDataSource):
                     subunit = obs_pe.protein_subunit))
 
     def add_corumdb(self):
-        if self._is_local:
-            corumdb = corum.Corum(name = 'corum', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        else:
-            corumdb = corum.Corum(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        corumdb.load_content()
-        self.corum_session = corumdb.session
+        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True,
+            load_content=True, download_backup=False, max_entries = self.max_entries)
+        corum_ses = corumdb.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
-        corum_complex = self.corum_session.query(corum.Complex).all()
-        corum_subunit = self.corum_session.query(corum.Subunit).all()
+        corum_complex = corum_ses.query(corum.Complex).all()
+        corum_subunit = corum_ses.query(corum.Subunit).all()
 
         for row in corum_complex:
-            entry = self.corum_session.query(corum.Observation).get(row.observation_id)
+            entry = corum_ses.query(corum.Observation).get(row.observation_id)
             metadata = self.get_or_create_object(Metadata, name = row.complex_name)
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = entry.taxon_ncbi_id,
-                name = self.corum_session.query(corum.Taxon).get(entry.taxon_ncbi_id).swissprot_id))
+                name = corum_ses.query(corum.Taxon).get(entry.taxon_ncbi_id).swissprot_id))
             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = str(entry.pubmed_id)))
             metadata.method.append(self.get_or_create_object(Method, name = 'purification', comments = entry.pur_method))
             metadata.cell_line.append(self.get_or_create_object(CellLine, name = entry.cell_line))
@@ -544,7 +558,7 @@ class CommonSchema(data_source.CachedDataSource):
                 complex_cmt = row.complex_cmt, disease_cmt = row.disease_cmt,  _metadata = metadata)
 
         for row in corum_subunit:
-            corum_cmplx = self.corum_session.query(corum.Complex).get(row.complex_id)
+            corum_cmplx = corum_ses.query(corum.Complex).get(row.complex_id)
             complex_ = self.session.query(ProteinComplex).filter_by(complex_name = corum_cmplx.complex_name).first()
             entry = self.session.query(Observation).get(complex_.complex_id)
             obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit,
@@ -553,32 +567,29 @@ class CommonSchema(data_source.CachedDataSource):
                 gene_syn = row.gene_syn, proteincomplex = complex_, _metadata = self.session.query(Metadata).get(entry._metadata_id))
 
     def add_jaspardb(self):
-        if self._is_local:
-            jaspardb = jaspar.Jaspar(name = 'jaspar', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        else:
-            jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        jaspardb.load_content()
-        self.jaspar_session = jaspardb.session
+        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = True,
+            load_content= True, download_backup=False, max_entries = self.max_entries)
+        jasp_ses = jaspardb.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
-        jaspar_matrix = self.jaspar_session.query(jaspar.Matrix).all()
-        jaspar_matrixposition = self.jaspar_session.query(jaspar.MatrixPosition).all()
+        jaspar_matrix = jasp_ses.query(jaspar.Matrix).all()
+        jaspar_matrixposition = jasp_ses.query(jaspar.MatrixPosition).all()
 
         for item in jaspar_matrix:
-            temp_tf = self.jaspar_session.query(jaspar.TranscriptionFactor).filter_by(id = item.transcription_factor_id).first()
-            tax = self.jaspar_session.query(jaspar.transcription_factor_species).filter_by(transcription_factor__id = temp_tf._id).all()
-            ref = self.jaspar_session.query(jaspar.matrix_resource).filter_by(matrix_id = item.id).all()
-            type_name = self.jaspar_session.query(jaspar.Type).get(item.type_id).name
-            temp_class = self.jaspar_session.query(jaspar.transcription_factor_class).filter_by(transcription_factor__id = temp_tf._id).first()
+            temp_tf = jasp_ses.query(jaspar.TranscriptionFactor).filter_by(id = item.transcription_factor_id).first()
+            tax = jasp_ses.query(jaspar.transcription_factor_species).filter_by(transcription_factor__id = temp_tf._id).all()
+            ref = jasp_ses.query(jaspar.matrix_resource).filter_by(matrix_id = item.id).all()
+            type_name = jasp_ses.query(jaspar.Type).get(item.type_id).name
+            temp_class = jasp_ses.query(jaspar.transcription_factor_class).filter_by(transcription_factor__id = temp_tf._id).first()
             if temp_class is not None:
-                class_name = self.jaspar_session.query(jaspar.Class).get(temp_class.class_id).name
-            temp_fam = self.jaspar_session.query(jaspar.transcription_factor_family).filter_by(transcription_factor__id = temp_tf._id).first()
+                class_name = jasp_ses.query(jaspar.Class).get(temp_class.class_id).name
+            temp_fam = jasp_ses.query(jaspar.transcription_factor_family).filter_by(transcription_factor__id = temp_tf._id).first()
             if temp_fam is not None:
-                fam_name = self.jaspar_session.query(jaspar.Family).get(temp_fam.family_id).name
+                fam_name = jasp_ses.query(jaspar.Family).get(temp_fam.family_id).name
             for speice in tax:
-                ncbi = self.jaspar_session.query(jaspar.Species).get(speice.species_id).ncbi_id
+                ncbi = jasp_ses.query(jaspar.Species).get(speice.species_id).ncbi_id
                 for docs in ref:
                     doc = docs.resource_pubmed_id
                     if '::' in temp_tf.name:
@@ -599,8 +610,8 @@ class CommonSchema(data_source.CachedDataSource):
                             frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
                             frequency_t = pos.frequency_t, dataset = obs_pp.dna_binding_dataset)
                     else:
-                        sub_id = self.jaspar_session.query(jaspar.transcription_factor_subunit).filter_by(transcription_factor__id = temp_tf._id).first().subunit_id
-                        uniprot_id = self.jaspar_session.query(jaspar.Subunit).get(sub_id).uniprot_id
+                        sub_id = jasp_ses.query(jaspar.transcription_factor_subunit).filter_by(transcription_factor__id = temp_tf._id).first().subunit_id
+                        uniprot_id = jasp_ses.query(jaspar.Subunit).get(sub_id).uniprot_id
                         metadata = self.get_or_create_object(Metadata, name = temp_tf.name)
                         metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = ncbi))
                         metadata.method.append(self.get_or_create_object(Method, name = type_name))
@@ -616,43 +627,40 @@ class CommonSchema(data_source.CachedDataSource):
                             frequency_t = pos.frequency_t, dataset = obs_pp.dna_binding_dataset)
 
     def add_ecmdb(self):
-        if self._is_local:
-            ecmDB = ecmdb.Ecmdb(name = 'ecmdb', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        else:
-            ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        ecmDB.load_content()
-        self.ecmdb_session = ecmDB.session
+        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = True,
+            load_content=True , download_backup=False, max_entries = self.max_entries)
+        ecm_ses = ecmDB.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
         ##TODO: Figure out a connection between concentration and compound
-        ecmdb_compound = self.ecmdb_session.query(ecmdb.Compound).all()
+        ecmdb_compound = ecm_ses.query(ecmdb.Compound).all()
 
         for item in ecmdb_compound:
-            concentration = self.ecmdb_session.query(ecmdb.Concentration).filter_by(compound_id = item._id).all()
-            ref = self.ecmdb_session.query(ecmdb.compound_resource).filter_by(compound__id = item._id).all()
-            compart = self.ecmdb_session.query(ecmdb.compound_compartment).filter_by(compound__id = item._id).all()
-            syn = self.ecmdb_session.query(ecmdb.compound_synonym).filter_by(compound__id = item._id).all()
+            concentration = ecm_ses.query(ecmdb.Concentration).filter_by(compound_id = item._id).all()
+            ref = ecm_ses.query(ecmdb.compound_resource).filter_by(compound__id = item._id).all()
+            compart = ecm_ses.query(ecmdb.compound_compartment).filter_by(compound__id = item._id).all()
+            syn = ecm_ses.query(ecmdb.compound_synonym).filter_by(compound__id = item._id).all()
             metadata = self.get_or_create_object(Metadata, name = item.name)
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = 562, name = 'E.Coli'))
             for docs in ref:
-                resource = self.ecmdb_session.query(ecmdb.Resource).get(docs.resource__id)
+                resource = ecm_ses.query(ecmdb.Resource).get(docs.resource__id)
                 metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
             for areas in compart:
-                compartment = self.ecmdb_session.query(ecmdb.Compartment).get(areas.compartment__id)
+                compartment = ecm_ses.query(ecmdb.Compartment).get(areas.compartment__id)
                 metadata.cell_compartment.append(self.get_or_create_object(CellCompartment, name = compartment.name))
             for syns in syn:
-                synonym = self.ecmdb_session.query(ecmdb.Synonym).get(syns.synonym__id)
+                synonym = ecm_ses.query(ecmdb.Synonym).get(syns.synonym__id)
                 metadata.synonym.append(self.get_or_create_object(Synonym, name = synonym.name))
             if concentration:
                 for rows in concentration:
                     metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
                     metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
                         media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
-                    refs = self.ecmdb_session.query(ecmdb.concentration_resource).filter_by(concentration__id = rows._id).all()
+                    refs = ecm_ses.query(ecmdb.concentration_resource).filter_by(concentration__id = rows._id).all()
                     for docs in refs:
-                        resource = self.ecmdb_session.query(ecmdb.Resource).get(docs.resource__id)
+                        resource = ecm_ses.query(ecmdb.Resource).get(docs.resource__id)
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
                     obs_pp.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name,
                         value = rows.value, error = rows.error, _metadata = metadata)
@@ -664,17 +672,14 @@ class CommonSchema(data_source.CachedDataSource):
                 _metadata = metadata)
 
     def add_sabiodb(self):
-        if self._is_local:
-            sabiodb = sabio_rk.SabioRk(name = 'sabio', clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        else:
-            sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True, load_content=False, download_backup=False, max_entries = self.max_entries)
-        sabiodb.load_content()
-        self.sabio_session = sabiodb.session
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True,
+            load_content=True, download_backup=False, max_entries = self.max_entries)
+        sabio_ses = sabiodb.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
-        sabio_entry = self.sabio_session.query(sabio_rk.Entry).all()
+        sabio_entry = sabio_ses.query(sabio_rk.Entry).all()
         counter = 1
         for item in sabio_entry:
             if item.name:
@@ -682,13 +687,13 @@ class CommonSchema(data_source.CachedDataSource):
             elif item._type == 'kinetic_law':
                 metadata = self.get_or_create_object(Metadata, name = 'Kinetic Law ' + str(counter))
                 counter += 1
-            syn = self.sabio_session.query(sabio_rk.entry_synonym).filter_by(entry__id = item._id).all()
-            res = self.sabio_session.query(sabio_rk.entry_resource).filter_by(entry__id = item._id).all()
+            syn = sabio_ses.query(sabio_rk.entry_synonym).filter_by(entry__id = item._id).all()
+            res = sabio_ses.query(sabio_rk.entry_resource).filter_by(entry__id = item._id).all()
             for synonyms in syn:
-                syns = self.sabio_session.query(sabio_rk.Synonym).get(synonyms.synonym__id)
+                syns = sabio_ses.query(sabio_rk.Synonym).get(synonyms.synonym__id)
                 metadata.synonym.append(self.get_or_create_object(Synonym, name = syns.name))
             for docs in res:
-                resource = self.sabio_session.query(sabio_rk.Resource).get(docs.resource__id)
+                resource = sabio_ses.query(sabio_rk.Resource).get(docs.resource__id)
                 if resource.namespace == 'taxonomy':
                     metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = resource.id))
                 elif resource.namespace == 'uniprot':
@@ -697,10 +702,10 @@ class CommonSchema(data_source.CachedDataSource):
                     metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace,
                         _id = resource.id))
             if item._type == 'compound':
-                structure = self.sabio_session.query(sabio_rk.compound_compound_structure).filter_by(compound__id = item._id).all()
+                structure = sabio_ses.query(sabio_rk.compound_compound_structure).filter_by(compound__id = item._id).all()
                 if structure:
                     for shape in structure:
-                        struct = self.sabio_session.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
+                        struct = sabio_ses.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
                         if struct.format == 'smiles':
                             obs_pp.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
                             _value_smiles = struct.value, _value_inchi = struct._value_inchi,
@@ -710,16 +715,16 @@ class CommonSchema(data_source.CachedDataSource):
                     obs_pp.structure = None
                 obs_pe.compound = self.get_or_create_object(Compound, type = 'Compound',
                     name = item.name, compound_name = item.name,
-                    _is_name_ambiguous = self.sabio_session.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
+                    _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
                     structure = obs_pp.structure, _metadata = metadata)
             elif item._type == 'enzyme':
-                complx = self.sabio_session.query(sabio_rk.Enzyme).get(item._id)
+                complx = sabio_ses.query(sabio_rk.Enzyme).get(item._id)
                 obs_pe.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Enzyme' ,
                     name = item.name , complex_name = item.name,
                     molecular_weight = complx.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
             elif item._type == 'enzyme_subunit':
-                subunit = self.sabio_session.query(sabio_rk.EnzymeSubunit).get(item._id)
-                complx = self.sabio_session.query(sabio_rk.Entry).get(subunit.enzyme_id)
+                subunit = sabio_ses.query(sabio_rk.EnzymeSubunit).get(item._id)
+                complx = sabio_ses.query(sabio_rk.Entry).get(subunit.enzyme_id)
                 result = self.session.query(ProteinComplex).filter_by(complex_name = complx.name).first()
                 obs_pe.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
                     name = item.name, subunit_name = item.name,
@@ -727,21 +732,21 @@ class CommonSchema(data_source.CachedDataSource):
                     sequence = subunit.coefficient, molecular_weight = subunit.molecular_weight,
                     proteincomplex = result, _metadata = metadata)
             elif item._type == 'kinetic_law':
-                res = self.sabio_session.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
-                law = self.sabio_session.query(sabio_rk.KineticLaw).get(item._id)
-                entry = self.sabio_session.query(sabio_rk.Entry).get(law.enzyme_id)
+                res = sabio_ses.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
+                law = sabio_ses.query(sabio_rk.KineticLaw).get(item._id)
+                entry = sabio_ses.query(sabio_rk.Entry).get(law.enzyme_id)
                 result = self.session.query(ProteinComplex).filter_by(complex_name = entry.name).first()
                 for docs in res:
-                    resource = self.sabio_session.query(sabio_rk.Resource).get(docs.resource__id)
+                    resource = sabio_ses.query(sabio_rk.Resource).get(docs.resource__id)
                     metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = law.taxon))
                 metadata.cell_line.append(self.get_or_create_object(CellLine, name = law.taxon_variant))
                 metadata.conditions.append(self.get_or_create_object(Conditions, temperature = law.temperature, ph = law.ph, media = law.media))
                 obs_pp.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = result,
                     enzyme_type = law.enzyme_type, tissue = law.tissue, mechanism = law.mechanism, equation = law.equation, _metadata = metadata)
-                rxn = self.sabio_session.query(sabio_rk.ReactionParticipant).filter(or_(sabio_rk.ReactionParticipant.reactant_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.product_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.modifier_kinetic_law_id == law._id)).all()
+                rxn = sabio_ses.query(sabio_rk.ReactionParticipant).filter(or_(sabio_rk.ReactionParticipant.reactant_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.product_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.modifier_kinetic_law_id == law._id)).all()
                 for row in rxn:
-                    compound_name = self.sabio_session.query(sabio_rk.Entry).get(row.compound_id).name
+                    compound_name = sabio_ses.query(sabio_rk.Entry).get(row.compound_id).name
                     _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
                     if row.reactant_kinetic_law_id:
                         reaction = Reaction(compound = _compound,
@@ -755,10 +760,10 @@ class CommonSchema(data_source.CachedDataSource):
                         reaction = Reaction(compound = _compound,
                             coefficient = row.coefficient, _is_modifier = 1, rxn_type = row.type,
                             kinetic_law_id = obs_pp.kinetic_law.kineticlaw_id)
-                total_param = self.sabio_session.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()
+                total_param = sabio_ses.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()
                 for param in total_param:
                     if param.compound_id:
-                        compound_name = self.sabio_session.query(sabio_rk.Entry).get(param.compound_id).name
+                        compound_name = sabio_ses.query(sabio_rk.Entry).get(param.compound_id).name
                         _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
                         parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
                             units = param.units, observed_name = param.observed_name, kinetic_law = obs_pp.kinetic_law,

@@ -15,27 +15,21 @@ import shutil
 
 
 class ShortTestCommonSchema(unittest.TestCase):
-    def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self._is_local = False
 
-    def tearDown(self):
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
+                                clear_content = True,
+                                load_content= True, download_backup= False,
+                                max_entries = 5)
+
+    @classmethod
+    def tearDownClass(self):
         shutil.rmtree(self.cache_dirname)
 
-    def test_working(self):
-        if self._is_local:
-            cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True,
-                                            load_content=False, download_backup=False,
-                                            max_entries = 5)
-            cs._is_local = True
-        else:
-            cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True,
-                load_content= False, download_backup=False, max_entries = 5)
-            cs._is_local = False
-
-        cs.load_content()
-        session = cs.session
-
+    def test_pax_added(self):
+        session = self.cs.session
         dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first()
         self.assertEqual(dataset.score , 2.47)
 
@@ -43,6 +37,8 @@ class ShortTestCommonSchema(unittest.TestCase):
         taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
         self.assertEqual(taxon.taxon_id, 882)
 
+    def test_corum_added(self):
+        session = self.cs.session
         subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'Histone deacetylase 5').first()
         self.assertEqual(subunit.uniprot_id, 'Q9UQL6')
         self.assertEqual(subunit.entrez_id, 10014)
@@ -54,7 +50,8 @@ class ShortTestCommonSchema(unittest.TestCase):
         pubmed = session.query(common_schema.Resource).get(resource.resource_id)
         self.assertEqual(pubmed._id, '11929873')
 
-
+    def test_jaspar_added(self):
+        session = self.cs.session
         subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'TFAP2A').first()
         self.assertEqual(subunit.uniprot_id, 'P05549')
         self.assertEqual(subunit.class_name, 'Zipper-Type')
@@ -68,7 +65,8 @@ class ShortTestCommonSchema(unittest.TestCase):
         pubmed = session.query(common_schema.Resource).get(resource.resource_id)
         self.assertEqual(pubmed._id, '8413232')
 
-
+    def test_ecmdb_added(self):
+        session = self.cs.session
         compound = session.query(common_schema.Compound).filter_by(name = 'Deoxyuridine').first()
         self.assertEqual(compound.description, "2'-Deoxyuridine is a naturally occurring nucleoside. It is similar in chemical structure to uridine, but without the 2'-hydroxyl group.  It is considered to be an antimetabolite that is converted to deoxyuridine triphosphate during DNA synthesis.")
         structure = session.query(common_schema.Structure).get(compound.structure_id)
@@ -79,6 +77,8 @@ class ShortTestCommonSchema(unittest.TestCase):
         name = session.query(common_schema.Synonym).get(synonym.synonym_id)
         self.assertEqual(name.name , '4-amino-1-[(2R,4S,5R)-4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-1,2-dihydropyrimidin-2-one')
 
+    def test_sabio_added(self):
+        session = self.cs.session
         compound = session.query(common_schema.Compound).filter_by(compound_name = 'Peptide').first()
         self.assertEqual(compound._is_name_ambiguous , 1)
         structure = session.query(common_schema.Structure).get(compound.structure_id)
