@@ -14,7 +14,8 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
-
+import os
+import urllib
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -253,12 +254,18 @@ class Protocol(Base):
         protocol_accession (:obj:`str`): array express identifier for protocol
         protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
         text (:obj:`str`): description the protocol
+        performer (:obj:`str`): name of the person who did the experiment 
+        hardware (:obj:`str`): hardware (usually detection instruments) used in protocol
+        software (:obj:`str`): software (usually for analyzing and normalizing the data)
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     protocol_accession = sqlalchemy.Column(sqlalchemy.String())
     protocol_type = sqlalchemy.Column(sqlalchemy.String())
     text = sqlalchemy.Column(sqlalchemy.String())
+    performer = sqlalchemy.Column(sqlalchemy.String())
+    hardware = sqlalchemy.Column(sqlalchemy.String())
+    software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
     
     __tablename__ = 'protocol'
@@ -533,20 +540,35 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'type' in protocol_json:
             protocol.protocol_type = protocol_json['type']
         if 'text' in protocol_json:
-            if isinstance(protocol_json['text'], str):
+            if not(isinstance(protocol_json['text'], list) or isinstance(protocol_json['text'], dict)):
                 protocol.text = protocol_json['text']
             if isinstance(protocol_json['text'], list):
                 details = ""
                 for item in protocol_json['text']:
-                    if isinstance(item, unicode):
+                    if not(isinstance(item, list) or isinstance(item, dict)):
                         if item[-1:] == ',':
                             item = item[:-1]
                         details = details + item + "\n"
                 if details:
                     details = details[:-1]
                 protocol.text = details
+        if 'performer' in protocol_json:
+            protocol.performer = protocol_json['performer']
+        if 'hardware' in protocol_json:
+            protocol.hardware = protocol_json['hardware']
+        if 'software' in protocol_json:
+            protocol.software = protocol_json['software']
+
         
         protocol.experiments.append(experiment)
+
+
+    def load_processed_data(self, experiment):
+        DIRNAME = '{}/array_express_processed_data'.format(self.cache_dirname)
+        if not os.path.isdir(DIRNAME):
+            os.makedirs(DIRNAME)
+        file = urllib.urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
+
 
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
