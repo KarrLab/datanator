@@ -14,6 +14,8 @@ import tempfile
 import unittest
 import os.path
 import zipfile
+import datetime
+import dateutil.parser
 
 
 class QuickTest(unittest.TestCase):
@@ -204,3 +206,62 @@ class LongTest(unittest.TestCase):
         self.assertEqual(sample.variables, [
             session.query(array_express.Variable).filter_by(name='sampling interval', value='1', unit=None).first()
         ])
+
+
+class TestDownloadProcessedData(unittest.TestCase):
+
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True)
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dirname)
+
+    def test_download_processed_data(self):
+        src = self.src
+
+        response = src.requests_session.get(src.ENDPOINT_DOMAINS['array_express'] + '?date=[2008-12-01+2008-12-20]')
+        response.raise_for_status()
+        for expt_json in response.json()['experiments']['experiment']:
+            id = expt_json['accession']
+            experiment = src.get_or_create_object(array_express.Experiment, id=id)
+            if isinstance(expt_json['name'], list):
+                experiment.name = expt_json['name'][0]
+                experiment.name_2 = expt_json['name'][1]
+            else:
+                experiment.name = expt_json['name']
+            if 'organism' in expt_json:
+                for organism_name in expt_json['organism']:
+                    experiment.organisms.append(src.get_or_create_object(array_express.Organism, name=organism_name))
+            if 'description' in expt_json:
+                experiment.description = expt_json['description'][0]['text']
+            if 'experimenttype' in expt_json:
+                entries = expt_json['experimenttype']
+                for entry in entries:
+                    experiment.types.append(src.get_or_create_object(array_express.ExperimentType, name=entry))
+            if 'experimentdesign' in expt_json:
+                entries = expt_json['experimentdesign']
+                for entry in entries:
+                    experiment.designs.append(src.get_or_create_object(array_express.ExperimentDesign, name=entry))
+            if 'bioassaydatagroup' in expt_json:
+                for entry in expt_json['bioassaydatagroup']:
+                    experiment.data_formats.append(src.get_or_create_object(array_express.DataFormat, name=entry['dataformat']))
+            if 'submissiondate' in expt_json:
+                experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
+            if 'releasedate' in expt_json:
+                experiment.release_date = dateutil.parser.parse(expt_json['releasedate']).date()
+            src.session.add(experiment)
+
+        for i_experiment, experiment in enumerate(src.session.query(array_express.Experiment).all()):
+
+            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                src.load_processed_data(experiment)
+
+        self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-GEOD-13518.processed.1.zip".format(src.cache_dirname)))
+
+        #the following should not download because there is not processed file
+        self.assertFalse(os.path.isfile("{}/array_express_processed_data/E-MTAB-71.processed.1.zip".format(src.cache_dirname)))
+
+        #the following should not download becuase the experiment is not rna seq of coding rna
+        self.assertFalse(os.path.isfile("{}/array_express_processed_data/E-MEXP-1386.processed.1.zip".format(src.cache_dirname)))
+
