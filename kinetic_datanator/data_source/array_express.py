@@ -10,12 +10,12 @@
 import datetime
 import dateutil.parser
 import pkg_resources
-import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
-
+import os
+import urllib
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -267,7 +267,7 @@ class Protocol(Base):
     hardware = sqlalchemy.Column(sqlalchemy.String())
     software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
-
+    
     __tablename__ = 'protocol'
 
 
@@ -487,7 +487,9 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
+    
     def load_experiment_protocols(self, experiment):
+
         """ Load the protocols for an experiment
 
         Args:
@@ -516,7 +518,9 @@ class ArrayExpress(data_source.HttpDataSource):
         for protocol in protocols:
             self.load_experiment_protocol(experiment, protocol)
 
+
     def load_experiment_protocol(self, experiment, protocol_json):
+        
         """ Load the protocols for an experiment
 
         Args:
@@ -525,7 +529,7 @@ class ArrayExpress(data_source.HttpDataSource):
         """
 
         db_session = self.session
-
+        
         protocol = Protocol()
 
         if 'accession' not in protocol_json:
@@ -536,7 +540,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'type' in protocol_json:
             protocol.protocol_type = protocol_json['type']
         if 'text' in protocol_json:
-            if isinstance(protocol_json['text'], six.string_types):
+            if not(isinstance(protocol_json['text'], list) or isinstance(protocol_json['text'], dict)):
                 protocol.text = protocol_json['text']
             if isinstance(protocol_json['text'], list):
                 details = ""
@@ -555,7 +559,16 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
 
+        
         protocol.experiments.append(experiment)
+
+
+    def load_processed_data(self, experiment):
+        DIRNAME = '{}/array_express_processed_data'.format(self.cache_dirname)
+        if not os.path.isdir(DIRNAME):
+            os.makedirs(DIRNAME)
+        file = urllib.urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
+
 
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
