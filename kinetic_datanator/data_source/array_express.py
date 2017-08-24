@@ -346,6 +346,9 @@ class ArrayExpress(data_source.HttpDataSource):
             self.load_experiment_samples(experiment)
             self.load_experiment_protocols(experiment)
 
+            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                self.load_processed_data(experiment)
+
         if self.verbose:
             print('  done.')
 
