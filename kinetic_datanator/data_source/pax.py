@@ -326,8 +326,12 @@ class Pax(data_source.HttpDataSource):
                 if self.session.query(q.exists()).scalar():
                     protein = q.first()
                 else:
-                    protein = Protein(protein_id=protein_id, string_id=string_id, uniprot_id = uniprot_dict[string_id])
-                    self.session.add(protein)
+                    if string_id in uniprot_dict:
+                        protein = Protein(protein_id=protein_id, string_id=string_id, uniprot_id = uniprot_dict[string_id])
+                        self.session.add(protein)
+                    else:
+                        protein = Protein(protein_id=protein_id, string_id=string_id)
+                        self.session.add(protein)
 
                 observation = Observation(dataset=dataset, abundance=abundance, protein=protein)
                 self.session.add(observation)
