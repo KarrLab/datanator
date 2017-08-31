@@ -17,8 +17,8 @@ import sqlalchemy.ext.declarative
 from six import BytesIO
 import six
 from bioservices import UniProt
-from sqlalchemy import MetaData
-from sqlalchemy_schemadisplay import create_schema_graph
+# from sqlalchemy import MetaData
+# from sqlalchemy_schemadisplay import create_schema_graph
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -593,7 +593,7 @@ class CommonSchema(data_source.HttpDataSource):
         self.download_backup = True
 
         ## Graph Schema
-        self.create_schema_png(False)
+        # self.create_schema_png(False)
 
         ## Add all DBs
         self.add_all()
@@ -605,16 +605,16 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    def create_schema_png(self, switch):
-        if switch:
-            # create the pydot graph object by autoloading all tables via a bound metadata object
-            graph = create_schema_graph(metadata=MetaData(self.engine),
-               show_datatypes=False, # The image would get nasty big if we'd show the datatypes
-               show_indexes=False, # ditto for indexes
-               rankdir='TB', # From left to right (instead of top to bottom)
-               concentrate=False # Don't try to join the relation lines together
-            )
-            graph.write_png('/Users/Pooch/Desktop/kinetic_datanator/kinetic_datanator/core/dbschema.png')
+    # def create_schema_png(self, switch):
+    #     if switch:
+    #         # create the pydot graph object by autoloading all tables via a bound metadata object
+    #         graph = create_schema_graph(metadata=MetaData(self.engine),
+    #            show_datatypes=False, # The image would get nasty big if we'd show the datatypes
+    #            show_indexes=False, # ditto for indexes
+    #            rankdir='TB', # From left to right (instead of top to bottom)
+    #            concentrate=False # Don't try to join the relation lines together
+    #         )
+    #         graph.write_png('/Users/Pooch/Desktop/kinetic_datanator/kinetic_datanator/core/dbschema.png')
 
     def fill_missing_subunit_info(self):
         u = UniProt(verbose = False)
