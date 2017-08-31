@@ -15,7 +15,7 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
 import os
-import urllib
+from six.moves.urllib.request import urlretrieve
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -102,7 +102,7 @@ class Variable(Base):
         _id (:obj:`int`): unique id
         name (:obj:`str`): name of the variable (e.g. genotype)
         value (:obj:`str`): value of variable (e.g control)
-        unit (:obj:`str`): units of value (e.g control). This field is not always filled. 
+        unit (:obj:`str`): units of value (e.g control). This field is not always filled.
         samples (:obj:`list` of :obj:`Sample`): samples
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -208,7 +208,7 @@ class DataFormat(Base):
     """ Represents a data format
 
     Attributes:
-        _id (:obj:`int`): unique id    
+        _id (:obj:`int`): unique id
         name (:obj:`str`): name
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments
     """
@@ -254,7 +254,7 @@ class Protocol(Base):
         protocol_accession (:obj:`str`): array express identifier for protocol
         protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
         text (:obj:`str`): description the protocol
-        performer (:obj:`str`): name of the person who did the experiment 
+        performer (:obj:`str`): name of the person who did the experiment
         hardware (:obj:`str`): hardware (usually detection instruments) used in protocol
         software (:obj:`str`): software (usually for analyzing and normalizing the data)
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
@@ -267,7 +267,7 @@ class Protocol(Base):
     hardware = sqlalchemy.Column(sqlalchemy.String())
     software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
-    
+
     __tablename__ = 'protocol'
 
 
@@ -313,7 +313,7 @@ class ArrayExpress(data_source.HttpDataSource):
     def load_content(self, start_year=2001, end_year=None):
         """
         Downloads all medatata from array exrpess on their samples and experiments. The metadata
-        is saved as the text file. Within the text files, the data is stored as a JSON object. 
+        is saved as the text file. Within the text files, the data is stored as a JSON object.
 
         Args:
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
@@ -490,7 +490,7 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
-    
+
     def load_experiment_protocols(self, experiment):
 
         """ Load the protocols for an experiment
@@ -523,7 +523,7 @@ class ArrayExpress(data_source.HttpDataSource):
 
 
     def load_experiment_protocol(self, experiment, protocol_json):
-        
+
         """ Load the protocols for an experiment
 
         Args:
@@ -532,7 +532,7 @@ class ArrayExpress(data_source.HttpDataSource):
         """
 
         db_session = self.session
-        
+
         protocol = Protocol()
 
         if 'accession' not in protocol_json:
@@ -562,7 +562,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
 
-        
+
         protocol.experiments.append(experiment)
 
 
@@ -570,7 +570,7 @@ class ArrayExpress(data_source.HttpDataSource):
         DIRNAME = '{}/array_express_processed_data'.format(self.cache_dirname)
         if not os.path.isdir(DIRNAME):
             os.makedirs(DIRNAME)
-        file = urllib.urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
+        file = urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
 
 
     def get_or_create_object(self, cls, **kwargs):
