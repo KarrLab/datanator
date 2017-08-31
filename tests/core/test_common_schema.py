@@ -90,17 +90,87 @@ class ShortTestCommonSchema(unittest.TestCase):
         self.assertEqual(name.name , 'variant DSAI (N76D/N87S/S103A/V104I)')
 
 
-# class LongTestCommonSchema(unittest.TestCase):
-#     def setUp(self):
-#         self.cache_dirname = tempfile.mkdtemp()
-#
-#     def tearDown(self):
-#         shutil.rmtree(self.cache_dirname)
-#
-#     def test_working(self):
-#         # cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname , clear_content = True, load_content=False, download_backup=False)
-#         cs = common_schema.CommonSchema(name = 'aggregate', clear_content = True,
-#                                         load_content=False, download_backup=False
-#                                         max_entries = 20)
-#         cs.load_content()
-#         session = cs.session
+class LongTestCommonSchema(unittest.TestCase):
+    """
+    Notes:
+    1. A majority of the time stems from uploading PAXDB to common schema
+       since PAX uploads by resource
+
+    2. PaxDB doesn't always load sequentially by file into the DB. Thus tests will fail if dependent
+       on order
+
+    To fix just pull from cache
+    """
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
+                                clear_content = True,
+                                load_content= True, download_backup= False,
+                                max_entries = 20, verbose = True)
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
+
+
+    def test_pax_added(self):
+        session = self.cs.session
+        dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = '3702/3702-6.1JasmonateControls_controlLeaves.txt')
+        self.assertEqual(dataset.count(),1)
+        dataset = dataset.first()
+        self.assertEqual(dataset.score , 6.78)
+        self.assertEqual(dataset.weight , 100)
+
+        metadata_subq = session.query(common_schema.Metadata).filter_by(name = '3055/3055-GPM_201408.txt').subquery()
+        resource = session.query(common_schema.Resource).join((metadata_subq, common_schema.Resource._metadata)).first()
+        self.assertEqual(resource._id, 'http://www.thegpm.org/')
+
+    def test_corum_added(self):
+        session = self.cs.session
+        complex_ = session.query(common_schema.ProteinComplex).filter_by(complex_name = 'Condensin I complex').first()
+        self.assertEqual(complex_.funcat_id, '10.03.01.01.11;10.03.04.03;10.03.04.05;42.10.03;70.10.03')
+
+        subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'Hermansky-Pudlak syndrome 1 protein').first()
+        self.assertEqual(subunit.entrez_id, 3257)
+        cmplx = session.query(common_schema.ProteinComplex).get(subunit.proteincomplex_id)
+        self.assertEqual(cmplx.complex_name, 'BLOC-3 (biogenesis of lysosome-related organelles complex 3)')
+
+        metadata_subq = session.query(common_schema.Metadata).filter_by(name = 'Condensin I complex').subquery()
+        resource = session.query(common_schema.Resource).join((metadata_subq, common_schema.Resource._metadata)).first()
+        self.assertEqual(resource._id, '11136719')
+
+    def test_jaspar_added(self):
+        session = self.cs.session
+        subunit = session.query(common_schema.ProteinSubunit).filter_by(uniprot_id = 'Q01295').first()
+        self.assertEqual(subunit.entrez_id, 44505)
+        self.assertEqual(subunit.gene_name , 'br')
+
+        binding = session.query(common_schema.DNABindingDataset).filter_by(subunit_id = subunit.subunit_id).first()
+        data = session.query(common_schema.DNABindingData).filter_by(dataset_id = binding.dataset_id).filter_by(position = 1).first()
+        self.assertEqual(data.frequency_c, 94)
+
+        metadata_subq = session.query(common_schema.Metadata).filter_by(name = 'Pax5').subquery()
+        taxon = session.query(common_schema.Taxon).join((metadata_subq, common_schema.Taxon._metadata)).first()
+        self.assertEqual(taxon.name, 'Mus musculus (Mouse)')
+
+    def test_ecmdb_added(self):
+        session = self.cs.session
+        compound = session.query(common_schema.Compound).filter_by(compound_name = 'Acetic acid').first()
+        structure = session.query(common_schema.Structure).get(compound.structure_id)
+        self.assertEqual(structure._value_inchi, 'InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)')
+
+
+        concentration = session.query(common_schema.Concentration).filter_by(compound_id = compound.compound_id)
+        self.assertEqual(concentration.count(),1)
+        self.assertEqual(concentration.first().value, 658.0)
+
+        metadata_subq = session.query(common_schema.Metadata).filter_by(name = 'Adenosine monophosphate').subquery()
+        cell_line = session.query(common_schema.CellLine).join((metadata_subq, common_schema.CellLine._metadata)).all()
+        self.assertEqual(len(cell_line), 3)
+
+
+    def test_sabio_added(self):
+        session = self.cs.session
+        compound = session.query(common_schema.Compound).filter_by(compound_name = 'Reduced FMN')
+        self.assertEqual(compound.count(),1)

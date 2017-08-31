@@ -17,8 +17,30 @@ import sqlalchemy.ext.declarative
 from six import BytesIO
 import six
 from bioservices import UniProt
+from sqlalchemy import MetaData
+from sqlalchemy_schemadisplay import create_schema_graph
+
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+
+
+class Observation(Base):
+    """
+    Represents an Observation of a Physical Entity or Property in the Common Schema
+
+    Attributes:
+        id (:obj:`int`): Common Schema Observation Identifier
+        _metadata_id (:obj:`int` of :obj:`Metadata`): Related Metadata ID
+
+    """
+
+    __tablename__ = 'observation'
+
+    id = Column(Integer, primary_key = True)
+
+    _metadata_id = Column(Integer, ForeignKey('_metadata.id'))
+    _metadata = relationship('Metadata', backref = 'observation')
+
 
 _metadata_taxon = Table(
     '_metadata_taxon', Base.metadata,
@@ -69,24 +91,136 @@ _metadata_compartment = Table(
 )
     # :obj:`Table`: Metadata:Conditions many-to-many association table
 
-
-class Observation(Base):
+class Metadata(Base):
     """
-    Represents an Observation of a Physical Entity or Property in the Common Schema
+    Table representing Metadata identifiers for entities and properties
 
     Attributes:
-        id (:obj:`int`): Common Schema Observation Identifier
-        _metadata_id (:obj:`int` of :obj:`Metadata`): Related Metadata ID
+        name (:obj:`str`): Name of the entity or property
+
+    """
+    __tablename__ = '_metadata'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(255), unique = True)
+
+    taxon = relationship('Taxon', secondary = _metadata_taxon, backref ='_metadata')
+    method = relationship('Method', secondary = _metadata_method, backref ='_metadata')
+    resource = relationship('Resource', secondary = _metadata_resource, backref ='_metadata')
+    cell_line = relationship('CellLine', secondary = _metadata_cell_line, backref ='_metadata')
+    synonym = relationship('Synonym', secondary = _metadata_synonym, backref ='_metadata')
+    conditions = relationship('Conditions', secondary = _metadata_conditions, backref = '_metadata')
+    cell_compartment = relationship('CellCompartment', secondary = _metadata_compartment, backref = '_metadata')
+
+class Method(Base):
+    """
+    Represents the method of collection for a given entity or Property
+
+    Attributes:
+        name (:obj:`str`): Name of the Method
+        comments (:obj:`str`): Comments on the method
 
     """
 
-    __tablename__ = 'observation'
+    id = Column(Integer, primary_key = True)
+    name = Column(String(255))
+    comments = Column(String(255))
+
+    __tablename__ = 'method'
+
+class Taxon(Base):
+    """
+    Represents the species of a given physical entity or property
+
+    Attributes:
+        ncbi_id (:obj:`int`): NCBI id of the species
+        name (:obj:`str`): Name of the species
+
+    """
+
+    ncbi_id = Column(Integer, primary_key = True)
+    name = Column(String(255))
+
+    __tablename__ = 'taxon'
+
+class Synonym(Base):
+    """
+    Represents a synonym of a given physical entity or property
+
+    Attributes:
+        name (:obj:`str`): Name of the Synonym
+
+    """
 
     id = Column(Integer, primary_key = True)
+    name = Column(String(255))
 
-    _metadata_id = Column(Integer, ForeignKey('_metadata.id'))
-    _metadata = relationship('Metadata', backref = 'observation')
+    __tablename__ = 'synonym'
 
+class Resource(Base):
+    """
+    Represents a resource of a given physical entity or property
+
+    Attributes:
+        namespace (:obj:`str`): Name of the classifier of the resource (Ex. Pubmed)
+        _id (:obj:`str`): Identifier of the resource
+
+    """
+    id = Column(Integer, primary_key = True)
+    namespace = Column(String(255))
+    _id =  Column(String(255))
+
+    __tablename__ = 'resource'
+
+class CellLine(Base):
+    """
+    Represents a cell line of a given physical entity or property
+
+    Attributes:
+        name (:obj:`str`): Name of the Cell Line
+
+    """
+    id = Column(Integer, primary_key = True)
+    name = Column(String(255))
+
+    __tablename__ = 'cell_line'
+
+class Conditions(Base):
+    """
+    Represents the conditions of a given physical entity or property
+
+    Attributes:
+        growth_status (:obj:`str`): Type of growth status
+        media (:obj:`str`): Media composition
+        temperature (:obj:`float`): Temperature of the sample (C)
+        ph (:obj:`float`): pH of the sample
+        growth_system (:obj:`str`): Type of growth system
+
+    """
+
+    id = Column(Integer, primary_key = True)
+    growth_status = Column(String(255))
+    media = Column(String(255))
+    temperature = Column(Float)
+    ph = Column(Float)
+    growth_system = Column(String(255))
+
+    __tablename__ = 'conditions'
+
+
+
+class CellCompartment(Base):
+    """
+    Represents a cell compartment of a given physical entity or property
+
+    Attributes:
+        name (:obj:`str`): Name of the Cell Compartment
+
+    """
+    __tablename__ = 'cell_compartment'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(255), unique = True, index = True)
 
 class PhysicalEntity(Observation):
     """
@@ -180,11 +314,12 @@ class Compound(PhysicalEntity):
     """
     Represents a Compound - An instance of Physical Entity
 
-    compound_id (:obj:`int`): Common Schema Observation Identifier
-    compound_name (:obj:`str`): Name of the Compound
-    description
-    comment = Column(String(255))
-    _is_name_ambiguous = Column(Boolean)
+    Attributes:
+        compound_id (:obj:`int`): Common Schema Observation Identifier
+        compound_name (:obj:`str`): Name of the Compound
+        description (:obj:`str`):
+        comment = Column(String(255))
+        _is_name_ambiguous = Column(Boolean)
 
     """
     __tablename__ = 'compound'
@@ -202,7 +337,12 @@ class Compound(PhysicalEntity):
 
 class PhysicalProperty(Observation):
     """
+    Represents a Physical Property in the Common Schema
 
+    Attributes:
+        observation_id (:obj:`int`): Common Schema Observation Identifier
+        type (:obj:`str`): Type of Physical Property (Ex. Concentration)
+        name (:obj:`str`): Name of the Physical Property
     """
     observation_id = Column(Integer, ForeignKey('observation.id'), primary_key = True)
     type = Column(String(255))
@@ -213,7 +353,12 @@ class PhysicalProperty(Observation):
 
 class Structure(PhysicalProperty):
     """
+    Represents a structure of a compound
 
+    Attributes:
+        _value_smiles (:obj:`str`): Smiles format for compound representation
+        _value_inchi (:obj:`str`): Inchi format for compound representation
+        _structure_formula_connectivity (:obj:`str`): Connectivity of compound
 
     """
 
@@ -225,23 +370,39 @@ class Structure(PhysicalProperty):
     _value_inchi = Column(String(255))
     _structure_formula_connectivity = Column(String(255))
 
-# class Reaction(PhysicalProperty):
-#     __tablename__ = 'reaction'
-#     __mapper_args__ = {'polymorphic_identity': 'reaction'}
-
 class Concentration(PhysicalProperty):
     """
+    Represents the concentration of an entity
 
+    Attributes:
+        value (:obj:`float`): concentration of a tagged compound
+        error (:obj:`float`): uncertainty of corresponding concentration value
     """
+
 
     __tablename__ = 'concentration'
     __mapper_args__ = {'polymorphic_identity': 'concentration'}
 
     concentration_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
+
+    compound_id = Column(Integer, ForeignKey('compound.compound_id'))
+    compound = relationship('Compound', backref = 'concentration')
+
     value = Column(Float)
     error = Column(Float)
 
 class KineticLaw(PhysicalProperty):
+    """
+    Represents the concentration of an entity
+
+    Attributes:
+        enzyme_id (:obj:`int`): ID of enzyme driving the kinetic law
+            enzyme_type (:obj:`str`): Enzyme classification (Ex. Modifier-Catalyst)
+            tissue (:obj:`str`): Tissue from which kinetic law stems from
+            mechanism (:obj:`str`): Rate kinetics of Kinetic Law
+            equation (:obj:`str`): Equation of the rate kinetics
+    """
+
     __tablename__ = 'kinetic_law'
     __mapper_args__ = {'polymorphic_identity': 'kinetic_law'}
 
@@ -256,8 +417,20 @@ class KineticLaw(PhysicalProperty):
     equation = Column(String(255))
 
 class Reaction(Base):
+    """
+    Represents a reaction
+
+    Attributes:
+        compound_id (:obj:`int`): ID of the corresponding compound
+        coefficient (:obj:`float`): Stoichiometric coefficient
+        _is_reactant (:obj:`bool`): Indicates of corresponding compound is a reactant
+        _is_product (:obj:`bool`): Indicates of corresponding compound is a product
+        _is_modifier (:obj:`bool`): Indicates of corresponding compound is a modifier
+        rxn_type (:obj:`str`): Classifer of reaction
+
+    """
+
     __tablename__ = 'reaction'
-    # __mapper_args__ = {'polymorphic_identity': 'reaction'}
 
     reaction_id = Column(Integer, primary_key = True)
     compound_id = Column(Integer, ForeignKey('compound.compound_id'))
@@ -270,13 +443,69 @@ class Reaction(Base):
 
     kinetic_law_id = Column(Integer, ForeignKey('kinetic_law.kineticlaw_id'))
 
+
+class AbundanceDataSet(PhysicalProperty):
+    """
+    Represents a dataset for protein abundance
+
+    Attributes:
+        file_name (:obj:`str`): Name of data set which data stems from
+        score (:obj:`float`): Quality of the experimental analysis (PAXdb Measure)
+        weight (:obj:`int`):
+        coverage (:obj:`int`): Percentage of genome coverage
+    """
+
+    __tablename__ = 'abundance_dataset'
+    __mapper_args__ = {'polymorphic_identity': 'abundance_dataset'}
+
+    dataset_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
+    file_name = Column(String, unique = True)
+    score = Column(Float)
+    weight = Column(Integer)
+    coverage = Column(Integer)
+
+
+class DNABindingDataset(PhysicalProperty):
+    """
+    Represents a dataset for Transcription Factor Binding
+
+    Attributes:
+        version (:obj:`int`): Represents the version of binding matrix
+        complex_id (:obj:`int`): Relation ID for transcription factor complex
+        subunit_id (:obj:`int`):  Relation ID for transcription factor subunit
+    """
+    __tablename__ = 'dna_binding_dataset'
+    __mapper_args__ = {'polymorphic_identity': 'dna_binding_dataset'}
+
+    dataset_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
+    version = Column(Integer)
+
+    complex_id = Column(Integer, ForeignKey('protein_complex.complex_id') )
+    tf = relationship('ProteinComplex', backref = 'dna_binding_dataset')
+
+    subunit_id = Column(Integer, ForeignKey('protein_subunit.subunit_id'))
+    subunit = relationship('ProteinSubunit', backref = 'dna_binding_dataset')
+
 class Parameter(Base):
     """
+    Represents a parameter for a given kinetic law and compound
+
+    Attributes:
+        kinetic_law_id (:obj:`int`): corresponding kinetic law to the parameter
+        sabio_type (:obj:`int`): sabio identifier for type of parameter
+        compound_id (:obj:`int`): corresponding compound for the parameter
+        value (:obj:`float`): Value of parameter
+        error (:obj:`float`): Uncertainty of the value
+        units (:obj:`str`): units of the parameter
+        observed_name (:obj:`str`): observed name of parameter
+        observed_sabio_type (:obj:`int`): observed sabio type
+        observed_value (:obj:`float`): observed value of parameter
+        observed_error (:obj:`float`): observed error of parameter
+        observed_units (:obj:`str`): observed units of parameter
 
     """
 
     __tablename__ = 'parameter'
-    # __mapper_args__ = {'polymorphic_identity': 'parameter'}
 
     parameter_id = Column(Integer, primary_key = True)
 
@@ -297,28 +526,17 @@ class Parameter(Base):
     observed_error = Column(Float)
     observed_units = Column(String(255))
 
-
-
-class AbundanceDataSet(PhysicalProperty):
-    """
-
-    """
-
-    __tablename__ = 'abundance_dataset'
-    __mapper_args__ = {'polymorphic_identity': 'abundance_dataset'}
-
-    dataset_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
-    file_name = Column(String, unique = True)
-    score = Column(Float)
-    weight = Column(Integer)
-    coverage = Column(Integer)
-
 class AbundanceData(Base):
     """
+    Represents protein abundance data from the Pax DB database
 
+    Attributes:
+        abundance (:obj:`float`): Represents protein abundance from given observation in ppm
+        dataset_id  (:obj:`int`): Represents the dataset from which the abundance stems from
+        subunit_id  (:obj:`int`): Represents the protein frmo which the abundance stems from
     """
+
     __tablename__ = 'abundance_data'
-    # __mapper_args__ = {'polymorphic_identity': 'abundance_data'}
 
     abundance_id  = Column(Integer, primary_key = True)
     abundance = Column(Float)
@@ -329,26 +547,17 @@ class AbundanceData(Base):
     subunit_id = Column(Integer, ForeignKey('protein_subunit.subunit_id'), index = True)
     subunit = relationship('ProteinSubunit', backref = 'pax_abundance_data' )
 
-class DNABindingDataset(PhysicalProperty):
-    """
-
-
-    """
-    __tablename__ = 'dna_binding_dataset'
-    __mapper_args__ = {'polymorphic_identity': 'dna_binding_dataset'}
-
-    dataset_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
-    version = Column(Integer)
-
-    complex_id = Column(Integer, ForeignKey('protein_complex.complex_id') )
-    tf = relationship('ProteinComplex', backref = 'dna_binding_dataset')
-
-    subunit_id = Column(Integer, ForeignKey('protein_subunit.subunit_id'))
-    subunit = relationship('ProteinSubunit', backref = 'dna_binding_dataset')
-
 class DNABindingData(Base):
     """
+    Represents Matrix binding profile for a protein transcription factor
 
+    Attributes:
+        position (:obj:`int`): Position in the sequence
+        frequency_a (:obj:`int`): Frequency of A
+        frequency_c (:obj:`int`): Frequency of C
+        frequency_g (:obj:`int`): Frequency of G
+        frequency_t (:obj:`int`): Frequency of T
+        dataset_id  (:obj:`int`): Represents the dataset from which the data stems from
     """
     __tablename__ = 'dna_bidning_data'
 
@@ -363,115 +572,28 @@ class DNABindingData(Base):
     dataset = relationship('DNABindingDataset', backref = 'dna_binding_data', foreign_keys=[dataset_id])
 
 
-
-class Metadata(Base):
-    """
-
-    """
-    __tablename__ = '_metadata'
-
-    id = Column(Integer, primary_key = True)
-    name = Column(String(255), unique = True)
-
-    taxon = relationship('Taxon', secondary = _metadata_taxon, backref ='_metadata')
-    method = relationship('Method', secondary = _metadata_method, backref ='_metadata')
-    resource = relationship('Resource', secondary = _metadata_resource, backref ='_metadata')
-    cell_line = relationship('CellLine', secondary = _metadata_cell_line, backref ='_metadata')
-    synonym = relationship('Synonym', secondary = _metadata_synonym, backref ='_metadata')
-    conditions = relationship('Conditions', secondary = _metadata_conditions, backref = '_metadata')
-    cell_compartment = relationship('CellCompartment', secondary = _metadata_compartment, backref = '_metadata')
-
-
-class Method(Base):
-    """
-
-    """
-
-    id = Column(Integer, primary_key = True)
-    name = Column(String(255))
-    comments = Column(String(255))
-
-    __tablename__ = 'method'
-
-class Taxon(Base):
-    """
-
-    """
-    ncbi_id = Column(Integer, primary_key = True)
-    name = Column(String(255))
-
-    __tablename__ = 'taxon'
-
-class Synonym(Base):
-    """
-
-    """
-
-    id = Column(Integer, primary_key = True)
-    name = Column(String(255))
-
-    __tablename__ = 'synonym'
-
-class Resource(Base):
-    """
-
-
-    """
-    id = Column(Integer, primary_key = True)
-    namespace = Column(String(255))
-    _id =  Column(String(255))
-
-    __tablename__ = 'resource'
-
-class CellLine(Base):
-    """
-
-    """
-    id = Column(Integer, primary_key = True)
-    name = Column(String(255))
-
-    __tablename__ = 'cell_line'
-
-class Conditions(Base):
-    """
-
-    """
-
-    id = Column(Integer, primary_key = True)
-    growth_status = Column(String(255))
-    media = Column(String(255))
-    temperature = Column(Float)
-    ph = Column(Float)
-    growth_system = Column(String(255))
-
-    __tablename__ = 'conditions'
-
-
-
-class CellCompartment(Base):
-    """
-
-    """
-    __tablename__ = 'cell_compartment'
-
-    id = Column(Integer, primary_key = True)
-    name = Column(String(255), unique = True, index = True)
-
-
 class CommonSchema(data_source.HttpDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
-    NOTES: For now.. Keeping the SQL local, out of cache
     """
     base_model = Base
 
     def load_content(self):
+        ## Initiate Observation and direct Subclasses
         observation = Observation()
         observation.physical_entity = PhysicalEntity()
         self.obs_pe = observation.physical_entity
         observation.physical_property = PhysicalProperty()
         self.obs_pp = observation.physical_property
+
+        ## Switches
+        self.clear_content = False
+        self.load_content = False
+        self.download_backup = True
+
+        ## Graph Schema
+        self.create_schema_png(False)
 
         ## Add all DBs
         self.add_all()
@@ -482,6 +604,17 @@ class CommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Comitting')
         self.session.commit()
+
+    def create_schema_png(self, switch):
+        if switch:
+            # create the pydot graph object by autoloading all tables via a bound metadata object
+            graph = create_schema_graph(metadata=MetaData(self.engine),
+               show_datatypes=False, # The image would get nasty big if we'd show the datatypes
+               show_indexes=False, # ditto for indexes
+               rankdir='TB', # From left to right (instead of top to bottom)
+               concentrate=False # Don't try to join the relation lines together
+            )
+            graph.write_png('/Users/Pooch/Desktop/kinetic_datanator/kinetic_datanator/core/dbschema.png')
 
     def fill_missing_subunit_info(self):
         u = UniProt(verbose = False)
@@ -498,18 +631,29 @@ class CommonSchema(data_source.HttpDataSource):
                 if entrez_dict[protein.uniprot_id]:
                     protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
             if protein.gene_name == None:
-                protein.gene_name = str(genename_dict[protein.uniprot_id][0])
+                if genename_dict[protein.uniprot_id]:
+                    protein.gene_name = str(genename_dict[protein.uniprot_id][0])
 
     def add_all(self):
         self.add_paxdb()
+        if self.verbose:
+            print('Pax Done')
         self.add_corumdb()
+        if self.verbose:
+            print('Corum Done')
         self.add_jaspardb()
+        if self.verbose:
+            print('Jaspar Done')
         self.add_ecmdb()
+        if self.verbose:
+            print('ECMDB Done')
         self.add_sabiodb()
+        if self.verbose:
+            print('Sabio Done')
 
     def add_paxdb(self):
-        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = True,
-            load_content= True, download_backup= False, max_entries = self.max_entries)
+        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
+            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
         pax_ses = paxdb.session
 
         obs_pe = self.obs_pe
@@ -534,8 +678,8 @@ class CommonSchema(data_source.HttpDataSource):
                     subunit = obs_pe.protein_subunit))
 
     def add_corumdb(self):
-        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = True,
-            load_content=True, download_backup=False, max_entries = self.max_entries)
+        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
+            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
         corum_ses = corumdb.session
 
         obs_pe = self.obs_pe
@@ -567,8 +711,8 @@ class CommonSchema(data_source.HttpDataSource):
                 gene_syn = row.gene_syn, proteincomplex = complex_, _metadata = self.session.query(Metadata).get(entry._metadata_id))
 
     def add_jaspardb(self):
-        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = True,
-            load_content= True, download_backup=False, max_entries = self.max_entries)
+        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
+            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
         jasp_ses = jaspardb.session
 
         obs_pe = self.obs_pe
@@ -627,14 +771,13 @@ class CommonSchema(data_source.HttpDataSource):
                             frequency_t = pos.frequency_t, dataset = obs_pp.dna_binding_dataset)
 
     def add_ecmdb(self):
-        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = True,
-            load_content=True , download_backup=False, max_entries = self.max_entries)
+        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
+            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
         ecm_ses = ecmDB.session
 
         obs_pe = self.obs_pe
         obs_pp = self.obs_pp
 
-        ##TODO: Figure out a connection between concentration and compound
         ecmdb_compound = ecm_ses.query(ecmdb.Compound).all()
 
         for item in ecmdb_compound:
@@ -653,7 +796,14 @@ class CommonSchema(data_source.HttpDataSource):
             for syns in syn:
                 synonym = ecm_ses.query(ecmdb.Synonym).get(syns.synonym__id)
                 metadata.synonym.append(self.get_or_create_object(Synonym, name = synonym.name))
+            obs_pp.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
+                _value_inchi = item.structure,
+               _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
+            obs_pe.compound = self.get_or_create_object(Compound, type = 'Compound', name = item.name,
+                compound_name = item.name, description = item.description, comment = item.comment, structure = obs_pp.structure,
+                _metadata = metadata)
             if concentration:
+                index = 0
                 for rows in concentration:
                     metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
                     metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
@@ -662,18 +812,13 @@ class CommonSchema(data_source.HttpDataSource):
                     for docs in refs:
                         resource = ecm_ses.query(ecmdb.Resource).get(docs.resource__id)
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
-                    obs_pp.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name,
-                        value = rows.value, error = rows.error, _metadata = metadata)
-            obs_pp.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
-                _value_inchi = item.structure,
-               _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
-            obs_pe.compound = self.get_or_create_object(Compound, type = 'Compound', name = item.name,
-                compound_name = item.name, description = item.description, comment = item.comment, structure = obs_pp.structure,
-                _metadata = metadata)
+                    obs_pp.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name+ ' Concentration '+str(index),
+                        value = rows.value, error = rows.error, _metadata = metadata, compound = obs_pe.compound)
+                    index += 1
 
     def add_sabiodb(self):
-        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = True,
-            load_content=True, download_backup=False, max_entries = self.max_entries)
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
+            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
         sabio_ses = sabiodb.session
 
         obs_pe = self.obs_pe
@@ -776,6 +921,6 @@ class CommonSchema(data_source.HttpDataSource):
                             observed_error = param.observed_error, observed_units = param.observed_units)
 
     # def add_arrayexpressdb(self):
-        # arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False, max_entries = 5)
-        # arrayexpressdb.load_experiments_from_text()
-        # array_session = arrayexpressdb.session
+    #     arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False)
+    #     arrayexpressdb.load_content
+    #     array_session = arrayexpressdb.session
