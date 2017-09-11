@@ -589,9 +589,9 @@ class CommonSchema(data_source.HttpDataSource):
         self.property = observation.physical_property
 
         ## Switches
-        self.clear_content = False
-        self.load_content = False
-        self.download_backup = True
+        self.clear = False
+        self.load = False
+        self.download = True
 
         ## Graph Schema
         # self.create_schema_png(True)
@@ -670,8 +670,8 @@ class CommonSchema(data_source.HttpDataSource):
             print('Sabio Done')
 
     def add_paxdb(self):
-        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
-            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries/5, verbose = self.verbose)
+        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
+            load_content= self.load, download_backup= self.download, max_entries = self.max_entries/5, verbose = self.verbose)
         pax_ses = paxdb.session
 
         _entity = self.entity
@@ -680,7 +680,7 @@ class CommonSchema(data_source.HttpDataSource):
         pax_dataset = pax_ses.query(pax.Dataset).all()
         entries = 0
         for item in pax_dataset:
-            if entries < self.max_entries:
+            if entries < (self.max_entries/5):
                 metadata = self.get_or_create_object(Metadata, name = item.file_name)
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon_ncbi_id))
                 metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = item.publication))
@@ -697,8 +697,8 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
 
     def add_corumdb(self):
-        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
-            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
+        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear,
+            load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
         corum_ses = corumdb.session
 
         _entity = self.entity
@@ -735,8 +735,8 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
 
     def add_jaspardb(self):
-        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
-            load_content= self.load_content, download_backup= self.download_backup, verbose = self.verbose)
+        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = self.clear,
+            load_content= self.load, download_backup= self.download, verbose = self.verbose)
         jasp_ses = jaspardb.session
 
         _entity = self.entity
@@ -798,8 +798,8 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
 
     def add_ecmdb(self):
-        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
-            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries, verbose = self.verbose)
+        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear,
+            load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
         ecm_ses = ecmDB.session
 
         _entity = self.entity
@@ -847,8 +847,8 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
 
     def add_sabiodb(self):
-        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear_content,
-            load_content= self.load_content, download_backup= self.download_backup, max_entries = self.max_entries*5, verbose = self.verbose)
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear,
+            load_content= self.load, download_backup= self.download, max_entries = self.max_entries*5, verbose = self.verbose)
         sabio_ses = sabiodb.session
 
         _entity = self.entity
@@ -858,7 +858,7 @@ class CommonSchema(data_source.HttpDataSource):
         entries = 0
         counter = 1
         for item in sabio_entry:
-            if entries < (self.max_entries):
+            if entries < (self.max_entries*5):
                 if item.name:
                     metadata = self.get_or_create_object(Metadata, name = item.name)
                 elif item._type == 'kinetic_law':

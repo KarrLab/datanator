@@ -13,6 +13,7 @@ from kinetic_datanator.core import common_schema
 from kinetic_datanator.data_source import pax
 import tempfile
 import shutil
+import random
 
 
 class ShortTestCommonSchema(unittest.TestCase):
@@ -113,18 +114,21 @@ class LongTestCommonSchema(unittest.TestCase):
 
     def test_pax_added(self):
         session = self.cs.session
-        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False)
+        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False, clear_content = False)
         pax_session = pax_compare.session
 
-        dataset = session.query(common_schema.AbundanceDataSet).get(3)
-        comparison = pax_session.query(pax.Dataset).filter_by(file_name = dataset.file_name).first()
-        self.assertEqual(dataset.score, comparison.score)
-        self.assertEqual(dataset.weight, comparison.weight)
-        self.assertEqual(dataset.coverage, comparison.coverage)
+        dataset_id = random.choice([1,2,3,4])
+        pax_dataset = pax_session.query(pax.Dataset).get(dataset_id)
 
-        metadata = session.query(common_schema.Metadata).filter_by(name = dataset.file_name).first()
+        abundance_dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = pax_dataset.file_name).first()
+        if abundance_dataset:
+            self.assertEqual(abundance_dataset.score, pax_dataset.score)
+            self.assertEqual(abundance_dataset.weight, pax_dataset.weight)
+            self.assertEqual(abundance_dataset.coverage, pax_dataset.coverage)
+
+        metadata = session.query(common_schema.Metadata).filter_by(name = abundance_dataset.file_name).first()
         taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
-        self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
+        self.assertEqual(taxon.taxon_id, pax_dataset.taxon_ncbi_id)
 
     def test_corum_added(self):
         session = self.cs.session
