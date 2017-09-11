@@ -10,6 +10,7 @@
 import unittest
 from sqlalchemy.orm import sessionmaker
 from kinetic_datanator.core import common_schema
+from kinetic_datanator.data_source import pax
 import tempfile
 import shutil
 
@@ -30,12 +31,18 @@ class ShortTestCommonSchema(unittest.TestCase):
 
     def test_pax_added(self):
         session = self.cs.session
-        dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first()
-        self.assertEqual(dataset.score , 2.47)
+        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False)
+        pax_session = pax_compare.session
 
-        metadata = session.query(common_schema.Metadata).filter_by(name = '882/882-Desulfo_Lac_Exp_SC_zhang_2006.txt').first()
+        dataset = session.query(common_schema.AbundanceDataSet).get(1)
+        comparison = pax_session.query(pax.Dataset).filter_by(file_name = dataset.file_name).first()
+        self.assertEqual(dataset.score, comparison.score)
+        self.assertEqual(dataset.weight, comparison.weight)
+        self.assertEqual(dataset.coverage, comparison.coverage)
+
+        metadata = session.query(common_schema.Metadata).filter_by(name = dataset.file_name).first()
         taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
-        self.assertEqual(taxon.taxon_id, 882)
+        self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
 
     def test_corum_added(self):
         session = self.cs.session
@@ -104,17 +111,20 @@ class LongTestCommonSchema(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
 
-    # def test_pax_added(self):
-    #     session = self.cs.session
-    #     dataset = session.query(common_schema.AbundanceDataSet).filter_by(file_name = '3702/3702-6.1JasmonateControls_controlLeaves.txt')
-    #     self.assertEqual(dataset.count(),1)
-    #     dataset = dataset.first()
-    #     self.assertEqual(dataset.score , 6.78)
-    #     self.assertEqual(dataset.weight , 100)
-    #
-    #     metadata_subq = session.query(common_schema.Metadata).filter_by(name = '3055/3055-GPM_201408.txt').subquery()
-    #     resource = session.query(common_schema.Resource).join((metadata_subq, common_schema.Resource._metadata)).first()
-    #     self.assertEqual(resource._id, 'http://www.thegpm.org/')
+    def test_pax_added(self):
+        session = self.cs.session
+        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False)
+        pax_session = pax_compare.session
+
+        dataset = session.query(common_schema.AbundanceDataSet).get(3)
+        comparison = pax_session.query(pax.Dataset).filter_by(file_name = dataset.file_name).first()
+        self.assertEqual(dataset.score, comparison.score)
+        self.assertEqual(dataset.weight, comparison.weight)
+        self.assertEqual(dataset.coverage, comparison.coverage)
+
+        metadata = session.query(common_schema.Metadata).filter_by(name = dataset.file_name).first()
+        taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
+        self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
 
     def test_corum_added(self):
         session = self.cs.session
@@ -158,7 +168,6 @@ class LongTestCommonSchema(unittest.TestCase):
         metadata_subq = session.query(common_schema.Metadata).filter_by(name = 'Adenosine monophosphate').subquery()
         cell_line = session.query(common_schema.CellLine).join((metadata_subq, common_schema.CellLine._metadata)).all()
         self.assertEqual(len(cell_line), 3)
-
 
     def test_sabio_added(self):
         session = self.cs.session
