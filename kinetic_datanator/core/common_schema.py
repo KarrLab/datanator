@@ -642,11 +642,11 @@ class CommonSchema(data_source.HttpDataSource):
         uni = []
         for items in subunits:
             uni.append(str(items.uniprot_id))
-        entrez_dict = u.mapping('ACC', 'P_ENTREZGENEID', uni)
+        entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
         for protein in subunits:
-            if protein.entrez_id == None:
-                if entrez_dict[str(protein.uniprot_id)]:
-                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+            # IF statement created to account for issues in UniProt Entrez ID fetching
+            if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
+                protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
             subunit_data = pd.read_csv(six.StringIO(u.search(protein.uniprot_id, \
                 columns = 'id, entry name, protein names, genes, sequence, length, mass', limit = 1)), \
                 sep = '\t')
@@ -668,7 +668,6 @@ class CommonSchema(data_source.HttpDataSource):
 
         for tax in species:
             tax.name = species_dict[tax.ncbi_id]
-
 
     def add_paxdb(self):
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
