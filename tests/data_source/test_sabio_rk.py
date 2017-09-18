@@ -759,7 +759,6 @@ class TestDownloader(unittest.TestCase):
             ('inchi', 'InChI=1S/H2O/h1H2'),
         ]))
 
-        print set([(xr.namespace, xr.id) for xr in compound_multiple_pubchem.cross_references])
         self.assertEqual(set([(xr.namespace, xr.id) for xr in compound_multiple_pubchem.cross_references]), set([
             ('pubchem.compound', '5960'),
             ('pubchem.compound', '5460541'),
