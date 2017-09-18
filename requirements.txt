@@ -10,6 +10,7 @@ numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
 openpyxl
+pandas
 pronto
 pubchempy
 python-dateutil
