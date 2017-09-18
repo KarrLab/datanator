@@ -18,6 +18,8 @@ from six import BytesIO
 import six
 from bioservices import UniProt
 from ete3 import NCBITaxa
+import pandas as pd
+import os
 # from sqlalchemy import MetaData
 # from sqlalchemy_schemadisplay import create_schema_graph
 
@@ -270,7 +272,9 @@ class ProteinSubunit(PhysicalEntity):
     class_name = Column(String(255))
     family_name = Column(String(255))
     coefficient = Column(Integer)
-    sequence = Column(String(255))
+    canonical_sequence = Column(String(255))
+    mass = Column(Integer)
+    length = Column(Integer)
     molecular_weight = Column(Float)
 
     proteincomplex_id = Column(Integer, ForeignKey('protein_complex.complex_id'))
@@ -593,66 +597,7 @@ class CommonSchema(data_source.HttpDataSource):
         self.load = False
         self.download = True
 
-        ## Graph Schema
-        # self.create_schema_png(True)
-
         ## Add all DBs
-        self.add_all()
-
-        ## Add missing subunit information
-        self.fill_missing_subunit_info()
-
-        ## Add missing Taxon information
-        self.fill_missing_ncbi_names()
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
-
-    # def create_schema_png(self, switch):
-    #     if switch:
-    #         # create the pydot graph object by autoloading all tables via a bound metadata object
-    #         graph = create_schema_graph(metadata=MetaData(self.engine),
-    #            show_datatypes=False, # The image would get nasty big if we'd show the datatypes
-    #            show_indexes=False, # ditto for indexes
-    #            rankdir='TB', # From left to right (instead of top to bottom)
-    #            concentrate=False # Don't try to join the relation lines together
-    #         )
-    #         graph.write_png('/Users/Pooch/Desktop/kinetic_datanator/kinetic_datanator/core/dbschema.png')
-
-    def fill_missing_subunit_info(self):
-        u = UniProt(verbose = False)
-
-        subunits = self.session.query(ProteinSubunit).all()
-        uni = []
-        for items in subunits:
-            uni.append(str(items.uniprot_id))
-        entrez_dict = u.mapping('ACC', 'P_ENTREZGENEID', uni)
-        genename_dict = u.mapping('ACC', 'GENENAME', uni)
-
-        for protein in subunits:
-            if protein.entrez_id == None:
-                if entrez_dict[str(protein.uniprot_id)]:
-                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            if protein.gene_name == None:
-                if genename_dict[str(protein.uniprot_id)]:
-                    protein.gene_name = str(genename_dict[protein.uniprot_id][0])
-
-    def fill_missing_ncbi_names(self):
-        ncbi = NCBITaxa()
-
-        ncbi_ids = []
-        species = self.session.query(Taxon).all()
-        for items in species:
-            ncbi_ids.append(items.ncbi_id)
-
-        species_dict = ncbi.get_taxid_translator(ncbi_ids)
-
-        for tax in species:
-            tax.name = species_dict[tax.ncbi_id]
-
-
-    def add_all(self):
         self.add_paxdb()
         if self.verbose:
             print('Pax Done')
@@ -668,6 +613,62 @@ class CommonSchema(data_source.HttpDataSource):
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
+
+        ## Add missing subunit information
+        self.fill_missing_subunit_info()
+
+        ## Add missing Taxon information
+        self.fill_missing_ncbi_names()
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
+    def create_schema_png(self):
+        if switch:
+            # create the pydot graph object by autoloading all tables via a bound metadata object
+            graph = create_schema_graph(metadata=MetaData(self.engine),
+               show_datatypes=False, # The image would get nasty big if we'd show the datatypes
+               show_indexes=False, # ditto for indexes
+               rankdir='TB', # From left to right (instead of top to bottom)
+               concentrate=False # Don't try to join the relation lines together
+            )
+            graph.write_png(os.getcwd())
+
+    def fill_missing_subunit_info(self):
+        u = UniProt(verbose = False)
+
+        subunits = self.session.query(ProteinSubunit).all()
+        uni = []
+        for items in subunits:
+            uni.append(str(items.uniprot_id))
+        entrez_dict = u.mapping('ACC', 'P_ENTREZGENEID', uni)
+        for protein in subunits:
+            if protein.entrez_id == None:
+                if entrez_dict[str(protein.uniprot_id)]:
+                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+            subunit_data = pd.read_csv(six.StringIO(u.search(protein.uniprot_id, \
+                columns = 'id, entry name, protein names, genes, sequence, length, mass', limit = 1)), \
+                sep = '\t')
+            protein.subunit_name = str(subunit_data['Protein names'].iloc[0])
+            protein.gene_name = str(subunit_data['Gene names'].iloc[0])
+            protein.canonical_sequence = str(subunit_data['Sequence'].iloc[0])
+            protein.mass = int(subunit_data['Mass'].iloc[0].replace(',',''))
+            protein.length = int(subunit_data['Length'].iloc[0])
+
+    def fill_missing_ncbi_names(self):
+        ncbi = NCBITaxa()
+
+        ncbi_ids = []
+        species = self.session.query(Taxon).all()
+        for items in species:
+            ncbi_ids.append(items.ncbi_id)
+
+        species_dict = ncbi.get_taxid_translator(ncbi_ids)
+
+        for tax in species:
+            tax.name = species_dict[tax.ncbi_id]
+
 
     def add_paxdb(self):
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
@@ -906,7 +907,7 @@ class CommonSchema(data_source.HttpDataSource):
                     _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
                         name = item.name, subunit_name = item.name,
                         uniprot_id = uniprot, coefficient = subunit.coefficient,
-                        sequence = subunit.coefficient, molecular_weight = subunit.molecular_weight,
+                        molecular_weight = subunit.molecular_weight,
                         proteincomplex = result, _metadata = metadata)
                 elif item._type == 'kinetic_law':
                     res = sabio_ses.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
