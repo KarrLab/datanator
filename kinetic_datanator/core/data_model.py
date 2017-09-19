@@ -212,6 +212,7 @@ class DnaSpecie(PolymerSpecie):
     pass
 
 
+
 class RnaSpecie(PolymerSpecie):
     """ Represents a RNA polymer """
     pass
@@ -219,7 +220,12 @@ class RnaSpecie(PolymerSpecie):
 
 class ProteinSpecie(PolymerSpecie):
     """ Represents a protein polymer """
-    pass
+    uniprot_id  = obj_model.core.StringAttribute()
+    entrez_id = obj_model.core.IntegerAttribute()
+    gene_name = obj_model.core.StringAttribute()
+    length = obj_model.core.IntegerAttribute()
+    mass = obj_model.core.IntegerAttribute()
+
 
 
 class Interaction(EntityInteractionOrProperty):
