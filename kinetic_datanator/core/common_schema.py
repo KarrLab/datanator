@@ -19,6 +19,7 @@ import six
 from bioservices import UniProt
 from ete3 import NCBITaxa
 import pandas as pd
+import numpy
 import os
 import time
 # from sqlalchemy import MetaData
@@ -656,11 +657,15 @@ class CommonSchema(data_source.HttpDataSource):
             # IF statement created to account for issues in UniProt Entrez ID fetching
             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'].iloc[0])
-            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'].iloc[0])
-            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'].iloc[0])
-            protein.mass = str(df.loc[protein.uniprot_id,'Mass'].iloc[0])
-            protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
+            # Brute way for differentating multiple returns for a given uniprot ID
+            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
+            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
+            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
+            protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
+            if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
+                protein.length = int(df.loc[protein.uniprot_id,'Length'])
+            else:
+                protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
 
 
         if self.verbose:

@@ -17,7 +17,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
     def setUp(self):
         self.protein_P00323 = data_model.ProteinSpecie(uniprot_id = 'P00323', gene_name = 'DVU_2680',
             sequence = 'MPKALIVYGSTTGNTEYTAETIARELADAGYEVDSRDAASVEAGGLFEGFDLVLLGCSTWGDDSIELQDDFIPLFDSLEETGAQGRKVACFGCGDSSYEYFCGAVDAIEEKLKNLGAEIVQDGLRIDGDPRAARDDIVGWAHDVRGAI',
-            mass = 15823, length = 148, entrez_id = '2795051')
+            mass = '15,823', length = 148, entrez_id = '2795051')
 
     def test_get_abundance_by_uniprot(self):
         q = protein_concentrations.ProteinConcentrationsQueryGenerator()
