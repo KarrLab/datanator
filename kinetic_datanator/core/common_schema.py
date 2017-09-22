@@ -656,11 +656,11 @@ class CommonSchema(data_source.HttpDataSource):
             # IF statement created to account for issues in UniProt Entrez ID fetching
             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'])
-            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-            protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-            protein.length = int(df.loc[protein.uniprot_id,'Length'])
+            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'].iloc[0])
+            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'].iloc[0])
+            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'].iloc[0])
+            protein.mass = str(df.loc[protein.uniprot_id,'Mass'].iloc[0])
+            protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
 
 
         if self.verbose:
@@ -896,7 +896,7 @@ class CommonSchema(data_source.HttpDataSource):
     def add_sabiodb(self):
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries = self.max_entries*5, verbose = self.verbose)
+            load_content= self.load, download_backup= self.download, max_entries = self.max_entries*100, verbose = self.verbose)
         sabio_ses = sabiodb.session
 
         _entity = self.entity
@@ -906,7 +906,7 @@ class CommonSchema(data_source.HttpDataSource):
         entries = 0
         counter = 1
         for item in sabio_entry:
-            if entries < (self.max_entries*5):
+            if entries < (self.max_entries*100):
                 if item.name:
                     metadata = self.get_or_create_object(Metadata, name = item.name)
                 elif item._type == 'kinetic_law':
