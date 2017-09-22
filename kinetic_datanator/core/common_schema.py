@@ -20,6 +20,7 @@ from bioservices import UniProt
 from ete3 import NCBITaxa
 import pandas as pd
 import os
+import time
 # from sqlalchemy import MetaData
 # from sqlalchemy_schemadisplay import create_schema_graph
 
@@ -223,7 +224,6 @@ class CellCompartment(Base):
     __tablename__ = 'cell_compartment'
 
     id = Column(Integer, primary_key = True)
-    name = Column(String(255), unique = True, index = True)
 
 class PhysicalEntity(Observation):
     """
@@ -276,6 +276,7 @@ class ProteinSubunit(PhysicalEntity):
     mass = Column(Integer)
     length = Column(Integer)
     molecular_weight = Column(Float)
+    pax_load = Column(Integer)
 
     proteincomplex_id = Column(Integer, ForeignKey('protein_complex.complex_id'))
     proteincomplex = relationship('ProteinComplex', backref = 'protein_subunit', foreign_keys=[proteincomplex_id])
@@ -331,7 +332,7 @@ class Compound(PhysicalEntity):
     __mapper_args__ = {'polymorphic_identity': 'compound'}
 
     compound_id = Column(Integer, ForeignKey('physical_entity.observation_id'), primary_key = True)
-    compound_name = Column(String(255), unique = True)
+    compound_name = Column(String(255))
     description = Column(String(255))
     comment = Column(String(255))
     _is_name_ambiguous = Column(Boolean)
@@ -413,7 +414,6 @@ class KineticLaw(PhysicalProperty):
 
     kineticlaw_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
 
-    enzyme_id = Column(Integer, ForeignKey('protein_complex.complex_id'), index = True)
     enzyme = relationship(ProteinComplex, backref = 'kinetic_law')
 
     enzyme_type = Column(String(255))
@@ -468,6 +468,7 @@ class AbundanceDataSet(PhysicalProperty):
     score = Column(Float)
     weight = Column(Integer)
     coverage = Column(Integer)
+
 
 
 class DNABindingDataset(PhysicalProperty):
@@ -549,8 +550,10 @@ class AbundanceData(Base):
     dataset_id  = Column(Integer, ForeignKey('abundance_dataset.dataset_id'))
     dataset = relationship('AbundanceDataSet', backref = 'abundance_data', foreign_keys=[dataset_id])
 
-    subunit_id = Column(Integer, ForeignKey('protein_subunit.subunit_id'), index = True)
     subunit = relationship('ProteinSubunit', backref = 'pax_abundance_data' )
+
+    pax_load = Column(Integer)
+    uniprot_id = Column(Integer)
 
 class DNABindingData(Base):
     """
@@ -636,6 +639,7 @@ class CommonSchema(data_source.HttpDataSource):
             graph.write_png(os.getcwd())
 
     def fill_missing_subunit_info(self):
+        #TODO: Make this faster
         u = UniProt(verbose = False)
 
         subunits = self.session.query(ProteinSubunit).all()
@@ -670,6 +674,7 @@ class CommonSchema(data_source.HttpDataSource):
             tax.name = species_dict[tax.ncbi_id]
 
     def add_paxdb(self):
+        t0 = time.time()
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
             load_content= self.load, download_backup= self.download, max_entries = self.max_entries/5, verbose = self.verbose)
         pax_ses = paxdb.session
@@ -677,8 +682,11 @@ class CommonSchema(data_source.HttpDataSource):
         _entity = self.entity
         _property = self.property
 
+
         pax_dataset = pax_ses.query(pax.Dataset).all()
+
         entries = 0
+        load = 1
         for item in pax_dataset:
             if entries < (self.max_entries/5):
                 metadata = self.get_or_create_object(Metadata, name = item.file_name)
@@ -687,16 +695,34 @@ class CommonSchema(data_source.HttpDataSource):
                 _property.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
                     name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata)
                 abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = item.id).all()
-                for data in abundance:
-                    uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id
-                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
-                        type = 'Protein Subunit', uniprot_id = uniprot_id, _metadata = metadata)
-                    abundance_data = self.get_or_create_object(AbundanceData,
-                        abundance = data.abundance, dataset = _property.abundance_dataset,
-                        subunit = _entity.protein_subunit)
+
+                self.session.bulk_insert_mappings(ProteinSubunit,
+                    [
+                        dict(uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id,\
+                        type = 'Protein Subunit', pax_load = load) for data in abundance
+                    ])
+
+                self.session.bulk_insert_mappings(AbundanceData,
+                    [
+                        dict(abundance = data.abundance, pax_load = load, \
+                            uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id)\
+                            for data in abundance
+
+                    ])
+
+                for rows in self.session.query(ProteinSubunit).filter_by(pax_load = load).all():
+                    rows._metadata = metadata
+
+                for rows in self.session.query(AbundanceData).filter_by(pax_load = load).all():
+                    rows.dataset = _property.abundance_dataset
+                    rows.subunit = self.session.query(ProteinSubunit).filter_by(pax_load = load).filter_by(uniprot_id = rows.uniprot_id).first()
+                load += 1
                 entries += 1
 
+        if self.verbose:
+
     def add_corumdb(self):
+        t0 = time.time()
         corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear,
             load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
         corum_ses = corumdb.session
@@ -733,8 +759,11 @@ class CommonSchema(data_source.HttpDataSource):
                     entrez_id = row.su_entrezs, name = row.protein_name, subunit_name = row.protein_name, gene_name=row.gene_name,
                     gene_syn = row.gene_syn, proteincomplex = complex_, _metadata = self.session.query(Metadata).get(entry._metadata_id))
                 entries += 1
+        if self.verbose:
+            print('Total time taken for Corum: ' + str(time.time()-t0) + ' secs')
 
     def add_jaspardb(self):
+        t0 = time.time()
         jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = self.clear,
             load_content= self.load, download_backup= self.download, verbose = self.verbose)
         jasp_ses = jaspardb.session
@@ -796,8 +825,11 @@ class CommonSchema(data_source.HttpDataSource):
                                 frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
                                 frequency_t = pos.frequency_t, dataset = _property.dna_binding_dataset)
                 entries += 1
+        if self.verbose:
+            print('Total time taken for Jaspar: ' + str(time.time()-t0) + ' secs')
 
     def add_ecmdb(self):
+        t0 = time.time()
         ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear,
             load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
         ecm_ses = ecmDB.session
@@ -846,7 +878,11 @@ class CommonSchema(data_source.HttpDataSource):
                         index += 1
                 entries += 1
 
+        if self.verbose:
+            print('Total time taken for ECMDB: ' + str(time.time()-t0) + ' secs')
+
     def add_sabiodb(self):
+        t0 = time.time()
         sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear,
             load_content= self.load, download_backup= self.download, max_entries = self.max_entries*5, verbose = self.verbose)
         sabio_ses = sabiodb.session
@@ -911,8 +947,11 @@ class CommonSchema(data_source.HttpDataSource):
                 elif item._type == 'kinetic_law':
                     res = sabio_ses.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
                     law = sabio_ses.query(sabio_rk.KineticLaw).get(item._id)
-                    entry = sabio_ses.query(sabio_rk.Entry).get(law.enzyme_id)
-                    result = self.session.query(ProteinComplex).filter_by(complex_name = entry.name).first()
+                    if law.enzyme_id:
+                        entry = sabio_ses.query(sabio_rk.Entry).get(law.enzyme_id)
+                        result = self.session.query(ProteinComplex).filter_by(complex_name = entry.name).first()
+                    else:
+                        result = None
                     for docs in res:
                         resource = sabio_ses.query(sabio_rk.Resource).get(docs.resource__id)
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
@@ -952,7 +991,8 @@ class CommonSchema(data_source.HttpDataSource):
                                 observed_sabio_type = param.observed_type, observed_value = param.observed_value,
                                 observed_error = param.observed_error, observed_units = param.observed_units)
                 entries += 1
-
+        if self.verbose:
+            print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
 
     # def add_arrayexpressdb(self):
     #     arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False)

@@ -24,7 +24,7 @@ class ShortTestCommonSchema(unittest.TestCase):
         self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True,
                                 load_content= True, download_backup= False,
-                                max_entries = 5, verbose = True)
+                                max_entries = 10, verbose = True)
 
     @classmethod
     def tearDownClass(self):
@@ -36,7 +36,6 @@ class ShortTestCommonSchema(unittest.TestCase):
         self.assertEqual(subunit.length, 453)
         self.assertEqual(subunit.mass, 48737)
 
-
     def test_fill_missing_ncbi_names(self):
         session = self.cs.session
         taxon = session.query(common_schema.Taxon).filter_by(ncbi_id = 882).first()
@@ -47,7 +46,7 @@ class ShortTestCommonSchema(unittest.TestCase):
         pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False)
         pax_session = pax_compare.session
 
-        dataset = session.query(common_schema.AbundanceDataSet).get(1)
+        dataset = session.query(common_schema.AbundanceDataSet).first()
         comparison = pax_session.query(pax.Dataset).filter_by(file_name = dataset.file_name).first()
         self.assertEqual(dataset.score, comparison.score)
         self.assertEqual(dataset.weight, comparison.weight)

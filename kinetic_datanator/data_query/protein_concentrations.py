@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-09-12
@@ -36,6 +38,12 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
 
     def get_observed_values(self, protein):
         """ Find the observed values for protein abundance
+
+        Args:
+            protein (:obj:`data_model.ProteinSpecie`): Protein to find data for
+
+        Returns:
+            :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
 
         """
         pass
