@@ -224,6 +224,7 @@ class CellCompartment(Base):
     __tablename__ = 'cell_compartment'
 
     id = Column(Integer, primary_key = True)
+    name = Column(String(255), unique = True, index=True)
 
 class PhysicalEntity(Observation):
     """
@@ -414,6 +415,7 @@ class KineticLaw(PhysicalProperty):
 
     kineticlaw_id = Column(Integer, ForeignKey('physical_property.observation_id'), primary_key = True)
 
+    enzyme_id = Column(Integer, ForeignKey('protein_complex.complex_id'), index=True)
     enzyme = relationship(ProteinComplex, backref = 'kinetic_law')
 
     enzyme_type = Column(String(255))
@@ -550,6 +552,7 @@ class AbundanceData(Base):
     dataset_id  = Column(Integer, ForeignKey('abundance_dataset.dataset_id'))
     dataset = relationship('AbundanceDataSet', backref = 'abundance_data', foreign_keys=[dataset_id])
 
+    subunit_id = Column(Integer, ForeignKey('protein_subunit.subunit_id'), index=True)
     subunit = relationship('ProteinSubunit', backref = 'pax_abundance_data' )
 
     pax_load = Column(Integer)
@@ -720,6 +723,7 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
 
         if self.verbose:
+            print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
 
     def add_corumdb(self):
         t0 = time.time()
