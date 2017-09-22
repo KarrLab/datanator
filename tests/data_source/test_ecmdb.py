@@ -43,7 +43,7 @@ class TestEcmdbFromRemote(unittest.TestCase):
         q = session.query(ecmdb.Compound)
 
         # check compound ids
-        self.assertEqual(q.count(), src.max_entries-1)
+        self.assertEqual(q.count(), src.max_entries)
         self.assertEqual([c.id for c in q.all()][0:5], [
             'M2MDB000001',
             'M2MDB000002',
