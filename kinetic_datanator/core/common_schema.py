@@ -642,7 +642,7 @@ class CommonSchema(data_source.HttpDataSource):
             graph.write_png(os.getcwd())
 
     def fill_missing_subunit_info(self):
-        #TODO: Make this faster
+        t0 = time.time()
         u = UniProt(verbose = False)
 
         subunits = self.session.query(ProteinSubunit).all()
@@ -650,20 +650,25 @@ class CommonSchema(data_source.HttpDataSource):
         for items in subunits:
             uni.append(str(items.uniprot_id))
         entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
+        df = u.get_df(uni, nChunk = 200)
+        df.set_index('Entry', inplace = True)
         for protein in subunits:
             # IF statement created to account for issues in UniProt Entrez ID fetching
             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            subunit_data = pd.read_csv(six.StringIO(u.search(protein.uniprot_id, \
-                columns = 'id, entry name, protein names, genes, sequence, length, mass', limit = 1)), \
-                sep = '\t')
-            protein.subunit_name = str(subunit_data['Protein names'].iloc[0])
-            protein.gene_name = str(subunit_data['Gene names'].iloc[0])
-            protein.canonical_sequence = str(subunit_data['Sequence'].iloc[0])
-            protein.mass = int(subunit_data['Mass'].iloc[0].replace(',',''))
-            protein.length = int(subunit_data['Length'].iloc[0])
+            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
+            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'])
+            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
+            protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
+            protein.length = int(df.loc[protein.uniprot_id,'Length'])
+
+
+        if self.verbose:
+            print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
 
     def fill_missing_ncbi_names(self):
+        t0 = time.time()
+
         ncbi = NCBITaxa()
 
         ncbi_ids = []
@@ -675,6 +680,9 @@ class CommonSchema(data_source.HttpDataSource):
 
         for tax in species:
             tax.name = species_dict[tax.ncbi_id]
+
+        if self.verbose:
+            print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
 
     def add_paxdb(self):
         t0 = time.time()
