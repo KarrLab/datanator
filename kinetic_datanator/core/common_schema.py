@@ -218,6 +218,8 @@ class CellCompartment(Base):
     """
     Represents a cell compartment of a given physical entity or property
 
+    Ties especially to the reacitons because this is where the reactions occur
+
     Attributes:
         name (:obj:`str`): Name of the Cell Compartment
 
@@ -443,11 +445,14 @@ class Reaction(Base):
     reaction_id = Column(Integer, primary_key = True)
     compound_id = Column(Integer, ForeignKey('compound.compound_id'))
     compound = relationship(Compound, backref = 'reaction' )
+    compartment_id = Column(Integer, ForeignKey('cell_compartment.id'))
+    compartment = relationship(CellCompartment, backref = 'reaction')
     coefficient = Column(Float)
     _is_reactant = Column(Boolean)
     _is_product = Column(Boolean)
     _is_modifier = Column(Boolean)
     rxn_type = Column(String(255))
+
 
     kinetic_law_id = Column(Integer, ForeignKey('kinetic_law.kineticlaw_id'))
 
@@ -848,7 +853,7 @@ class CommonSchema(data_source.HttpDataSource):
     def add_ecmdb(self):
         t0 = time.time()
         ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
+            load_content= self.load, download_backup= self.download, max_entries =(100*self.max_entries), verbose = self.verbose)
         ecm_ses = ecmDB.session
 
         _entity = self.entity
@@ -858,7 +863,7 @@ class CommonSchema(data_source.HttpDataSource):
 
         entries = 0
         for item in ecmdb_compound:
-            if entries < self.max_entries:
+            if entries < (self.max_entries*100):
                 concentration = ecm_ses.query(ecmdb.Concentration).filter_by(compound_id = item._id).all()
                 ref = ecm_ses.query(ecmdb.compound_resource).filter_by(compound__id = item._id).all()
                 compart = ecm_ses.query(ecmdb.compound_compartment).filter_by(compound__id = item._id).all()
@@ -931,6 +936,8 @@ class CommonSchema(data_source.HttpDataSource):
                     else:
                         metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace,
                             _id = resource.id))
+                if item._type == 'compartment':
+                    compartment = self.get_or_create_object(CellCompartment, name = item.name)
                 if item._type == 'compound':
                     structure = sabio_ses.query(sabio_rk.compound_compound_structure).filter_by(compound__id = item._id).all()
                     if structure:
@@ -981,16 +988,21 @@ class CommonSchema(data_source.HttpDataSource):
                     for row in rxn:
                         compound_name = sabio_ses.query(sabio_rk.Entry).get(row.compound_id).name
                         _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
+                        if row.compartment_id:
+                            sabio_compartment_name = sabio_ses.query(sabio_rk.Entry).get(row.compartment_id).name
+                            _compartment = self.session.query(CellCompartment).filter_by(name = sabio_compartment_name).first()
+                        else:
+                            _compartment = None
                         if row.reactant_kinetic_law_id:
-                            reaction = Reaction(compound = _compound,
+                            reaction = Reaction(compound = _compound, compartment = _compartment,
                                 coefficient = row.coefficient, _is_reactant = 1, rxn_type = row.type,
                                 kinetic_law_id = _property.kinetic_law.kineticlaw_id)
                         elif row.product_kinetic_law_id:
-                            reaction = Reaction( compound = _compound,
+                            reaction = Reaction( compound = _compound, compartment = _compartment,
                                 coefficient = row.coefficient, _is_product = 1, rxn_type = row.type,
                                 kinetic_law_id = _property.kinetic_law.kineticlaw_id)
                         elif row.modifier_kinetic_law_id:
-                            reaction = Reaction(compound = _compound,
+                            reaction = Reaction(compound = _compound, compartment = _compartment,
                                 coefficient = row.coefficient, _is_modifier = 1, rxn_type = row.type,
                                 kinetic_law_id = _property.kinetic_law.kineticlaw_id)
                     total_param = sabio_ses.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()

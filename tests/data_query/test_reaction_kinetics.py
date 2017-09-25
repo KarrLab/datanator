@@ -16,6 +16,7 @@ from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 import unittest
 
+#TODO: Make Print and Filtering functions
 
 class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
     """
@@ -112,15 +113,15 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         # single EC, match_levels=4
         laws_62 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.62'], match_levels=4).all()
-        ids_62 = set([1987, 1988, 1989, 1990, 1991])
+        ids_62 = set([2000, 1996, 1997, 1998, 1999])
         self.assertEqual(set(l.id for l in laws_62), ids_62)
 
         laws_73 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.73'], match_levels=4).all()
-        ids_73 = set([1996, 1997])
+        ids_73 = set([2005, 2006])
         self.assertEqual(set(l.id for l in laws_73), ids_73)
 
         laws_89 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.89'], match_levels=4).all()
-        ids_89 = set([2112, 2113, 2114, 2115, 2116, 2117, 2118, 2119, 2120, 2121, 2122, 2123, 2106, 2107, 2108, 2109, 2110, 2111])
+        ids_89 = set([2115, 2116, 2117, 2118, 2119, 2120, 2121, 2122, 2123, 2124, 2125, 2126, 2127, 2128, 2129, 2130, 2131, 2132])
         self.assertEqual(set(l.id for l in laws_89), ids_89)
 
         #multiple EC, match_levels=4
@@ -154,7 +155,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         law = q.get_kinetic_laws_by_compound(inchi, role = 'product')
         # print set(c.kineticlaw_id for c in law.all())
-        self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([2332,2333]))
+        self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([2341,2342]))
 
 
     def test_get_compounds_by_structure(self):
@@ -173,10 +174,10 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         law = q.get_kinetic_laws_by_participants(participants, only_formula_and_connectivity = False).order_by(common_schema.KineticLaw.kineticlaw_id)
 
-        self.assertEqual([l.kineticlaw_id for l in law], [2192,2193,2194,2195,2196,2197,2204,2205,2206,
-            2207,2208,2209,2210,2211,2212,2213,2214,2215,2216,2217,2218,2219,2220,2221,2222,2223,2224,2225,2226,
-            2227,2228,2229,2230,2231,2232,2233,2234,2235,2236,2237, 2238,2239,2240,2241,2242,2243,2244,2245,2246,
-            2247,2248,2249,2250,2251,2252,2253,2254,2255])
+        self.assertEqual([l.kineticlaw_id for l in law], [2201, 2202, 2203, 2204, 2205, 2206, 2213, 2214, 2215, 2216,
+            2217, 2218, 2219, 2220, 2221, 2222, 2223, 2224, 2225, 2226, 2227, 2228, 2229, 2230, 2231, 2232, 2233, 2234,
+             2235, 2236, 2237, 2238, 2239, 2240, 2241, 2242, 2243, 2244, 2245, 2246, 2247, 2248, 2249, 2250, 2251, 2252,
+             2253, 2254, 2255, 2256, 2257, 2258, 2259, 2260, 2261, 2262, 2263, 2264])
 
 
     def test_get_kinetic_laws_by_reaction(self):
@@ -185,18 +186,18 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         laws = q.get_kinetic_laws_by_reaction(self.reaction) \
             .order_by(common_schema.KineticLaw.kineticlaw_id).all()
 
-        self.assertEqual([l.kineticlaw_id for l in laws], [2192,2193,2194,2195,2196,2197,2204,2205,2206,
-            2207,2208,2209,2210,2211,2212,2213,2214,2215,2216,2217,2218,2219,2220,2221,2222,2223,2224,2225,2226,
-            2227,2228,2229,2230,2231,2232,2233,2234,2235,2236,2237, 2238,2239,2240,2241,2242,2243,2244,2245,2246,
-            2247,2248,2249,2250,2251,2252,2253,2254,2255])
+        self.assertEqual([l.kineticlaw_id for l in laws], [2201, 2202, 2203, 2204, 2205, 2206, 2213, 2214, 2215, 2216,
+            2217, 2218, 2219, 2220, 2221, 2222, 2223, 2224, 2225, 2226, 2227, 2228, 2229, 2230, 2231, 2232, 2233, 2234,
+             2235, 2236, 2237, 2238, 2239, 2240, 2241, 2242, 2243, 2244, 2245, 2246, 2247, 2248, 2249, 2250, 2251, 2252,
+             2253, 2254, 2255, 2256, 2257, 2258, 2259, 2260, 2261, 2262, 2263, 2264])
 
         laws = q.get_kinetic_laws_by_reaction(self.reaction_w_resource) \
             .order_by(common_schema.KineticLaw.kineticlaw_id).all()
 
-        self.assertEqual([l.kineticlaw_id for l in laws], [2192,2193,2194,2195,2196,2197,2204,2205,2206,
-            2207,2208,2209,2210,2211,2212,2213,2214,2215,2216,2217,2218,2219,2220,2221,2222,2223,2224,2225,2226,
-            2227,2228,2229,2230,2231,2232,2233,2234,2235,2236,2237, 2238,2239,2240,2241,2242,2243,2244,2245,2246,
-            2247,2248,2249,2250,2251,2252,2253,2254,2255])
+        self.assertEqual([l.kineticlaw_id for l in laws], [2201, 2202, 2203, 2204, 2205, 2206, 2213, 2214, 2215, 2216,
+            2217, 2218, 2219, 2220, 2221, 2222, 2223, 2224, 2225, 2226, 2227, 2228, 2229, 2230, 2231, 2232, 2233, 2234,
+             2235, 2236, 2237, 2238, 2239, 2240, 2241, 2242, 2243, 2244, 2245, 2246, 2247, 2248, 2249, 2250, 2251, 2252,
+             2253, 2254, 2255, 2256, 2257, 2258, 2259, 2260, 2261, 2262, 2263, 2264])
 
     def test_get_observed_values(self):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
@@ -205,7 +206,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         for val in vals:
             sabiork_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction')
             common_schema_kinetic_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'common_schema.kineticlaw_id')
-            if sabiork_id == '100' and common_schema_kinetic_id == '2196':
+            if sabiork_id == '100' and common_schema_kinetic_id == '2205':
                 if val.observable.property == 'Km_A':
                     self.assertEqual(val.observable.specie.name,'NADPH')
                     self.assertEqual(val.value, 7.3e-06)

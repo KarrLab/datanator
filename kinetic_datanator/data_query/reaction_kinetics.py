@@ -9,12 +9,12 @@
 from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_query
 from kinetic_datanator.core import common_schema
-from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
 import sqlalchemy.orm
 
+#TODO: Make Print and Filtering Functions
 
 class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant kinetics observations for reactions
@@ -23,9 +23,9 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
       a. Find kinetics observed for the reaction
 
-        i. Find the SABIO-RK compound(s) of each participant
-        ii. Find the SABIO-RK reaction(s) which contain all of these SABIO-RK compounds
-        iii. Find the SABIO-RK kinetic laws associated with these SABIO-RK reactions
+        i. Find the compound(s) of each participant
+        ii. Find the  reaction(s) which contain all of these compounds
+        iii. Find the  kinetic laws associated with these reactions
 
       b. Find kinetics observed for similar reactions
 
@@ -69,9 +69,9 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         1. Find kinetics observed for the reaction
 
-          a. Find the SABIO-RK compound(s) of each participant
-          b. Find the SABIO-RK reaction(s) which contain all of these SABIO-RK compounds
-          c. Find the SABIO-RK kinetic laws associated with these SABIO-RK reactions
+          a. Find the compound(s) of each participant
+          b. Find the reaction(s) which contain all of these compounds
+          c. Find the kinetic laws associated with these reactions
 
         2. Find kinetics observed for similar reactions
 
@@ -115,10 +115,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if reactant.compound.structure_id:
                     part.specie.structure = reactant.compound.structure._value_inchi
 
-                # if reactant.compound._metadata.cell_compartment:
-                #     if reactant.compound._metadata.cell_compartment.name not in compartments:
-                #         compartments[reactant.compound._metadata.cell_compartment.name] = data_model.Compartment(name=reactant.compartment.name)
-                #     part.compartment = compartments[reactant.compartment.name]
+                if reactant.compartment_id:
+                    if reactant.compartment.name not in compartments:
+                        compartments[reactant.compartment.name] = data_model.Compartment(name=reactant.compartment.name)
+                    part.compartment = compartments[reactant.compartment.name]
 
                 reaction.participants.append(part)
 
@@ -132,10 +132,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if product.compound.structure_id:
                     part.specie.structure = product.compound.structure._value_inchi
 
-                # if product.compartment:
-                #     if product.compartment.name not in compartments:
-                #         compartments[product.compartment.name] = data_model.Compartment(name=product.compartment.name)
-                #     part.compartment = compartments[product.compartment.name]
+                if product.compartment_id:
+                    if product.compartment.name not in compartments:
+                        compartments[product.compartment.name] = data_model.Compartment(name=product.compartment.name)
+                    part.compartment = compartments[product.compartment.name]
 
                 reaction.participants.append(part)
 
@@ -149,10 +149,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if modifier.compound.structure_id:
                     part.specie.structure = modifier.compound.structure._value_inchi
 
-                # if modifier.compartment:
-                #     if modifier.compartment.name not in compartments:
-                #         compartments[modifier.compartment.name] = data_model.Compartment(name=modifier.compartment.name)
-                #     part.compartment = compartments[modifier.compartment.name]
+                if modifier.compartment_id:
+                    if modifier.compartment.name not in compartments:
+                        compartments[modifier.compartment.name] = data_model.Compartment(name=modifier.compartment.name)
+                    part.compartment = compartments[modifier.compartment.name]
 
                 reaction.participants.append(part)
 
