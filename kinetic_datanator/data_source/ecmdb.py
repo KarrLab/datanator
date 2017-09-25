@@ -189,7 +189,7 @@ class Ecmdb(data_source.HttpDataSource):
     DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAINS['ecmdb'] +'/compounds/{}.xml'
 
     def load_content(self):
-        """ Download the content of SABIO-RK and store it to a local sqlite database. """
+        """ Download the content of ECMDB and store it to a local sqlite database. """
         db_session = self.session
         req_session = self.requests_session
 
