@@ -8,6 +8,7 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_query
+from kinetic_datanator.core import common_schema
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
@@ -57,13 +58,14 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=sabio_rk.SabioRk())
+            data_source=common_schema.CommonSchema())
 
         self.filters.append(data_query.ReactionSimilarityFilter())
         self.filters.append(data_query.ReactionParticipantFilter())
 
     def get_observed_values(self, reaction):
         """ Find observed kinetics for the reaction or similar reactions
+        TODO: Add compartment infomrmation
 
         1. Find kinetics observed for the reaction
 
@@ -86,115 +88,119 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         q_law = self.get_kinetic_laws_by_reaction(reaction)
         observed_vals = []
         for law in q_law.all():
-            sabiork_reaction_id = next(xr.id for xr in law.cross_references if xr.namespace == 'sabiork.reaction')
+            common_schema_reaction_id = next(xr._id for xr in law._metadata.resource if xr.namespace == 'sabiork.reaction')
 
             reaction = data_model.Reaction(
                 cross_references=[
-                    data_model.Resource(namespace='sabiork.kineticrecord', id=str(law.id)),
-                    data_model.Resource(namespace='sabiork.reaction', id=sabiork_reaction_id),
+                    data_model.Resource(namespace='common_schema.kineticlaw_id', id=str(law.kineticlaw_id)),
+                    data_model.Resource(namespace='sabiork.reaction', id=common_schema_reaction_id),
                 ],
             )
             species = {}
             compartments = {}
 
-            for reactant in law.reactants:
+            cs_rxn = self.data_source.session.query(common_schema.Reaction).filter_by(kinetic_law_id = law.kineticlaw_id)
+            reactants = cs_rxn.filter_by(_is_reactant = 1).all()
+            products = cs_rxn.filter_by(_is_product = 1).all()
+            modifiers = cs_rxn.filter_by(_is_modifier = 1).all()
+
+
+            for reactant in reactants:
                 part = data_model.ReactionParticipant(coefficient=-1)
 
-                if reactant.compound.id not in species:
-                    species[reactant.compound.id] = data_model.Specie(name=reactant.compound.name)
-                part.specie = species[reactant.compound.id]
+                if reactant.compound_id not in species:
+                    species[reactant.compound_id] = data_model.Specie(name=reactant.compound.compound_name)
+                part.specie = species[reactant.compound_id]
 
-                if reactant.compound.structures:
-                    part.specie.structure = reactant.compound.structures[0].value
+                if reactant.compound.structure_id:
+                    part.specie.structure = reactant.compound.structure._value_inchi
 
-                if reactant.compartment:
-                    if reactant.compartment.name not in compartments:
-                        compartments[reactant.compartment.name] = data_model.Compartment(name=reactant.compartment.name)
-                    part.compartment = compartments[reactant.compartment.name]
+                # if reactant.compound._metadata.cell_compartment:
+                #     if reactant.compound._metadata.cell_compartment.name not in compartments:
+                #         compartments[reactant.compound._metadata.cell_compartment.name] = data_model.Compartment(name=reactant.compartment.name)
+                #     part.compartment = compartments[reactant.compartment.name]
 
                 reaction.participants.append(part)
 
-            for product in law.products:
+            for product in products:
                 part = data_model.ReactionParticipant(coefficient=1)
 
-                if product.compound.id not in species:
-                    species[product.compound.id] = data_model.Specie(name=product.compound.name)
-                part.specie = species[product.compound.id]
+                if product.compound_id not in species:
+                    species[product.compound_id] = data_model.Specie(name=product.compound.compound_name)
+                part.specie = species[product.compound_id]
 
-                if product.compound.structures:
-                    part.specie.structure = product.compound.structures[0].value
+                if product.compound.structure_id:
+                    part.specie.structure = product.compound.structure._value_inchi
 
-                if product.compartment:
-                    if product.compartment.name not in compartments:
-                        compartments[product.compartment.name] = data_model.Compartment(name=product.compartment.name)
-                    part.compartment = compartments[product.compartment.name]
+                # if product.compartment:
+                #     if product.compartment.name not in compartments:
+                #         compartments[product.compartment.name] = data_model.Compartment(name=product.compartment.name)
+                #     part.compartment = compartments[product.compartment.name]
 
                 reaction.participants.append(part)
 
-            for modifier in law.modifiers:
+            for modifier in modifiers:
                 part = data_model.ReactionParticipant(coefficient=0)
 
-                if modifier.compound.id not in species:
-                    species[modifier.compound.id] = data_model.Specie(name=modifier.compound.name)
-                part.specie = species[modifier.compound.id]
+                if modifier.compound_id not in species:
+                    species[modifier.compound_id] = data_model.Specie(name=modifier.compound.compound_name)
+                part.specie = species[modifier.compound_id]
 
-                if modifier.compound.structures:
-                    part.specie.structure = modifier.compound.structures[0].value
+                if modifier.compound.structure_id:
+                    part.specie.structure = modifier.compound.structure._value_inchi
 
-                if modifier.compartment:
-                    if modifier.compartment.name not in compartments:
-                        compartments[modifier.compartment.name] = data_model.Compartment(name=modifier.compartment.name)
-                    part.compartment = compartments[modifier.compartment.name]
+                # if modifier.compartment:
+                #     if modifier.compartment.name not in compartments:
+                #         compartments[modifier.compartment.name] = data_model.Compartment(name=modifier.compartment.name)
+                #     part.compartment = compartments[modifier.compartment.name]
 
                 reaction.participants.append(part)
 
             observation = data_model.Observation(
                 genetics=data_model.Genetics(
-                    taxon=law.taxon,
-                    variation=law.taxon_variant,
+                    taxon=law._metadata.taxon[0].name,
+                    variation=law._metadata.cell_line[0].name,
                 ),
                 environment=data_model.Environment(
-                    temperature=law.temperature,
-                    ph=law.ph,
-                    media=law.media,
+                    temperature=law._metadata.conditions[0].temperature,
+                    ph=law._metadata.conditions[0].ph,
+                    media=law._metadata.conditions[0].media,
                 ),
             )
-            for parameter in law.parameters:
-                if parameter.value is None:
-                    continue
 
-                if parameter.type not in sabio_rk.Parameter.TYPES:
+            for parameter in law.parameter:
+                if parameter.value is None:
                     continue
 
                 observable = data_model.Observable(
                     interaction=reaction,
-                    property=sabio_rk.Parameter.TYPES[parameter.type],
+                    property=parameter.observed_name,
                 )
 
-                if parameter.compound:
-                    observable.specie = species[parameter.compound.id]
-                    if parameter.compartment:
-                        observable.compartment = data_model.Compartment(
-                            id=parameter.compartment.name,
-                        )
+                if parameter.compound_id:
+                    observable.specie = species[parameter.compound_id]
+                    # if parameter.compartment:
+                    #     observable.compartment = data_model.Compartment(
+                    #         id=parameter.compartment.name,
+                    #     )
 
                 observed_vals.append(data_model.ObservedValue(
                     observation=observation,
                     observable=observable,
                     value=parameter.value,
-                    error=None,
+                    error=parameter.error,
                     units=parameter.units,
                 ))
 
         return observed_vals
 
-    def get_kinetic_laws_by_reaction(self, reaction, select=sabio_rk.KineticLaw):
+    def get_kinetic_laws_by_reaction(self, reaction, select=common_schema.KineticLaw):
         """ Get kinetic laws that were observed for similar reactions (same participants or same EC class)
 
         Args:
             reaction (:obj:`data_model.Reaction`): reaction to find data for
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.KineticLaw` or one of its columns
+                :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws observed for similar reactions
@@ -222,7 +228,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         return self.data_source.session.query(select).filter_by(id=-1)
 
     def get_kinetic_laws_by_participants(self, participants, only_formula_and_connectivity=True, include_water_hydrogen=False,
-                                         select=sabio_rk.KineticLaw):
+                                         select=common_schema.KineticLaw):
         """ Get kinetic laws with the participants :obj:`participants`
 
         Args:
@@ -232,17 +238,20 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict kinetic laws based on their water, hydroxide, and
                 hydrogen participants
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.KineticLaw` or one of its columns
+                :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain all of the participants
         """
         q_laws = None
         for i_part, part in enumerate(participants):
-            try:
-                structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
-            except ValueError:
-                return self.data_source.session.query(select).filter(sabio_rk.KineticLaw.id == -1)
+            if only_formula_and_connectivity == True:
+                try:
+                    structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
+                except ValueError:
+                    return self.data_source.session.query(select).filter(common_schema.KineticLaw.kineticlaw_id == -1)
+            else:
+                structure = part.specie.structure
 
             if not include_water_hydrogen:
                 if only_formula_and_connectivity:
@@ -268,7 +277,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         return q_laws
 
-    def get_kinetic_laws_by_compound(self, structure, only_formula_and_connectivity=False, role='reactant', select=sabio_rk.KineticLaw):
+    def get_kinetic_laws_by_compound(self, structure, only_formula_and_connectivity=False, role='reactant', select=common_schema.KineticLaw):
         """ Get kinetic laws that contain a structure in role :obj:`role`
 
         Args:
@@ -277,39 +286,33 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 InChI formula and connectivity layers
             role (:obj:`str`, optional): role (reactant, or product) to search for species
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.KineticLaw` or one of its columns
+                :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
         """
 
         if only_formula_and_connectivity:
-            condition = sabio_rk.CompoundStructure._value_inchi_formula_connectivity == structure
+            condition = common_schema.Structure._structure_formula_connectivity == structure
         else:
-            condition = sabio_rk.CompoundStructure._value_inchi == structure
+            condition = common_schema.Structure._value_inchi == structure
 
         if role == 'reactant':
-            participant_type = sabio_rk.ReactionParticipant.reactant_kinetic_law_id
+            participant_condition = common_schema.Reaction._is_reactant == 1
+        elif role == 'product':
+            participant_condition = common_schema.Reaction._is_product == 1
         else:
-            participant_type = sabio_rk.ReactionParticipant.product_kinetic_law_id
+            participant_condition = common_schema.Reaction._is_modifier == 1
 
         session = self.data_source.session
 
-        q_structure = session.query(sabio_rk.CompoundStructure) \
-            .filter(condition) \
-            .subquery()
+        law = session.query(select).join(common_schema.Reaction, common_schema.KineticLaw.kineticlaw_id == common_schema.Reaction.kinetic_law_id)\
+            .filter(participant_condition).join(common_schema.Compound, common_schema.Reaction.compound)\
+            .join(common_schema.Structure, common_schema.Compound.structure).filter(condition)
 
-        return session.query(select) \
-            .join(sabio_rk.ReactionParticipant,
-                  sabio_rk.KineticLaw._id == participant_type) \
-            .join(sabio_rk.compound_compound_structure,
-                  sabio_rk.ReactionParticipant.compound_id == sabio_rk.compound_compound_structure.c.get('compound__id')) \
-            .join(q_structure,
-                  sabio_rk.compound_compound_structure.c.get('compound_structure__id') == q_structure.c._id) \
-            .filter(participant_type != None) \
-            .distinct(sabio_rk.KineticLaw._id)
+        return law
 
-    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=True, select=sabio_rk.Compound):
+    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=True, select=common_schema.Compound):
         """ Get compounds with the same structure. Optionally, get compounds which only have
         the same core empirical formula and core atom connecticity (i.e. same InChI formula
         and connectivity layers).
@@ -320,20 +323,20 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
                 identical structure.
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.Compound` or one of its columns
+                :obj:`common_schema.Compound` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
         """
-        q = self.data_source.session.query(select).join((sabio_rk.CompoundStructure, sabio_rk.Compound.structures))
+        q = self.data_source.session.query(select).join((common_schema.Structure, common_schema.Compound.structure))
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
-            condition = sabio_rk.CompoundStructure._value_inchi_formula_connectivity == formula_and_connectivity
+            condition = common_schema.Structure._structure_formula_connectivity == formula_and_connectivity
         else:
-            condition = sabio_rk.CompoundStructure._value_inchi == inchi
+            condition = common_schema.Structure._value_inchi == inchi
         return q.filter(condition)
 
-    def get_kinetic_laws_by_ec_numbers(self, ec_numbers, match_levels=4, select=sabio_rk.KineticLaw):
+    def get_kinetic_laws_by_ec_numbers(self, ec_numbers, match_levels=4, select=common_schema.KineticLaw):
         """ Get kinetic laws which have one of a list of EC numbers or, optionally,
         belong to one of a list of EC classes.
 
@@ -341,23 +344,23 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ec_numbers (:obj:`list` of :obj:`str`): EC numbers to search for
             match_levels (:obj:`int`): number of EC levels that the EC number must match
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`sabio_rk.KineticLaw` or one of its columns
+                :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching kinetic laws
         """
         # find kinetic laws with identical EC number
         q = self.data_source.session.query(select) \
-            .join((sabio_rk.Resource, sabio_rk.KineticLaw.cross_references)) \
-            .filter(sabio_rk.Resource.namespace == 'ec-code')
+            .join((common_schema.Metadata, common_schema.KineticLaw._metadata)).join((common_schema.Resource, common_schema.Metadata.resource))\
+            .filter(common_schema.Resource.namespace == 'ec-code')
 
         if match_levels == 4:
-            result = q.filter(sabio_rk.Resource.id.in_(ec_numbers))
+            result = q.filter(common_schema.Resource._id.in_(ec_numbers))
         else:
             conditions = []
             for ec_number in ec_numbers:
                 ec_class, _, _ = string.partition_nth(ec_number, '.', match_levels)
-                conditions.append(sabio_rk.Resource.id.like('{}.%'.format(ec_class)))
+                conditions.append(common_schema.Resource._id.like('{}.%'.format(ec_class)))
             result = q.filter(sqlalchemy.or_(*conditions))
 
         return result
