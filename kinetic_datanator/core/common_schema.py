@@ -710,21 +710,6 @@ class CommonSchema(data_source.HttpDataSource):
         _entity = self.entity
         _property = self.property
 
-        abundance = pax_ses.query(pax.Observation).filter(pax.Observation.dataset_id.in_(range(1, (self.max_entries/5)+1))).all()
-        self.session.bulk_insert_mappings(AbundanceData,
-            [
-                dict(abundance = data.abundance, pax_load = data.dataset_id, \
-                    uniprot_id = data.protein.uniprot_id)\
-                    for data in abundance
-
-            ])
-
-        self.session.bulk_insert_mappings(ProteinSubunit,
-            [
-                dict(uniprot_id = data.protein.uniprot_id,\
-                type = 'Protein Subunit', pax_load = data.dataset_id) for data in abundance
-            ])
-
 
         pax_dataset = pax_ses.query(pax.Dataset).all()
         entries = 0
@@ -735,6 +720,20 @@ class CommonSchema(data_source.HttpDataSource):
                 metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = item.publication))
                 _property.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
                     name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata)
+                abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = item.id).all()
+
+                self.session.bulk_insert_mappings(AbundanceData,
+                    [
+                        dict(abundance = data.abundance, pax_load = data.dataset_id, \
+                            uniprot_id = data.protein.uniprot_id)\
+                            for data in abundance
+                    ])
+
+                self.session.bulk_insert_mappings(ProteinSubunit,
+                    [
+                        dict(uniprot_id = data.protein.uniprot_id,\
+                        type = 'Protein Subunit', pax_load = data.dataset_id) for data in abundance
+                    ])
 
                 for rows in self.session.query(ProteinSubunit).filter_by(pax_load = item.id).all():
                     rows._metadata = metadata
