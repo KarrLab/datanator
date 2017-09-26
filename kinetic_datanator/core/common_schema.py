@@ -574,6 +574,7 @@ class DNABindingData(Base):
         frequency_c (:obj:`int`): Frequency of C
         frequency_g (:obj:`int`): Frequency of G
         frequency_t (:obj:`int`): Frequency of T
+        jaspar_id (:obj:`int`): ID of Jaspar Matrix (used for bulk insert mapping)
         dataset_id  (:obj:`int`): Represents the dataset from which the data stems from
     """
     __tablename__ = 'dna_bidning_data'
@@ -584,6 +585,7 @@ class DNABindingData(Base):
     frequency_c = Column(Integer)
     frequency_g = Column(Integer)
     frequency_t = Column(Integer)
+    jaspar_id = Column(Integer)
 
     dataset_id  = Column(Integer, ForeignKey('dna_binding_dataset.dataset_id'))
     dataset = relationship('DNABindingDataset', backref = 'dna_binding_data', foreign_keys=[dataset_id])
@@ -632,10 +634,6 @@ class CommonSchema(data_source.HttpDataSource):
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
 
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
-
     def create_schema_png(self):
         if switch:
             # create the pydot graph object by autoloading all tables via a bound metadata object
@@ -663,18 +661,23 @@ class CommonSchema(data_source.HttpDataSource):
             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
             # Brute way for differentating multiple returns for a given uniprot ID
-            protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-            protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
-            protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-            protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-            if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
-                protein.length = int(df.loc[protein.uniprot_id,'Length'])
-            else:
-                protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
+            if protein.uniprot_id in df.index:
+                protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
+                protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
+                protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
+                protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
+                if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
+                    protein.length = int(df.loc[protein.uniprot_id,'Length'])
+                else:
+                    protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
 
 
         if self.verbose:
             print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
 
     def fill_missing_ncbi_names(self):
         t0 = time.time()
@@ -694,20 +697,37 @@ class CommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
 
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
     def add_paxdb(self):
         t0 = time.time()
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries = self.max_entries/5, verbose = self.verbose)
+            load_content= self.load, download_backup= self.download,  verbose = self.verbose)
         pax_ses = paxdb.session
 
         _entity = self.entity
         _property = self.property
 
+        abundance = pax_ses.query(pax.Observation).filter(pax.Observation.dataset_id.in_(range(1, (self.max_entries/5)+1))).all()
+        self.session.bulk_insert_mappings(AbundanceData,
+            [
+                dict(abundance = data.abundance, pax_load = data.dataset_id, \
+                    uniprot_id = data.protein.uniprot_id)\
+                    for data in abundance
+
+            ])
+
+        self.session.bulk_insert_mappings(ProteinSubunit,
+            [
+                dict(uniprot_id = data.protein.uniprot_id,\
+                type = 'Protein Subunit', pax_load = data.dataset_id) for data in abundance
+            ])
+
 
         pax_dataset = pax_ses.query(pax.Dataset).all()
-
         entries = 0
-        load = 1
         for item in pax_dataset:
             if entries < (self.max_entries/5):
                 metadata = self.get_or_create_object(Metadata, name = item.file_name)
@@ -715,38 +735,26 @@ class CommonSchema(data_source.HttpDataSource):
                 metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = item.publication))
                 _property.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
                     name = item.file_name, file_name = item.file_name, score = item.score, weight = item.weight, coverage= item.coverage, _metadata = metadata)
-                abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = item.id).all()
 
-                self.session.bulk_insert_mappings(ProteinSubunit,
-                    [
-                        dict(uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id,\
-                        type = 'Protein Subunit', pax_load = load) for data in abundance
-                    ])
-
-                self.session.bulk_insert_mappings(AbundanceData,
-                    [
-                        dict(abundance = data.abundance, pax_load = load, \
-                            uniprot_id = pax_ses.query(pax.Protein).get(data.protein_id).uniprot_id)\
-                            for data in abundance
-
-                    ])
-
-                for rows in self.session.query(ProteinSubunit).filter_by(pax_load = load).all():
+                for rows in self.session.query(ProteinSubunit).filter_by(pax_load = item.id).all():
                     rows._metadata = metadata
 
-                for rows in self.session.query(AbundanceData).filter_by(pax_load = load).all():
+                for rows in self.session.query(AbundanceData).filter_by(pax_load = item.id).all():
                     rows.dataset = _property.abundance_dataset
-                    rows.subunit = self.session.query(ProteinSubunit).filter_by(pax_load = load).filter_by(uniprot_id = rows.uniprot_id).first()
-                load += 1
+                    rows.subunit = self.session.query(ProteinSubunit).filter_by(pax_load = item.id).filter_by(uniprot_id = rows.uniprot_id).first()
                 entries += 1
 
         if self.verbose:
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
 
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
     def add_corumdb(self):
         t0 = time.time()
         corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries = self.max_entries, verbose = self.verbose)
+            load_content= self.load, download_backup= self.download, verbose = self.verbose)
         corum_ses = corumdb.session
 
         _entity = self.entity
@@ -758,7 +766,7 @@ class CommonSchema(data_source.HttpDataSource):
         entries = 0
         for row in corum_complex:
             if entries < self.max_entries:
-                entry = corum_ses.query(corum.Observation).get(row.observation_id)
+                entry = row.observation
                 metadata = self.get_or_create_object(Metadata, name = row.complex_name)
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = entry.taxon_ncbi_id))
                 metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = str(entry.pubmed_id)))
@@ -773,8 +781,7 @@ class CommonSchema(data_source.HttpDataSource):
         entries = 0
         for row in corum_subunit:
             if entries < self.max_entries:
-                corum_cmplx = corum_ses.query(corum.Complex).get(row.complex_id)
-                complex_ = self.session.query(ProteinComplex).filter_by(complex_name = corum_cmplx.complex_name).first()
+                complex_ = self.session.query(ProteinComplex).filter_by(complex_name = row.complex.complex_name).first()
                 entry = self.session.query(Observation).get(complex_.complex_id)
                 _entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
                     type = 'Protein Subunit', uniprot_id = row.su_uniprot,
@@ -783,6 +790,10 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
         if self.verbose:
             print('Total time taken for Corum: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
 
     def add_jaspardb(self):
         t0 = time.time()
@@ -794,66 +805,65 @@ class CommonSchema(data_source.HttpDataSource):
         _property = self.property
 
         jaspar_matrix = jasp_ses.query(jaspar.Matrix).all()
+        position = jasp_ses.query(jaspar.MatrixPosition).all()
+
+        self.session.bulk_insert_mappings(DNABindingData,
+            [
+                dict(position = pos.position,
+                frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
+                frequency_t = pos.frequency_t, jaspar_id = pos.matrix_id) for pos in position
+            ])
 
         entries = 0
         for item in jaspar_matrix:
             if entries < self.max_entries:
-                temp_tf = jasp_ses.query(jaspar.TranscriptionFactor).filter_by(id = item.transcription_factor_id).first()
-                tax = jasp_ses.query(jaspar.transcription_factor_species).filter_by(transcription_factor__id = temp_tf._id).all()
-                ref = jasp_ses.query(jaspar.matrix_resource).filter_by(matrix_id = item.id).all()
-                type_name = jasp_ses.query(jaspar.Type).get(item.type_id).name
-                temp_class = jasp_ses.query(jaspar.transcription_factor_class).filter_by(transcription_factor__id = temp_tf._id).first()
-                if temp_class is not None:
-                    class_name = jasp_ses.query(jaspar.Class).get(temp_class.class_id).name
-                temp_fam = jasp_ses.query(jaspar.transcription_factor_family).filter_by(transcription_factor__id = temp_tf._id).first()
-                if temp_fam is not None:
-                    fam_name = jasp_ses.query(jaspar.Family).get(temp_fam.family_id).name
-                for speice in tax:
-                    ncbi = jasp_ses.query(jaspar.Species).get(speice.species_id).ncbi_id
-                    for docs in ref:
-                        doc = docs.resource_pubmed_id
-                        if '::' in temp_tf.name:
-                            su = temp_tf.name.split('::')
-                            dialoge = 'Subunits are: '
-                            for items in su:
-                                dialoge += (items + ' ')
-                            metadata = self.get_or_create_object(Metadata, name = temp_tf.name)
-                            metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = ncbi))
-                            metadata.method.append(self.get_or_create_object(Method, name = type_name))
-                            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = doc))
-                            _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = temp_tf.name,
-                                complex_name = temp_tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
-                            _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
-                                version = item.version, tf = _entity.protein_complex, _metadata = metadata)
-                            for pos in jaspar_matrixposition:
-                                data = self.get_or_create_object(DNABindingData, position = pos.position,
-                                frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-                                frequency_t = pos.frequency_t, dataset = _property.dna_binding_dataset)
-                        else:
-                            sub_id = jasp_ses.query(jaspar.transcription_factor_subunit).filter_by(transcription_factor__id = temp_tf._id).first().subunit_id
-                            uniprot_id = jasp_ses.query(jaspar.Subunit).get(sub_id).uniprot_id
-                            metadata = self.get_or_create_object(Metadata, name = temp_tf.name)
-                            metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = ncbi))
-                            metadata.method.append(self.get_or_create_object(Method, name = type_name))
-                            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = doc))
-                            _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
-                                name = temp_tf.name, subunit_name = temp_tf.name, gene_name = temp_tf.name,
-                                class_name = class_name, family_name = fam_name, _metadata = metadata)
-                            _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = temp_tf.name,
-                                version = item.version, subunit = _entity.protein_subunit, _metadata = metadata)
-                            jaspar_matrixposition = jasp_ses.query(jaspar.MatrixPosition).filter_by(matrix_id = item.id).all()
-                            for pos in jaspar_matrixposition:
-                                data = self.get_or_create_object(DNABindingData, position = pos.position,
-                                frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-                                frequency_t = pos.frequency_t, dataset = _property.dna_binding_dataset)
+                tf = item.transcription_factor
+                if item.type_id:
+                    type_name = item.type.name
+                if item.transcription_factor.classes:
+                    class_name = item.transcription_factor.classes[0].name
+                if item.transcription_factor.families:
+                    fam_name = item.transcription_factor.families[0].name
+                metadata = self.get_or_create_object(Metadata, name = tf.name)
+                for speice in item.transcription_factor.species:
+                    metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = speice.ncbi_id))
+                metadata.method.append(self.get_or_create_object(Method, name = type_name))
+                for docs in item.references:
+                    metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = docs.pubmed_id))
+                if '::' in tf.name:
+                    su = tf.name.split('::')
+                    dialoge = 'Subunits are: '
+                    for items in su:
+                        dialoge += (items + ' ')
+                    _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = tf.name,
+                        complex_name = tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
+                    _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
+                        version = item.version, tf = _entity.protein_complex, _metadata = metadata)
+                    for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
+                        row.dataset = _property.dna_binding_dataset
+                else:
+                    if tf.subunits:
+                        uniprot_id = tf.subunits[0].uniprot_id
+                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
+                        name = tf.name, subunit_name = tf.name, gene_name = tf.name,
+                        class_name = class_name, family_name = fam_name, _metadata = metadata)
+                    _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
+                        version = item.version, subunit = _entity.protein_subunit, _metadata = metadata)
+                    for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
+                        row.dataset = _property.dna_binding_dataset
                 entries += 1
+
         if self.verbose:
             print('Total time taken for Jaspar: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
 
     def add_ecmdb(self):
         t0 = time.time()
         ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries =(100*self.max_entries), verbose = self.verbose)
+            load_content= self.load, download_backup= self.download, verbose = self.verbose)
         ecm_ses = ecmDB.session
 
         _entity = self.entity
@@ -863,22 +873,19 @@ class CommonSchema(data_source.HttpDataSource):
 
         entries = 0
         for item in ecmdb_compound:
-            if entries < (self.max_entries*100):
-                concentration = ecm_ses.query(ecmdb.Concentration).filter_by(compound_id = item._id).all()
-                ref = ecm_ses.query(ecmdb.compound_resource).filter_by(compound__id = item._id).all()
-                compart = ecm_ses.query(ecmdb.compound_compartment).filter_by(compound__id = item._id).all()
-                syn = ecm_ses.query(ecmdb.compound_synonym).filter_by(compound__id = item._id).all()
+            if entries < (self.max_entries):
+                concentration = item.concentrations
+                ref = item.cross_references
+                compart = item.compartments
+                syn = item.synonyms
                 metadata = self.get_or_create_object(Metadata, name = item.name)
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = 562, name = 'E.Coli'))
                 for docs in ref:
-                    resource = ecm_ses.query(ecmdb.Resource).get(docs.resource__id)
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
+                    metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
                 for areas in compart:
-                    compartment = ecm_ses.query(ecmdb.Compartment).get(areas.compartment__id)
-                    metadata.cell_compartment.append(self.get_or_create_object(CellCompartment, name = compartment.name))
+                    metadata.cell_compartment.append(self.get_or_create_object(CellCompartment, name = areas.name))
                 for syns in syn:
-                    synonym = ecm_ses.query(ecmdb.Synonym).get(syns.synonym__id)
-                    metadata.synonym.append(self.get_or_create_object(Synonym, name = synonym.name))
+                    metadata.synonym.append(self.get_or_create_object(Synonym, name = syns.name))
                 _property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
                     _value_inchi = item.structure,
                    _structure_formula_connectivity = item._structure_formula_connectivity, _metadata = metadata)
@@ -891,10 +898,9 @@ class CommonSchema(data_source.HttpDataSource):
                         metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
                         metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
                             media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
-                        refs = ecm_ses.query(ecmdb.concentration_resource).filter_by(concentration__id = rows._id).all()
+                        refs = rows.references
                         for docs in refs:
-                            resource = ecm_ses.query(ecmdb.Resource).get(docs.resource__id)
-                            metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
+                            metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
                         _property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name+ ' Concentration '+str(index),
                             value = rows.value, error = rows.error, _metadata = metadata, compound = _entity.compound)
                         index += 1
@@ -903,10 +909,14 @@ class CommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Total time taken for ECMDB: ' + str(time.time()-t0) + ' secs')
 
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
     def add_sabiodb(self):
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, max_entries = self.max_entries*100, verbose = self.verbose)
+            load_content= self.load, download_backup= self.download,  verbose = self.verbose)
         sabio_ses = sabiodb.session
 
         _entity = self.entity
@@ -922,20 +932,18 @@ class CommonSchema(data_source.HttpDataSource):
                 elif item._type == 'kinetic_law':
                     metadata = self.get_or_create_object(Metadata, name = 'Kinetic Law ' + str(counter))
                     counter += 1
-                syn = sabio_ses.query(sabio_rk.entry_synonym).filter_by(entry__id = item._id).all()
-                res = sabio_ses.query(sabio_rk.entry_resource).filter_by(entry__id = item._id).all()
+                syn = item.synonyms
+                res = item.cross_references
                 for synonyms in syn:
-                    syns = sabio_ses.query(sabio_rk.Synonym).get(synonyms.synonym__id)
-                    metadata.synonym.append(self.get_or_create_object(Synonym, name = syns.name))
+                    metadata.synonym.append(self.get_or_create_object(Synonym, name = synonyms.name))
                 for docs in res:
-                    resource = sabio_ses.query(sabio_rk.Resource).get(docs.resource__id)
-                    if resource.namespace == 'taxonomy':
-                        metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = resource.id))
-                    elif resource.namespace == 'uniprot':
-                        uniprot = resource.id
+                    if docs.namespace == 'taxonomy':
+                        metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = docs.id))
+                    elif docs.namespace == 'uniprot':
+                        uniprot = docs.id
                     else:
-                        metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace,
-                            _id = resource.id))
+                        metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace,
+                            _id = docs.id))
                 if item._type == 'compartment':
                     compartment = self.get_or_create_object(CellCompartment, name = item.name)
                 if item._type == 'compound':
@@ -1022,6 +1030,10 @@ class CommonSchema(data_source.HttpDataSource):
                 entries += 1
         if self.verbose:
             print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
 
     # def add_arrayexpressdb(self):
     #     arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False)

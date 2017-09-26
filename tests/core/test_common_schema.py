@@ -21,7 +21,7 @@ class ShortTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
+        self.cs = common_schema.CommonSchema(
                                 clear_content = True,
                                 load_content= True, download_backup= False,
                                 max_entries = 10, verbose = True)
@@ -55,6 +55,7 @@ class ShortTestCommonSchema(unittest.TestCase):
         metadata = session.query(common_schema.Metadata).filter_by(name = dataset.file_name).first()
         taxon = session.query(common_schema._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
         self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
+
 
     def test_corum_added(self):
         session = self.cs.session
