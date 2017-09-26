@@ -21,7 +21,7 @@ class ShortTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(
+        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True,
                                 load_content= True, download_backup= False,
                                 max_entries = 10, verbose = True)
