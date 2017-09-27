@@ -221,8 +221,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
     @unittest.skip('implement me')
     def test_filter_observed_values(self):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
-        reaction = self.reaction
-        vals = q.get_observed_values(reaction)
+        vals = q.get_observed_values(self.reaction)
         filter_result = q.filter_observed_values(reaction, vals)
 
         for ov in filter_result.observed_values:

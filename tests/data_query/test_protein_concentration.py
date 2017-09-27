@@ -19,6 +19,20 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
             sequence = 'MPKALIVYGSTTGNTEYTAETIARELADAGYEVDSRDAASVEAGGLFEGFDLVLLGCSTWGDDSIELQDDFIPLFDSLEETGAQGRKVACFGCGDSSYEYFCGAVDAIEEKLKNLGAEIVQDGLRIDGDPRAARDDIVGWAHDVRGAI',
             mass = '15,823', length = 148, entrez_id = '2795051')
 
+
+
+    def test_filter_observed_values(self):
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+
+        vals = q.get_observed_values(self.protein_P00323)
+
+        for items in vals:
+            self.assertEqual(items.units, 'PPM')
+            self.assertEqual(items.observable.specie.sequence, self.protein_P00323.sequence)
+            if items.observation.reference.publication == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt':
+                self.assertEqual(items.value, 1003.0)
+
+
     def test_get_abundance_by_uniprot(self):
         q = protein_concentrations.ProteinConcentrationsQueryGenerator()
 

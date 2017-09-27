@@ -219,7 +219,16 @@ class RnaSpecie(PolymerSpecie):
 
 
 class ProteinSpecie(PolymerSpecie):
-    """ Represents a protein polymer """
+    """ Represents a protein polymer
+
+    Attributes:
+        uniprot_id (:obj:`str`): Uniprot Identifier
+        entrez_id (:obj:`int`): Entrez Identifier
+        gene_name (:obj:`str`): gene name from which protein stems
+        length (:obj:`int`): Length of the amino acid sequence
+        mass (:obj:`int`): Mass of the protein in KDa
+
+    """
     uniprot_id  = obj_model.core.StringAttribute()
     entrez_id = obj_model.core.IntegerAttribute()
     gene_name = obj_model.core.StringAttribute()
@@ -503,7 +512,7 @@ class Reference(obj_model.core.Model):
         number (:obj:`str`): number
         chapter (:obj:`str`): chapter
         pages (:obj:`str`): pages
-        uri (:obj:`str`): uri
+        url (:obj:`str`): url
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
@@ -516,4 +525,4 @@ class Reference(obj_model.core.Model):
     number = obj_model.core.StringAttribute()
     chapter = obj_model.core.StringAttribute()
     pages = obj_model.core.StringAttribute()
-    uri = obj_model.core.StringAttribute()
+    url = obj_model.core.StringAttribute()

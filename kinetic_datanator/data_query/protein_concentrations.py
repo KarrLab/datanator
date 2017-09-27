@@ -46,7 +46,34 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
 
         """
-        pass
+        abundances = self.get_abundance_by_sequence(protein.sequence).all()
+        observed_vals = []
+
+        for abundance in abundances:
+
+            observation = data_model.Observation(
+                genetics = data_model.Genetics(
+                    taxon = abundance.dataset._metadata.taxon[0].name
+                ),
+                reference = data_model.Reference(
+                    publication = abundance.dataset.file_name,
+                    url = abundance.dataset._metadata.resource[0]._id
+                )
+            )
+
+            observable = data_model.Observable(
+                specie = protein
+            )
+
+            observed_vals.append(data_model.ObservedValue(
+                observation = observation,
+                observable = observable,
+                value = abundance.abundance,
+                error = 0 ,
+                units = 'PPM',
+            ))
+
+        return observed_vals
 
 
     def get_abundance_by_uniprot(self, uniprot, select = common_schema.AbundanceData):
@@ -65,9 +92,17 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
         return q.filter(condition)
 
     def get_abundance_by_gene_name(self, gene_name, select = common_schema.AbundanceData):
+        """ Find the abundance from gene_name
+
+        Args:
+            uniprot (:obj:`str`): protein id from Uniprot Database
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`common_schema.CommonSchema` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
         """
 
-        """
         ##TODO: Figure out a gene name from the string of gene_name in the common database. So if name = gen_name (in string)
         q = self.data_source.session.query(select).join(common_schema.ProteinSubunit, common_schema.AbundanceData.subunit)
         condition = common_schema.ProteinSubunit.gene_name == gene_name
@@ -75,32 +110,60 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
 
 
     def get_abundance_by_sequence(self, sequence, select = common_schema.AbundanceData):
-        """
+        """ Find the abundance from uniprot
 
+        Args:
+            uniprot (:obj:`str`): protein id from Uniprot Database
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`common_schema.CommonSchema` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
         """
         q = self.data_source.session.query(select).join(common_schema.ProteinSubunit, common_schema.AbundanceData.subunit)
         condition = common_schema.ProteinSubunit.canonical_sequence == sequence
         return q.filter(condition)
 
     def get_abundance_by_entrez(self, entrez_id, select = common_schema.AbundanceData):
-        """
+        """ Find the abundance from uniprot
 
+        Args:
+            uniprot (:obj:`str`): protein id from Uniprot Database
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`common_schema.CommonSchema` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
         """
         q = self.data_source.session.query(select).join(common_schema.ProteinSubunit, common_schema.AbundanceData.subunit)
         condition = common_schema.ProteinSubunit.entrez_id == entrez_id
         return q.filter(condition)
 
     def get_abundance_by_mass(self, mass, select = common_schema.AbundanceData):
-        """
+        """ Find the abundance from uniprot
 
+        Args:
+            uniprot (:obj:`str`): protein id from Uniprot Database
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`common_schema.CommonSchema` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
         """
         q = self.data_source.session.query(select).join(common_schema.ProteinSubunit, common_schema.AbundanceData.subunit)
         condition = common_schema.ProteinSubunit.mass == mass
         return q.filter(condition)
 
     def get_abundance_by_length(self, length, select = common_schema.AbundanceData):
-        """
+        """ Find the abundance from uniprot
 
+        Args:
+            uniprot (:obj:`str`): protein id from Uniprot Database
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`common_schema.CommonSchema` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
         """
         q = self.data_source.session.query(select).join(common_schema.ProteinSubunit, common_schema.AbundanceData.subunit)
         condition = common_schema.ProteinSubunit.length == length

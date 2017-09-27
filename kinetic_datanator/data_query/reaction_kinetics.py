@@ -179,10 +179,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
                 if parameter.compound_id:
                     observable.specie = species[parameter.compound_id]
-                    # if parameter.compartment:
-                    #     observable.compartment = data_model.Compartment(
-                    #         id=parameter.compartment.name,
-                    #     )
+                    if parameter.compartment:
+                        observable.compartment = data_model.Compartment(
+                            id=parameter.compartment.name,
+                        )
 
                 observed_vals.append(data_model.ObservedValue(
                     observation=observation,
