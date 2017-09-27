@@ -29,7 +29,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
         for items in vals:
             self.assertEqual(items.units, 'PPM')
             self.assertEqual(items.observable.specie.sequence, self.protein_P00323.sequence)
-            if items.observation.reference.publication == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt':
+            if items.observable.specie.cross_references[0].id == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt':
                 self.assertEqual(items.value, 1003.0)
 
 

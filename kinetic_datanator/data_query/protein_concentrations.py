@@ -54,16 +54,17 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             observation = data_model.Observation(
                 genetics = data_model.Genetics(
                     taxon = abundance.dataset._metadata.taxon[0].name
-                ),
-                reference = data_model.Reference(
-                    publication = abundance.dataset.file_name,
-                    url = abundance.dataset._metadata.resource[0]._id
                 )
             )
 
             observable = data_model.Observable(
-                specie = protein
+                specie = protein,
             )
+
+            observable.specie.cross_references = [
+                data_model.Resource(namespace ='publication', id = abundance.dataset.file_name),
+                data_model.Resource(namespace ='url', id = abundance.dataset._metadata.resource[0]._id)
+            ]
 
             observed_vals.append(data_model.ObservedValue(
                 observation = observation,

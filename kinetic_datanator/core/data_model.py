@@ -447,6 +447,8 @@ class Environment(obj_model.core.Model):
     temperature = obj_model.core.FloatAttribute()
     ph = obj_model.core.FloatAttribute()
     media = obj_model.core.LongStringAttribute()
+    growth_status = obj_model.core.LongStringAttribute()
+    growth_system = obj_model.core.LongStringAttribute()
 
 
 class Method(obj_model.core.Model):
