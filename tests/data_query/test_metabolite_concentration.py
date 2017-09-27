@@ -25,19 +25,14 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
             ',12,15)(H2,16,17,18)/t4-,6-,7-,8-/m1/s1'
         )
 
-    @unittest.skip('need to fix common_schema metadata mapping issue before running this test')
     def test_filter_observed_values(self):
         q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator()
 
         obs = q.get_observed_values(self.proline)
+        self.assertEqual(set(c.value for c in obs), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
+        self.assertEqual(set(c.error for c in obs), set([0.0,0.0,0.0,0.0,45.0,11.37]))
         for c in obs:
-            print c.observation.genetics.taxon
-            print c.observation.genetics.variation
-            print c.observation.environment.temperature
-            print c.observation.environment.media
-            print c.observable.compartment.name
-            print c.value
-
+            self.assertEqual(c.observation.genetics.taxon, 'Escherichia coli')
 
     def test_get_concentration_by_structure(self):
         q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator()

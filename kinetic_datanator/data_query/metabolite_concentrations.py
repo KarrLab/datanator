@@ -54,22 +54,25 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
 
         for c in concentrations:
 
+        #TODO: Figure out the multi metadata issue.
+
             observation = data_model.Observation(
                 genetics = data_model.Genetics(
-                    taxon = c._metadata.taxon.name,
-                    variation = c._metadata.cell_line.name
+                    taxon = c._metadata.taxon[0].name,
+                    variation = c._metadata.cell_line[0].name
                 ),
                 environment = data_model.Environment(
-                    temperature = c._metadata.conditions.temperature,
-                    ph = c._metadata.conditions.ph,
-                    media = c._metadata.conditions.media,
-                    growth_status = c._metadata.conditions.growth_status,
-                    growth_system = c._metadata.conditions.growth_system,
+                    temperature = c._metadata.conditions[0].temperature,
+                    ph = c._metadata.conditions[0].ph,
+                    media = c._metadata.conditions[0].media,
+                    growth_status = c._metadata.conditions[0].growth_status,
+                    growth_system = c._metadata.conditions[0].growth_system,
                 )
             )
+
             observable = data_model.Observable(
                 specie = specie,
-                compartment = data_model.Compartment(name = c._metadata.cell_compartment.name)
+                compartment = data_model.Compartment(name = c._metadata.cell_compartment[0].name)
             )
 
             observed_vals.append(data_model.ObservedValue(

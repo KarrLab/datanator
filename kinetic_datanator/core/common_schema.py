@@ -894,14 +894,18 @@ class CommonSchema(data_source.HttpDataSource):
                 if concentration:
                     index = 0
                     for rows in concentration:
-                        metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
-                        metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
+                        new_metadata = self.get_or_create_object(Metadata, name = item.name+ ' Concentration ' + str(index))
+                        new_metadata.taxon = metadata.taxon
+                        new_metadata.cell_compartment = metadata.cell_compartment
+                        new_metadata.synonym = metadata.synonym
+                        new_metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
+                        new_metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
                             media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
                         refs = rows.references
                         for docs in refs:
-                            metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
+                            new_metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
                         _property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = item.name+ ' Concentration '+str(index),
-                            value = rows.value, error = rows.error, _metadata = metadata, compound = _entity.compound)
+                            value = rows.value, error = rows.error, _metadata = new_metadata, compound = _entity.compound)
                         index += 1
                 entries += 1
 
