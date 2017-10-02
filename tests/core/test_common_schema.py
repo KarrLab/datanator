@@ -16,14 +16,15 @@ import shutil
 import random
 
 
-class ShortTestCommonSchema(unittest.TestCase):
+
+class LoadingTestCommonSchema(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
-                                clear_content = True,
-                                load_content= True, download_backup= False,
+                                clear_content = True, load_entire_small_DBs = False,
+                                continue_load = False, download_backup= False,
                                 max_entries = 10, verbose = True)
 
     @classmethod
