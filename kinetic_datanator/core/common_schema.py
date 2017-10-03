@@ -641,7 +641,7 @@ class CommonSchema(data_source.CachedDataSource):
             self.load_small_db_switch = False
             self.session.query(Progress).delete()
             self.load_content()
-        else:
+        elif load_content:
             self.pax_loaded = 0
             self.sabio_loaded = 0
             self.load_small_db_switch = True
@@ -702,14 +702,19 @@ class CommonSchema(data_source.CachedDataSource):
         t0 = time.time()
         u = UniProt(verbose = False)
 
+
         subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
-        uni = []
-        for items in subunits.all():
-            uni.append(str(items.uniprot_id))
-        entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
-        for protein in subunits:
-            if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
-                protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+        while(subunits.count() != 0):
+            chunk = 1000
+            uni = []
+            for items in subunits.limit(chunk).all():
+                uni.append(str(items.uniprot_id))
+            entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
+            for protein in subunits:
+                if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
+                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+            print("here")
+
 
         subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
         uni = []
@@ -769,9 +774,11 @@ class CommonSchema(data_source.CachedDataSource):
         _property = self.property
 
 
-
-        pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_\
-            (range(self.pax_loaded+1, self.pax_loaded+1 +(self.max_entries/5))))
+        if self.max_entries == float('inf'):
+            pax_dataset = pax_ses.query(pax.Dataset).all()
+        else:
+            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_\
+                (range(self.pax_loaded+1, self.pax_loaded+1 + int(self.max_entries/5))))
 
 
         for item in pax_dataset:
@@ -830,12 +837,14 @@ class CommonSchema(data_source.CachedDataSource):
         corum_complex = corum_ses.query(corum.Complex).all()
         corum_subunit = corum_ses.query(corum.Subunit).all()
 
+        max_entries = self.max_entries
+
         if self.load_entire_small_DBs:
-            self.max_entries = float('inf')
+            max_entries = float('inf')
 
         entries = 0
         for row in corum_complex:
-            if entries < self.max_entries:
+            if entries < max_entries:
                 entry = row.observation
                 metadata = self.get_or_create_object(Metadata, name = row.complex_name)
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = entry.taxon_ncbi_id))
@@ -850,7 +859,7 @@ class CommonSchema(data_source.CachedDataSource):
 
         entries = 0
         for row in corum_subunit:
-            if entries < self.max_entries:
+            if entries < max_entries:
                 complex_ = self.session.query(ProteinComplex).filter_by(complex_name = row.complex.complex_name).first()
                 entry = self.session.query(Observation).get(complex_.complex_id)
                 _entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
@@ -884,12 +893,14 @@ class CommonSchema(data_source.CachedDataSource):
                 frequency_t = pos.frequency_t, jaspar_id = pos.matrix_id) for pos in position
             ])
 
+        max_entries = self.max_entries
+
         if self.load_entire_small_DBs:
-            self.max_entries = float('inf')
+            max_entries = float('inf')
 
         entries = 0
         for item in jaspar_matrix:
-            if entries < self.max_entries:
+            if entries < max_entries:
                 tf = item.transcription_factor
                 if item.type_id:
                     type_name = item.type.name
@@ -944,12 +955,15 @@ class CommonSchema(data_source.CachedDataSource):
 
         ecmdb_compound = ecm_ses.query(ecmdb.Compound).all()
 
+        max_entries = self.max_entries
+
+
         if self.load_entire_small_DBs:
-            self.max_entries = float('inf')
+            max_entries = float('inf')
 
         entries = 0
         for item in ecmdb_compound:
-            if entries < (self.max_entries):
+            if entries < max_entries:
                 concentration = item.concentrations
                 ref = item.cross_references
                 compart = item.compartments
@@ -1002,8 +1016,11 @@ class CommonSchema(data_source.CachedDataSource):
         _entity = self.entity
         _property = self.property
 
-        sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
-            (range(self.sabio_loaded+1, self.sabio_loaded+1 + (self.max_entries*50)))).all()
+        if self.max_entries == float('inf'):
+            sabio_entry = sabio_ses.query(sabio_rk.Entry).all()
+        else:
+            sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
+                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*100)))).all()
 
         counter = 1
         for item in sabio_entry:
@@ -1109,7 +1126,7 @@ class CommonSchema(data_source.CachedDataSource):
                             observed_error = param.observed_error, observed_units = param.observed_units)
 
 
-        self.get_or_create_object(Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))
+        self.get_or_create_object(Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*100))
 
         if self.verbose:
             print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')

@@ -15,12 +15,10 @@ jobs:
 
       - run: pip2 install -e .
       - run: pip2 install -U -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-      - run: pip2 install --upgrade sphinx
       - run: karr-lab-build-utils-2 install-requirements
 
       - run: pip3 install -e .
       - run: pip3 install -U -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-      - run: pip3 install --upgrade sphinx
       - run: karr-lab-build-utils-3 install-requirements
 
       - save_cache:
