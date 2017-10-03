@@ -24,7 +24,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True, load_entire_small_DBs = False,
-                                continue_load = False, download_backup= False,
+                                continue_load = False, download_backup= False, load_content = True,
                                 max_entries = 10, verbose = True)
 
     @classmethod
@@ -60,7 +60,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_corum_added(self):
         session = self.cs.session
-        subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'Histone deacetylase 5 (HD5) (EC 3.5.1.98) (Antigen NY-CO-9)').first()
+        subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'Histone deacetylase 5').first()
         self.assertEqual(subunit.uniprot_id, 'Q9UQL6')
         self.assertEqual(subunit.entrez_id, 10014)
         complex_  = session.query(common_schema.ProteinComplex).get(subunit.proteincomplex_id)
@@ -73,7 +73,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_jaspar_added(self):
         session = self.cs.session
-        subunit = session.query(common_schema.ProteinSubunit).filter_by(subunit_name = 'Transcription factor AP-2-alpha (AP2-alpha) (AP-2 transcription factor) (Activating enhancer-binding protein 2-alpha) (Activator protein 2) (AP-2)').first()
+        subunit = session.query(common_schema.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
         self.assertEqual(subunit.uniprot_id, 'P05549')
         self.assertEqual(subunit.class_name, 'Zipper-Type')
         binding = session.query(common_schema.DNABindingDataset).filter_by(subunit_id = subunit.subunit_id).first()

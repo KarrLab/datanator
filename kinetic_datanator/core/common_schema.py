@@ -663,7 +663,7 @@ class CommonSchema(data_source.CachedDataSource):
         self.load = False
         self.download = True
 
-        ## Add all DBs
+        # Add all DBs
         self.add_paxdb()
         if self.verbose:
             print('Pax Done')
@@ -705,33 +705,53 @@ class CommonSchema(data_source.CachedDataSource):
 
         subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
         while(subunits.count() != 0):
+            initial_count = subunits.count()
             chunk = 1000
             uni = []
             for items in subunits.limit(chunk).all():
                 uni.append(str(items.uniprot_id))
             entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
-            for protein in subunits:
+            for protein in subunits.limit(chunk).all():
                 if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
                     protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            print("here")
+            if subunits.count() == initial_count:
+                break
 
+        subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
+        while(subunits.count() != 0):
+            initial_count = subunits.count()
+            chunk = 1000
+            uni = []
+            for items in subunits.limit(chunk).all():
+                uni.append(str(items.uniprot_id))
+            df = u.get_df(uni, nChunk = 200)
+            df.set_index('Entry', inplace = True)
+            for protein in subunits.limit(chunk).all():
+                if protein.uniprot_id in df.index:
+                    protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
+                    protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
+            if subunits.count() == initial_count:
+                break
 
         subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
-        uni = []
-        for items in subunits.all():
-            uni.append(str(items.uniprot_id))
-        df = u.get_df(uni, nChunk = 200)
-        df.set_index('Entry', inplace = True)
-        for protein in subunits:
-            if protein.uniprot_id in df.index:
-                protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-                protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
-                protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-                protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-                if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
-                    protein.length = int(df.loc[protein.uniprot_id,'Length'])
-                else:
-                    protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
+        while(subunits.count() != 0):
+            initial_count = subunits.count()
+            chunk = 1000
+            uni = []
+            for items in subunits.limit(chunk).all():
+                uni.append(str(items.uniprot_id))
+            df = u.get_df(uni, nChunk = 200)
+            df.set_index('Entry', inplace = True)
+            for protein in subunits.limit(chunk).all():
+                if protein.uniprot_id in df.index:
+                    protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
+                    protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
+                    if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
+                        protein.length = int(df.loc[protein.uniprot_id,'Length'])
+                    else:
+                        protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
+            if subunits.count() == initial_count:
+                break
 
 
         if self.verbose:
@@ -1020,7 +1040,7 @@ class CommonSchema(data_source.CachedDataSource):
             sabio_entry = sabio_ses.query(sabio_rk.Entry).all()
         else:
             sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
-                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*100)))).all()
+                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*50)))).all()
 
         counter = 1
         for item in sabio_entry:
@@ -1126,7 +1146,7 @@ class CommonSchema(data_source.CachedDataSource):
                             observed_error = param.observed_error, observed_units = param.observed_units)
 
 
-        self.get_or_create_object(Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*100))
+        self.get_or_create_object(Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))
 
         if self.verbose:
             print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
