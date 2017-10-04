@@ -737,7 +737,7 @@ class TestDownloader(unittest.TestCase):
         compound_unknown = sabio_rk.Compound(name='Unknown')
         compound_no_pubchem = sabio_rk.Compound(name='a random string: adfkja;uvhayocbvadf')
         compound_one_pubchem = sabio_rk.Compound(name='water')
-        compound_multiple_pubchem = sabio_rk.Compound(name='Phenyllactate')
+        compound_multiple_pubchem = sabio_rk.Compound(name='Aspartate')
         session.add(compound_unknown)
         session.add(compound_no_pubchem)
         session.add(compound_one_pubchem)
@@ -760,14 +760,14 @@ class TestDownloader(unittest.TestCase):
         ]))
 
         self.assertEqual(set([(xr.namespace, xr.id) for xr in compound_multiple_pubchem.cross_references]), set([
-            ('pubchem.compound', '3848'),
-            ('pubchem.compound', '643327'),
-            ('pubchem.compound', '4060207'),
+            ('pubchem.compound', '5960'),
+            ('pubchem.compound', '5460541'),
+            ('pubchem.compound', '5460294'),
         ]))
         self.assertEqual(set([(s.format, s.value) for s in compound_multiple_pubchem.structures]), set([
-            ('inchi', 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)'),
-            ('inchi', 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1'),
-            ('inchi', 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/p-1'),
+            ('inchi', 'InChI=1S/C4H7NO4/c5-2(4(8)9)1-3(6)7/h2H,1,5H2,(H,6,7)(H,8,9)/t2-/m0/s1'),
+            ('inchi', 'InChI=1S/C4H7NO4/c5-2(4(8)9)1-3(6)7/h2H,1,5H2,(H,6,7)(H,8,9)/p-2/t2-/m0/s1'),
+            ('inchi', 'InChI=1S/C4H7NO4/c5-2(4(8)9)1-3(6)7/h2H,1,5H2,(H,6,7)(H,8,9)/p-1/t2-/m0/s1'),
         ]))
 
     def test_calc_inchi_formula_connectivity(self):

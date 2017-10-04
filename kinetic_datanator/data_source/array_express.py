@@ -1,5 +1,4 @@
 """ Downloads and parses the ArrayExpress database
-
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2017-08-16
@@ -15,7 +14,10 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
 import os
-import urllib
+from six.moves.urllib.request import urlretrieve
+from kinetic_datanator.data_source.array_express_tools import parse_counts
+from kinetic_datanator.data_source.array_express_tools import get_genome_size
+import zipfile
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -77,9 +79,15 @@ experiment_protocol = sqlalchemy.Table(
 # :obj:`sqlalchemy.Table`: Experiment:Protocol many-to-many association table
 
 
+experiment_genes = sqlalchemy.Table(
+    'experiment_genes', Base.metadata,
+    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
+    sqlalchemy.Column('gene__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('gene._id'), index=True),
+)
+# :obj:`sqlalchemy.Table`: Sample:Characteristic many-to-many association table
+
 class Characteristic(Base):
     """ Represents an experimental characteristic
-
     Attributes:
         _id (:obj:`int`): unique id
         category (:obj:`str`): name of the characteristic (e.g. organism)
@@ -97,12 +105,11 @@ class Characteristic(Base):
 
 class Variable(Base):
     """ Represents an experimental variable
-
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name of the variable (e.g. genotype)
         value (:obj:`str`): value of variable (e.g control)
-        unit (:obj:`str`): units of value (e.g control). This field is not always filled. 
+        unit (:obj:`str`): units of value (e.g control). This field is not always filled.
         samples (:obj:`list` of :obj:`Sample`): samples
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -115,9 +122,23 @@ class Variable(Base):
     __tablename__ = 'variable'
 
 
+class Gene(Base):
+    """ Represents a gene. This is used to reference which genes are used in which experiments
+    Attributes:
+        _id (:obj:`int`): unique id
+        category (:obj:`str`): name of the characteristic (e.g. organism)
+        value (:obj:`str`): value of characteristic (e.g. Mus musculus)
+        samples (:obj:`list` of :obj:`Sample`): samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String())
+
+    sqlalchemy.schema.UniqueConstraint(name)
+
+    __tablename__ = 'gene'
+
 class Sample(Base):
     """ Represents an observed concentration
-
     Attributes:
         _id (:obj:`int`): unique id
         experiment_id: (:obj:`int`): the accesion number of the experiment
@@ -145,7 +166,6 @@ class Sample(Base):
 
 class Experiment(Base):
     """ Represents an experiment
-
     Attributes:
         _id (:obj:`int`): unique id
         id (:obj:`str`): unique string identifier assigned by ArrayExpress
@@ -159,6 +179,7 @@ class Experiment(Base):
         release_date (:obj:`datetime.date`): release date
         data_formats (:obj:`list` of :obj:`DataFormat`): list of data formats
         samples (:obj:`list` of :obj:`Sample`): list of samples
+        genes (:obj:`list` of :obj:`Gene`): list of genes in the experiment
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     id = sqlalchemy.Column(sqlalchemy.String(), unique=True, index=True)
@@ -175,12 +196,15 @@ class Experiment(Base):
     data_formats = sqlalchemy.orm.relationship('DataFormat', secondary=experiment_data_format,
                                                backref=sqlalchemy.orm.backref('experiments'))
 
+    genes = sqlalchemy.orm.relationship(
+        'Gene', secondary=experiment_genes, backref=sqlalchemy.orm.backref('experiments'))
+    whole_genome = sqlalchemy.Column(sqlalchemy.Boolean())
+
     __tablename__ = 'experiment'
 
 
 class ExperimentDesign(Base):
     """ Represents and experimental design
-
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name
@@ -193,7 +217,6 @@ class ExperimentDesign(Base):
 
 class ExperimentType(Base):
     """ Represents a type of experiment
-
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name
@@ -206,9 +229,8 @@ class ExperimentType(Base):
 
 class DataFormat(Base):
     """ Represents a data format
-
     Attributes:
-        _id (:obj:`int`): unique id    
+        _id (:obj:`int`): unique id
         name (:obj:`str`): name
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments
     """
@@ -220,7 +242,6 @@ class DataFormat(Base):
 
 class Organism(Base):
     """ Represents an organism
-
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name
@@ -233,7 +254,6 @@ class Organism(Base):
 
 class Extract(Base):
     """ Represents an extract of a sample
-
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name
@@ -248,13 +268,12 @@ class Extract(Base):
 
 class Protocol(Base):
     """ Represents a protocol for an experiment
-
     Attributes:
         _id (:obj:`int`): unique id
         protocol_accession (:obj:`str`): array express identifier for protocol
         protocol_type (:obj:`list` of :obj:`Sample`): the type of exerpimental protocol (e.g. normalization, extraction, etc.)
         text (:obj:`str`): description the protocol
-        performer (:obj:`str`): name of the person who did the experiment 
+        performer (:obj:`str`): name of the person who did the experiment
         hardware (:obj:`str`): hardware (usually detection instruments) used in protocol
         software (:obj:`str`): software (usually for analyzing and normalizing the data)
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments that performed this protocol
@@ -267,13 +286,12 @@ class Protocol(Base):
     hardware = sqlalchemy.Column(sqlalchemy.String())
     software = sqlalchemy.Column(sqlalchemy.String())
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
-    
+
     __tablename__ = 'protocol'
 
 
 class ArrayExpress(data_source.HttpDataSource):
     """ A local sqlite copy of the ArrayExpress database
-
     Attributes:
         EXCLUDED_DATASET_IDS (:obj:`list` of :obj:`str`): list of IDs of datasets to exclude
     """
@@ -313,8 +331,7 @@ class ArrayExpress(data_source.HttpDataSource):
     def load_content(self, start_year=2001, end_year=None):
         """
         Downloads all medatata from array exrpess on their samples and experiments. The metadata
-        is saved as the text file. Within the text files, the data is stored as a JSON object. 
-
+        is saved as the text file. Within the text files, the data is stored as a JSON object.
         Args:
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
             end_year (:obj:`int`, optional): the last year to retrieve experiments for
@@ -346,18 +363,19 @@ class ArrayExpress(data_source.HttpDataSource):
             self.load_experiment_samples(experiment)
             self.load_experiment_protocols(experiment)
 
+            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                self.load_processed_data(experiment)
+
         if self.verbose:
             print('  done.')
 
         self.session.commit()
 
-    def load_experiment_metadata(self, start_year=2001, end_year=None):
+    def load_experiment_metadata(self, start_year=2001, end_year=None, test_url=""):
         """ Get a list of accession identifiers for the experiments from the year :obj:`start_year` to year :obj:`end_year`
-
         Args:
             start_year (:obj:`int`, optional): the first year to retrieve experiment acession ids for
             end_year (:obj:`int`, optional): the last year to retrieve experiment acession ids for
-
         Returns:
             :obj:`list` of :obj:`str`: list of experiment accession identifiers
         """
@@ -366,8 +384,14 @@ class ArrayExpress(data_source.HttpDataSource):
 
         db_session = self.session
 
+        if test_url:
+            end_year = 2002
+
         for year in range(start_year, end_year + 1):
-            response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
+            if not test_url:
+                response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
+            if test_url:
+                response = self.requests_session.get(test_url)
             response.raise_for_status()
             for expt_json in response.json()['experiments']['experiment']:
 
@@ -414,7 +438,6 @@ class ArrayExpress(data_source.HttpDataSource):
 
     def load_experiment_samples(self, experiment):
         """ Load the samples for an experiment
-
         Args:
             experiment (:obj:`Experiment`): experiment
         """
@@ -440,7 +463,6 @@ class ArrayExpress(data_source.HttpDataSource):
 
     def load_experiment_sample(self, experiment, sample_json, index):
         """ Load the samples for an experiment
-
         Args:
             experiment (:obj:`Experiment`): experiment
             sample_json (:obj:`dict`): sample
@@ -487,11 +509,10 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
-    
+
     def load_experiment_protocols(self, experiment):
 
         """ Load the protocols for an experiment
-
         Args:
             experiment (:obj:`Experiment`): experiment
         """
@@ -520,16 +541,15 @@ class ArrayExpress(data_source.HttpDataSource):
 
 
     def load_experiment_protocol(self, experiment, protocol_json):
-        
-        """ Load the protocols for an experiment
 
+        """ Load the protocols for an experiment
         Args:
             experiment (:obj:`Experiment`): experiment
             protocol_json (:obj:`dict`): sample
         """
 
         db_session = self.session
-        
+
         protocol = Protocol()
 
         if 'accession' not in protocol_json:
@@ -559,7 +579,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
 
-        
+
         protocol.experiments.append(experiment)
 
 
@@ -567,17 +587,46 @@ class ArrayExpress(data_source.HttpDataSource):
         DIRNAME = '{}/array_express_processed_data'.format(self.cache_dirname)
         if not os.path.isdir(DIRNAME):
             os.makedirs(DIRNAME)
-        file = urllib.urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
+        file = urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
+        
+        zip_ref = zipfile.ZipFile("{}/array_express_processed_data/{}.processed.1.zip".format(self.cache_dirname, experiment.id), 'r')
+        zip_ref.extractall(os.path.join(self.cache_dirname, 'array_express_processed_data/E-MTAB-4063'))
+        zip_ref.close()
 
+        from os import listdir
+        from os.path import isfile, join
+        #the text file is taken from the folder, and then the information is put into the Experiment object
+        #this only works if there is only one file in the folder. If there is more than one, an error will be raised
+        onlyfiles = [f for f in listdir("{}/array_express_processed_data/E-MTAB-4063".format(self.cache_dirname)) if isfile(join("{}/array_express_processed_data/E-MTAB-4063".format(self.cache_dirname), f))]
+        if len(onlyfiles)>1:
+            raise ValueError('There is more than one file in the processed data folder. There should only be one')
+        counts_text_file = onlyfiles[0]
+        file = open("{}/array_express_processed_data/{}/{}".format(self.cache_dirname, experiment.id, counts_text_file))
+
+        data_samples = parse_counts.get_data_from_file(file)
+        experiment_size = len(data_samples[0].measurements)
+        organism_list =  [c.name for c in experiment.organisms]
+        if len(list(set(organism_list))) > 1:
+            raise ValueError("There is more than one organism in the experiment. Currently, this only supports single organism")
+        experimental_genome_size = get_genome_size.get_genome_size(organism_list[0])
+        if not (experiment_size > 1.15 * experimental_genome_size or experiment_size < 0.85 * experimental_genome_size):
+            experiment.whole_genome = True
+        """
+        for num, measurement in enumerate(data_samples[0].measurements):
+            if num % 500 == 0:
+                print measurement.gene_name
+
+            #experiment.genes.append(self.get_or_create_object(
+            #        Gene, name=measurement.gene_name))
+        
+        """
 
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
         if there is no instance with the property-values pairs described by kwargs
-
         Args:
             cls (:obj:`class`): type of object to find or create
             **kwargs: values of the properties of the object
-
         Returns:
             :obj:`Base`: instance of :obj:`cls` hat has the property-values pairs described by kwargs
         """

@@ -1897,6 +1897,5 @@ class SabioRk(data_source.HttpDataSource):
             ws.append(wc_utils.workbook.core.Row(row))
 
         if not filename:
-            filename = os.getcwd() + '/kinetic_datanator/data_source/cache/' + '.summary.xlsx'
-            #filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
+            filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
         wc_utils.workbook.io.write(filename, wb, style=style)

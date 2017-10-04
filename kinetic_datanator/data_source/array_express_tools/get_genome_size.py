@@ -1,13 +1,16 @@
 import numpy as np
 from ete3 import NCBITaxa
+import os
 
 
 def get_genome_size(organism_name):
+	path = os.path.dirname(os.path.realpath(__file__))
+
 	domain = get_taxonomic_lineage(organism_name)[-3:-2][0]
 	if domain == "Bacteria":
-		file = open('number_of_prokaryote_genes.txt')
+		file = open(os.path.join(path, 'number_of_prokaryote_genes.txt'))
 	if domain == 'Eukaryota':
-		file = open('number_of_eukaryote_genes.txt')
+		file = open(os.path.join(path, 'number_of_eukaryote_genes.txt'))
 	lines = file.readlines()
 	lines = [line.split("	") for line in lines]
 	total = []
@@ -16,7 +19,6 @@ def get_genome_size(organism_name):
 			if not line[12] == '-':
 				total.append(int(line[12]))
 
-	print total
 	return np.average(total)
 
 def get_taxonomic_lineage(baseSpecies):
@@ -33,6 +35,10 @@ def get_taxonomic_lineage(baseSpecies):
 	return new
 
 if __name__ == '__main__':
-	print get_genome_size('Mycoplasma pneumoniae')
-	print get_genome_size('Mus musculus')
-	print get_genome_size('Homo sapiens')
+	print(get_genome_size('Mycoplasma pneumoniae'))
+	print(get_genome_size('Mus musculus'))
+
+	print(get_genome_size('Homo sapiens'))
+
+	print(get_genome_size('Homo sapiens'))
+

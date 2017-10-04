@@ -66,6 +66,7 @@ class Protein(Base):
     __tablename__ = 'protein'
     protein_id = Column(Integer, primary_key=True)
     string_id  = Column(String(255))
+    uniprot_id = Column(String(255))
 
 class Observation(Base):
     """  Represents a protein
@@ -113,6 +114,18 @@ def find_files(path):
             data_files.append(f)
     return data_files
 
+def find_uniprot_relation(path, ncbi_id):
+    """ Finds the current working directory and feeds back dictionary of uniprot_ids
+
+
+    """
+    fname = path + '/' + str(ncbi_id) + '-paxdb_uniprot.txt'
+    with open(fname, 'r') as f:
+        rows = ( line.split('\t') for line in f)
+        d = { row[0]:str(row[1]).strip() for row in rows}
+        return d
+
+
 
 """ ----------------------------- Pax DB Class  ---------------------------------"""
 
@@ -125,6 +138,7 @@ class Pax(data_source.HttpDataSource):
     base_model = Base
     ENDPOINT_DOMAINS = {
         'pax': 'http://pax-db.org/downloads/latest/datasets/paxdb-abundance-files-v4.0.zip',
+        'pax_protein': 'http://pax-db.org/downloads/latest/UniProt_mappings/paxdb-uniprot-links-v4_0.zip'
     }
 
     def load_content(self):
@@ -135,14 +149,22 @@ class Pax(data_source.HttpDataSource):
         """
 
         database_url = self.ENDPOINT_DOMAINS['pax']
+        protein_conversion_url = self.ENDPOINT_DOMAINS['pax_protein']
         req = self.requests_session
 
-        # Extract All Files and Save to Cache Directory
+        # Extract All Main Files and Save to Cache Directory
         response = req.get(database_url)
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
         self.cwd = self.cache_dirname+'/paxdb-abundance-files-v4.0'
         self.data_files = find_files(self.cwd)
+
+        # Extract All Protein Relation Files and Save to Cache Directory
+        response = req.get(protein_conversion_url)
+        z = zipfile.ZipFile(BytesIO(response.content))
+        z.extractall(self.cache_dirname)
+        self.cwd_prot = self.cache_dirname+'/paxdb-uniprot-links-v4_0'
+
 
         # Insert Error Report in Cache
         new_file = '/report.txt'
@@ -161,6 +183,7 @@ class Pax(data_source.HttpDataSource):
           print('Finished parsing files, committing to DB.')
         self.session.commit()
 
+
     def parse_paxDB_files(self):
         """ This function parses pax DB files and adds them to the SQL database
         Attributes:
@@ -177,6 +200,7 @@ class Pax(data_source.HttpDataSource):
         start  = file_path.find('/',len(self.cwd)-1)+1
         finish = file_path.find('/',len(self.cwd)+4)
         ncbi_id = int(file_path[start:finish])
+
 
         # Get file_name
         start   = file_path.find('/',len(self.cwd))+1
@@ -288,19 +312,26 @@ class Pax(data_source.HttpDataSource):
 
             """ --- Parse individual measurements and add them to DB ----------- """
 
+            uniprot_dict = find_uniprot_relation(self.cwd_prot, ncbi_id)
+
             for i in range(11,len(lines)):
                 split_line = lines[i].split()
                 protein_id = split_line[0]
                 string_id  = split_line[1]
                 abundance  = split_line[2]
 
+
                 # Insert relevant table entries
                 q = self.session.query(Protein).filter(Protein.protein_id==protein_id)
                 if self.session.query(q.exists()).scalar():
                     protein = q.first()
                 else:
-                    protein = Protein(protein_id=protein_id, string_id=string_id)
-                    self.session.add(protein)
+                    if string_id in uniprot_dict:
+                        protein = Protein(protein_id=protein_id, string_id=string_id, uniprot_id = uniprot_dict[string_id])
+                        self.session.add(protein)
+                    else:
+                        protein = Protein(protein_id=protein_id, string_id=string_id)
+                        self.session.add(protein)
 
                 observation = Observation(dataset=dataset, abundance=abundance, protein=protein)
                 self.session.add(observation)

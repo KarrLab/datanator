@@ -15,18 +15,32 @@ class Sample():
 		total_value_all_counts = None
 
 
-def get_data_from_file(text_file):
-	file = open('counts.txt')
+def get_data_from_file(file):
+	#file = open('array_express_tools/counts.txt')
 
 	samples = []
-
 	lines = file.readlines()
-	content = [x.strip().split(' ') for x in lines]
-	for sample_name in content[0]:#.split(' '):
+	seperator = ""
+	if "\t" in lines[0]:
+		seperator = "\t"
+	elif " " in lines[0]:
+		seperator = " "
+	else:
+		raise ValueError("Unidentified seperator in file")
+
+	content = [x.strip().split(seperator) for x in lines]
+	first_line = []
+	if len(content[0]) == len(content[1]):
+		first_line = content[0][1:]
+	else:
+		first_line = content[0]
+
+	for sample_name in first_line:#.split(' '):
 		samples.append(Sample(sample_name=sample_name))
 	for num, sample in enumerate(samples):
 		measurements = []
 		for row in content[1:]:
+
 			measurements.append(Measurement(row[0], row[num+1]))
 		sample.measurements = measurements
 
@@ -50,8 +64,8 @@ if __name__ == '__main__':
 	samples = get_data_from_file(file)
 
 	for sample in samples:
-		print sample.total_value_all_counts
-		print len(sample.measurements)
+		print(sample.total_value_all_counts)
+		print(len(sample.measurements))
 		"""
 		total = 0
 		for m in sample.measurements:
