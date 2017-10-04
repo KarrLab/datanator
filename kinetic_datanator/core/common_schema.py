@@ -604,7 +604,7 @@ class Progress(Base):
     amount_loaded = Column(Integer)
 
 
-class CommonSchema(data_source.CachedDataSource):
+class CommonSchema(data_source.HttpDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
@@ -612,7 +612,8 @@ class CommonSchema(data_source.CachedDataSource):
     base_model = Base
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False, load_entire_small_DBs = False):
+                 commit_intermediate_results=False, download_backup=True, verbose=False, load_entire_small_DBs = False,
+                  clear_requests_cache=False, download_request_backup=False):
 
         """
         Args:
@@ -628,9 +629,10 @@ class CommonSchema(data_source.CachedDataSource):
         """
 
         super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
-                              load_content=False, max_entries=max_entries,
-                              commit_intermediate_results=commit_intermediate_results,
-                              download_backup=download_backup, verbose=verbose)
+                                      load_content=False, max_entries=max_entries,
+                                      commit_intermediate_results=commit_intermediate_results,
+                                      download_backup=download_backup, verbose=verbose,
+                                      clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
         self.load_entire_small_DBs = load_entire_small_DBs
 
@@ -716,6 +718,8 @@ class CommonSchema(data_source.CachedDataSource):
             if subunits.count() == initial_count:
                 break
 
+        self.session.commit()
+
         subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
         while(subunits.count() != 0):
             initial_count = subunits.count()
@@ -731,6 +735,9 @@ class CommonSchema(data_source.CachedDataSource):
                     protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
             if subunits.count() == initial_count:
                 break
+
+        self.session.commit()
+
 
         subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
         while(subunits.count() != 0):
@@ -751,7 +758,6 @@ class CommonSchema(data_source.CachedDataSource):
                         protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
             if subunits.count() == initial_count:
                 break
-
 
         if self.verbose:
             print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
