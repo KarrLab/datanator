@@ -1,6 +1,7 @@
 """
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
+:Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-05-16
 :Copyright: 2017, Karr Lab
 :License: MIT
