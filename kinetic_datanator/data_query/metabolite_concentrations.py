@@ -1,5 +1,6 @@
 """
 :Author: Jonathan Karr <jonrkarr@gmail.com>
+:Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-05-16
 :Copyright: 2017, Karr Lab
 :License: MIT
@@ -101,6 +102,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
 
         q = self.data_source.session.query(select).join((common_schema.Compound, select.compound)).\
             join((common_schema.Structure, common_schema.Compound.structure))
+
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
             condition = common_schema.Structure._structure_formula_connectivity == formula_and_connectivity

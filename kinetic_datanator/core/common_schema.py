@@ -604,7 +604,7 @@ class Progress(Base):
     amount_loaded = Column(Integer)
 
 
-class CommonSchema(data_source.CachedDataSource):
+class CommonSchema(data_source.HttpDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
@@ -612,7 +612,8 @@ class CommonSchema(data_source.CachedDataSource):
     base_model = Base
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False, continue_load = False, load_entire_small_DBs = False):
+                 commit_intermediate_results=False, download_backup=True, verbose=False, load_entire_small_DBs = False,
+                  clear_requests_cache=False, download_request_backup=False):
 
         """
         Args:
@@ -620,7 +621,6 @@ class CommonSchema(data_source.CachedDataSource):
             cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
-            continue_load (:obj:`bool`, optional): if :obj:`True`, continues to load content where left off for LARGE DBS (PAX/SABIO)
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
@@ -629,13 +629,14 @@ class CommonSchema(data_source.CachedDataSource):
         """
 
         super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
-                              load_content=False, max_entries=max_entries,
-                              commit_intermediate_results=commit_intermediate_results,
-                              download_backup=download_backup, verbose=verbose)
+                                      load_content=False, max_entries=max_entries,
+                                      commit_intermediate_results=commit_intermediate_results,
+                                      download_backup=download_backup, verbose=verbose,
+                                      clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
         self.load_entire_small_DBs = load_entire_small_DBs
 
-        if download_backup and continue_load:
+        if download_backup and load_content:
             self.pax_loaded = self.session.query(Progress).filter_by(database_name = 'Pax').first().amount_loaded
             self.sabio_loaded = self.session.query(Progress).filter_by(database_name = 'Sabio').first().amount_loaded
             self.load_small_db_switch = False
@@ -717,6 +718,8 @@ class CommonSchema(data_source.CachedDataSource):
             if subunits.count() == initial_count:
                 break
 
+        self.session.commit()
+
         subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
         while(subunits.count() != 0):
             initial_count = subunits.count()
@@ -732,6 +735,9 @@ class CommonSchema(data_source.CachedDataSource):
                     protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
             if subunits.count() == initial_count:
                 break
+
+        self.session.commit()
+
 
         subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
         while(subunits.count() != 0):
@@ -753,7 +759,6 @@ class CommonSchema(data_source.CachedDataSource):
             if subunits.count() == initial_count:
                 break
 
-
         if self.verbose:
             print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
 
@@ -774,7 +779,8 @@ class CommonSchema(data_source.CachedDataSource):
         species_dict = ncbi.get_taxid_translator(ncbi_ids)
 
         for tax in species:
-            tax.name = species_dict[tax.ncbi_id]
+            if tax.ncbi_id in species_dict.keys():
+                tax.name = species_dict[tax.ncbi_id]
 
         if self.verbose:
             print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
