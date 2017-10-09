@@ -208,8 +208,12 @@ class PolymerSpecie(Specie):
 
 
 class DnaSpecie(PolymerSpecie):
-    """ Represents a DNA polymer """
-    pass
+    """ Represents a DNA polymer
+    Attributes:
+        binding_matrix (:obj:`Bio.motifs.matrix.FrequencyPositionMatrix`): Binding motif
+    """
+    binding_matrix = obj_model.core.Attribute()
+
 
 
 
