@@ -19,6 +19,7 @@ import dateutil.parser
 
 class QuickTest(unittest.TestCase):
 
+
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
@@ -30,6 +31,8 @@ class QuickTest(unittest.TestCase):
     def test_load_experiment_metadata(self):
         src = self.src
         session = src.session
+
+        self.assertEqual.__self__.maxDiff = None
 
         src.load_experiment_metadata(2001, 2002)
         q = session.query(array_express.Experiment)
@@ -47,10 +50,17 @@ class QuickTest(unittest.TestCase):
         self.assertEqual(experiment.types, [session.query(array_express.ExperimentType).filter_by(
             name='transcription profiling by SAGE').first()])
         self.assertEqual(experiment.designs, [])
-        self.assertEqual(sorted(experiment.data_formats, key=lambda format: format.name), [
+        self.assertEqual(sorted([df.name for df in experiment.data_formats]), ['normalization', 'processedData'])
+        print "yello"
+        self.assertEqual(sorted([df.name for df in experiment.data_formats]), sorted([df.name for df in [
             session.query(array_express.DataFormat).filter_by(name='normalization').first(),
             session.query(array_express.DataFormat).filter_by(name='processedData').first(),
-        ])
+        ]]))
+
+        #self.assertEqual(sorted(experiment.data_formats, key=lambda format: format.name), [
+        #    session.query(array_express.DataFormat).filter_by(name='normalization').first(),
+        #    session.query(array_express.DataFormat).filter_by(name='processedData').first(),
+        #])
         self.assertEqual(experiment.submission_date, datetime.date(2001, 10, 2))
         self.assertEqual(experiment.release_date, datetime.date(2001, 10, 3))
 
@@ -285,11 +295,72 @@ class TestIncorporateProcessedData(unittest.TestCase):
         for i_experiment, experiment in enumerate(session.query(array_express.Experiment).all()):
             src.load_experiment_samples(experiment)
             src.load_experiment_protocols(experiment)
-            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+            single_dimensional_processed_RNA_seq_data = False
+            print [d.name for d in experiment.types]
+            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                for df in experiment.data_formats:
+                    print df.name
+                    print df.bio_assay_data_cubes
+                    print ""
+                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
+                        single_dimensional_processed_RNA_seq_data = True
+                        break
+
+            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+            if single_dimensional_processed_RNA_seq_data:
                 src.load_processed_data(experiment)
 
         self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-MTAB-4063.processed.1.zip".format(src.cache_dirname)))
         self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-MTAB-4063/NJMU24_normalized_counts.txt".format(src.cache_dirname)))
         experiment = session.query(array_express.Experiment).filter_by(id='E-MTAB-4063').first()
         self.assertTrue(experiment.whole_genome)
-        #self.assertTrue(len(experiment.genes), 57820)
+        self.assertTrue(len(experiment.genes), 57820)
+        some_gene = session.query(array_express.Gene).filter_by(name='ENSG00000001084.6').first()
+        self.assertEqual(some_gene.experiments[0].id, 'E-MTAB-4063')
+
+    def test_download_processed_data_long(self):
+        src = self.src
+        session = src.session
+
+        src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2016-02-02+2016-02-04]")
+        #src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?accession=E-MTAB-4063")
+        experiments = session.query(array_express.Experiment)
+
+        for i_experiment, experiment in enumerate(session.query(array_express.Experiment).all()):
+            print experiment.id
+            src.load_experiment_samples(experiment)
+            src.load_experiment_protocols(experiment)
+            single_dimensional_processed_RNA_seq_data = False
+            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                for df in experiment.data_formats:
+                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
+                        single_dimensional_processed_RNA_seq_data = True
+                        break
+
+            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+            if single_dimensional_processed_RNA_seq_data:
+                src.load_processed_data(experiment)
+        
+        self.assertEqual(len(session.query(array_express.Gene).all()), 97481)
+        incorporated_exps = list(set([g.experiment_id for g in session.query(array_express.Gene).all()]))
+        self.assertEqual(incorporated_exps, list(set([u'E-MTAB-3965', u'E-MTAB-4063'])))
+        total_exps = set([exp.id for exp in session.query(array_express.Experiment).all()])
+        unincorporated_exps = list(total_exps - set(incorporated_exps))
+        self.assertEqual(unincorporated_exps, [u'E-MTAB-4133', 
+            u'E-GEOD-77512', 
+            u'E-MTAB-3941', #unincorporated because no processed data
+            u'E-GEOD-77428', 
+            u'E-MTAB-3680', #unincorporated because no processed data
+            u'E-GEOD-69220', 
+            u'E-GEOD-77479', 
+            u'E-GEOD-66821', 
+            u'E-GEOD-72210', 
+            u'E-GEOD-65859', 
+            u'E-MTAB-4231', #unincorporated because not an RNA seq experiment
+            u'E-MTAB-3301', #unincorporated because has too many bio_assay_data_cubes
+            u'E-GEOD-71319', 
+            u'E-GEOD-77224'
+            ])
+
+
+        

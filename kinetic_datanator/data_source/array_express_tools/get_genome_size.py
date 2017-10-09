@@ -35,10 +35,11 @@ def get_taxonomic_lineage(baseSpecies):
 	return new
 
 if __name__ == '__main__':
-	print(get_genome_size('Mycoplasma pneumoniae'))
-	print(get_genome_size('Mus musculus'))
+	#print(get_genome_size('Mycoplasma pneumoniae'))
+	#print(get_genome_size('Mus musculus'))
 
-	print(get_genome_size('Homo sapiens'))
+	#print(get_genome_size('Homo sapiens'))
 
-	print(get_genome_size('Homo sapiens'))
+	print(get_genome_size('Zea mays'))
+
 

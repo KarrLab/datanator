@@ -18,6 +18,8 @@ from six.moves.urllib.request import urlretrieve
 from kinetic_datanator.data_source.array_express_tools import parse_counts
 from kinetic_datanator.data_source.array_express_tools import get_genome_size
 import zipfile
+from os import listdir
+from os.path import isfile, join
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -131,6 +133,7 @@ class Gene(Base):
         samples (:obj:`list` of :obj:`Sample`): samples
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    experiment_id = sqlalchemy.Column(sqlalchemy.String()) #array express identification
     name = sqlalchemy.Column(sqlalchemy.String())
 
     sqlalchemy.schema.UniqueConstraint(name)
@@ -235,8 +238,10 @@ class DataFormat(Base):
         experiments (:obj:`list` of :obj:`Experiment`): list of experiments
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+    name = sqlalchemy.Column(sqlalchemy.String())
+    bio_assay_data_cubes =  sqlalchemy.Column(sqlalchemy.Integer())
 
+    sqlalchemy.schema.UniqueConstraint(name, bio_assay_data_cubes)
     __tablename__ = 'data_format'
 
 
@@ -363,7 +368,16 @@ class ArrayExpress(data_source.HttpDataSource):
             self.load_experiment_samples(experiment)
             self.load_experiment_protocols(experiment)
 
-            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+            single_dimensional_processed_RNA_seq_data = False
+            
+            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                for df in experiment.data_formats:
+                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
+                        single_dimensional_processed_RNA_seq_data = True
+                        break
+
+            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+            if single_dimensional_processed_RNA_seq_data:
                 self.load_processed_data(experiment)
 
         if self.verbose:
@@ -426,7 +440,7 @@ class ArrayExpress(data_source.HttpDataSource):
 
                 if 'bioassaydatagroup' in expt_json:
                     for entry in expt_json['bioassaydatagroup']:
-                        experiment.data_formats.append(self.get_or_create_object(DataFormat, name=entry['dataformat']))
+                        experiment.data_formats.append(self.get_or_create_object(DataFormat, name=entry['dataformat'], bio_assay_data_cubes = entry['bioassaydatacubes']))
 
                 if 'submissiondate' in expt_json:
                     experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
@@ -589,38 +603,41 @@ class ArrayExpress(data_source.HttpDataSource):
             os.makedirs(DIRNAME)
         file = urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
         
-        zip_ref = zipfile.ZipFile("{}/array_express_processed_data/{}.processed.1.zip".format(self.cache_dirname, experiment.id), 'r')
-        zip_ref.extractall(os.path.join(self.cache_dirname, 'array_express_processed_data/E-MTAB-4063'))
-        zip_ref.close()
+        if experiment.id[2:6] == "MTAB":
+            zip_ref = zipfile.ZipFile("{}/array_express_processed_data/{}.processed.1.zip".format(self.cache_dirname, experiment.id), 'r')
+            zip_ref.extractall(os.path.join(self.cache_dirname, 'array_express_processed_data/{}'.format(experiment.id)))
+            zip_ref.close()
 
-        from os import listdir
-        from os.path import isfile, join
-        #the text file is taken from the folder, and then the information is put into the Experiment object
-        #this only works if there is only one file in the folder. If there is more than one, an error will be raised
-        onlyfiles = [f for f in listdir("{}/array_express_processed_data/E-MTAB-4063".format(self.cache_dirname)) if isfile(join("{}/array_express_processed_data/E-MTAB-4063".format(self.cache_dirname), f))]
-        if len(onlyfiles)>1:
-            raise ValueError('There is more than one file in the processed data folder. There should only be one')
-        counts_text_file = onlyfiles[0]
-        file = open("{}/array_express_processed_data/{}/{}".format(self.cache_dirname, experiment.id, counts_text_file))
 
-        data_samples = parse_counts.get_data_from_file(file)
-        experiment_size = len(data_samples[0].measurements)
-        organism_list =  [c.name for c in experiment.organisms]
-        if len(list(set(organism_list))) > 1:
-            raise ValueError("There is more than one organism in the experiment. Currently, this only supports single organism")
-        experimental_genome_size = get_genome_size.get_genome_size(organism_list[0])
-        if not (experiment_size > 1.15 * experimental_genome_size or experiment_size < 0.85 * experimental_genome_size):
-            experiment.whole_genome = True
-        """
-        for num, measurement in enumerate(data_samples[0].measurements):
-            if num % 500 == 0:
-                print measurement.gene_name
+            #the text file is taken from the folder, and then the information is put into the Experiment object
+            #this only works if there is only one file in the folder. If there is more than one, an error will be raised
+            onlyfiles = [f for f in listdir("{}/array_express_processed_data/{}".format(self.cache_dirname, experiment.id)) if isfile(join("{}/array_express_processed_data/{}".format(self.cache_dirname, experiment.id), f))]
+            if len(onlyfiles)>1:
+                raise ValueError('There is more than one file in the processed data folder. There should only be one')
+            counts_text_file = onlyfiles[0]
+            file = open("{}/array_express_processed_data/{}/{}".format(self.cache_dirname, experiment.id, counts_text_file))
 
-            #experiment.genes.append(self.get_or_create_object(
-            #        Gene, name=measurement.gene_name))
+            data_samples = parse_counts.get_data_from_file(file)
+            experiment_size = len(data_samples[0].measurements)
+            organism_list =  [c.name for c in experiment.organisms]
+            if len(list(set(organism_list))) > 1:
+                raise ValueError("There is more than one organism in the experiment. Currently, this only supports single organism")
+            experimental_genome_size = get_genome_size.get_genome_size(organism_list[0])
+            if not (experiment_size > 1.15 * experimental_genome_size or experiment_size < 0.85 * experimental_genome_size):
+                experiment.whole_genome = True
+            
+
+            self.session.bulk_insert_mappings(Gene,
+                [
+                    dict(name=measurement.gene_name, experiment_id=experiment.id)\
+                        for measurement in data_samples[0].measurements
+                ])
+
+            for row in self.session.query(Gene).filter_by(experiment_id=experiment.id).all():
+                experiment.genes.append(row)
+                #print row.name
+            
         
-        """
-
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
         if there is no instance with the property-values pairs described by kwargs
