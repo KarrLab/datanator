@@ -14,7 +14,6 @@ import tempfile
 import shutil
 import csv
 
-
 class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
     """
     Tests for Protein to DNA interactions
@@ -45,28 +44,30 @@ class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
         self.assertEqual(set(c.position for c in position[0]), set([1, 2, 3, 4, 5, 6]))
 
 
-# class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
-#     """
-#     Tests for DNA to Protein interactions
-#
-#     Case: You have a DNA segment and want to find binding Protein
-#
-#     """
-#     @classmethod
-#     def setUp(self):
-#         q = dpi.ProteintoDNAInteractionQueryGenerator()
-#         self.srf = data_model.ProteinSpecie(uniprot_id = 'P11831', sequence = 'SRF')
-#         observable = q.get_observed_values(self.srf)
-#         self.dna_segment = data_model.DnaSpecie(binding_matrix = observable[0].specie.binding_matrix,
-#                                                 sequence = observable[0].specie.sequence)
-#
-#     def test_get_protein_by_binding_matrix(self):
-#         """
-#
-#         """
-#
-#         q = dpi.DNAtoProteinInteractionQueryGenerator()
-#
-#         query = q.get_protein_by_binding_matrix(self.dna_segment.binding_matrix)
-#
-#         self.assert
+class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
+    """
+    Tests for DNA to Protein interactions
+
+    Case: You have a DNA segment and want to find binding Protein
+
+    """
+    @classmethod
+    def setUp(self):
+        self.dna_segment1 = data_model.DnaSpecie(sequence = 'CCTTTGTT')
+        self.dna_segment2 = data_model.DnaSpecie(sequence = 'AAGGTCAA')
+
+    def test_filter_observed_values(self):
+        q = dpi.DNAtoProteinInteractionQueryGenerator()
+
+        observe = q.get_observed_values(self.dna_segment2)
+
+        self.assertEqual(set(c.specie.gene_name for c in observe), set(['NR4A2', 'TRP(MYB) class']))
+
+
+    def test_get_protein_by_binding_matrix(self):
+        q = dpi.DNAtoProteinInteractionQueryGenerator()
+
+        query = q.get_protein_by_DNA_sequence(self.dna_segment1.sequence)
+
+        self.assertEqual(set(c[0].subunit_name for c in query), set(['pan', 'Sox2', 'DOF5.6', 'DOF5.7']))
+        self.assertEqual(set(c[1] for c in query), set([0,0,-8,-8]))

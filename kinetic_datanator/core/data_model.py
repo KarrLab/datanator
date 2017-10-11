@@ -242,8 +242,14 @@ class ProteinSpecie(PolymerSpecie):
 
 
 class Interaction(EntityInteractionOrProperty):
-    """ Represents an interaction """
-    pass
+    """ Represents an interaction
+
+        Attributes:
+            position (:obj:`int`): position at which interaction occurs
+            score (:obj:`float`): ranking of the response of the interaction
+    """
+    position = obj_model.core.IntegerAttribute()
+    score = obj_model.core.FloatAttribute()
 
 
 class Reaction(Interaction):
