@@ -27,7 +27,7 @@ class QuickTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    
+
     def test_load_experiment_metadata(self):
         src = self.src
         session = src.session
@@ -51,7 +51,7 @@ class QuickTest(unittest.TestCase):
             name='transcription profiling by SAGE').first()])
         self.assertEqual(experiment.designs, [])
         self.assertEqual(sorted([df.name for df in experiment.data_formats]), ['normalization', 'processedData'])
-        print "yello"
+        # print "yello"
         self.assertEqual(sorted([df.name for df in experiment.data_formats]), sorted([df.name for df in [
             session.query(array_express.DataFormat).filter_by(name='normalization').first(),
             session.query(array_express.DataFormat).filter_by(name='processedData').first(),
@@ -134,7 +134,7 @@ class QuickTest(unittest.TestCase):
         self.assertEqual(protocol.hardware,'Affymetrix GeneChip Scanner 3000 7G')
         self.assertEqual(protocol.software,'Affymetrix AGCC')
 
-    
+
 
     def test_load_processed_data(self):
         test_experiment = array_express.Experiment(id = 'E-MTAB-4549', organisms=[array_express.Organism(name="Mus musculus")])
@@ -296,12 +296,12 @@ class TestIncorporateProcessedData(unittest.TestCase):
             src.load_experiment_samples(experiment)
             src.load_experiment_protocols(experiment)
             single_dimensional_processed_RNA_seq_data = False
-            print [d.name for d in experiment.types]
+            # print [d.name for d in experiment.types]
             if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
                 for df in experiment.data_formats:
-                    print df.name
-                    print df.bio_assay_data_cubes
-                    print ""
+                    # print df.name
+                    # print df.bio_assay_data_cubes
+                    # print ""
                     if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
                         single_dimensional_processed_RNA_seq_data = True
                         break
@@ -327,7 +327,7 @@ class TestIncorporateProcessedData(unittest.TestCase):
         experiments = session.query(array_express.Experiment)
 
         for i_experiment, experiment in enumerate(session.query(array_express.Experiment).all()):
-            print experiment.id
+            # print experiment.id
             src.load_experiment_samples(experiment)
             src.load_experiment_protocols(experiment)
             single_dimensional_processed_RNA_seq_data = False
@@ -340,27 +340,24 @@ class TestIncorporateProcessedData(unittest.TestCase):
             #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
             if single_dimensional_processed_RNA_seq_data:
                 src.load_processed_data(experiment)
-        
+
         self.assertEqual(len(session.query(array_express.Gene).all()), 97481)
         incorporated_exps = list(set([g.experiment_id for g in session.query(array_express.Gene).all()]))
         self.assertEqual(incorporated_exps, list(set([u'E-MTAB-3965', u'E-MTAB-4063'])))
         total_exps = set([exp.id for exp in session.query(array_express.Experiment).all()])
         unincorporated_exps = list(total_exps - set(incorporated_exps))
-        self.assertEqual(unincorporated_exps, [u'E-MTAB-4133', 
-            u'E-GEOD-77512', 
+        self.assertEqual(unincorporated_exps, [u'E-MTAB-4133',
+            u'E-GEOD-77512',
             u'E-MTAB-3941', #unincorporated because no processed data
-            u'E-GEOD-77428', 
+            u'E-GEOD-77428',
             u'E-MTAB-3680', #unincorporated because no processed data
-            u'E-GEOD-69220', 
-            u'E-GEOD-77479', 
-            u'E-GEOD-66821', 
-            u'E-GEOD-72210', 
-            u'E-GEOD-65859', 
+            u'E-GEOD-69220',
+            u'E-GEOD-77479',
+            u'E-GEOD-66821',
+            u'E-GEOD-72210',
+            u'E-GEOD-65859',
             u'E-MTAB-4231', #unincorporated because not an RNA seq experiment
             u'E-MTAB-3301', #unincorporated because has too many bio_assay_data_cubes
-            u'E-GEOD-71319', 
+            u'E-GEOD-71319',
             u'E-GEOD-77224'
             ])
-
-
-        
