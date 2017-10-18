@@ -659,11 +659,6 @@ class CommonSchema(data_source.HttpDataSource):
         observation.physical_property = PhysicalProperty()
         self.property = observation.physical_property
 
-        ## Switches
-        self.clear = False
-        self.load = False
-        self.download = True
-
         # Add all DBs
         self.add_paxdb()
         if self.verbose:
@@ -791,8 +786,8 @@ class CommonSchema(data_source.HttpDataSource):
 
     def add_paxdb(self):
         t0 = time.time()
-        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download,  verbose = self.verbose)
+        paxdb = pax.Pax(cache_dirname = self.cache_dirname, clear_content = False,
+            load_content= False, download_backup= True,  verbose = self.verbose)
         pax_ses = paxdb.session
         u = UniProt(verbose = False)
 
@@ -853,8 +848,8 @@ class CommonSchema(data_source.HttpDataSource):
 
     def add_corumdb(self):
         t0 = time.time()
-        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, verbose = self.verbose)
+        corumdb = corum.Corum(cache_dirname = self.cache_dirname, clear_content = False,
+            load_content= False, download_backup= True, verbose = self.verbose)
         corum_ses = corumdb.session
 
         _entity = self.entity
@@ -902,8 +897,8 @@ class CommonSchema(data_source.HttpDataSource):
 
     def add_jaspardb(self):
         t0 = time.time()
-        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, verbose = self.verbose)
+        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = False,
+            load_content= False, download_backup= True, verbose = self.verbose)
         jasp_ses = jaspardb.session
 
         _entity = self.entity
@@ -972,8 +967,8 @@ class CommonSchema(data_source.HttpDataSource):
 
     def add_ecmdb(self):
         t0 = time.time()
-        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download, verbose = self.verbose)
+        ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, clear_content = False,
+            load_content= False, download_backup= True, verbose = self.verbose)
         ecm_ses = ecmDB.session
 
         _entity = self.entity
@@ -1035,8 +1030,8 @@ class CommonSchema(data_source.HttpDataSource):
 
     def add_sabiodb(self):
         t0 = time.time()
-        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = self.clear,
-            load_content= self.load, download_backup= self.download,  verbose = self.verbose)
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, clear_content = False,
+            load_content= False, download_backup= True,  verbose = self.verbose)
         sabio_ses = sabiodb.session
 
         _entity = self.entity
