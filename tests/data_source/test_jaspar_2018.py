@@ -24,9 +24,7 @@ class TestLoad(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.jaspar = jaspar2018.JASPAR2018(
-                                clear_content = True, download_backup= False,
-                                load_content = True)
+        self.jaspar = jaspar2018.JASPAR2018(cache_dirname = self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
