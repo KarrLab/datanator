@@ -9,7 +9,7 @@ natsort
 numpy <= 1.13.2
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
-openpyxl
+openpyxl <= 2.4.8
 pandas
 pronto
 pubchempy
