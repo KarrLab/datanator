@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 
-
+@unittest.skip('Deprecated')
 class TestStructure(unittest.TestCase):
 
     def setUp(self):
@@ -72,7 +72,7 @@ class TestStructure(unittest.TestCase):
         self.assertEqual(set([s.uniprot_id for s in tf.subunits]), set(['P17679', 'P17679-2']))
         self.assertEqual(tf.subunits[0].transcription_factors, [tf])
 
-
+@unittest.skip('Deprecated')
 class TestParseFunctions(unittest.TestCase):
 
     def test_type_cast_matrix_ids_to_ints(self):
@@ -149,7 +149,7 @@ class TestParseFunctions(unittest.TestCase):
         self.assertEqual(set([tuple(base) for base in result2[1]]), set([('A', 410), ('C', 411)]))
         self.assertEqual(set([tuple(base) for base in result2[2]]), set([('A', 420), ('C', 421)]))
 
-
+@unittest.skip('Deprecated')
 class TestLoadContent(unittest.TestCase):
 
     def setUp(self):

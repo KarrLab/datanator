@@ -22,10 +22,10 @@ class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
+        self.cs = common_schema.CommonSchema(
                                 clear_content = True, load_entire_small_DBs = False,
                                 download_backup= False, load_content = True,
-                                max_entries = 10, verbose = True)
+                                max_entries = 10 , verbose = True)
 
     @classmethod
     def tearDownClass(self):
@@ -75,16 +75,14 @@ class LoadingTestCommonSchema(unittest.TestCase):
         session = self.cs.session
         subunit = session.query(common_schema.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
         self.assertEqual(subunit.uniprot_id, 'P05549')
-        self.assertEqual(subunit.class_name, 'Zipper-Type')
+        self.assertEqual(subunit.class_name, 'Basic helix-span-helix factors (bHSH)')
         binding = session.query(common_schema.DNABindingDataset).filter_by(subunit_id = subunit.subunit_id).first()
         data = session.query(common_schema.DNABindingData).filter_by(dataset_id = binding.dataset_id).first()
         self.assertEqual(data.position, 1)
         self.assertEqual(data.frequency_g, 185)
 
-        metadata = session.query(common_schema.Metadata).filter_by(name = 'RUNX1').first()
-        resource = session.query(common_schema._metadata_resource).filter_by(_metadata_id = metadata.id).first()
-        pubmed = session.query(common_schema.Resource).get(resource.resource_id)
-        self.assertEqual(pubmed._id, '8413232')
+        metadata = session.query(common_schema.Metadata).filter_by(name = 'RUNX1 Binding Motif').first()
+        self.assertEqual(metadata.resource[0]._id, '8413232')
 
     def test_ecmdb_added(self):
         session = self.cs.session
@@ -109,6 +107,19 @@ class LoadingTestCommonSchema(unittest.TestCase):
         cell_line = session.query(common_schema._metadata_cell_line).filter_by(_metadata_id = metadata.id).first()
         name = session.query(common_schema.CellLine).get(cell_line.cell_line_id)
         self.assertEqual(name.name , 'variant DSAI (N76D/N87S/S103A/V104I)')
+
+    def test_intact_added(self):
+        session = self.cs.session
+
+        interact = session.query(common_schema.ProteinInteractions).filter_by(participant_a = 'uniprotkb:P49418').all()
+        self.assertEqual(set([c.site_b for c in interact]), set(['binding-associated region:1063-1070(MINT-376288)', '-']))
+
+        interact = session.query(common_schema.ProteinInteractions).filter_by(participant_a = 'intact:EBI-7121765').first()
+        self.assertEqual(interact._metadata.resource[0]._id, '10542231|mint')
+
+
+
+
 
 
 # class LongTestCommonSchema(unittest.TestCase):
@@ -170,7 +181,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
 #         metadata_subq = session.query(common_schema.Metadata).filter_by(name = 'PAX5').subquery()
 #         taxon = session.query(common_schema.Taxon).join((metadata_subq, common_schema.Taxon._metadata)).first()
 #         self.assertEqual(taxon.name, 'Mus musculus')
-#
+# #
 #     def test_ecmdb_added(self):
 #         session = self.cs.session
 #         compound = session.query(common_schema.Compound).filter_by(compound_name = 'Acetic acid').first()

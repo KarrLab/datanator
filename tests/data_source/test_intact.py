@@ -2,10 +2,7 @@ import unittest
 from kinetic_datanator.data_source import intact
 import tempfile
 import shutil
-from sqlalchemy.schema import Table
-from sqlalchemy import Column, Integer, String
-import pandas as pd
-from sqlalchemy.sql import select
+
 
 class TestIntAct(unittest.TestCase):
     """
@@ -32,3 +29,5 @@ class TestIntAct(unittest.TestCase):
         q = self.intact.session.query(intact.ProteinInteractions).filter_by(interactor_a = 'uniprotkb:Q61824').first()
         self.assertEqual(q.interactor_b, 'uniprotkb:Q60631')
         self.assertEqual(q.publications, 'pubmed:11127814|mint:MINT-5213342')
+
+    #TODO: Add more Tests

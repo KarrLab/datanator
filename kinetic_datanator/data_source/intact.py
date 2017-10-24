@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
-from sqlalchemy import String, UnicodeText, Column, Integer, String
+from sqlalchemy import Column, Integer, String
 import sqlalchemy.ext.declarative
 from kinetic_datanator.core import data_source
-from six.moves.urllib.request import urlopen, urlretrieve
-import zipfile, os
+from six.moves.urllib.request import urlretrieve
+import zipfile
 from six import BytesIO
 
 Base = sqlalchemy.ext.declarative.declarative_base()
