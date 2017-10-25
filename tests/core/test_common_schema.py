@@ -22,7 +22,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(
+        self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True, load_entire_small_DBs = False,
                                 download_backup= False, load_content = True,
                                 max_entries = 10 , verbose = True)
