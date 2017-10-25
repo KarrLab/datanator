@@ -99,6 +99,14 @@ _metadata_compartment = Table(
 )
     # :obj:`Table`: Metadata:Conditions many-to-many association table
 
+subunit_interaction = Table(
+    'subunit_interaction', Base.metadata,
+    Column('protein_subunit_id', Integer, ForeignKey('protein_subunit.subunit_id'), index = True),
+    Column('interaction_id', Integer, ForeignKey('protein_interactions.interaction_id'), index = True)
+)
+
+
+
 class Metadata(Base):
     """
     Table representing Metadata identifiers for entities and properties
@@ -284,6 +292,8 @@ class ProteinSubunit(PhysicalEntity):
     length = Column(Integer)
     molecular_weight = Column(Float)
     pax_load = Column(Integer)
+
+    interaction = relationship('ProteinInteractions', secondary = subunit_interaction , backref = 'protein_subunit')
 
     proteincomplex_id = Column(Integer, ForeignKey('protein_complex.complex_id'))
     proteincomplex = relationship('ProteinComplex', backref = 'protein_subunit', foreign_keys=[proteincomplex_id])
@@ -1299,7 +1309,13 @@ class CommonSchema(data_source.HttpDataSource):
             site_a = e.feature_a, site_b = e.feature_b,
             stoich_a= e.stoich_a, stoich_b = e.stoich_b, _metadata = metadata)
             index += 1
-
+            subunit = []
+            if 'uniprotkb:' in  e.interactor_a:
+                _property.protein_interactions.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
+                uniprot_id = e.interactor_a.replace('uniprotkb:', '')))
+            if 'uniprotkb:' in  e.interactor_b:
+                _property.protein_interactions.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
+                uniprot_id = e.interactor_b.replace('uniprotkb:', '')))
 
         if self.verbose:
             print('Total time taken for IntAct: ' + str(time.time()-t0) + ' secs')
