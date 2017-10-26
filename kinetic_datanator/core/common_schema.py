@@ -705,7 +705,6 @@ class CommonSchema(data_source.HttpDataSource):
 
 
         # Add all DBs
-
         self.add_intact()
         if self.verbose:
             print('IntAct Done')
@@ -1001,7 +1000,11 @@ class CommonSchema(data_source.HttpDataSource):
                     _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset',
                     name = entry.NAME, version = entry.VERSION, tf= _entity.protein_complex, _metadata = metadata)
                 else:
-                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = protein[0],
+                    if protein:
+                        prot = protein[0]
+                    else:
+                        prot = None
+                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = prot,
                     type = 'Transcription Factor Subunit', name = entry.NAME, subunit_name = entry.NAME, gene_name = entry.NAME,
                     class_name = list_to_string(class_), family_name = list_to_string(family_), _metadata = metadata)
                     _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset',
