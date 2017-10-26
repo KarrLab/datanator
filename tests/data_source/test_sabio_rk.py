@@ -225,7 +225,7 @@ class TestDownloader(unittest.TestCase):
         h20_created = c.created
 
         c = session.query(Compound).filter_by(id=2562).first()
-        self.assertEqual(c.name, 'Peptide')
+        self.assertTrue('Peptide' in c.name)
         xrs = [dict(namespace=xr.namespace, id=xr.id) for xr in c.cross_references]
         self.assertEqual(sorted(xrs, key=lambda xr: xr['namespace']), [
             dict(namespace='chebi', id='CHEBI:16670'),

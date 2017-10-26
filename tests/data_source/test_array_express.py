@@ -346,7 +346,7 @@ class TestIncorporateProcessedData(unittest.TestCase):
         self.assertEqual(incorporated_exps, list(set([u'E-MTAB-3965', u'E-MTAB-4063'])))
         total_exps = set([exp.id for exp in session.query(array_express.Experiment).all()])
         unincorporated_exps = list(total_exps - set(incorporated_exps))
-        self.assertEqual(unincorporated_exps, [u'E-MTAB-4133',
+        self.assertEqual(set(unincorporated_exps), set([u'E-MTAB-4133',
             u'E-GEOD-77512',
             u'E-MTAB-3941', #unincorporated because no processed data
             u'E-GEOD-77428',
@@ -360,4 +360,4 @@ class TestIncorporateProcessedData(unittest.TestCase):
             u'E-MTAB-3301', #unincorporated because has too many bio_assay_data_cubes
             u'E-GEOD-71319',
             u'E-GEOD-77224'
-            ])
+            ]))

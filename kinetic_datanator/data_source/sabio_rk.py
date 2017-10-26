@@ -1247,8 +1247,11 @@ class SabioRk(data_source.HttpDataSource):
                     _, _, ids = val.partition(' ')
                     resources = [('ec-code', id) for id in ids.split('/')]
                 else:
-                    _, _, _, namespace, id = val.split('/')
-                    resources = [(namespace, id)]
+                    parsed_url = val.split('/')
+                    if len(parsed_url) == 5:
+                        resources = [(parsed_url[3], parsed_url[4])]
+                    else:
+                        resources = [(parsed_url[2], parsed_url[3])]
 
                 for namespace, id in resources:
                     query = self.session.query(Resource).filter_by(namespace=namespace, id=id)
