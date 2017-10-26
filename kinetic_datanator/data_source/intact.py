@@ -37,6 +37,7 @@ class ProteinInteractions(Base):
     feature_b = Column(String(255))
     stoich_a = Column(String(255))
     stoich_b = Column(String(255))
+    interaction_type = Column(String(255))
 
 
 class IntAct(data_source.HttpDataSource):

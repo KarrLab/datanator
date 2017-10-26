@@ -9,7 +9,7 @@ This code is a common schema for all the kinetic_datanator modules
 :License: MIT
 """
 
-from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table, create_engine, Numeric, or_
+from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar2018, array_express, ecmdb, sabio_rk, intact
@@ -628,6 +628,8 @@ class ProteinInteractions(PhysicalProperty):
     site_b = Column(String(255))
     stoich_a = Column(String(255))
     stoich_b = Column(String(255))
+    interaction_type = Column(String(255))
+    publication = Column(String(255))
 
 
 class Progress(Base):
@@ -679,12 +681,14 @@ class CommonSchema(data_source.HttpDataSource):
         if download_backup and load_content:
             self.pax_loaded = self.session.query(Progress).filter_by(database_name = 'Pax').first().amount_loaded
             self.sabio_loaded = self.session.query(Progress).filter_by(database_name = 'Sabio').first().amount_loaded
+            self.intact_loaded = self.session.query(Progress).filter_by(database_name = 'IntAct').first().amount_loaded
             self.load_small_db_switch = False
             self.session.query(Progress).delete()
             self.load_content()
         elif load_content:
             self.pax_loaded = 0
             self.sabio_loaded = 0
+            self.intact_loaded = 0
             self.load_small_db_switch = True
             self.load_content()
 
@@ -702,12 +706,12 @@ class CommonSchema(data_source.HttpDataSource):
 
         # Add all DBs
 
-        self.add_paxdb()
-        if self.verbose:
-            print('Pax Done')
         self.add_intact()
         if self.verbose:
             print('IntAct Done')
+        self.add_paxdb()
+        if self.verbose:
+            print('Pax Done')
         if self.load_small_db_switch:
             self.add_corumdb()
             if self.verbose:
@@ -1299,23 +1303,27 @@ class CommonSchema(data_source.HttpDataSource):
             interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_\
                 (range(self.max_entries))).all()
 
-        index = 1
-        for e in interactiondb:
+        self.session.bulk_insert_mappings(ProteinInteractions,
+            [{'name' : e.interactor_a + "+" + e.interactor_b, 'type' : 'Protein Interaction',
+            'participant_a' : e.interactor_a, 'participant_b' : e.interactor_b, 'publication' : e.publications,
+            'interaction' : e.interaction, 'site_a' : e.feature_a, 'site_b' : e.feature_b,
+            'stoich_a' : e.stoich_a, 'stoich_b' : e.stoich_b, 'interaction_type': e.interaction_type} for e in interactiondb]
+            )
+
+        index = self.intact_loaded
+        for row in self.session.query(ProteinInteractions).all():
             metadata = self.get_or_create_object(Metadata, name = 'Protein Interaction ' + str(index))
-            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = re.split(':||', e.publications)[1]))
-            _property.protein_interactions = self.get_or_create_object(ProteinInteractions,
-            name = e.interactor_a + "+" + e.interactor_b, type = 'Protein Interaction', participant_a = e.interactor_a,
-            participant_b = e.interactor_b, interaction = e.interaction,
-            site_a = e.feature_a, site_b = e.feature_b,
-            stoich_a= e.stoich_a, stoich_b = e.stoich_b, _metadata = metadata)
+            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = re.split(':||', row.publication)[1]))
+            row._metadata = metadata
+            if 'uniprotkb:' in  row.participant_a:
+                row.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
+                uniprot_id = row.participant_a.replace('uniprotkb:', '')))
+            if 'uniprotkb:' in  row.participant_b:
+                row.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
+                uniprot_id = row.participant_b.replace('uniprotkb:', '')))
             index += 1
-            subunit = []
-            if 'uniprotkb:' in  e.interactor_a:
-                _property.protein_interactions.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
-                uniprot_id = e.interactor_a.replace('uniprotkb:', '')))
-            if 'uniprotkb:' in  e.interactor_b:
-                _property.protein_interactions.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
-                uniprot_id = e.interactor_b.replace('uniprotkb:', '')))
+
+        self.get_or_create_object(Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
 
         if self.verbose:
             print('Total time taken for IntAct: ' + str(time.time()-t0) + ' secs')
