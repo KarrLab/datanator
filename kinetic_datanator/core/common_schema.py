@@ -766,16 +766,18 @@ class CommonSchema(data_source.HttpDataSource):
         subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
         while(subunits.count() != 0):
             initial_count = subunits.count()
-            chunk = 1000
+            chunk = 200
             uni = []
             for items in subunits.limit(chunk).all():
                 uni.append(str(items.uniprot_id))
+            if 'P08107' in uni: ## FIXME: Temporary fix for the Float.split() issue.
+                uni.remove('P08107')
             df = u.get_df(uni, nChunk = 200)
             df.set_index('Entry', inplace = True)
             for protein in subunits.limit(chunk).all():
                 if protein.uniprot_id in df.index:
                     protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-                    protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names'][0])
+                    protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names']).replace('[', '').replace(']','')
             if subunits.count() == initial_count:
                 break
 
@@ -789,6 +791,8 @@ class CommonSchema(data_source.HttpDataSource):
             uni = []
             for items in subunits.limit(chunk).all():
                 uni.append(str(items.uniprot_id))
+            if 'P08107' in uni:
+                uni.remove('P08107')
             df = u.get_df(uni, nChunk = 200)
             df.set_index('Entry', inplace = True)
             for protein in subunits.limit(chunk).all():
@@ -1320,10 +1324,10 @@ class CommonSchema(data_source.HttpDataSource):
             row._metadata = metadata
             if 'uniprotkb:' in  row.participant_a:
                 row.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
-                uniprot_id = row.participant_a.replace('uniprotkb:', '')))
+                uniprot_id = str(row.participant_a.replace('uniprotkb:', ''))))
             if 'uniprotkb:' in  row.participant_b:
                 row.protein_subunit.append(self.get_or_create_object(ProteinSubunit,\
-                uniprot_id = row.participant_b.replace('uniprotkb:', '')))
+                uniprot_id = str(row.participant_b.replace('uniprotkb:', ''))))
             index += 1
 
         self.get_or_create_object(Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
