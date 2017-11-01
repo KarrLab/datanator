@@ -1,4 +1,4 @@
-version: 2
+version: 3
 jobs:
   build:
     working_directory: /root/project
@@ -13,10 +13,6 @@ jobs:
             - cache-v1-{{ .Branch }}-
             - cache-v1-
 
-      - run: pip2 install -e .
-      - run: pip2 install -U -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-      - run: karr-lab-build-utils-2 install-requirements
-
       - run: pip3 install -e .
       - run: pip3 install -U -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
       - run: karr-lab-build-utils-3 install-requirements
@@ -30,14 +26,6 @@ jobs:
       - run: |
           set +e
 
-          pip2 install -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
-          RESULT=$?
-          if [ $RESULT -ne 0 ]; then
-            exit $RESULT
-          fi
-          karr-lab-build-utils-2 run-tests tests --with-xunit --with-coverage
-          RESULT2=$?
-
           pip3 install -e git+https://github.com/KarrLab/Karr-Lab-build-utils.git#egg=Karr-Lab-build-utils
           RESULT=$?
           if [ $RESULT -ne 0 ]; then
@@ -48,7 +36,7 @@ jobs:
 
           karr-lab-build-utils make-and-archive-reports
 
-          if [[ $RESULT2 -eq 0 && $RESULT3 -eq 0 ]]; then
+          if [[ $RESULT3 -eq 0 ]]; then
             exit 0
           else
             exit 1
@@ -56,9 +44,6 @@ jobs:
 
       - store_test_results:
           path: /root/project/tests/reports
-      - store_artifacts:
-          path: /root/project/.coverage.2.7.13
-          destination: .coverage.2.7.13
       - store_artifacts:
           path: /root/project/.coverage.3.6.1
           destination: .coverage.3.6.1
