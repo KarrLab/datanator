@@ -692,9 +692,6 @@ class CommonSchema(data_source.HttpDataSource):
             self.load_small_db_switch = True
             self.load_content()
 
-
-
-
     def load_content(self):
         ## Initiate Observation and direct Subclasses
         observation = Observation()
@@ -702,7 +699,6 @@ class CommonSchema(data_source.HttpDataSource):
         self.entity = observation.physical_entity
         observation.physical_property = PhysicalProperty()
         self.property = observation.physical_property
-
 
         # Add all DBs
         self.add_intact()
@@ -721,9 +717,9 @@ class CommonSchema(data_source.HttpDataSource):
             self.add_ecmdb()
             if self.verbose:
                 print('ECMDB Done')
-            self.add_sabiodb()
-            if self.verbose:
-                print('Sabio Done')
+        self.add_sabiodb()
+        if self.verbose:
+            print('Sabio Done')
 
         ## Add missing subunit information
         self.fill_missing_subunit_info()
@@ -862,7 +858,8 @@ class CommonSchema(data_source.HttpDataSource):
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = dataset.taxon_ncbi_id))
             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'url', _id = dataset.publication))
             _property.abundance_dataset = self.get_or_create_object(AbundanceDataSet, type = 'Protein Abundance Dataset',
-                name = dataset.file_name, file_name = dataset.file_name, score = dataset.score, weight = dataset.weight, coverage= dataset.coverage, _metadata = metadata)
+                name = dataset.file_name, file_name = dataset.file_name, score = dataset.score, weight = dataset.weight,
+                coverage= dataset.coverage, _metadata = metadata)
             abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = dataset.id).all()
             uni = [str(d.protein.uniprot_id) for d in abundance]
 
@@ -992,11 +989,8 @@ class CommonSchema(data_source.HttpDataSource):
 
                 metadata = self.get_or_create_object(Metadata, name = entry.NAME + ' Binding Motif')
                 metadata.method.append(self.get_or_create_object(Method, name = list_to_string(type_)))
-                for ref in pubmed:
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = ref))
-                for tax in species:
-                    if tax != '-':
-                        metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = int(tax)))
+                metadata.resource = [self.get_or_create_object(Resource, namespace = 'pubmed', _id = ref) for ref in pubmed]
+                metadata.taxon = [self.get_or_create_object(Taxon, ncbi_id = int(tax)) for tax in species if tax != '-' ]
                 if '::' in entry.NAME:
                     _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex',
                     name = entry.NAME, complex_name = entry.NAME, complex_cmt = 'transcription factor', class_name = list_to_string(class_),
@@ -1004,10 +998,7 @@ class CommonSchema(data_source.HttpDataSource):
                     _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset',
                     name = entry.NAME, version = entry.VERSION, tf= _entity.protein_complex, _metadata = metadata)
                 else:
-                    if protein:
-                        prot = protein[0]
-                    else:
-                        prot = None
+                    prot = protein[0] if protein else None
                     _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = prot,
                     type = 'Transcription Factor Subunit', name = entry.NAME, subunit_name = entry.NAME, gene_name = entry.NAME,
                     class_name = list_to_string(class_), family_name = list_to_string(family_), _metadata = metadata)
@@ -1028,76 +1019,76 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    def add_jaspardb(self):
-        """ DEPRECATED"""
-        t0 = time.time()
-        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = False,
-            load_content= False, download_backup= True, verbose = self.verbose)
-        jasp_ses = jaspardb.session
-
-        _entity = self.entity
-        _property = self.property
-
-        jaspar_matrix = jasp_ses.query(jaspar.Matrix).all()
-        position = jasp_ses.query(jaspar.MatrixPosition).all()
-
-        self.session.bulk_insert_mappings(DNABindingData,
-            [
-                dict(position = pos.position,
-                frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-                frequency_t = pos.frequency_t, jaspar_id = pos.matrix_id) for pos in position
-            ])
-
-        max_entries = self.max_entries
-
-        if self.load_entire_small_DBs:
-            max_entries = float('inf')
-
-        entries = 0
-        for item in jaspar_matrix:
-            if entries < max_entries:
-                tf = item.transcription_factor
-                if item.type_id:
-                    type_name = item.type.name
-                if item.transcription_factor.classes:
-                    class_name = item.transcription_factor.classes[0].name
-                if item.transcription_factor.families:
-                    fam_name = item.transcription_factor.families[0].name
-                metadata = self.get_or_create_object(Metadata, name = tf.name)
-                for speice in item.transcription_factor.species:
-                    metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = speice.ncbi_id))
-                metadata.method.append(self.get_or_create_object(Method, name = type_name))
-                for docs in item.references:
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = docs.pubmed_id))
-                if '::' in tf.name:
-                    su = tf.name.split('::')
-                    dialoge = 'Subunits are: '
-                    for items in su:
-                        dialoge += (items + ' ')
-                    _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = tf.name,
-                        complex_name = tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
-                    _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
-                        version = item.version, tf = _entity.protein_complex, _metadata = metadata)
-                    for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
-                        row.dataset = _property.dna_binding_dataset
-                else:
-                    if tf.subunits:
-                        uniprot_id = tf.subunits[0].uniprot_id
-                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
-                        name = tf.name, subunit_name = tf.name, gene_name = tf.name,
-                        class_name = class_name, family_name = fam_name, _metadata = metadata)
-                    _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
-                        version = item.version, subunit = _entity.protein_subunit, _metadata = metadata)
-                    for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
-                        row.dataset = _property.dna_binding_dataset
-                entries += 1
-
-        if self.verbose:
-            print('Total time taken for Jaspar: ' + str(time.time()-t0) + ' secs')
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
+    #def add_jaspardb(self):
+        # """ DEPRECATED"""
+        # t0 = time.time()
+        # jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = False,
+        #     load_content= False, download_backup= True, verbose = self.verbose)
+        # jasp_ses = jaspardb.session
+        #
+        # _entity = self.entity
+        # _property = self.property
+        #
+        # jaspar_matrix = jasp_ses.query(jaspar.Matrix).all()
+        # position = jasp_ses.query(jaspar.MatrixPosition).all()
+        #
+        # self.session.bulk_insert_mappings(DNABindingData,
+        #     [
+        #         dict(position = pos.position,
+        #         frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
+        #         frequency_t = pos.frequency_t, jaspar_id = pos.matrix_id) for pos in position
+        #     ])
+        #
+        # max_entries = self.max_entries
+        #
+        # if self.load_entire_small_DBs:
+        #     max_entries = float('inf')
+        #
+        # entries = 0
+        # for item in jaspar_matrix:
+        #     if entries < max_entries:
+        #         tf = item.transcription_factor
+        #         if item.type_id:
+        #             type_name = item.type.name
+        #         if item.transcription_factor.classes:
+        #             class_name = item.transcription_factor.classes[0].name
+        #         if item.transcription_factor.families:
+        #             fam_name = item.transcription_factor.families[0].name
+        #         metadata = self.get_or_create_object(Metadata, name = tf.name)
+        #         for speice in item.transcription_factor.species:
+        #             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = speice.ncbi_id))
+        #         metadata.method.append(self.get_or_create_object(Method, name = type_name))
+        #         for docs in item.references:
+        #             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = docs.pubmed_id))
+        #         if '::' in tf.name:
+        #             su = tf.name.split('::')
+        #             dialoge = 'Subunits are: '
+        #             for items in su:
+        #                 dialoge += (items + ' ')
+        #             _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = tf.name,
+        #                 complex_name = tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
+        #             _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
+        #                 version = item.version, tf = _entity.protein_complex, _metadata = metadata)
+        #             for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
+        #                 row.dataset = _property.dna_binding_dataset
+        #         else:
+        #             if tf.subunits:
+        #                 uniprot_id = tf.subunits[0].uniprot_id
+        #             _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
+        #                 name = tf.name, subunit_name = tf.name, gene_name = tf.name,
+        #                 class_name = class_name, family_name = fam_name, _metadata = metadata)
+        #             _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
+        #                 version = item.version, subunit = _entity.protein_subunit, _metadata = metadata)
+        #             for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
+        #                 row.dataset = _property.dna_binding_dataset
+        #         entries += 1
+        #
+        # if self.verbose:
+        #     print('Total time taken for Jaspar: ' + str(time.time()-t0) + ' secs')
+        #
+        # if self.verbose:
+        #     print('Comitting')
+        # self.session.commit()
 
     def add_ecmdb(self):
         """
@@ -1115,7 +1106,6 @@ class CommonSchema(data_source.HttpDataSource):
 
         max_entries = self.max_entries
 
-
         if self.load_entire_small_DBs:
             max_entries = float('inf')
 
@@ -1128,34 +1118,29 @@ class CommonSchema(data_source.HttpDataSource):
                 syn = compound.synonyms
                 metadata = self.get_or_create_object(Metadata, name = compound.name)
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = 562, name = 'E.Coli'))
-                for docs in ref:
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
-                for areas in compart:
-                    metadata.cell_compartment.append(self.get_or_create_object(CellCompartment, name = areas.name))
-                for syns in syn:
-                    metadata.synonym.append(self.get_or_create_object(Synonym, name = syns.name))
+                metadata.resource = [self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id) for docs in ref]
+                metadata.cell_compartment = [self.get_or_create_object(CellCompartment, name = areas.name) for areas in compart]
+                metadata.synonym = [self.get_or_create_object(Synonym, name = syns.name) for syns in syn]
                 _property.structure = self.get_or_create_object(Structure, type = 'Structure', name = compound.name,
                     _value_inchi = compound.structure,
                    _structure_formula_connectivity = compound._structure_formula_connectivity, _metadata = metadata)
                 _entity.compound = self.get_or_create_object(Compound, type = 'Compound', name = compound.name,
                     compound_name = compound.name, description = compound.description, comment = compound.comment, structure = _property.structure,
                     _metadata = metadata)
-                if concentration:
-                    index = 0
-                    for rows in concentration:
-                        new_metadata = self.get_or_create_object(Metadata, name = compound.name+ ' Concentration ' + str(index))
-                        new_metadata.taxon = metadata.taxon
-                        new_metadata.cell_compartment = metadata.cell_compartment
-                        new_metadata.synonym = metadata.synonym
-                        new_metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
-                        new_metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
-                            media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
-                        refs = rows.references
-                        for docs in refs:
-                            new_metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id))
-                        _property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = compound.name+ ' Concentration '+str(index),
-                            value = rows.value, error = rows.error, _metadata = new_metadata, compound = _entity.compound)
-                        index += 1
+                index = 0 if concentration else -1
+                if index == -1: continue
+                for rows in concentration:
+                    new_metadata = self.get_or_create_object(Metadata, name = compound.name+ ' Concentration ' + str(index))
+                    new_metadata.taxon = metadata.taxon
+                    new_metadata.cell_compartment = metadata.cell_compartment
+                    new_metadata.synonym = metadata.synonym
+                    new_metadata.cell_line.append(self.get_or_create_object(CellLine, name = rows.strain))
+                    new_metadata.conditions.append(self.get_or_create_object(Conditions, growth_status = rows.growth_status,
+                        media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
+                    new_metadata.resource = [self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id) for docs in rows.references]
+                    _property.concentration = self.get_or_create_object(Concentration, type = 'Concentration', name = compound.name+ ' Concentration '+str(index),
+                        value = rows.value, error = rows.error, _metadata = new_metadata, compound = _entity.compound)
+                    index += 1
                 entries += 1
 
         if self.verbose:
@@ -1185,106 +1170,82 @@ class CommonSchema(data_source.HttpDataSource):
 
         counter = 1
         for item in sabio_entry:
-            if item.name:
-                metadata = self.get_or_create_object(Metadata, name = item.name)
-            elif item._type == 'kinetic_law':
-                metadata = self.get_or_create_object(Metadata, name = 'Kinetic Law ' + str(counter))
-                counter += 1
-            syn = item.synonyms
-            res = item.cross_references
-            for synonyms in syn:
-                metadata.synonym.append(self.get_or_create_object(Synonym, name = synonyms.name))
-            for docs in res:
-                if docs.namespace == 'taxonomy':
-                    metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = docs.id))
-                elif docs.namespace == 'uniprot':
-                    uniprot = docs.id
-                else:
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = docs.namespace,
-                        _id = docs.id))
-            if item._type == 'compartment':
-                compartment = self.get_or_create_object(CellCompartment, name = item.name)
+            metadata = self.get_or_create_object(Metadata, name = 'Kinetic Law ' + str(item.id)) if item._type == 'kinetic_law' else self.get_or_create_object(Metadata, name = item.name)
+            metadata.synonym = [self.get_or_create_object(Synonym, name = synonyms.name) for synonyms in item.synonyms]
+            metadata.taxon = [self.get_or_create_object(Taxon, ncbi_id = docs.id) for docs in item.cross_references if docs.namespace == 'taxonomy']
+            uniprot = [docs.id for docs in item.cross_references  if docs.namespace == 'uniprot']
+            metadata.resource = [self.get_or_create_object(Resource, namespace = docs.namespace, _id = docs.id) for docs in item.cross_references]
+            compartment = self.get_or_create_object(CellCompartment, name = item.name) if item._type == 'compartment' else None
+            if compartment: continue
+
             if item._type == 'compound':
-                structure = sabio_ses.query(sabio_rk.compound_compound_structure).filter_by(compound__id = item._id).all()
-                if structure:
-                    for shape in structure:
-                        struct = sabio_ses.query(sabio_rk.CompoundStructure).get(shape.compound_structure__id)
-                        if struct.format == 'smiles':
-                            _property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
-                            _value_smiles = struct.value, _value_inchi = struct._value_inchi,
-                            _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)
-                            break
-                else:
-                    _property.structure = None
+                structure = item.structures
+                for struct in structure:
+                    _property.structure = self.get_or_create_object(Structure, type = 'Structure', name = item.name,
+                        _value_smiles = struct.value, _value_inchi = struct._value_inchi,
+                        _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)\
+                        if struct.format == 'smiles' else None
                 _entity.compound = self.get_or_create_object(Compound, type = 'Compound',
                     name = item.name, compound_name = item.name,
                     _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
                     structure = _property.structure, _metadata = metadata)
+                continue
+
             elif item._type == 'enzyme':
                 complx = sabio_ses.query(sabio_rk.Enzyme).get(item._id)
                 _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Enzyme' ,
                     name = item.name , complex_name = item.name,
-                    molecular_weight = complx.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
+                    molecular_weight = item.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
+                continue
+
             elif item._type == 'enzyme_subunit':
-                subunit = sabio_ses.query(sabio_rk.EnzymeSubunit).get(item._id)
-                complx = sabio_ses.query(sabio_rk.Entry).get(subunit.enzyme_id)
-                result = self.session.query(ProteinComplex).filter_by(complex_name = complx.name).first()
+                result = self.session.query(ProteinComplex).filter_by(complex_name = item.enzyme.name).first()
                 _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, type = 'Enzyme Subunit',
                     name = item.name, subunit_name = item.name,
-                    uniprot_id = uniprot, coefficient = subunit.coefficient,
-                    molecular_weight = subunit.molecular_weight,
+                    uniprot_id = uniprot, coefficient = item.coefficient,
+                    molecular_weight = item.molecular_weight,
                     proteincomplex = result, _metadata = metadata)
+                continue
+
             elif item._type == 'kinetic_law':
-                res = sabio_ses.query(sabio_rk.kinetic_law_resource).filter_by(kinetic_law__id = item._id).all()
-                law = sabio_ses.query(sabio_rk.KineticLaw).get(item._id)
-                if law.enzyme_id:
-                    entry = sabio_ses.query(sabio_rk.Entry).get(law.enzyme_id)
-                    result = self.session.query(ProteinComplex).filter_by(complex_name = entry.name).first()
-                else:
-                    result = None
-                for docs in res:
-                    resource = sabio_ses.query(sabio_rk.Resource).get(docs.resource__id)
-                    metadata.resource.append(self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id))
-                metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = law.taxon))
-                metadata.cell_line.append(self.get_or_create_object(CellLine, name = law.taxon_variant))
-                metadata.conditions.append(self.get_or_create_object(Conditions, temperature = law.temperature, ph = law.ph, media = law.media))
-                _property.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = result,
-                    enzyme_type = law.enzyme_type, tissue = law.tissue, mechanism = law.mechanism, equation = law.equation, _metadata = metadata)
-                rxn = sabio_ses.query(sabio_rk.ReactionParticipant).filter(or_(sabio_rk.ReactionParticipant.reactant_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.product_kinetic_law_id == law._id, sabio_rk.ReactionParticipant.modifier_kinetic_law_id == law._id)).all()
-                for row in rxn:
-                    compound_name = sabio_ses.query(sabio_rk.Entry).get(row.compound_id).name
-                    _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
-                    if row.compartment_id:
-                        sabio_compartment_name = sabio_ses.query(sabio_rk.Entry).get(row.compartment_id).name
-                        _compartment = self.session.query(CellCompartment).filter_by(name = sabio_compartment_name).first()
-                    else:
-                        _compartment = None
-                    if row.reactant_kinetic_law_id:
-                        reaction = Reaction(compound = _compound, compartment = _compartment,
-                            coefficient = row.coefficient, _is_reactant = 1, rxn_type = row.type,
-                            kinetic_law_id = _property.kinetic_law.kineticlaw_id)
-                    elif row.product_kinetic_law_id:
-                        reaction = Reaction( compound = _compound, compartment = _compartment,
-                            coefficient = row.coefficient, _is_product = 1, rxn_type = row.type,
-                            kinetic_law_id = _property.kinetic_law.kineticlaw_id)
-                    elif row.modifier_kinetic_law_id:
-                        reaction = Reaction(compound = _compound, compartment = _compartment,
-                            coefficient = row.coefficient, _is_modifier = 1, rxn_type = row.type,
-                            kinetic_law_id = _property.kinetic_law.kineticlaw_id)
-                total_param = sabio_ses.query(sabio_rk.Parameter).filter_by(kinetic_law_id = law._id).all()
-                for param in total_param:
-                    if param.compound_id:
-                        compound_name = sabio_ses.query(sabio_rk.Entry).get(param.compound_id).name
-                        _compound = self.session.query(Compound).filter_by(compound_name = compound_name).first()
-                        parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
-                            units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
-                            observed_sabio_type = param.observed_type, observed_value = param.observed_value, compound = _compound,
-                            observed_error = param.observed_error, observed_units = param.observed_units)
-                    else:
-                        parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
-                            units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
-                            observed_sabio_type = param.observed_type, observed_value = param.observed_value,
-                            observed_error = param.observed_error, observed_units = param.observed_units)
+
+                catalyst = self.session.query(ProteinComplex).filter_by(complex_name = item.enzyme.name).first() if item.enzyme_id else None
+                metadata.resource = [self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references]
+                metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon))
+                metadata.cell_line.append(self.get_or_create_object(CellLine, name = item.taxon_variant))
+                metadata.conditions.append(self.get_or_create_object(Conditions, temperature = item.temperature, ph = item.ph, media = item.media))
+                _property.kinetic_law = self.get_or_create_object(KineticLaw, type = 'Kinetic Law', enzyme = catalyst,
+                    enzyme_type = item.enzyme_type, tissue = item.tissue, mechanism = item.mechanism, equation = item.equation, _metadata = metadata)
+
+                def common_schema_compound(sabio_object):
+                    compound_name = sabio_object.name
+                    return self.session.query(Compound).filter_by(compound_name = compound_name).first()
+
+                def common_schema_compartment(sabio_object):
+                    if sabio_object:
+                        compartment_name = sabio_object.name
+                        return self.session.query(CellCompartment).filter_by(name = compartment_name).first()
+                    else: return None
+
+                reactants = [Reaction(compound = common_schema_compound(r.compound),
+                    compartment = common_schema_compartment(r.compartment), _is_reactant = 1, rxn_type = r.type,
+                     kinetic_law_id = _property.kinetic_law.kineticlaw_id) for r in item.reactants if item.reactants]
+
+                products = [Reaction(compound = common_schema_compound(p.compound),
+                    compartment = common_schema_compartment(p.compartment), _is_product = 1, rxn_type = p.type,
+                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for p in item.products if item.products]
+
+                modifier = [Reaction(compound = common_schema_compound(m.compound),
+                    compartment = common_schema_compartment(m.compartment), _is_modifier = 1, rxn_type = m.type,
+                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for m in item.modifiers if item.products]
+
+                for param in item.parameters:
+                    parameter = Parameter(sabio_type = param.type, value = param.value, error = param.error,
+                        units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
+                        observed_sabio_type = param.observed_type, observed_value = param.observed_value,
+                        observed_error = param.observed_error, observed_units = param.observed_units)
+                    parameter.compound = common_schema_compound(param.compound) if param.compound else None
+                continue
 
 
         self.get_or_create_object(Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))

@@ -24,8 +24,8 @@ class LoadingTestCommonSchema(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.cs = common_schema.CommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True, load_entire_small_DBs = False,
-                                download_backup= False, load_content = True,
-                                max_entries = 10, verbose = True)
+                                download_backup= False, load_content = True, max_entries = 10,
+                                verbose = True)
 
     @classmethod
     def tearDownClass(self):
