@@ -1,9 +1,12 @@
-from bioservices import UniProt
 from kinetic_datanator.core import data_source
 import sqlalchemy.ext.declarative
 import pandas as pd
 from sqlalchemy import Column, Integer, String, Float
 from functools import lru_cache
+from six.moves.urllib.request import urlretrieve
+import gzip
+from six import BytesIO
+
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -26,11 +29,15 @@ class UniprotData(Base):
     __tablename__ = 'uniprot'
     index = Column(Integer, primary_key = True)
     uniprot_id = Column(String(255), unique = True)
-    name = Column(String(255))
+    entry_name = Column(String(255))
     gene_name = Column(String(255))
+    protein_name = Column(String(255))
     canonical_sequence = Column(String(255))
     length = Column(Integer)
     mass = Column(String(255))
+    ec_number = Column(String(255))
+    entrez_id = Column(Integer)
+    status  = Column(String(255))
 
 
 
@@ -39,19 +46,23 @@ class Uniprot(data_source.HttpDataSource):
 
     """
     base_model = Base
+    ENDPOINT_DOMAINS = {'uniprot' : 'http://www.uniprot.org/uniprot/?query=*&fil=reviewed%3Ayes#'}
 
 
     def load_content(self):
 
-        u = UniProt(verbose = False)
+        #TODO: Figure out way to get the textfile from uniprot website
 
-        dt = u.get_df(self.uniprot_list, nChunk = 200)
+        pand = pd.read_csv('kinetic_datanator/data_source/cache/uniprot-all.txt', delimiter = '\t')
 
-        columns = ['Entry', 'Entry name', 'Gene names  (primary )', 'Sequence', 'Length', 'Mass' ]
-
-        pand = dt.loc[:, columns]
-        new_columns = ['uniprot_id', 'name', 'gene_name', 'canonical_sequence', 'length', 'mass']
+        new_columns = ['uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
+            'ec_number', 'entrez_id', 'status']
         pand.columns = new_columns
+
+        pand['entrez_id'] = pand['entrez_id'].str.replace(';', '')
+
+        if not self.max_entries == float('inf'):
+            pand = pand[0:self.max_entries]
 
         pand.to_sql(name = 'uniprot', con=self.engine, if_exists = 'append', chunksize = 1000)
         self.session.commit()
