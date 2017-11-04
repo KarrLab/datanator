@@ -31,6 +31,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree(self.cache_dirname)
 
+    @unittest.skip('module deprecated for now')
     def test_fill_missing_subunit_info(self):
         session = self.cs.session
         subunit = session.query(common_schema.ProteinSubunit).filter_by(uniprot_id = 'Q01196').first()

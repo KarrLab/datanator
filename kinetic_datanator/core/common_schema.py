@@ -12,7 +12,7 @@ This code is a common schema for all the kinetic_datanator modules
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
-from kinetic_datanator.data_source import corum, pax, jaspar, jaspar2018, array_express, ecmdb, sabio_rk, intact
+from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, array_express, ecmdb, sabio_rk, intact, uniprot
 import sqlalchemy.ext.declarative
 from six import BytesIO
 import six
@@ -711,7 +711,7 @@ class CommonSchema(data_source.HttpDataSource):
             self.add_corumdb()
             if self.verbose:
                 print('Corum Done')
-            self.add_jaspar2018db()
+            self.add_jaspardb()
             if self.verbose:
                 print('Jaspar Done')
             self.add_ecmdb()
@@ -721,8 +721,11 @@ class CommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Sabio Done')
 
+
         ## Add missing subunit information
-        self.fill_missing_subunit_info()
+        self.add_uniprot()
+        if self.verbose:
+            print('Uniprot Done')
 
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
@@ -738,69 +741,65 @@ class CommonSchema(data_source.HttpDataSource):
             )
             graph.write_png(os.getcwd())
 
-    def fill_missing_subunit_info(self):
-        t0 = time.time()
-        u = UniProt(verbose = False)
-
-
-        subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
-        while(subunits.count() != 0):
-            initial_count = subunits.count()
-            chunk = 1000
-            uni = []
-            for items in subunits.limit(chunk).all():
-                uni.append(str(items.uniprot_id))
-            entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
-            for protein in subunits.limit(chunk).all():
-                if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
-                    protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-            if subunits.count() == initial_count:
-                break
-
-        self.session.commit()
-
-        subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
-        while(subunits.count() != 0):
-            initial_count = subunits.count()
-            chunk = 200
-            uni = []
-            for items in subunits.limit(chunk).all():
-                uni.append(str(items.uniprot_id))
-            if 'P08107' in uni: ## FIXME: Temporary fix for the Float.split() issue.
-                uni.remove('P08107')
-            df = u.get_df(uni, nChunk = 200)
-            df.set_index('Entry', inplace = True)
-            for protein in subunits.limit(chunk).all():
-                if protein.uniprot_id in df.index:
-                    protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-                    protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names']).replace('[', '').replace(']','')
-            if subunits.count() == initial_count:
-                break
-
-        self.session.commit()
-
-
-        subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
-        while(subunits.count() != 0):
-            initial_count = subunits.count()
-            chunk = 1000
-            uni = []
-            for items in subunits.limit(chunk).all():
-                uni.append(str(items.uniprot_id))
-            if 'P08107' in uni:
-                uni.remove('P08107')
-            df = u.get_df(uni, nChunk = 200)
-            df.set_index('Entry', inplace = True)
-            for protein in subunits.limit(chunk).all():
-                if protein.uniprot_id in df.index:
-                    protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-                    protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-                    if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
-                        protein.length = int(df.loc[protein.uniprot_id,'Length'])
-                    else:
-                        protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
-            if subunits.count() == initial_count:
-                break
+    # def fill_missing_subunit_info(self):
+    #     t0 = time.time()
+    #     u = UniProt(verbose = False)
+    #
+    #
+    #     subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
+    #     while(subunits.count() != 0):
+    #         initial_count = subunits.count()
+    #         chunk = 1000
+    #         uni = []
+    #         for items in subunits.limit(chunk).all():
+    #             uni.append(str(items.uniprot_id))
+    #         entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
+    #         for protein in subunits.limit(chunk).all():
+    #             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
+    #                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
+    #         if subunits.count() == initial_count:
+    #             break
+    #
+    #     self.session.commit()
+    #
+    #     subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
+    #     while(subunits.count() != 0):
+    #         initial_count = subunits.count()
+    #         chunk = 200
+    #         uni = []
+    #         for items in subunits.limit(chunk).all():
+    #             uni.append(str(items.uniprot_id))
+    #         df = u.get_df(uni, nChunk = 200)
+    #         df.set_index('Entry', inplace = True)
+    #         for protein in subunits.limit(chunk).all():
+    #             if protein.uniprot_id in df.index:
+    #                 protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
+    #                 protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names']).replace('[', '').replace(']','')
+    #         if subunits.count() == initial_count:
+    #             break
+    #
+    #     self.session.commit()
+    #
+    #
+    #     subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
+    #     while(subunits.count() != 0):
+    #         initial_count = subunits.count()
+    #         chunk = 1000
+    #         uni = []
+    #         for items in subunits.limit(chunk).all():
+    #             uni.append(str(items.uniprot_id))
+    #         df = u.get_df(uni, nChunk = 200)
+    #         df.set_index('Entry', inplace = True)
+    #         for protein in subunits.limit(chunk).all():
+    #             if protein.uniprot_id in df.index:
+    #                 protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
+    #                 protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
+    #                 if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
+    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'])
+    #                 else:
+    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
+    #         if subunits.count() == initial_count:
+    #             break
 
         if self.verbose:
             print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
@@ -870,15 +869,10 @@ class CommonSchema(data_source.HttpDataSource):
                         for data in abundance
                 ])
 
-            df = u.get_df(uni, nChunk = 200)
-            df.set_index('Entry', inplace = True)
-
             self.session.bulk_insert_mappings(ProteinSubunit,
                 [
-                    dict(uniprot_id = data.protein.uniprot_id, subunit_name = str(df.loc[data.protein.uniprot_id,'Protein names']),
-                        gene_name = str(df.loc[data.protein.uniprot_id,'Gene names'][0]), canonical_sequence = str(df.loc[data.protein.uniprot_id,'Sequence']),
-                        mass = str(df.loc[data.protein.uniprot_id,'Mass']), length =  int(df.loc[data.protein.uniprot_id,'Length']),
-                        type = 'Protein Subunit', pax_load = data.dataset_id) for data in abundance
+                    dict(uniprot_id = data.protein.uniprot_id, type = 'Protein Subunit',
+                    pax_load = data.dataset_id) for data in abundance
                 ])
 
             self.session.commit()
@@ -951,9 +945,9 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    def add_jaspar2018db(self):
+    def add_jaspardb(self):
         t0 = time.time()
-        jaspardb = jaspar2018.JASPAR2018(cache_dirname = self.cache_dirname,verbose = self.verbose)
+        jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname,verbose = self.verbose)
 
         jasp_ses = jaspardb.session
 
@@ -969,7 +963,7 @@ class CommonSchema(data_source.HttpDataSource):
             else:
                 return ''
 
-        matrix = jasp_ses.query(jaspar2018.Matrix).all()
+        matrix = jasp_ses.query(jaspar.Matrix).all()
 
         max_entries = self.max_entries
 
@@ -979,13 +973,13 @@ class CommonSchema(data_source.HttpDataSource):
         entries = 0
         for entry in matrix:
             if entries <= max_entries:
-                annotations = jasp_ses.query(jaspar2018.Annotation).filter_by(ID = entry.ID)
+                annotations = jasp_ses.query(jaspar.Annotation).filter_by(ID = entry.ID)
                 class_ = [c.VAL for c in annotations.filter_by(TAG = 'class').all()]
                 family_ = [f.VAL for f  in annotations.filter_by(TAG = 'family').all()]
                 pubmed = [p.VAL for p in annotations.filter_by(TAG = 'medline').all()]
                 type_ = [t.VAL for t in annotations.filter_by(TAG = 'type').all()]
-                species = [s.TAX_ID for s in jasp_ses.query(jaspar2018.Species).filter_by(ID = entry.ID).all()]
-                protein = [p.ACC for p in jasp_ses.query(jaspar2018.Protein).filter_by(ID = entry.ID).all()]
+                species = [s.TAX_ID for s in jasp_ses.query(jaspar.Species).filter_by(ID = entry.ID).all()]
+                protein = [p.ACC for p in jasp_ses.query(jaspar.Protein).filter_by(ID = entry.ID).all()]
 
                 metadata = self.get_or_create_object(Metadata, name = entry.NAME + ' Binding Motif')
                 metadata.method.append(self.get_or_create_object(Method, name = list_to_string(type_)))
@@ -1004,7 +998,7 @@ class CommonSchema(data_source.HttpDataSource):
                     class_name = list_to_string(class_), family_name = list_to_string(family_), _metadata = metadata)
                     _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset',
                     name = entry.NAME, version = entry.VERSION, subunit = _entity.protein_subunit, _metadata = metadata)
-                subquery = jasp_ses.query(jaspar2018.Data).filter_by(ID = entry.ID)
+                subquery = jasp_ses.query(jaspar.Data).filter_by(ID = entry.ID)
                 for position in range(1,1+max(set([c.col for c in subquery.all()]))):
                     freq = subquery.filter_by(col = position)
                     self.get_or_create_object(DNABindingData, position = position, frequency_a = freq.filter_by(row = 'A').first().val,
@@ -1300,7 +1294,30 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    # def add_arrayexpressdb(self):
-    #     arrayexpressdb = array_express.ArrayExpress(name = 'array_express', load_content=False, download_backup=False)
-    #     arrayexpressdb.load_content
-    #     array_session = arrayexpressdb.session
+    def add_uniprot(self):
+        t0 = time.time()
+
+        unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
+        unidb_ses = unidb.session
+        _entity = self.entity
+        _property = self.property
+
+        com_unis = self.session.query(ProteinSubunit).all()
+
+        for subunit in com_unis:
+            info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
+            if info:
+                print(!(subunit.subunit_name))
+                subunit.subunit_name = info.entry_name if !(subunit.subunit_name)
+                subunit.entrez_id = info.entrez_id if not subunit.entrez_id else None
+                # subunit.gene_name = info.gene_name
+                subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else None
+                subunit.length = info.length if not subunit.length else None
+                subunit.mass = info.mass if not subunit.mass else None
+
+        if self.verbose:
+            print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
