@@ -48,7 +48,10 @@ class CachedDataSource(DataSource):
     Attributes:
         filename (:obj:`str`): path to sqlite copy of the data source
         cache_dirname (:obj:`str`): directory to store the local copy of the data source
-        backup_server_token (:obj:`str`): authentification token to upload/download copies of the data source to/from the Karr Lab server
+        backup_server_hostname (:obj:`str`): hostname for server to upload/download copies of the data source to/from the Karr Lab server
+        backup_server_username (:obj:`str`): username for server to upload/download copies of the data source to/from the Karr Lab server
+        backup_server_password (:obj:`str`): password for server to upload/download copies of the data source to/from the Karr Lab server
+        backup_server_remote_dirname (:obj:`str`): remote directory on server to upload/download copies of the data source to/from the Karr Lab server
         engine (:obj:`sqlalchemy.engine.Engine`): sqlalchemy engine
         session (:obj:`sqlalchemy.orm.session.Session`): sqlalchemy session
         max_entries (:obj:`float`): maximum number of entries to save locally
@@ -90,7 +93,10 @@ class CachedDataSource(DataSource):
         self.commit_intermediate_results = commit_intermediate_results
 
         # backup settings
-        self.backup_server_token = config_manager.get_config()['wc_utils']['backup']['token']
+        self.backup_server_hostname = config_manager.get_config()['wc_utils']['backup']['hostname']
+        self.backup_server_username = config_manager.get_config()['wc_utils']['backup']['username']
+        self.backup_server_password = config_manager.get_config()['wc_utils']['backup']['password']
+        self.backup_server_remote_dirname = config_manager.get_config()['wc_utils']['backup']['remote_dirname']
 
         # verbosity
         self.verbose = verbose
@@ -103,7 +109,7 @@ class CachedDataSource(DataSource):
             self.session = self.get_session()
             if load_content:
                 self.load_content()
-        elif download_backup and self.backup_server_token:
+        elif download_backup and self.backup_server_hostname:
             self.download_backup()
             self.engine = self.get_engine()
             self.session = self.get_session()
@@ -152,7 +158,8 @@ class CachedDataSource(DataSource):
             backup.BackupManager(
                 os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
                 file.arcname + '.tar.gz',
-                token=self.backup_server_token) \
+                hostname=self.backup_server_hostname, username=self.backup_server_username,
+                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname) \
                 .create([file]) \
                 .upload() \
                 .cleanup()
@@ -163,14 +170,16 @@ class CachedDataSource(DataSource):
             backup_manager = backup.BackupManager(
                 os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
                 file.arcname + '.tar.gz',
-                token=self.backup_server_token)
+                hostname=self.backup_server_hostname, username=self.backup_server_username,
+                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname)
             backup_manager.download()
 
         for file in self.get_backup_files(download=True, get_metadata=True):
             backup_manager = backup.BackupManager(
                 os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
                 file.arcname + '.tar.gz',
-                token=self.backup_server_token)
+                hostname=self.backup_server_hostname, username=self.backup_server_username,
+                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname)
             backup_manager.extract([file])
             backup_manager.cleanup()
 
