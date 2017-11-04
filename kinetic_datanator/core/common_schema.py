@@ -723,9 +723,9 @@ class CommonSchema(data_source.HttpDataSource):
 
 
         ## Add missing subunit information
-        self.add_uniprot()
-        if self.verbose:
-            print('Uniprot Done')
+        # self.add_uniprot()
+        # if self.verbose:
+        #     print('Uniprot Done')
 
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
@@ -1294,30 +1294,29 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    def add_uniprot(self):
-        t0 = time.time()
-
-        unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
-        unidb_ses = unidb.session
-        _entity = self.entity
-        _property = self.property
-
-        com_unis = self.session.query(ProteinSubunit).all()
-
-        for subunit in com_unis:
-            info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
-            if info:
-                print(!(subunit.subunit_name))
-                subunit.subunit_name = info.entry_name if !(subunit.subunit_name)
-                subunit.entrez_id = info.entrez_id if not subunit.entrez_id else None
-                # subunit.gene_name = info.gene_name
-                subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else None
-                subunit.length = info.length if not subunit.length else None
-                subunit.mass = info.mass if not subunit.mass else None
-
-        if self.verbose:
-            print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
+    # def add_uniprot(self):
+    #     t0 = time.time()
+    #
+    #     unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
+    #     unidb_ses = unidb.session
+    #     _entity = self.entity
+    #     _property = self.property
+    #
+    #     com_unis = self.session.query(ProteinSubunit).all()
+    #
+    #     for subunit in com_unis:
+    #         info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
+    #         if info:
+    #             subunit.subunit_name = info.entry_name if !(subunit.subunit_name)
+    #             subunit.entrez_id = info.entrez_id if not subunit.entrez_id else None
+    #             # subunit.gene_name = info.gene_name
+    #             subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else None
+    #             subunit.length = info.length if not subunit.length else None
+    #             subunit.mass = info.mass if not subunit.mass else None
+    #
+    #     if self.verbose:
+    #         print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
+    #
+    #     if self.verbose:
+    #         print('Comitting')
+    #     self.session.commit()
