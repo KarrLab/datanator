@@ -6,10 +6,10 @@ enum34
 ete3
 jxmlease
 natsort
-numpy <= 1.13.2
+numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model
 openbabel
-openpyxl <= 2.4.8
+openpyxl
 pandas
 pronto
 pubchempy
