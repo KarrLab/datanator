@@ -1,4 +1,4 @@
-bioservices
+git+https://github.com/cokelaer/bioservices.git#egg=bioservices
 bs4
 cement
 demjson
