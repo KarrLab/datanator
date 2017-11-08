@@ -240,7 +240,6 @@ class ProteinSpecie(PolymerSpecie):
     mass = obj_model.core.IntegerAttribute()
 
 
-
 class Interaction(EntityInteractionOrProperty):
     """ Represents an interaction
 
@@ -250,6 +249,27 @@ class Interaction(EntityInteractionOrProperty):
     """
     position = obj_model.core.IntegerAttribute()
     score = obj_model.core.FloatAttribute()
+
+class ProteinInteraction(Interaction):
+    """ Represents a protein interaction
+
+    Attributes:
+        participant_a (:obj:`str`):
+        participant_b (:obj:`str`):
+        interaction_id (:obj:`str`):
+        stoichiometry_a (:obj:`int`):
+        stoichiometry_b (:obj:`int`):
+        site_a (:obj:`str`):
+        site_b (:obj:`str`):
+
+    """
+    participant_a = obj_model.core.StringAttribute()
+    participant_b = obj_model.core.StringAttribute()
+    interaction_id = obj_model.core.StringAttribute()
+    stoichiometry_a = obj_model.core.IntegerAttribute()
+    stoichiometry_b = obj_model.core.IntegerAttribute()
+    site_a = obj_model.core.StringAttribute()
+    site_b = obj_model.core.StringAttribute()
 
 
 class Reaction(Interaction):

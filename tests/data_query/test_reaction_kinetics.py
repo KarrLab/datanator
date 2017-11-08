@@ -108,21 +108,25 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
                 data_model.Resource(namespace='ec-code', id='1.5.1.3', assignment_method=data_model.ResourceAssignmentMethod.manual),
         ])
 
-    @unittest.skip('dependent on cached common_schema - will test after full version availible')
     def test_get_kinetic_laws_by_ec_numbers(self):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
+        com = common_schema.CommonSchema()
+        ses = com.session
 
         # single EC, match_levels=4
         laws_62 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.62'], match_levels=4).all()
-        ids_62 = set([2000, 1996, 1997, 1998, 1999])
+        compare = ses.query(common_schema.KineticLaw).filter_by(enzyme_id = laws_62[0].enzyme_id).all()
+        ids_62 = set([c.kineticlaw_id for c in compare])
         self.assertEqual(set(l.id for l in laws_62), ids_62)
 
         laws_73 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.73'], match_levels=4).all()
-        ids_73 = set([2005, 2006])
+        compare = ses.query(common_schema.KineticLaw).filter_by(enzyme_id = laws_73[0].enzyme_id).all()
+        ids_73 = set([c.kineticlaw_id for c in compare])
         self.assertEqual(set(l.id for l in laws_73), ids_73)
 
         laws_89 = q.get_kinetic_laws_by_ec_numbers(['3.4.21.89'], match_levels=4).all()
-        ids_89 = set([2115, 2116, 2117, 2118, 2119, 2120, 2121, 2122, 2123, 2124, 2125, 2126, 2127, 2128, 2129, 2130, 2131, 2132])
+        compare = ses.query(common_schema.KineticLaw).filter_by(enzyme_id = laws_89[0].enzyme_id).all()
+        ids_89 = set([c.kineticlaw_id for c in compare])
         self.assertEqual(set(l.id for l in laws_89), ids_89)
 
         #multiple EC, match_levels=4
@@ -146,7 +150,6 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         ids_contains = ids_62 | ids_73 | ids_89
         self.assertEqual(ids_contains.difference(ids), set())
 
-
     @unittest.skip('dependent on cached common_schema - will test after full version availible')
     def test_get_kinetic_laws_by_compound(self):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
@@ -155,7 +158,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
 
         law = q.get_kinetic_laws_by_compound(inchi, role = 'product')
-        # print set(c.kineticlaw_id for c in law.all())
+        print set(c.kineticlaw_id for c in law.all())
         self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([2341,2342]))
 
     @unittest.skip('dependent on cached common_schema - will test after full version availible')
