@@ -19,6 +19,7 @@ class TestPortionUniprot(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.uni = uniprot.Uniprot()
+        #FIXME: Fix when db is being loaded as a module
 
     @classmethod
     def tearDownClass(self):
@@ -36,6 +37,7 @@ class TestFullUniprot(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.uni = uniprot.Uniprot()
+        #FIXME: Fix when db is being loaded as a module
 
     @classmethod
     def tearDownClass(self):
