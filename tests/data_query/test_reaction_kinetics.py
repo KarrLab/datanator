@@ -158,7 +158,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
 
         law = q.get_kinetic_laws_by_compound(inchi, role = 'product')
-        print set(c.kineticlaw_id for c in law.all())
+        # print set(c.kineticlaw_id for c in law.all())
         self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([2341,2342]))
 
     @unittest.skip('dependent on cached common_schema - will test after full version availible')
