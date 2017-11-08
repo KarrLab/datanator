@@ -60,7 +60,6 @@ class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
         q = dpi.DNAtoProteinInteractionQueryGenerator()
 
         observe = q.get_observed_values(self.dna_segment2)
-
         self.assertEqual(set(c.specie.gene_name for c in observe), set(['NR4A2', 'TRP(MYB) class']))
 
 
@@ -69,5 +68,5 @@ class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
 
         query = q.get_protein_by_DNA_sequence(self.dna_segment1.sequence)
 
-        self.assertEqual(set(c[0].subunit_name for c in query), set(['pan', 'Sox2', 'DOF5.6', 'DOF5.7']))
+        self.assertEqual(set(c[0].subunit_name for c in query), set(['pan', 'Sox2', 'DOF5.6']))
         self.assertEqual(set(c[1] for c in query), set([0,0,-8,-8]))
