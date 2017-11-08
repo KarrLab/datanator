@@ -282,6 +282,7 @@ class ProteinSubunit(PhysicalEntity):
     subunit_name = Column(String(255))
     uniprot_id = Column(String(255))
     entrez_id = Column(Integer)
+    ec_number = Column(String(255))
     gene_name = Column(String(255))
     gene_syn  = Column(String(255))
     class_name = Column(String(255))
@@ -740,72 +741,6 @@ class CommonSchema(data_source.HttpDataSource):
             )
             graph.write_png(os.getcwd())
 
-    # def fill_missing_subunit_info(self):
-    #     t0 = time.time()
-    #     u = UniProt(verbose = False)
-    #
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 1000
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
-    #                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-    #         if subunits.count() == initial_count:
-    #             break
-    #
-    #     self.session.commit()
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 200
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         df = u.get_df(uni, nChunk = 200)
-    #         df.set_index('Entry', inplace = True)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.uniprot_id in df.index:
-    #                 protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-    #                 protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names']).replace('[', '').replace(']','')
-    #         if subunits.count() == initial_count:
-    #             break
-    #
-    #     self.session.commit()
-    #
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 1000
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         df = u.get_df(uni, nChunk = 200)
-    #         df.set_index('Entry', inplace = True)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.uniprot_id in df.index:
-    #                 protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-    #                 protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-    #                 if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
-    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'])
-    #                 else:
-    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
-    #         if subunits.count() == initial_count:
-    #             break
-        #
-        # if self.verbose:
-        #     print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
-        #
-        # if self.verbose:
-        #     print('Comitting')
-        # self.session.commit()
 
     def fill_missing_ncbi_names(self):
         t0 = time.time()
@@ -1132,7 +1067,7 @@ class CommonSchema(data_source.HttpDataSource):
             elif item._type == 'kinetic_law':
 
                 catalyst = self.session.query(ProteinComplex).filter_by(complex_name = item.enzyme.name).first() if item.enzyme_id else None
-                metadata.resource = [self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references]
+                metadata.resource.extend([self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references])
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon))
                 metadata.cell_line.append(self.get_or_create_object(CellLine, name = item.taxon_variant))
                 metadata.conditions.append(self.get_or_create_object(Conditions, temperature = item.temperature, ph = item.ph, media = item.media))

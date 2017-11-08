@@ -103,6 +103,22 @@ class LoadingTestCommonSchema(unittest.TestCase):
         name = session.query(common_schema.CellLine).get(cell_line.cell_line_id)
         self.assertEqual(name.name , 'variant DSAI (N76D/N87S/S103A/V104I)')
 
+
+        q = session.query(common_schema.KineticLaw) \
+            .join((common_schema.Metadata, common_schema.KineticLaw._metadata)).join((common_schema.Resource, common_schema.Metadata.resource))\
+            .filter(common_schema.Resource.namespace == 'ec-code').filter(common_schema.Resource._id.in_(['3.4.21.62']))
+
+        compare = session.query(common_schema.KineticLaw).filter_by(enzyme_id = q.first().enzyme_id).all()
+
+        self.assertEqual(set([n.kineticlaw_id for n in q.all()]),
+            set([c.kineticlaw_id for c in compare]))
+
+
+
+        resource = session.query(common_schema.Resource).filter_by(namespace = 'ec-code').filter_by(_id = '3.4.21.62').all()
+        self.assertEqual(len(resource), 1)
+        print resource[0]._metadata
+
     def test_intact_added(self):
         session = self.cs.session
 
