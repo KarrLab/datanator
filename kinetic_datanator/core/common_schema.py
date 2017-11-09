@@ -282,6 +282,7 @@ class ProteinSubunit(PhysicalEntity):
     subunit_name = Column(String(255))
     uniprot_id = Column(String(255))
     entrez_id = Column(Integer)
+    ec_number = Column(String(255))
     gene_name = Column(String(255))
     gene_syn  = Column(String(255))
     class_name = Column(String(255))
@@ -721,11 +722,10 @@ class CommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Sabio Done')
 
-
         ## Add missing subunit information
-        # self.add_uniprot()
-        # if self.verbose:
-        #     print('Uniprot Done')
+        self.add_uniprot()
+        if self.verbose:
+            print('Uniprot Done')
 
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
@@ -741,72 +741,6 @@ class CommonSchema(data_source.HttpDataSource):
             )
             graph.write_png(os.getcwd())
 
-    # def fill_missing_subunit_info(self):
-    #     t0 = time.time()
-    #     u = UniProt(verbose = False)
-    #
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(entrez_id = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 1000
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         entrez_dict = u.mapping(fr = 'ACC', to = 'P_ENTREZGENEID', query = uni)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.entrez_id == None and protein.uniprot_id in entrez_dict.keys():
-    #                 protein.entrez_id = int(entrez_dict[protein.uniprot_id][0])
-    #         if subunits.count() == initial_count:
-    #             break
-    #
-    #     self.session.commit()
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(gene_name = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 200
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         df = u.get_df(uni, nChunk = 200)
-    #         df.set_index('Entry', inplace = True)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.uniprot_id in df.index:
-    #                 protein.subunit_name = str(df.loc[protein.uniprot_id,'Protein names'])
-    #                 protein.gene_name = str(df.loc[protein.uniprot_id,'Gene names']).replace('[', '').replace(']','')
-    #         if subunits.count() == initial_count:
-    #             break
-    #
-    #     self.session.commit()
-    #
-    #
-    #     subunits = self.session.query(ProteinSubunit).filter_by(canonical_sequence = None)
-    #     while(subunits.count() != 0):
-    #         initial_count = subunits.count()
-    #         chunk = 1000
-    #         uni = []
-    #         for items in subunits.limit(chunk).all():
-    #             uni.append(str(items.uniprot_id))
-    #         df = u.get_df(uni, nChunk = 200)
-    #         df.set_index('Entry', inplace = True)
-    #         for protein in subunits.limit(chunk).all():
-    #             if protein.uniprot_id in df.index:
-    #                 protein.canonical_sequence = str(df.loc[protein.uniprot_id,'Sequence'])
-    #                 protein.mass = str(df.loc[protein.uniprot_id,'Mass'])
-    #                 if type(df.loc[protein.uniprot_id,'Length']) == numpy.int64:
-    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'])
-    #                 else:
-    #                     protein.length = int(df.loc[protein.uniprot_id,'Length'].iloc[0])
-    #         if subunits.count() == initial_count:
-    #             break
-
-        if self.verbose:
-            print('Total time taken for Uniprot fillings: ' + str(time.time()-t0) + ' secs')
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
 
     def fill_missing_ncbi_names(self):
         t0 = time.time()
@@ -1013,77 +947,6 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    #def add_jaspardb(self):
-        # """ DEPRECATED"""
-        # t0 = time.time()
-        # jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname, clear_content = False,
-        #     load_content= False, download_backup= True, verbose = self.verbose)
-        # jasp_ses = jaspardb.session
-        #
-        # _entity = self.entity
-        # _property = self.property
-        #
-        # jaspar_matrix = jasp_ses.query(jaspar.Matrix).all()
-        # position = jasp_ses.query(jaspar.MatrixPosition).all()
-        #
-        # self.session.bulk_insert_mappings(DNABindingData,
-        #     [
-        #         dict(position = pos.position,
-        #         frequency_a = pos.frequency_a, frequency_c = pos.frequency_c, frequency_g = pos.frequency_g,
-        #         frequency_t = pos.frequency_t, jaspar_id = pos.matrix_id) for pos in position
-        #     ])
-        #
-        # max_entries = self.max_entries
-        #
-        # if self.load_entire_small_DBs:
-        #     max_entries = float('inf')
-        #
-        # entries = 0
-        # for item in jaspar_matrix:
-        #     if entries < max_entries:
-        #         tf = item.transcription_factor
-        #         if item.type_id:
-        #             type_name = item.type.name
-        #         if item.transcription_factor.classes:
-        #             class_name = item.transcription_factor.classes[0].name
-        #         if item.transcription_factor.families:
-        #             fam_name = item.transcription_factor.families[0].name
-        #         metadata = self.get_or_create_object(Metadata, name = tf.name)
-        #         for speice in item.transcription_factor.species:
-        #             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = speice.ncbi_id))
-        #         metadata.method.append(self.get_or_create_object(Method, name = type_name))
-        #         for docs in item.references:
-        #             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'pubmed', _id = docs.pubmed_id))
-        #         if '::' in tf.name:
-        #             su = tf.name.split('::')
-        #             dialoge = 'Subunits are: '
-        #             for items in su:
-        #                 dialoge += (items + ' ')
-        #             _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Transcription Factor Complex', name = tf.name,
-        #                 complex_name = tf.name, su_cmt = dialoge, complex_cmt = 'transcription factor', class_name = class_name, family_name = fam_name, _metadata = metadata)
-        #             _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
-        #                 version = item.version, tf = _entity.protein_complex, _metadata = metadata)
-        #             for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
-        #                 row.dataset = _property.dna_binding_dataset
-        #         else:
-        #             if tf.subunits:
-        #                 uniprot_id = tf.subunits[0].uniprot_id
-        #             _entity.protein_subunit = self.get_or_create_object(ProteinSubunit, uniprot_id = uniprot_id, type = 'Transcription Factor Subunit',
-        #                 name = tf.name, subunit_name = tf.name, gene_name = tf.name,
-        #                 class_name = class_name, family_name = fam_name, _metadata = metadata)
-        #             _property.dna_binding_dataset = self.get_or_create_object(DNABindingDataset, type = 'DNA Binding Dataset', name = tf.name,
-        #                 version = item.version, subunit = _entity.protein_subunit, _metadata = metadata)
-        #             for row in self.session.query(DNABindingData).filter_by(jaspar_id = item.id).all():
-        #                 row.dataset = _property.dna_binding_dataset
-        #         entries += 1
-        #
-        # if self.verbose:
-        #     print('Total time taken for Jaspar: ' + str(time.time()-t0) + ' secs')
-        #
-        # if self.verbose:
-        #     print('Comitting')
-        # self.session.commit()
-
     def add_ecmdb(self):
         """
         Adds ECMDB Database from Ecmdb.sqlite file in Karr Server
@@ -1204,7 +1067,7 @@ class CommonSchema(data_source.HttpDataSource):
             elif item._type == 'kinetic_law':
 
                 catalyst = self.session.query(ProteinComplex).filter_by(complex_name = item.enzyme.name).first() if item.enzyme_id else None
-                metadata.resource = [self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references]
+                metadata.resource.extend([self.get_or_create_object(Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references])
                 metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = item.taxon))
                 metadata.cell_line.append(self.get_or_create_object(CellLine, name = item.taxon_variant))
                 metadata.conditions.append(self.get_or_create_object(Conditions, temperature = item.temperature, ph = item.ph, media = item.media))
@@ -1294,29 +1157,29 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    # def add_uniprot(self):
-    #     t0 = time.time()
-    #
-    #     unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
-    #     unidb_ses = unidb.session
-    #     _entity = self.entity
-    #     _property = self.property
-    #
-    #     com_unis = self.session.query(ProteinSubunit).all()
-    #
-    #     for subunit in com_unis:
-    #         info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
-    #         if info:
-    #             subunit.subunit_name = info.entry_name if !(subunit.subunit_name)
-    #             subunit.entrez_id = info.entrez_id if not subunit.entrez_id else None
-    #             # subunit.gene_name = info.gene_name
-    #             subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else None
-    #             subunit.length = info.length if not subunit.length else None
-    #             subunit.mass = info.mass if not subunit.mass else None
-    #
-    #     if self.verbose:
-    #         print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
-    #
-    #     if self.verbose:
-    #         print('Comitting')
-    #     self.session.commit()
+    def add_uniprot(self):
+        t0 = time.time()
+
+        unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
+        unidb_ses = unidb.session
+        _entity = self.entity
+        _property = self.property
+
+        com_unis = self.session.query(ProteinSubunit).all()
+
+        for subunit in com_unis:
+            info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
+            if info:
+                subunit.subunit_name = info.entry_name if not subunit.subunit_name else subunit.subunit_name
+                subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
+                subunit.gene_name = info.gene_name if not subunit.gene_name  else subunit.gene_name
+                subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else subunit.canonical_sequence
+                subunit.length = info.length if not subunit.length else subunit.length
+                subunit.mass = info.mass if not subunit.mass else subunit.mass
+
+        if self.verbose:
+            print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()

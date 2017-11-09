@@ -197,7 +197,7 @@ class DNAtoProteinInteractionQueryGenerator(data_query.CachedDataSourceQueryGene
                 ##TODO: Include selective threshold
                 # distribution = m.pssm.distribution().threshold_paster()
                 # print distribution.threshold_paster()
-                for position, score in m.pssm.search(my_seq, threshold = 1):
+                for position, score in m.pssm.search(my_seq, threshold = 2):
                     ans.append((matricies.subunit, position, score))
 
         return ans
