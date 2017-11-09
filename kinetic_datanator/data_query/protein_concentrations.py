@@ -55,7 +55,7 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
                 genetics = data_model.Genetics(
                     taxon = abundance.dataset._metadata.taxon[0].name
                 )
-            )
+            ) if abundance.dataset._metadata.taxon else None
 
             observable = data_model.Observable(
                 specie = protein,

@@ -157,12 +157,12 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         inchi = 'InChI=1S/C3H6O3/c1-2(4)3(5)6/h2,4H,1H3,(H,5,6)'
 
         law = q.get_kinetic_laws_by_compound(inchi, role = 'product')
-        self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([60256,60252]))
+        self.assertEqual(set(c.kineticlaw_id for c in law.all() if c.kineticlaw_id <400000 ), set([60256,60252]))
 
 
         inchi = 'InChI=1S/H5O10P3/c1-11(2,3)9-13(7,8)10-12(4,5)6/h(H,7,8)(H2,1,2,3)(H2,4,5,6)'
         law = q.get_kinetic_laws_by_compound(inchi)
-        self.assertEqual(set(c.kineticlaw_id for c in law.all()), set([59398, 59399, 59400,
+        self.assertEqual(set(c.kineticlaw_id for c in law.all() if c.kineticlaw_id <400000 ), set([59398, 59399, 59400,
             59401, 59406, 59407, 59408, 59409]))
 
 
@@ -172,7 +172,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         inchi = 'InChI=1S/C5H8O3/c1-3(2)4(6)5(7)8/h3H,1-2H3,(H,7,8)'
 
         compounds = q.get_compounds_by_structure(inchi).all()
-        self.assertEqual(set(c.id for c in compounds), set([50387, 51867]))
+        self.assertEqual(set(c.id for c in compounds if c.id<400000), set([50387, 51867,]))
 
     def test_get_kinetic_laws_by_participants(self):
         q = reaction_kinetics.ReactionKineticsQueryGenerator()
@@ -181,7 +181,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         law = q.get_kinetic_laws_by_participants(participants, only_formula_and_connectivity = False)
 
-        self.assertEqual([l.kineticlaw_id for l in law], [59296, 59297, 59298, 59299, 59300, 59301,
+        self.assertEqual([l.kineticlaw_id for l in law if l.kineticlaw_id <400000 ], [59296, 59297, 59298, 59299, 59300, 59301,
         59308, 59309, 59310, 59311, 59312, 59313, 59314, 59315, 59316, 59317, 59318, 59319, 59320,
         59321, 59322, 59323, 59324, 59325, 59326, 59327, 59328, 59329, 59330, 59331, 59332, 59333,
         59334, 59335, 59336, 59337, 59338, 59339, 59340, 59341, 59342, 59343, 59344, 59345, 59346,
@@ -197,7 +197,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         laws = q.get_kinetic_laws_by_reaction(self.reaction)
 
-        self.assertEqual([l.kineticlaw_id for l in laws], sorted([59296, 59297, 59298, 59299, 59300, 59301,
+        self.assertEqual([l.kineticlaw_id for l in laws if l.kineticlaw_id <400000], sorted([59296, 59297, 59298, 59299, 59300, 59301,
         59308, 59309, 59310, 59311, 59312, 59313, 59314, 59315, 59316, 59317, 59318, 59319, 59320,
         59321, 59322, 59323, 59324, 59325, 59326, 59327, 59328, 59329, 59330, 59331, 59332, 59333,
         59334, 59335, 59336, 59337, 59338, 59339, 59340, 59341, 59342, 59343, 59344, 59345, 59346,
@@ -205,7 +205,7 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
 
         laws = q.get_kinetic_laws_by_reaction(self.reaction_w_resource)
 
-        self.assertEqual([l.kineticlaw_id for l in laws], sorted([59317, 59354, 59323, 59356, 59322, 59311,
+        self.assertEqual([l.kineticlaw_id for l in laws if l.kineticlaw_id <400000], sorted([59317, 59354, 59323, 59356, 59322, 59311,
         59300, 59332, 59318, 59333, 59351, 59299, 59346, 59320, 59337, 59315, 59331, 59328, 59308,
         59301, 59309, 59324, 59347, 59352, 59326, 59345, 59327, 59342, 59359, 59297, 59296, 59310,
         59329, 59321, 59298, 59312, 59314, 59339, 59353, 59340, 59344, 59313, 59338, 59355, 59334,
