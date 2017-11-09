@@ -88,7 +88,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         q_law = self.get_kinetic_laws_by_reaction(reaction)
         observed_vals = []
-        for law in q_law.all():
+        for law in q_law:
             common_schema_reaction_id = next(xr._id for xr in law._metadata.resource if xr.namespace == 'sabiork.reaction')
 
             reaction = data_model.Reaction(
@@ -180,10 +180,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
                 if parameter.compound_id:
                     observable.specie = species[parameter.compound_id]
-                    if parameter.compartment:
-                        observable.compartment = data_model.Compartment(
-                            id=parameter.compartment.name,
-                        )
+                    # if parameter.compartment:
+                    #     observable.compartment = data_model.Compartment(
+                    #         id=parameter.compartment.name,
+                    #     )
 
                 observed_vals.append(data_model.ObservedValue(
                     observation=observation,
@@ -204,26 +204,26 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws observed for similar reactions
+            :obj:`list` of :obj:`common_schema.KineticLaw`: a list kinetic laws that contain all of the participants
         """
 
         # by participants
         participants = reaction.participants
         q = self.get_kinetic_laws_by_participants(participants, select=select)
-        if q.count():
+        if len(q):
             return q
 
         # by assigned EC numbers
         ec_numbers = [xr.id for xr in reaction.get_manual_ec_numbers()]
         q = self.get_kinetic_laws_by_ec_numbers(ec_numbers, select=select)
         if q.count():
-            return q
+            return q.all()
 
         # by predicted EC numbers
         ec_numbers = [xr.id for xr in reaction.get_predicted_ec_numbers()]
         q = self.get_kinetic_laws_by_ec_numbers(ec_numbers, select=select)
         if q.count():
-            return q
+            return q.all()
 
         # return empty list if no relevant observations were found
         return self.data_source.session.query(select).filter_by(id=-1)
@@ -242,7 +242,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain all of the participants
+            :obj:`list` of :obj:`common_schema.KineticLaw`: a list kinetic laws that contain all of the participants
         """
         q_laws = None
         for i_part, part in enumerate(participants):
@@ -269,12 +269,12 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
             q_part = self.get_kinetic_laws_by_compound(
                 structure, only_formula_and_connectivity=only_formula_and_connectivity, role=role,
-                select=select)
+                select=select).all()
 
             if not q_laws:
                 q_laws = q_part
             else:
-                q_laws = q_laws.intersect(q_part)
+                q_laws = [val for val in q_laws if val in q_part]
 
         return q_laws
 
