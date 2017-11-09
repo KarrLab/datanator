@@ -231,7 +231,7 @@ class KineticLaw(Entry):
         reactants (:obj:`list` of :obj:`ReactionParticipant`): list of reactants
         products (:obj:`list` of :obj:`ReactionParticipant`): list of products
         enzyme (:obj:`Enzyme`): enzyme
-        enzyme_compartment (:obj:`Compartment): compartment
+        enzyme_compartment (:obj:`Compartment`): compartment
         enzyme_type (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
         tissue (:obj:`str`): tissue
         mechanism (:obj:`str`): mechanism of enzymatic catalysis (e.g. Michaelis-Menten)
@@ -915,11 +915,11 @@ class SabioRk(data_source.HttpDataSource):
             id (:obj:`int`): identifier
             sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction
             specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
-
+                
                 * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
                 * `variant` (:obj:`str`): description of the variant of the eznyme
                 * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
-
+                
             functions (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of rate law equations (keys = IDs in SBML, values = equations)
             units (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of units (keys = IDs in SBML, values = names)
 

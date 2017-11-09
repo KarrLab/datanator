@@ -142,6 +142,7 @@ class Gene(Base):
 
 class Sample(Base):
     """ Represents an observed concentration
+
     Attributes:
         _id (:obj:`int`): unique id
         experiment_id: (:obj:`int`): the accesion number of the experiment
@@ -149,8 +150,8 @@ class Sample(Base):
         index (:obj:`int`): index of the sample within the experiment
         name (:obj:`str`): name of the source of the sample
         assay (:obj:`str`): assay
-        characteristics (:obj:`list` of :obj:`Characteristic'): characteristics
-        variables (:obj:`list` of :obj:`Variable'): variables
+        characteristics (:obj:`list` of :obj:`Characteristic`): characteristics
+        variables (:obj:`list` of :obj:`Variable`): variables
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)

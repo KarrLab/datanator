@@ -120,7 +120,7 @@ class InputReader(object):
             species (:obj:`list` of :obj:`data_model.Specie`): list of species
 
         Returns:
-            :obj:`data_model.Reaction': reaction
+            :obj:`data_model.Reaction`: reaction
         """
         compartments_dict = {c.id: c for c in compartments}
         species_dict = {s.id: s for s in species}

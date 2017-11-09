@@ -26,18 +26,17 @@ import wc_utils.util.string
 class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents a query of a data source
 
-    1. Find observed values for the exact or similar model components
+    #. Find observed values for the exact or similar model components
+    #. Filter out observed values from disimilar genetic and environmental conditions and
+       rank the remaing observed values by their similarity to the desired genetic and environmental
+       conditions
 
-    2. Filter out observed values from disimilar genetic and environmental conditions and
-      rank the remaing observed values by their similarity to the desired genetic and environmental
-      conditions
+        * Taxonomy
+        * Genetic variation (wildtype/mutant)
+        * Temperature
+        * pH
 
-      * Taxonomy
-      * Genetic variation (wildtype/mutant)
-      * Temperature
-      * pH
-
-    3. Calculate a statistical representation of the relevant observed values
+    #. Calculate a statistical representation of the relevant observed values
 
     Attributes:
         filters (:obj:`list` of :obj:`Filter`): list of filters
