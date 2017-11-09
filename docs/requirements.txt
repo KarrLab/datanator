@@ -6,7 +6,10 @@ jxmlease
 # openbabel
 python-dateutil
 robpol86-sphinxcontrib-googleanalytics
+six
 Sphinx
 sphinx_rtd_theme
+sphinxcontrib-bibtex
+sphinxcontrib-spelling; python_version >= '3.0'
 sqlalchemy
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
