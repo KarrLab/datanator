@@ -10,6 +10,6 @@ six
 Sphinx >= 1.6
 sphinx_rtd_theme
 sphinxcontrib-bibtex
-sphinxcontrib-spelling; python_version >= '3.0'
+sphinxcontrib-spelling
 sqlalchemy
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
