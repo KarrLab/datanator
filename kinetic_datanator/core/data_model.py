@@ -239,6 +239,24 @@ class ProteinSpecie(PolymerSpecie):
     length = obj_model.core.IntegerAttribute()
     mass = obj_model.core.IntegerAttribute()
 
+class KnownProteinComplex(ProteinSpecie):
+    """ Represents a protein interaction
+
+        Attributes:
+
+    """
+    go_id = obj_model.core.StringAttribute()
+    go_dsc = obj_model.core.StringAttribute()
+    funcat_id = obj_model.core.StringAttribute()
+    funcat_dsc = obj_model.core.StringAttribute()
+    su_cmt = obj_model.core.StringAttribute()
+    complex_cmt = obj_model.core.StringAttribute()
+    disease_cmt = obj_model.core.StringAttribute()
+    class_name = obj_model.core.StringAttribute()
+    family_name = obj_model.core.StringAttribute()
+    molecular_weight = obj_model.core.FloatAttribute()
+
+
 
 class Interaction(EntityInteractionOrProperty):
     """ Represents an interaction
