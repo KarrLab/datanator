@@ -342,8 +342,8 @@ class TestIncorporateProcessedData(unittest.TestCase):
                 src.load_processed_data(experiment)
 
         self.assertEqual(len(session.query(array_express.Gene).all()), 97481)
-        incorporated_exps = list(set([g.experiment_id for g in session.query(array_express.Gene).all()]))
-        self.assertEqual(incorporated_exps, list(set([u'E-MTAB-3965', u'E-MTAB-4063'])))
+        incorporated_exps = set([g.experiment_id for g in session.query(array_express.Gene).all()])
+        self.assertEqual(incorporated_exps, set([u'E-MTAB-3965', u'E-MTAB-4063']))
         total_exps = set([exp.id for exp in session.query(array_express.Experiment).all()])
         unincorporated_exps = list(total_exps - set(incorporated_exps))
         self.assertEqual(set(unincorporated_exps), set([u'E-MTAB-4133',
