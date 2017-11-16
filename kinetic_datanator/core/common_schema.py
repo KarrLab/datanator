@@ -16,7 +16,6 @@ from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, array_expr
 import sqlalchemy.ext.declarative
 from six import BytesIO
 import six
-from bioservices import UniProt
 from ete3 import NCBITaxa
 import pandas as pd
 import numpy
@@ -774,7 +773,6 @@ class CommonSchema(data_source.HttpDataSource):
         t0 = time.time()
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, verbose = self.verbose)
         pax_ses = paxdb.session
-        u = UniProt(verbose = False)
 
         _entity = self.entity
         _property = self.property
