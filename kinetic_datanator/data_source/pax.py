@@ -19,6 +19,8 @@ from kinetic_datanator.core import data_source
 import os, zipfile
 from operator import itemgetter
 from six import BytesIO
+import shutil
+import pandas as pd
 
 Base = declarative_base()
 
@@ -78,7 +80,7 @@ class Observation(Base):
 
     __tablename__ = 'observation'
     id         = Column(Integer, primary_key=True)
-    abundance  = Column(Float)
+    abundance  = Column(String(255))
 
     dataset_id = Column(Integer, ForeignKey('dataset.id'))
     protein_id = Column(Integer, ForeignKey('protein.protein_id'))
@@ -114,17 +116,6 @@ def find_files(path):
             data_files.append(f)
     return data_files
 
-def find_uniprot_relation(path, ncbi_id):
-    """ Finds the current working directory and feeds back dictionary of uniprot_ids
-
-
-    """
-    fname = path + '/' + str(ncbi_id) + '-paxdb_uniprot.txt'
-    with open(fname, 'r') as f:
-        rows = ( line.split('\t') for line in f)
-        d = { row[0]:str(row[1]).strip() for row in rows}
-        return d
-
 
 
 """ ----------------------------- Pax DB Class  ---------------------------------"""
@@ -137,8 +128,8 @@ class Pax(data_source.HttpDataSource):
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        'pax': 'http://pax-db.org/downloads/latest/datasets/paxdb-abundance-files-v4.0.zip',
-        'pax_protein': 'http://pax-db.org/downloads/latest/UniProt_mappings/paxdb-uniprot-links-v4_0.zip'
+        'pax': 'http://pax-db.org/downloads/latest/datasets/paxdb-abundance-files-v4.1.zip',
+        'pax_protein': 'http://pax-db.org/downloads/latest/paxdb-uniprot-links-v4.1.zip'
     }
 
     def load_content(self):
@@ -156,14 +147,15 @@ class Pax(data_source.HttpDataSource):
         response = req.get(database_url)
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
-        self.cwd = self.cache_dirname+'/paxdb-abundance-files-v4.0'
+        self.cwd = self.cache_dirname+'/paxdb-abundance-files-v4.1'
+        shutil.rmtree(self.cwd+'/paxdb-abundance-files-v4.1')
         self.data_files = find_files(self.cwd)
 
         # Extract All Protein Relation Files and Save to Cache Directory
         response = req.get(protein_conversion_url)
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
-        self.cwd_prot = self.cache_dirname+'/paxdb-uniprot-links-v4_0'
+        self.cwd_prot = self.cache_dirname+'/paxdb-uniprot-links-v4.1'
 
 
         # Insert Error Report in Cache
@@ -171,6 +163,9 @@ class Pax(data_source.HttpDataSource):
         new_path = self.cache_dirname + '/report.txt'
         self.report = open(new_path, 'w+')
         self.report.write('Errors found:\n')
+
+        self.uniprot_pd = pd.read_csv(self.cwd_prot+'/paxdb-uniprot-links-v4.1.tsv',
+            delimiter='\t', names = ['string_id', 'uniprot_id'], index_col=0)
 
         # Find data and parse individual files
         for self.file_id in range(int(self.max_entries)):
@@ -210,11 +205,11 @@ class Pax(data_source.HttpDataSource):
             lines=f.readlines()
 
             # Get species name
-            start  = lines[0].find(':')+2
-            finish = lines[0].find('-')-1
-            species_name = lines[0][start:finish]
+            start  = lines[1].find(':')+2
+            finish = lines[1].find('-')-1
+            species_name = lines[1][start:finish]
 
-            field_name,_,_ = lines[0].partition(':')
+            field_name,_,_ = lines[1].partition(':')
             if field_name=='#name':
                 pass
             else:
@@ -223,10 +218,10 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get score
-            finish = len(lines[1])-1
-            score = float(lines[1][8:finish])
+            finish = len(lines[2])-1
+            score = float(lines[2][8:finish])
 
-            field_name,_,_ = lines[1].partition(':')
+            field_name,_,_ = lines[2].partition(':')
             if field_name=='#score':
                 pass
             else:
@@ -235,13 +230,13 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get weight
-            finish = lines[2].find('%')
+            finish = lines[3].find('%')
             if finish==-1:
                 weight = None
             else:
-                weight = float(lines[2][9:finish])
+                weight = float(lines[3][9:finish])
 
-            field_name,_,_ = lines[2].partition(':')
+            field_name,_,_ = lines[3].partition(':')
             if field_name=='#weight':
                 pass
             else:
@@ -250,11 +245,11 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get publication link
-            start  = lines[3].find('http:')
-            finish = lines[3].find('"',start)
-            publication = lines[3][start:finish]
+            start  = lines[4].find('http:')
+            finish = lines[4].find('"',start)
+            publication = lines[4][start:finish]
 
-            field_name,_,_ = lines[3].partition(':')
+            field_name,_,_ = lines[4].partition(':')
             if field_name=='#description':
                 pass
             else:
@@ -263,11 +258,11 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get organ
-            start  = lines[4].find(':')+2
-            finish = len(lines[4])-1
-            organ  = lines[4][start:finish]
+            start  = lines[5].find(':')+2
+            finish = len(lines[5])-1
+            organ  = lines[5][start:finish]
 
-            field_name,_,_ = lines[4].partition(':')
+            field_name,_,_ = lines[5].partition(':')
             if field_name=='#organ':
                 pass
             else:
@@ -276,11 +271,11 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get coverage
-            start    = lines[6].find(':')+2
-            finish   = len(lines[6])-1
-            coverage = float(lines[6][start:finish])
+            start    = lines[7].find(':')+2
+            finish   = len(lines[7])-1
+            coverage = float(lines[7][start:finish])
 
-            field_name,_,_ = lines[6].partition(':')
+            field_name,_,_ = lines[7].partition(':')
             if field_name=='#coverage':
                 pass
             else:
@@ -289,7 +284,7 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Check column header
-            column_headers = lines[10].split()
+            column_headers = lines[11].split()
             if column_headers[0]=='#internal_id' and column_headers[1]=='string_external_id' and column_headers[2]=='abundance' and len(column_headers)<5:
                 pass
             else:
@@ -312,8 +307,6 @@ class Pax(data_source.HttpDataSource):
 
             """ --- Parse individual measurements and add them to DB ----------- """
 
-            uniprot_dict = find_uniprot_relation(self.cwd_prot, ncbi_id)
-
             for i in range(11,len(lines)):
                 split_line = lines[i].split()
                 protein_id = split_line[0]
@@ -326,11 +319,11 @@ class Pax(data_source.HttpDataSource):
                 if self.session.query(q.exists()).scalar():
                     protein = q.first()
                 else:
-                    if string_id in uniprot_dict:
-                        protein = Protein(protein_id=protein_id, string_id=string_id, uniprot_id = uniprot_dict[string_id])
+                    if string_id in self.uniprot_pd.index.values:
+                        protein = Protein(string_id=string_id, uniprot_id = str(self.uniprot_pd.loc[string_id]))
                         self.session.add(protein)
                     else:
-                        protein = Protein(protein_id=protein_id, string_id=string_id)
+                        protein = Protein(string_id=string_id)
                         self.session.add(protein)
 
                 observation = Observation(dataset=dataset, abundance=abundance, protein=protein)
