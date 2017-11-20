@@ -188,8 +188,8 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         59347, 59348, 59349, 59350, 59351, 59352, 59353, 59354, 59355, 59356, 59357, 59358, 59359])
 
         for i in range(5):
-            index1 = random.randint(0,len(law))
-            index2 = random.randint(0,len(law))
+            index1 = random.randint(0,len(law)-1)
+            index2 = random.randint(0,len(law)-1)
             self.assertEqual(law[index1].enzyme, law[index2].enzyme)
 
     def test_get_kinetic_laws_by_reaction(self):
