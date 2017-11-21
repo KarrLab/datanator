@@ -27,7 +27,7 @@ class TestIntAct(unittest.TestCase):
 
         self.assertEqual(q.name, 'INO80 chromatin remodeling complex')
         self.assertEqual(q.ncbi, '559292')
-        self.assertEqual(q.evidence, 'intact:EBI-1212520')
+        self.assertEqual(q.evidence, 'intact:EBI-515508')
 
 
     def test_add_interactions(self):
