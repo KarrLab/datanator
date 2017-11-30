@@ -701,9 +701,12 @@ class CommonSchema(data_source.HttpDataSource):
         self.property = observation.physical_property
 
         # Add all DBs
-        self.add_intact()
+        self.add_intact_interactions()
         if self.verbose:
-            print('IntAct Done')
+            print('IntAct Interactions Done')
+        self.add_intact_complexes()
+        if self.verbose:
+            print('IntAct Complexes Done')
         self.add_paxdb()
         if self.verbose:
             print('Pax Done')
@@ -739,7 +742,6 @@ class CommonSchema(data_source.HttpDataSource):
                concentrate=False # Don't try to join the relation lines together
             )
             graph.write_png(os.getcwd())
-
 
     def fill_missing_ncbi_names(self):
         t0 = time.time()
@@ -1112,7 +1114,7 @@ class CommonSchema(data_source.HttpDataSource):
             print('Comitting')
         self.session.commit()
 
-    def add_intact(self):
+    def add_intact_interactions(self):
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
 
@@ -1149,7 +1151,48 @@ class CommonSchema(data_source.HttpDataSource):
         self.get_or_create_object(Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
 
         if self.verbose:
-            print('Total time taken for IntAct: ' + str(time.time()-t0) + ' secs')
+            print('Total time taken for IntAct Interactions: ' + str(time.time()-t0) + ' secs')
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
+    def add_intact_complexes(self):
+        t0 = time.time()
+        intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
+
+        intact_ses = intactdb.session
+        _entity = self.entity
+        _property = self.property
+
+        def parse_string(regex, string):
+            result = re.findall(regex,string)
+            return '|'.join(result)
+
+        if self.max_entries == float('inf'):
+            complexdb = intactdb.session.query(intact.ProteinComplex).all()
+        else:
+            complexdb = intactdb.session.query(intact.ProteinComplex).limit(self.max_entries).all()
+
+        for row in complexdb:
+            metadata = self.get_or_create_object(Metadata, name = row.name)
+            metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = row.ncbi))
+            metadata.resource.append(self.get_or_create_object(Resource, namespace = 'ebi id', _id = row.identifier))
+
+            go_dsc =  parse_string(".*?\((.*?)\)", row.go_annot)
+            go_id = parse_string(".*?\GO:(.*?)\(", row.go_annot)
+            subunits = re.findall(".*?\|(.*?)\(", '|'+row.subunits)
+            _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Protein Comlplex',
+            complex_name = row.name, su_cmt = row.subunits, go_dsc = go_dsc, go_id = go_id,
+            complex_cmt = row.desc, _metadata = metadata)
+            for sub in subunits:
+                if 'CHEBI' not in sub:
+                    _entity.protein_subunit = self.get_or_create_object(ProteinSubunit,
+                        type = 'Protein Subunit', uniprot_id = sub,
+                        proteincomplex = _entity.protein_complex, _metadata = metadata)
+
+        if self.verbose:
+            print('Total time taken for IntAct Complex: ' + str(time.time()-t0) + ' secs')
 
         if self.verbose:
             print('Comitting')

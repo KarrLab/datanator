@@ -117,7 +117,7 @@ class LoadingTestCommonSchema(unittest.TestCase):
         resource = session.query(common_schema.Resource).filter_by(namespace = 'ec-code').filter_by(_id = '3.4.21.62').all()
         self.assertEqual(len(resource), 1)
 
-    def test_intact_added(self):
+    def test_intact_interactions_added(self):
         session = self.cs.session
 
         interact = session.query(common_schema.ProteinInteractions).filter_by(participant_a = 'uniprotkb:P49418').all()
@@ -125,6 +125,15 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
         interact = session.query(common_schema.ProteinInteractions).filter_by(participant_a = 'intact:EBI-7121765').first()
         self.assertEqual(interact._metadata.resource[0]._id, '10542231|mint')
+
+    def test_intact_complex_added(self):
+        session = self.cs.session
+
+        plex = session.query(common_schema.ProteinComplex).filter_by(complex_name = 'CPAP-STIL complex').all()
+        self.assertEqual(len(plex), 1)
+        self.assertEqual(plex[0].go_id, '1905832|0110028|0046601|0005737|0008017|1900087|0120099')
+        self.assertEqual(plex[0].su_cmt, 'Q7ZVT3(0)|Q8JGS1(0)|E7FCY1(0)')
+        self.assertEqual(len(plex[0].protein_subunit), 3)
 
     def test_uniprot_added(self):
         session = self.cs.session
