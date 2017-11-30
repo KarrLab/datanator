@@ -1179,9 +1179,10 @@ class CommonSchema(data_source.HttpDataSource):
             metadata.taxon.append(self.get_or_create_object(Taxon, ncbi_id = row.ncbi))
             metadata.resource.append(self.get_or_create_object(Resource, namespace = 'ebi id', _id = row.identifier))
 
-            go_dsc =  parse_string(".*?\((.*?)\)", row.go_annot)
-            go_id = parse_string(".*?\GO:(.*?)\(", row.go_annot)
-            subunits = re.findall(".*?\|(.*?)\(", '|'+row.subunits)
+            go_dsc =  parse_string(re.compile(".*?\((.*?)\)"), row.go_annot)
+            go_id = parse_string(re.compile("GO:(.*?)\("), row.go_annot)
+            print(go_id)
+            subunits = re.findall(re.compile(".*?\|(.*?)\("), '|'+row.subunits)
             _entity.protein_complex = self.get_or_create_object(ProteinComplex, type = 'Protein Comlplex',
             complex_name = row.name, su_cmt = row.subunits, go_dsc = go_dsc, go_id = go_id,
             complex_cmt = row.desc, _metadata = metadata)
