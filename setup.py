@@ -1,7 +1,18 @@
 from setuptools import setup, find_packages
-import kinetic_datanator
+import os
 import pip
 import re
+
+# get long description
+if os.path.isfile('README.rst'):
+    with open('README.rst', 'r') as file:
+        long_description = file.read()
+else:
+    long_description = ''
+
+# get version
+with open('kinetic_datanator/VERSION', 'r') as file:
+    version = file.read().strip()
 
 # parse dependencies and their links from requirements.txt files
 install_requires = []
@@ -34,8 +45,9 @@ dependency_links = list(set(dependency_links))
 # install package
 setup(
     name='kinetic_datanator',
-    version=kinetic_datanator.__version__,
+    version=version,
     description='Finds relevant kinetic data for biochemical models',
+    long_description=long_description,
 
     url='https://github.com/KarrLab/kinetic_datanator',
     download_url='https://github.com/KarrLab/kinetic_datanator',
@@ -58,6 +70,7 @@ setup(
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_data={
         'kinetic_datanator': [
+            'VERSION',
             'config/schema.cfg',
             'config/default.cfg',
             'data_source/*.txt',
@@ -65,7 +78,6 @@ setup(
             'data/*.xlsx',
         ],
     },
-    include_package_data=True,
     entry_points={
         'console_scripts': [
             'kinetic_datanator = kinetic_datanator.__main__:main',

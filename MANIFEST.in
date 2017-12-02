@@ -1,3 +1,9 @@
+# description
+include README.rst
+
+# version
+include kinetic_datanator/VERSION
+
 # license
 include LICENSE
 
