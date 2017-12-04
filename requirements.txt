@@ -13,11 +13,11 @@ openpyxl
 pandas
 pronto
 pubchempy
-python-dateutil
-python-Levenshtein
-python-libsbml
+python_dateutil
+python_levenshtein
+python_libsbml
 requests
-requests-cache
+requests_cache
 scipy
 six
 sqlalchemy
