@@ -2,7 +2,7 @@
 [![Documentation](https://readthedocs.org/projects/kinetic_datanator/badge/?version=latest)](http://kinetic_datanator.readthedocs.org)
 [![Test results](https://circleci.com/gh/KarrLab/kinetic_datanator.svg?style=shield)](https://circleci.com/gh/KarrLab/kinetic_datanator)
 [![Test coverage](https://coveralls.io/repos/github/KarrLab/kinetic_datanator/badge.svg)](https://coveralls.io/github/KarrLab/kinetic_datanator)
-[![Code analysis](https://codeclimate.com/github/KarrLab/kinetic_datanator/badges/gpa.svg)](https://codeclimate.com/github/KarrLab/kinetic_datanator)
+[![Code analysis](https://api.codeclimate.com/v1/badges/62e495c53a118f35afea/maintainability)](https://codeclimate.com/github/KarrLab/kinetic_datanator)
 [![License](https://img.shields.io/github/license/KarrLab/kinetic_datanator.svg)](LICENSE)
 ![Analytics](https://ga-beacon.appspot.com/UA-86759801-1/kinetic_datanator/README.md?pixel)
 
