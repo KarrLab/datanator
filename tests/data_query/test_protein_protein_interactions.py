@@ -23,7 +23,8 @@ class TestProteinProteinInteractionGenerator(unittest.TestCase):
         self.assertEqual(set([i.participant_a for i in interaction]),
             set([u'uniprotkb:P41810', u'uniprotkb:P41811', u'uniprotkb:P53622',
             u'uniprotkb:P33767', u'uniprotkb:P40509']))
-        self.assertEqual(complex, [])
+        self.assertEqual(complex[0].name,'COPI vesicle coat complex')
+
 
 
     def test_get_interaction_by_subunit(self):
