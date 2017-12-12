@@ -237,14 +237,23 @@ class CachedDataSource(DataSource):
         Returns:
             :obj:`base_model`: SQLAlchemy object of type :obj:`cls`
         """
-        q = self.session.query(cls).filter_by(**kwargs)
-        if q.count():
-            return q.first()
+        if self.flask:
+            q = cls.query.filter_by(**kwargs)
+            if q.count():
+                return q.first()
+            else:
+                obj = cls(**kwargs)
+                self.session.add(obj)
+                self.session.commit()
+                return obj
         else:
-            obj = cls(**kwargs)
-            self.session.add(obj)
-            return obj
-
+            q = self.session.query(cls).filter_by(**kwargs)
+            if q.count():
+                return q.first()
+            else:
+                obj = cls(**kwargs)
+                self.session.add(obj)
+                return obj
 
 class HttpDataSource(CachedDataSource):
     """ An external data source which can be obtained via a HTTP interface

@@ -23,7 +23,7 @@ import os
 import time
 import re
 import flask_whooshalchemy
-from models import app, db, Observation, PhysicalEntity, PhysicalProperty, Compound, Metadata, Taxon, Resource, Structure, CellLine, Conditions, Concentration, CellCompartment, Synonym
+from kinetic_datanator.flask_datanator.models import app, db, Observation, PhysicalEntity, PhysicalProperty, Compound, Metadata, Taxon, Resource, Structure, CellLine, Conditions, Concentration, CellCompartment, Synonym
 # from sqlalchemy import MetaData
 # from sqlalchemy_schemadisplay import create_schema_graph
 
@@ -34,7 +34,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
     """
 
     base_model = db
-    app = app 
+    app = app
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False, load_entire_small_DBs = False,
