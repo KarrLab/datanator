@@ -18,6 +18,8 @@ import sys
 import tarfile
 import wc_utils.config.core
 
+
+
 config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
 # :obj:`wc_utils.config.core.ConfigManager`: configuration manager
 
@@ -63,7 +65,7 @@ class CachedDataSource(DataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False):
+                 commit_intermediate_results=False, download_backup=True, verbose=False, flask=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -85,7 +87,6 @@ class CachedDataSource(DataSource):
             cache_dirname = CACHE_DIRNAME
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
-
         # loading
         self.max_entries = max_entries
 
@@ -100,6 +101,9 @@ class CachedDataSource(DataSource):
 
         # verbosity
         self.verbose = verbose
+
+        #flaskosity
+        self.flask = flask
 
         """ Create SQLAlchemy session and load content if necessary """
         if os.path.isfile(self.filename):
@@ -132,17 +136,25 @@ class CachedDataSource(DataSource):
         if not os.path.isdir(os.path.dirname(self.filename)):
             os.makedirs(os.path.dirname(self.filename))
 
-        engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
-
-        if not os.path.isfile(self.filename):
-            self.base_model.metadata.create_all(engine)
+        if self.flask:
+            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
+            self.app.config['WHOOSH_BASE'] = self.cache_dirname +'/whoosh_cache/'
+            engine = self.base_model.create_all()
+        else:
+            engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
+            if not os.path.isfile(self.filename):
+                    self.base_model.metadata.create_all(engine)
 
         return engine
 
     def clear_content(self):
         """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
-        self.base_model.metadata.drop_all(self.engine)
-        self.base_model.metadata.create_all(self.engine)
+        if self.flask:
+            self.base_model.drop_all()
+            self.base_model.create_all()
+        else:
+            self.base_model.metadata.drop_all(self.engine)
+            self.base_model.metadata.create_all(self.engine)
 
     def get_session(self):
         """ Get a session for the sqlite database
@@ -150,7 +162,10 @@ class CachedDataSource(DataSource):
         Returns:
             :obj:`sqlalchemy.orm.session.Session`: database session
         """
-        return sqlalchemy.orm.sessionmaker(bind=self.engine)()
+        if self.flask:
+            return self.base_model.session
+        else:
+            return sqlalchemy.orm.sessionmaker(bind=self.engine)()
 
     def upload_backup(self):
         """ Backup the local sqlite database to the Karr Lab server """
@@ -246,7 +261,7 @@ class HttpDataSource(CachedDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backup=True, verbose=False,
-                 clear_requests_cache=False, download_request_backup=False):
+                 clear_requests_cache=False, download_request_backup=False, flask = False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -283,7 +298,7 @@ class HttpDataSource(CachedDataSource):
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
                                              commit_intermediate_results=commit_intermediate_results,
-                                             download_backup=download_backup, verbose=verbose)
+                                             download_backup=download_backup, verbose=verbose, flask = flask)
 
     def get_requests_session(self):
         """ Setup an cache-enabled HTTP request session
