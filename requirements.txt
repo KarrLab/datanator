@@ -21,5 +21,8 @@ requests_cache
 scipy
 six
 sqlalchemy
+flask_whooshalchemy
+flask_sqlalchemy
+flask
 unicodecsv
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
