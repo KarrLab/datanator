@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /root/project
     docker:
-      - image: karrlab/build:0.0.16
+      - image: karrlab/build:0.0.18
     steps:
       - checkout
 
