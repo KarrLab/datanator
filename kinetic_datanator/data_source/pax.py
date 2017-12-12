@@ -128,7 +128,7 @@ class Pax(data_source.HttpDataSource):
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        'pax': 'http://pax-db.org/downloads/latest/datasets/paxdb-abundance-files-v4.1.zip',
+        'pax': 'https://pax-db.org/downloads/4.1/datasets/paxdb-abundance-files-v4.1.zip',
         'pax_protein': 'http://pax-db.org/downloads/latest/paxdb-uniprot-links-v4.1.zip'
     }
 
