@@ -33,4 +33,4 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_whoosh(self):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
-        set([u'Adenosine', u'Adenosine monophosphate', u'Cyclic AMP', u"Adenosine 3',5'-diphosphate", u'Adenine']))
+            set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
