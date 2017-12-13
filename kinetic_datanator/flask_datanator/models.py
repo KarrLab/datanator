@@ -377,12 +377,11 @@ class Structure(PhysicalProperty):
     """
 
     __tablename__ = 'structure'
-    __searchable__ = ['value_inchi', 'value_smiles']
     __mapper_args__ = {'polymorphic_identity': 'structure'}
 
     struct_id = db.Column(db.Integer, db.ForeignKey('physical_property.observation_id'), primary_key = True)
-    value_smiles= db.Column(db.String(255))
-    value_inchi = db.Column(db.String(255))
+    _value_smiles= db.Column(db.String(255))
+    _value_inchi = db.Column(db.String(255))
     _structure_formula_connectivity = db.Column(db.String(255))
 
 class Concentration(PhysicalProperty):
