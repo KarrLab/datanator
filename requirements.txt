@@ -1,4 +1,4 @@
-git+https://github.com/cokelaer/bioservices.git#egg=bioservices
+git+https://github.com/cokelaer/bioservices.git#egg=bioservices-1.5.0
 bs4
 cement
 demjson
@@ -7,7 +7,7 @@ ete3
 jxmlease
 natsort
 numpy
-git+https://github.com/KarrLab/obj_model.git#egg=obj_model
+git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.4
 openbabel
 openpyxl
 pandas
@@ -25,4 +25,4 @@ flask_whooshalchemy == 0.8
 flask_sqlalchemy
 flask
 unicodecsv
-git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
+git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils-0.0.1a5
