@@ -113,12 +113,14 @@ class Method(db.Model):
         comments (:obj:`str`): Comments on the method
 
     """
+    __tablename__ = 'method'
+    __searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255))
     comments = db.Column(db.String(255))
 
-    __tablename__ = 'method'
+
 
 class Taxon(db.Model):
     """
@@ -129,11 +131,13 @@ class Taxon(db.Model):
         name (:obj:`str`): Name of the species
 
     """
+    __tablename__ = 'taxon'
+    __searchable__ = ['ncbi_id', 'name']
 
     ncbi_id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255))
 
-    __tablename__ = 'taxon'
+
 
 class Synonym(db.Model):
     """
@@ -143,6 +147,8 @@ class Synonym(db.Model):
         name (:obj:`str`): Name of the Synonym
 
     """
+
+    __searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255))
@@ -172,10 +178,13 @@ class CellLine(db.Model):
         name (:obj:`str`): Name of the Cell Line
 
     """
+    __tablename__ = 'cell_line'
+    __searchable__ = ['name']
+
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255))
 
-    __tablename__ = 'cell_line'
+
 
 class Conditions(db.Model):
     """
@@ -189,6 +198,7 @@ class Conditions(db.Model):
         growth_system (:obj:`str`): Type of growth system
 
     """
+
 
     id = db.Column(db.Integer, primary_key = True)
     growth_status = db.Column(db.String(255))
@@ -212,6 +222,7 @@ class CellCompartment(db.Model):
 
     """
     __tablename__ = 'cell_compartment'
+    __searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(255), unique = True, index=True)
@@ -252,6 +263,7 @@ class ProteinSubunit(PhysicalEntity):
     """
 
     __tablename__ = 'protein_subunit'
+    __searchable__ = ['subunit_name', 'uniprot_id', 'canonical_sequence']
     __mapper_args__ = {'polymorphic_identity': 'protein_subunit'}
 
     subunit_id = db.Column(db.Integer, db.ForeignKey('physical_entity.observation_id'), primary_key = True)
@@ -294,6 +306,7 @@ class ProteinComplex(PhysicalEntity):
         molecular_weight (:obj:`float`): Molecular weight of subunit
     """
     __tablename__ = 'protein_complex'
+    __searchable__ = ['complex_name', 'go_id', 'funcat_id', 'su_cmt']
     __mapper_args__ = {'polymorphic_identity': 'protein_complex'}
 
     complex_id = db.Column(db.Integer, db.ForeignKey('physical_entity.observation_id'), primary_key = True)
@@ -334,9 +347,6 @@ class Compound(PhysicalEntity):
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
     structure = db.relationship('Structure', backref = 'compound')
-
-    def __repr__(self):
-        return '<Compound %r>' % self.compound_id
 
 
 class PhysicalProperty(Observation):
@@ -553,7 +563,7 @@ class AbundanceData(db.Model):
     dataset = db.relationship('AbundanceDataSet', backref = 'abundance_data', foreign_keys=[dataset_id])
 
     subunit_id = db.Column(db.Integer, db.ForeignKey('protein_subunit.subunit_id'), index=True)
-    subunit = db.relationship('ProteinSubunit', backref = 'pax_abundance_data' )
+    subunit = db.relationship('ProteinSubunit')
 
     pax_load = db.Column(db.Integer)
     uniprot_id = db.Column(db.Integer)
@@ -599,6 +609,7 @@ class ProteinInteractions(PhysicalProperty):
 
     """
     __tablename__ = 'protein_interactions'
+    __searchable__ = ['participant_a', 'participant_b']
     __mapper_args__ = {'polymorphic_identity': 'protein_interactions'}
 
     interaction_id = db.Column(db.Integer, db.ForeignKey('physical_property.observation_id'), primary_key = True)
