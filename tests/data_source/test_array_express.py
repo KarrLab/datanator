@@ -7,7 +7,6 @@
 """
 
 from kinetic_datanator.data_source import array_express
-from kinetic_datanator.data_source import parallel_array_express
 import shutil
 import tempfile
 import unittest
