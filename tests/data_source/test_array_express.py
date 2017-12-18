@@ -7,14 +7,10 @@
 """
 
 from kinetic_datanator.data_source import array_express
-import datetime
 import shutil
 import tempfile
 import unittest
-import os.path
-import zipfile
 import datetime
-import dateutil.parser
 
 
 class QuickTest(unittest.TestCase):
@@ -27,7 +23,7 @@ class QuickTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-
+    
     def test_load_experiment_metadata(self):
         src = self.src
         session = src.session
@@ -51,16 +47,12 @@ class QuickTest(unittest.TestCase):
             name='transcription profiling by SAGE').first()])
         self.assertEqual(experiment.designs, [])
         self.assertEqual(sorted([df.name for df in experiment.data_formats]), ['normalization', 'processedData'])
-        # print "yello"
         self.assertEqual(sorted([df.name for df in experiment.data_formats]), sorted([df.name for df in [
             session.query(array_express.DataFormat).filter_by(name='normalization').first(),
             session.query(array_express.DataFormat).filter_by(name='processedData').first(),
         ]]))
 
-        #self.assertEqual(sorted(experiment.data_formats, key=lambda format: format.name), [
-        #    session.query(array_express.DataFormat).filter_by(name='normalization').first(),
-        #    session.query(array_express.DataFormat).filter_by(name='processedData').first(),
-        #])
+
         self.assertEqual(experiment.submission_date, datetime.date(2001, 10, 2))
         self.assertEqual(experiment.release_date, datetime.date(2001, 10, 3))
 
@@ -91,7 +83,7 @@ class QuickTest(unittest.TestCase):
         experiment = session.query(array_express.Experiment).filter_by(id='E-SNGR-6').first()
         src.load_experiment_samples(experiment)
 
-        self.assertEqual(len(experiment.samples), 20)
+        self.assertEqual(len(experiment.samples), 1)
 
         sample = next(sample for sample in experiment.samples if sample.index == 0)
         self.assertEqual(sample.name, 'Schizosaccharomyces pombe, cultured with nitrogen source NH4Cl')
@@ -134,43 +126,32 @@ class QuickTest(unittest.TestCase):
         self.assertEqual(protocol.hardware,'Affymetrix GeneChip Scanner 3000 7G')
         self.assertEqual(protocol.software,'Affymetrix AGCC')
 
-
-
-    def test_load_processed_data(self):
-        test_experiment = array_express.Experiment(id = 'E-MTAB-4549', organisms=[array_express.Organism(name="Mus musculus")])
-        src = self.src
-        src.load_processed_data(test_experiment)
-        self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-MTAB-4549.processed.1.zip".format(src.cache_dirname)))
-        zip_ref = zipfile.ZipFile("{}/array_express_processed_data/E-MTAB-4549.processed.1.zip".format(src.cache_dirname), 'r')
-        zip_ref.extractall(src.cache_dirname)
-        zip_ref.close()
-        filename = "{}/raw_countsHSC_bulk.txt".format(src.cache_dirname)
-        file = open(filename, "r")
-        self.assertEqual(file.read()[:9], 'dHSC dHSC')
-
-
-
-
-
     def test_load_content(self):
         src = self.src
         session = src.session
+        #print(len(session.query(array_express.Experiment).all()))
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-4262")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-4262").first()
+        self.assertEqual(exp.id, "E-MTAB-4262")
+        self.assertEqual(exp.name, "Expression analysis of Arabidopsis seedlings 3h and 2h after transfer to sucrose")
+        self.assertEqual(exp.description, "Seedlings are grown on a mesh covering MS media without carbon source, and subsequently transferred at 9 DAS to control media without sucrose or medium supplemented with 15 mM sucrose. 3 hours and 24 hours after transfer, seedlings were harvested and the third leaf micro-dissected for RNA extraction.")
+        self.assertEqual(exp.organisms[0].name, "Arabidopsis thaliana")
+        self.assertEqual(list(set([t.name for t in exp.types])), list(set(["RNA-seq of coding RNA"])))
+        self.assertEqual(list(set([t.name for t in exp.designs])), list(set(["compound treatment design", "time series design"])))
+        self.assertEqual(len(exp.protocols), 8)
+        self.assertTrue(exp.has_fastq_files)
+        self.assertEqual(exp.read_type, "paired")
+        self.assertEqual(len(exp.samples), 12)
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="R1_0mM_24h").first()
+        self.assertEqual(a_sample.read_type, "paired")
+        self.assertEqual(list(set([
+            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_1.fastq.gz",
+            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
+            ])), list(set([u.url for u in a_sample.fastq_urls])))
 
-        src.load_content(start_year=2001, end_year=2001)
 
-        experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-10').first()
-        self.assertEqual(set([sample.name for sample in experiment.samples]), set(['GSM571 1', 'GSM572 1', 'GSM573 1', 'GSM574 1']))
-
-        sample = next(sample for sample in experiment.samples if sample.name == 'GSM574 1')
-        self.assertEqual(sample.name, 'GSM574 1')
-        self.assertEqual(sample.extracts, [session.query(array_express.Extract).filter_by(name='GSM574 extract 1').first()])
-        self.assertEqual(sample.assay, 'GSM574')
-        self.assertEqual(sample.characteristics, [session.query(
-            array_express.Characteristic).filter_by(category='Organism', value='Homo sapiens').first()])
-        self.assertEqual(sample.variables, [])
-
-
-class LongTest(unittest.TestCase):
+    
+class TestLoadFASTQ_Url(unittest.TestCase):
 
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
@@ -179,185 +160,56 @@ class LongTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    def test_load_content(self):
-        src = self.src
-        session = src.session
+    def test_single_read(self):
+        session = self.src.session
+        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-41373"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-41373").first()
+        self.assertTrue(exp.has_fastq_files)
+        self.assertEqual(exp.read_type, "single")
+        self.assertEqual(len(exp.samples), 12)
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1015798 1").first()
+        self.assertEqual(a_sample.read_type, "single")
+        self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR580/SRR580556/SRR580556.fastq.gz")
 
-        src.load_content(start_year=2001, end_year=2002)
-
-        # E-GEOD-10
-        experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-10').first()
-        self.assertEqual(set([sample.name for sample in experiment.samples]), set(['GSM571 1', 'GSM572 1', 'GSM573 1', 'GSM574 1']))
-
-        sample = next(sample for sample in experiment.samples if sample.name == 'GSM574 1')
-        self.assertEqual(sample.name, 'GSM574 1')
-        self.assertEqual(sample.extracts, [session.query(array_express.Extract).filter_by(name='GSM574 extract 1').first()])
-        self.assertEqual(sample.assay, 'GSM574')
-        self.assertEqual(sample.characteristics, [session.query(
-            array_express.Characteristic).filter_by(category='Organism', value='Homo sapiens').first()])
-        self.assertEqual(sample.variables, [])
-
-        # E-SNGR-6
-        experiment = session.query(array_express.Experiment).filter_by(id='E-SNGR-6').first()
-        self.assertEqual(len(experiment.samples), 20)
-
-        sample = next(sample for sample in experiment.samples if sample.index == 0)
-        self.assertEqual(sample.name, 'Schizosaccharomyces pombe, cultured with nitrogen source NH4Cl')
-        self.assertEqual(sample.extracts, [
-            session.query(array_express.Extract).filter_by(name='1h, added nitrogen').first()
-        ])
-        self.assertEqual(sample.assay, 'jm_1h_135-15')
-
-        self.assertEqual(sorted(sample.characteristics, key=lambda characteristic: characteristic.category), [
-            session.query(array_express.Characteristic).filter_by(category='Genotype', value='h+/h+ ade6-M210/ade6-M216').first(),
-            session.query(array_express.Characteristic).filter_by(category='Organism', value='Schizosaccharomyces pombe').first(),
-        ])
-        self.assertEqual(sample.variables, [
-            session.query(array_express.Variable).filter_by(name='sampling interval', value='1', unit=None).first()
-        ])
+    def test_paired_read(self):
+        session = self.src.session
+        self.src.load_experiment_samples(array_express.Experiment(id="E-MTAB-4262"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-4262").first()
+        self.assertTrue(exp.has_fastq_files)
+        self.assertEqual(exp.read_type, "paired")
+        self.assertEqual(len(exp.samples), 12)
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="R1_0mM_24h").first()
+        self.assertEqual(a_sample.read_type, "paired")
+        self.assertEqual(list(set([
+            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_1.fastq.gz",
+            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
+            ])), list(set([u.url for u in a_sample.fastq_urls])))
 
 
-class TestDownloadProcessedData(unittest.TestCase):
+    def test_multiple_reads(self):
+        session = self.src.session
+        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-58388"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-58388").first()
+        self.assertEqual(exp.read_type, "single")
+        self.assertEqual(len(exp.samples), 12)
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710 1").first()
+        self.assertEqual(a_sample.read_type, "single")
+        self.assertEqual(len(a_sample.fastq_urls), 1) #this sample has one entry
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409720 1").first()
+        self.assertEqual(len(a_sample.fastq_urls), 1) #this sample has two entries, but the url is the same
+        self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR137/000/SRR1377310/SRR1377310.fastq.gz")
+        
+        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-45474"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-45474").first()
+        self.assertEqual(exp.read_type, "single")
+        self.assertEqual(len(exp.samples), 33)
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1105145 1").first()
+        self.assertEqual(a_sample.read_type, "single")
+        self.assertEqual(len(a_sample.fastq_urls), 2) #this sample has two entries, but the urls are different, so they are both added
 
-    def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.cache_dirname)
-
-    def test_download_processed_data(self):
-        src = self.src
-
-        response = src.requests_session.get(src.ENDPOINT_DOMAINS['array_express'] + '?date=[2008-12-01+2008-12-20]')
-        response.raise_for_status()
-        for expt_json in response.json()['experiments']['experiment']:
-            id = expt_json['accession']
-            experiment = src.get_or_create_object(array_express.Experiment, id=id)
-            if isinstance(expt_json['name'], list):
-                experiment.name = expt_json['name'][0]
-                experiment.name_2 = expt_json['name'][1]
-            else:
-                experiment.name = expt_json['name']
-            if 'organism' in expt_json:
-                for organism_name in expt_json['organism']:
-                    experiment.organisms.append(src.get_or_create_object(array_express.Organism, name=organism_name))
-            if 'description' in expt_json:
-                experiment.description = expt_json['description'][0]['text']
-            if 'experimenttype' in expt_json:
-                entries = expt_json['experimenttype']
-                for entry in entries:
-                    experiment.types.append(src.get_or_create_object(array_express.ExperimentType, name=entry))
-            if 'experimentdesign' in expt_json:
-                entries = expt_json['experimentdesign']
-                for entry in entries:
-                    experiment.designs.append(src.get_or_create_object(array_express.ExperimentDesign, name=entry))
-            if 'bioassaydatagroup' in expt_json:
-                for entry in expt_json['bioassaydatagroup']:
-                    experiment.data_formats.append(src.get_or_create_object(array_express.DataFormat, name=entry['dataformat']))
-            if 'submissiondate' in expt_json:
-                experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
-            if 'releasedate' in expt_json:
-                experiment.release_date = dateutil.parser.parse(expt_json['releasedate']).date()
-            src.session.add(experiment)
-
-        for i_experiment, experiment in enumerate(src.session.query(array_express.Experiment).all()):
-
-            if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                src.load_processed_data(experiment)
-
-        self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-GEOD-13518.processed.1.zip".format(src.cache_dirname)))
-
-        #the following should not download because there is not processed file
-        self.assertFalse(os.path.isfile("{}/array_express_processed_data/E-MTAB-71.processed.1.zip".format(src.cache_dirname)))
-
-        #the following should not download becuase the experiment is not rna seq of coding rna
-        self.assertFalse(os.path.isfile("{}/array_express_processed_data/E-MEXP-1386.processed.1.zip".format(src.cache_dirname)))
-
-
-class TestIncorporateProcessedData(unittest.TestCase):
-
-    def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False, verbose=True)
-
-    def tearDown(self):
-        shutil.rmtree(self.cache_dirname)
-
-    def test_download_processed_data(self):
-        src = self.src
-        session = src.session
-
-        #src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2016-02-02+2016-02-02]")
-        src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?accession=E-MTAB-4063")
-        experiments = session.query(array_express.Experiment)
-
-        for i_experiment, experiment in enumerate(session.query(array_express.Experiment).all()):
-            src.load_experiment_samples(experiment)
-            src.load_experiment_protocols(experiment)
-            single_dimensional_processed_RNA_seq_data = False
-            # print [d.name for d in experiment.types]
-            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                for df in experiment.data_formats:
-                    # print df.name
-                    # print df.bio_assay_data_cubes
-                    # print ""
-                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
-                        single_dimensional_processed_RNA_seq_data = True
-                        break
-
-            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-            if single_dimensional_processed_RNA_seq_data:
-                src.load_processed_data(experiment)
-
-        self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-MTAB-4063.processed.1.zip".format(src.cache_dirname)))
-        self.assertTrue(os.path.isfile("{}/array_express_processed_data/E-MTAB-4063/NJMU24_normalized_counts.txt".format(src.cache_dirname)))
-        experiment = session.query(array_express.Experiment).filter_by(id='E-MTAB-4063').first()
-        self.assertTrue(experiment.whole_genome)
-        self.assertTrue(len(experiment.genes), 57820)
-        some_gene = session.query(array_express.Gene).filter_by(name='ENSG00000001084.6').first()
-        self.assertEqual(some_gene.experiments[0].id, 'E-MTAB-4063')
-
-    def test_download_processed_data_long(self):
-        src = self.src
-        session = src.session
-
-        src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?date=[2016-02-02+2016-02-04]")
-        #src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments?accession=E-MTAB-4063")
-        experiments = session.query(array_express.Experiment)
-
-        for i_experiment, experiment in enumerate(session.query(array_express.Experiment).all()):
-            # print experiment.id
-            src.load_experiment_samples(experiment)
-            src.load_experiment_protocols(experiment)
-            single_dimensional_processed_RNA_seq_data = False
-            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                for df in experiment.data_formats:
-                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
-                        single_dimensional_processed_RNA_seq_data = True
-                        break
-
-            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-            if single_dimensional_processed_RNA_seq_data:
-                src.load_processed_data(experiment)
-
-        self.assertEqual(len(session.query(array_express.Gene).all()), 97481)
-        incorporated_exps = set([g.experiment_id for g in session.query(array_express.Gene).all()])
-        self.assertEqual(incorporated_exps, set([u'E-MTAB-3965', u'E-MTAB-4063']))
-        total_exps = set([exp.id for exp in session.query(array_express.Experiment).all()])
-        unincorporated_exps = list(total_exps - set(incorporated_exps))
-        self.assertEqual(set(unincorporated_exps), set([u'E-MTAB-4133',
-            u'E-GEOD-77512',
-            u'E-MTAB-3941', #unincorporated because no processed data
-            u'E-GEOD-77428',
-            u'E-MTAB-3680', #unincorporated because no processed data
-            u'E-GEOD-69220',
-            u'E-GEOD-77479',
-            u'E-GEOD-66821',
-            u'E-GEOD-72210',
-            u'E-GEOD-65859',
-            u'E-MTAB-4231', #unincorporated because not an RNA seq experiment
-            u'E-MTAB-3301', #unincorporated because has too many bio_assay_data_cubes
-            u'E-GEOD-71319',
-            u'E-GEOD-77224'
-            ]))
+    def test_without_fastq_files(self):
+        session = self.src.session
+        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-32190"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-32190").first()
+        self.assertFalse(exp.has_fastq_files)
+        self.assertEqual(exp.read_type, "paired") #even though the fastq files aren't available, it is still important to record the read type for the user

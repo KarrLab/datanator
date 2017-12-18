@@ -13,13 +13,7 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
-import os
-from six.moves.urllib.request import urlretrieve
-from kinetic_datanator.data_source.array_express_tools import parse_counts
-from kinetic_datanator.data_source.array_express_tools import get_genome_size
-import zipfile
-from os import listdir
-from os.path import isfile, join
+
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -80,13 +74,11 @@ experiment_protocol = sqlalchemy.Table(
 )
 # :obj:`sqlalchemy.Table`: Experiment:Protocol many-to-many association table
 
-
-experiment_genes = sqlalchemy.Table(
-    'experiment_genes', Base.metadata,
-    sqlalchemy.Column('experiment__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('experiment._id'), index=True),
-    sqlalchemy.Column('gene__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('gene._id'), index=True),
+sample_url = sqlalchemy.Table(
+    'sample_url', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('url_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('url._id'), index=True),
 )
-# :obj:`sqlalchemy.Table`: Sample:Characteristic many-to-many association table
 
 class Characteristic(Base):
     """ Represents an experimental characteristic
@@ -103,7 +95,6 @@ class Characteristic(Base):
     sqlalchemy.schema.UniqueConstraint(category, value)
 
     __tablename__ = 'characteristic'
-
 
 class Variable(Base):
     """ Represents an experimental variable
@@ -123,9 +114,8 @@ class Variable(Base):
 
     __tablename__ = 'variable'
 
-
-class Gene(Base):
-    """ Represents a gene. This is used to reference which genes are used in which experiments
+class Url(Base):
+    """ Represents a url
     Attributes:
         _id (:obj:`int`): unique id
         category (:obj:`str`): name of the characteristic (e.g. organism)
@@ -133,16 +123,13 @@ class Gene(Base):
         samples (:obj:`list` of :obj:`Sample`): samples
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-    experiment_id = sqlalchemy.Column(sqlalchemy.String()) #array express identification
-    name = sqlalchemy.Column(sqlalchemy.String())
+    url = sqlalchemy.Column(sqlalchemy.String())
+    sqlalchemy.schema.UniqueConstraint(url)
 
-    sqlalchemy.schema.UniqueConstraint(name)
-
-    __tablename__ = 'gene'
+    __tablename__ = 'url'
 
 class Sample(Base):
     """ Represents an observed concentration
-
     Attributes:
         _id (:obj:`int`): unique id
         experiment_id: (:obj:`int`): the accesion number of the experiment
@@ -150,8 +137,8 @@ class Sample(Base):
         index (:obj:`int`): index of the sample within the experiment
         name (:obj:`str`): name of the source of the sample
         assay (:obj:`str`): assay
-        characteristics (:obj:`list` of :obj:`Characteristic`): characteristics
-        variables (:obj:`list` of :obj:`Variable`): variables
+        characteristics (:obj:`list` of :obj:`Characteristic'): characteristics
+        variables (:obj:`list` of :obj:`Variable'): variables
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
@@ -162,11 +149,11 @@ class Sample(Base):
     characteristics = sqlalchemy.orm.relationship(
         'Characteristic', secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
     variables = sqlalchemy.orm.relationship('Variable', secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
-
+    fastq_urls = sqlalchemy.orm.relationship('Url', secondary=sample_url, backref=sqlalchemy.orm.backref('samples'))
+    read_type = sqlalchemy.Column(sqlalchemy.String())
+    sqlalchemy.schema.UniqueConstraint(experiment_id, name)
     sqlalchemy.schema.UniqueConstraint(experiment_id, index)
-
     __tablename__ = 'sample'
-
 
 class Experiment(Base):
     """ Represents an experiment
@@ -199,13 +186,11 @@ class Experiment(Base):
     release_date = sqlalchemy.Column(sqlalchemy.Date())
     data_formats = sqlalchemy.orm.relationship('DataFormat', secondary=experiment_data_format,
                                                backref=sqlalchemy.orm.backref('experiments'))
-
-    genes = sqlalchemy.orm.relationship(
-        'Gene', secondary=experiment_genes, backref=sqlalchemy.orm.backref('experiments'))
+    read_type = sqlalchemy.Column(sqlalchemy.String())
+    has_fastq_files = sqlalchemy.Column(sqlalchemy.Boolean())
     whole_genome = sqlalchemy.Column(sqlalchemy.Boolean())
 
     __tablename__ = 'experiment'
-
 
 class ExperimentDesign(Base):
     """ Represents and experimental design
@@ -218,7 +203,6 @@ class ExperimentDesign(Base):
 
     __tablename__ = 'experiment_design'
 
-
 class ExperimentType(Base):
     """ Represents a type of experiment
     Attributes:
@@ -229,7 +213,6 @@ class ExperimentType(Base):
     name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
 
     __tablename__ = 'experiment_type'
-
 
 class DataFormat(Base):
     """ Represents a data format
@@ -244,7 +227,6 @@ class DataFormat(Base):
 
     sqlalchemy.schema.UniqueConstraint(name, bio_assay_data_cubes)
     __tablename__ = 'data_format'
-
 
 class Organism(Base):
     """ Represents an organism
@@ -271,7 +253,6 @@ class Extract(Base):
 
     __tablename__ = 'extract'
 
-
 class Protocol(Base):
     """ Represents a protocol for an experiment
     Attributes:
@@ -294,7 +275,6 @@ class Protocol(Base):
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
 
     __tablename__ = 'protocol'
-
 
 class ArrayExpress(data_source.HttpDataSource):
     """ A local sqlite copy of the ArrayExpress database
@@ -334,7 +314,7 @@ class ArrayExpress(data_source.HttpDataSource):
         with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
             self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
-    def load_content(self, start_year=2001, end_year=None):
+    def load_content(self, start_year=2001, end_year=None, test_url=""):
         """
         Downloads all medatata from array exrpess on their samples and experiments. The metadata
         is saved as the text file. Within the text files, the data is stored as a JSON object.
@@ -344,14 +324,14 @@ class ArrayExpress(data_source.HttpDataSource):
         """
         if not end_year:
             end_year = datetime.datetime.now().year
-
         session = self.session
 
         # download and parse experiment ids
         if self.verbose:
             print('Loading metadata for experiments ...')
 
-        self.load_experiment_metadata(start_year, end_year)
+        self.load_experiment_metadata(start_year, end_year, test_url)
+        self.session.commit()
 
         if self.verbose:
             print('  done.')
@@ -361,29 +341,26 @@ class ArrayExpress(data_source.HttpDataSource):
 
         if self.verbose:
             print('Loading samples and protocols for experiments ...')
+                
+       # download and parse experiments
+        if self.verbose:
+            print('Loading samples and protocols for experiments ...')
 
-        for i_experiment, experiment in enumerate(session.query(Experiment).all()):
-            if self.verbose and i_experiment % 500 == 0:
-                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, n_experiments))
-
-            self.load_experiment_samples(experiment)
-            self.load_experiment_protocols(experiment)
-
-            single_dimensional_processed_RNA_seq_data = False
-            
+        total_experiments = session.query(Experiment).all()
+        rna_seq_experiments = []
+        for experiment in total_experiments:
             if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                for df in experiment.data_formats:
-                    if df.name == 'processedData' and df.bio_assay_data_cubes == 1:
-                        single_dimensional_processed_RNA_seq_data = True
-                        break
+                rna_seq_experiments.append(experiment)
+        for i_experiment, experiment in enumerate(rna_seq_experiments):
+            if self.verbose and i_experiment % 500 == 0:
+                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, len(list_of_experiments)))
 
-            #if ('processedData' in [d.name for d in experiment.data_formats]) and ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-            if single_dimensional_processed_RNA_seq_data:
-                self.load_processed_data(experiment)
-
+            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
+                self.load_experiment_samples(experiment)
+                self.load_experiment_protocols(experiment)
+        
         if self.verbose:
             print('  done.')
-
         self.session.commit()
 
     def load_experiment_metadata(self, start_year=2001, end_year=None, test_url=""):
@@ -451,30 +428,73 @@ class ArrayExpress(data_source.HttpDataSource):
 
                 db_session.add(experiment)
 
+
     def load_experiment_samples(self, experiment):
         """ Load the samples for an experiment
         Args:
             experiment (:obj:`Experiment`): experiment
         """
-        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id))
+
+        url = self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id)
+       	response = self.requests_session.get(url)
+        
         response.raise_for_status()
         json = response.json()
 
         if 'experiment' not in json:
             return
         experiment_json = json['experiment']
-
         if 'sample' not in experiment_json:
             return
         samples = experiment_json['sample']
+        
+        paired_end = False
+        list_of_source_names = []
+        for sample in samples:
+            if "source" in sample:
+                list_of_source_names.append(sample['source']['name'])
+        if ((len(samples) == len(set(list(list_of_source_names)))*2) #if its paried end, then there two sample entries to every one source name
+                and (list_of_source_names.count(list_of_source_names[0]) == 2) #if its paired end, then each source name must appear twice
+                and (list_of_source_names.count(list_of_source_names[len(list_of_source_names)-1:len(list_of_source_names)][0])==2)
+            ):
+            paired_end = True
 
+
+        if paired_end:
+            experiment.read_type = "paired"
+        else:
+            experiment.read_type = "single"
         session = self.session
 
         if not isinstance(samples, list):
             samples = [samples]
+        experiment.has_fastq_files = False 
+        
+        sample_indeces = {}
+        for name in set(list(list_of_source_names)):
+            sample_indeces[name] = [i for i, j in enumerate(list_of_source_names) if j == name]
+        i = 0
+        for key, value in sample_indeces.items():
+            new_sample = self.load_experiment_sample(experiment, samples[value[0]], i)
+            new_sample.read_type = experiment.read_type
+            i = i+1
+            for num in value:
+                if 'scan' in samples[num]:
+                    if 'comment' in samples[num]['scan']:
+                        if isinstance(samples[num]['scan']['comment'], list):
+                            for comment in samples[num]['scan']['comment']:
+                                if comment['name'] == "FASTQ_URI":
+                                    if comment['value'] not in [u.url for u in new_sample.fastq_urls]:
+                                        new_sample.fastq_urls.append(self.get_or_create_object(Url, url=comment['value']))
+                                        experiment.has_fastq_files = True
 
-        for i_sample, sample in enumerate(samples):
-            self.load_experiment_sample(experiment, sample, i_sample)
+                        elif isinstance(samples[num]['scan']['comment'], dict):
+                            if sample['scan']['comment']['name'] == "FASTQ_URI":
+                                if comment['value'] not in [u.url for u in new_sample.fastq_urls]:
+                                    new_sample.fastq_urls.append(self.get_or_create_object(Url, url=comment['value']))
+                                    experiment.has_fastq_files = True
+
+        
 
     def load_experiment_sample(self, experiment, sample_json, index):
         """ Load the samples for an experiment
@@ -483,8 +503,8 @@ class ArrayExpress(data_source.HttpDataSource):
             sample_json (:obj:`dict`): sample
             index (:obj:`int`): index of the sample within the experiment
         """
-        sample = Sample()
 
+        sample = Sample()
         experiment.samples.append(sample)
         sample.index = index
 
@@ -523,38 +543,29 @@ class ArrayExpress(data_source.HttpDataSource):
                     unit = variable['unit']
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
-
+        return sample
 
     def load_experiment_protocols(self, experiment):
 
         """ Load the protocols for an experiment
         Args:
             experiment (:obj:`Experiment`): experiment
-        """
-        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
-        response.raise_for_status()
+        """        
+        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))    
         json = response.json()
-
         session = self.session
-        # todo: implement
-
         if 'protocols' not in json:
             return
         protocol_json = json['protocols']
-
         if 'protocol' not in protocol_json:
             return
         protocols = protocol_json['protocol']
-
         session = self.session
-
         if not isinstance(protocols, list):
             protocols = [protocols]
-
         for protocol in protocols:
             self.load_experiment_protocol(experiment, protocol)
-
-
+       
     def load_experiment_protocol(self, experiment, protocol_json):
 
         """ Load the protocols for an experiment
@@ -564,14 +575,11 @@ class ArrayExpress(data_source.HttpDataSource):
         """
 
         db_session = self.session
-
         protocol = Protocol()
-
         if 'accession' not in protocol_json:
             return
         protocol_accession = protocol_json['accession']
         protocol = self.get_or_create_object(Protocol, protocol_accession=protocol_accession)
-
         if 'type' in protocol_json:
             protocol.protocol_type = protocol_json['type']
         if 'text' in protocol_json:
@@ -593,52 +601,8 @@ class ArrayExpress(data_source.HttpDataSource):
             protocol.hardware = protocol_json['hardware']
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
-
-
         protocol.experiments.append(experiment)
-
-
-    def load_processed_data(self, experiment):
-        DIRNAME = '{}/array_express_processed_data'.format(self.cache_dirname)
-        if not os.path.isdir(DIRNAME):
-            os.makedirs(DIRNAME)
-        file = urlretrieve('https://www.ebi.ac.uk/arrayexpress/files/{}/{}.processed.1.zip'.format(experiment.id, experiment.id), '{}/{}.processed.1.zip'.format(DIRNAME, experiment.id))
-        
-        if experiment.id[2:6] == "MTAB":
-            zip_ref = zipfile.ZipFile("{}/array_express_processed_data/{}.processed.1.zip".format(self.cache_dirname, experiment.id), 'r')
-            zip_ref.extractall(os.path.join(self.cache_dirname, 'array_express_processed_data/{}'.format(experiment.id)))
-            zip_ref.close()
-
-
-            #the text file is taken from the folder, and then the information is put into the Experiment object
-            #this only works if there is only one file in the folder. If there is more than one, an error will be raised
-            onlyfiles = [f for f in listdir("{}/array_express_processed_data/{}".format(self.cache_dirname, experiment.id)) if isfile(join("{}/array_express_processed_data/{}".format(self.cache_dirname, experiment.id), f))]
-            if len(onlyfiles)>1:
-                raise ValueError('There is more than one file in the processed data folder. There should only be one')
-            counts_text_file = onlyfiles[0]
-            file = open("{}/array_express_processed_data/{}/{}".format(self.cache_dirname, experiment.id, counts_text_file))
-
-            data_samples = parse_counts.get_data_from_file(file)
-            experiment_size = len(data_samples[0].measurements)
-            organism_list =  [c.name for c in experiment.organisms]
-            if len(list(set(organism_list))) > 1:
-                raise ValueError("There is more than one organism in the experiment. Currently, this only supports single organism")
-            experimental_genome_size = get_genome_size.get_genome_size(organism_list[0])
-            if not (experiment_size > 1.15 * experimental_genome_size or experiment_size < 0.85 * experimental_genome_size):
-                experiment.whole_genome = True
-            
-
-            self.session.bulk_insert_mappings(Gene,
-                [
-                    dict(name=measurement.gene_name, experiment_id=experiment.id)\
-                        for measurement in data_samples[0].measurements
-                ])
-
-            for row in self.session.query(Gene).filter_by(experiment_id=experiment.id).all():
-                experiment.genes.append(row)
-                #print row.name
-            
-        
+                   
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
         if there is no instance with the property-values pairs described by kwargs
