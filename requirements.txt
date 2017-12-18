@@ -21,7 +21,7 @@ requests_cache
 scipy
 six
 sqlalchemy
-git+https://github.com/saapooch/Flask-WhooshAlchemy.git#egg=flask_whooshalchemy-0.0.1
+git+https://github.com/Karrlab/Flask-WhooshAlchemy.git#egg=flask_whooshalchemy-0.0.80
 flask_sqlalchemy
 flask
 unicodecsv
