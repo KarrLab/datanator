@@ -96,15 +96,15 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             self.add_intact_complexes()
             if self.verbose:
                 print('IntAct Complexes Done')
-        self.add_corumdb()
-        if self.verbose:
-            print('Corum Done')
-        self.add_jaspardb()
-        if self.verbose:
-            print('Jaspar Done')
-        self.add_ecmdb()
-        if self.verbose:
-            print('ECMDB Done')
+            self.add_corumdb()
+            if self.verbose:
+                print('Corum Done')
+            self.add_jaspardb()
+            if self.verbose:
+                print('Jaspar Done')
+            self.add_ecmdb()
+            if self.verbose:
+                print('ECMDB Done')
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
