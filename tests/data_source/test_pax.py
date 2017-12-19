@@ -52,7 +52,6 @@ class TestPaxDBDownload(unittest.TestCase):
         self.assertEqual(refined_data.taxon_ncbi_id, 882)
 
 
-@unittest.skip('Pax website has issues -- contacted tech support to fix')
 class TestPaxDBCreation(unittest.TestCase):
 
     def setUp(self):
@@ -60,7 +59,7 @@ class TestPaxDBCreation(unittest.TestCase):
         self.src = pax.Pax(cache_dirname = self.cache_dirname,
         load_content=True, clear_content=True,
         download_backup=False, verbose = True,
-        max_entries= 5)
+        max_entries= 2)
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
@@ -83,6 +82,6 @@ class TestPaxDBCreation(unittest.TestCase):
         self.assertEqual(prot.protein_id, obs.protein_id)
 
         refined_data = session.query(pax.Dataset).filter(pax.Dataset.file_name == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first()
-        self.assertEqual(refined_data.score, 2.47)
+        self.assertEqual(refined_data.score, 3.19)
         self.assertEqual(refined_data.weight, 100)
         self.assertEqual(refined_data.taxon_ncbi_id, 882)
