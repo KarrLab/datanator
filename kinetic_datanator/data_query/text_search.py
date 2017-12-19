@@ -12,6 +12,7 @@
 from kinetic_datanator.data_query import dna_protein_interactions, metabolite_concentrations, protein_protein_interactions, reaction_kinetics
 from kinetic_datanator.flask_datanator import flask_common_schema, models
 import flask_whooshalchemy
+import tempfile
 
 class TextSearchSession(object):
     """
@@ -20,7 +21,8 @@ class TextSearchSession(object):
     """
 
     def __init__(self):
-        self.db = flask_common_schema.FlaskCommonSchema()
+        self.cache_dirname = tempfile.mkdtemp()
+        self.db = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         flask_whooshalchemy.whoosh_index(models.app, models.Compound)
         flask_whooshalchemy.whoosh_index(models.app, models.ProteinComplex)
