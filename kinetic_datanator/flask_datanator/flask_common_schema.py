@@ -62,11 +62,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.load_entire_small_DBs = load_entire_small_DBs
 
         if download_backup and load_content:
-            self.pax_loaded = self.session.query(Progress).filter_by(database_name = 'Pax').first().amount_loaded
-            self.sabio_loaded = self.session.query(Progress).filter_by(database_name = 'Sabio').first().amount_loaded
-            self.intact_loaded = self.session.query(Progress).filter_by(database_name = 'IntAct').first().amount_loaded
+            self.pax_loaded = self.session.query(model.Progress).filter_by(database_name = 'Pax').first().amount_loaded
+            self.sabio_loaded = self.session.query(model.Progress).filter_by(database_name = 'Sabio').first().amount_loaded
+            self.intact_loaded = self.session.query(model.Progress).filter_by(database_name = 'IntAct').first().amount_loaded
             self.load_small_db_switch = False
-            self.session.query(Progress).delete()
+            self.session.query(model.Progress).delete()
             self.load_content()
         elif load_content:
             self.pax_loaded = 0
@@ -92,19 +92,19 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.add_paxdb()
         if self.verbose:
             print('Pax Done')
-        self.add_intact_complexes()
-        if self.verbose:
-            print('IntAct Complexes Done')
         if self.load_small_db_switch:
-            self.add_corumdb()
+            self.add_intact_complexes()
             if self.verbose:
-                print('Corum Done')
-            self.add_jaspardb()
-            if self.verbose:
-                print('Jaspar Done')
-            self.add_ecmdb()
-            if self.verbose:
-                print('ECMDB Done')
+                print('IntAct Complexes Done')
+        self.add_corumdb()
+        if self.verbose:
+            print('Corum Done')
+        self.add_jaspardb()
+        if self.verbose:
+            print('Jaspar Done')
+        self.add_ecmdb()
+        if self.verbose:
+            print('ECMDB Done')
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
@@ -168,7 +168,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         if self.max_entries == float('inf'):
             pax_dataset = pax_ses.query(pax.Dataset).all()
         else:
-            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id == 1)
+            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_\
+                (range(self.pax_loaded+1, self.pax_loaded+1 + int(self.max_entries/10))))
 
         for dataset in pax_dataset:
             metadata = self.get_or_create_object(model.Metadata, name = dataset.file_name)
@@ -202,7 +203,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 rows.subunit = self.session.query(model.ProteinSubunit).filter_by(pax_load = dataset.id).filter_by(uniprot_id = rows.uniprot_id).first()
                 rows.dataset = _property.abundance_dataset
 
-        self.get_or_create_object(model.Progress, database_name = 'Pax', amount_loaded = self.pax_loaded + (self.max_entries/5))
+        self.get_or_create_object(model.Progress, database_name = 'Pax', amount_loaded = self.pax_loaded + (self.max_entries/10))
 
         if self.verbose:
             print('Comitting')
@@ -554,7 +555,12 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             result = re.findall(regex,string)
             return '|'.join(result)
 
-        if self.max_entries == float('inf'):
+        max_entries = self.max_entries
+
+        if self.load_entire_small_DBs:
+            max_entries = float('inf')
+
+        if max_entries == float('inf'):
             complexdb = intactdb.session.query(intact.ProteinComplex).all()
         else:
             complexdb = intactdb.session.query(intact.ProteinComplex).limit(self.max_entries).all()

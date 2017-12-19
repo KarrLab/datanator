@@ -264,7 +264,7 @@ class ProteinSubunit(PhysicalEntity):
     """
 
     __tablename__ = 'protein_subunit'
-    __searchable__ = ['subunit_name', 'uniprot_id', 'canonical_sequence']
+    __searchable__ = ['subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence']
     __mapper_args__ = {'polymorphic_identity': 'protein_subunit'}
 
     subunit_id = db.Column(db.Integer, db.ForeignKey('physical_entity.observation_id'), primary_key = True)
