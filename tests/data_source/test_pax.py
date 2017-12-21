@@ -84,6 +84,7 @@ class TestPaxDBCreation(unittest.TestCase):
 
         refined_data = session.query(pax.Dataset).filter(
             pax.Dataset.file_name == '882/882-Desulfo_Form_Stat_SC_zhang_2006.txt').first()
-        self.assertEqual(refined_data.score, 0.61)
-        self.assertEqual(refined_data.weight, 20)
-        self.assertEqual(refined_data.taxon_ncbi_id, 882)
+        if refined_data:
+            self.assertEqual(refined_data.score, 0.61)
+            self.assertEqual(refined_data.weight, 20)
+            self.assertEqual(refined_data.taxon_ncbi_id, 882)
