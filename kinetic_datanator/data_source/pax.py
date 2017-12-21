@@ -16,7 +16,8 @@ from sqlalchemy import create_engine, ForeignKey, exists, Column, Integer, Strin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.core import data_source
-import os, zipfile
+import os
+import zipfile
 from operator import itemgetter
 from six import BytesIO
 import shutil
@@ -33,8 +34,9 @@ class Taxon(Base):
     """
 
     __tablename__ = 'taxon'
-    ncbi_id      = Column(Integer,primary_key=True)
+    ncbi_id = Column(Integer, primary_key=True)
     species_name = Column(String(255))
+
 
 class Dataset(Base):
     """  Represents a given dataset (typically results form a single paper)
@@ -47,16 +49,17 @@ class Dataset(Base):
         coverage    (:obj:`int`): what percentage of the genome is coevred by the datatset
     """
 
-    __tablename__  = 'dataset'
-    id          = Column(Integer, primary_key=True)
+    __tablename__ = 'dataset'
+    id = Column(Integer, primary_key=True)
     publication = Column(String(255))
-    file_name   = Column(String(255))
-    score       = Column(Float)
-    weight      = Column(Integer)
-    coverage    = Column(Integer)
+    file_name = Column(String(255))
+    score = Column(Float)
+    weight = Column(Integer)
+    coverage = Column(Integer)
 
     taxon_ncbi_id = Column(Integer, ForeignKey('taxon.ncbi_id'))
-    taxon         = relationship('Taxon', backref=backref('datasets'), foreign_keys=[taxon_ncbi_id])
+    taxon = relationship('Taxon', backref=backref('datasets'), foreign_keys=[taxon_ncbi_id])
+
 
 class Protein(Base):
     """  Represents a protein
@@ -67,8 +70,9 @@ class Protein(Base):
 
     __tablename__ = 'protein'
     protein_id = Column(Integer, primary_key=True)
-    string_id  = Column(String(255))
+    string_id = Column(String(255))
     uniprot_id = Column(String(255))
+
 
 class Observation(Base):
     """  Represents a protein
@@ -79,18 +83,17 @@ class Observation(Base):
     """
 
     __tablename__ = 'observation'
-    id         = Column(Integer, primary_key=True)
-    abundance  = Column(String(255))
+    id = Column(Integer, primary_key=True)
+    abundance = Column(String(255))
 
     dataset_id = Column(Integer, ForeignKey('dataset.id'))
     protein_id = Column(Integer, ForeignKey('protein.protein_id'))
-    dataset    = relationship('Dataset',backref=backref('observation'),foreign_keys=[dataset_id])
-    protein    = relationship('Protein',backref=backref('observation'),foreign_keys=[protein_id])
+    dataset = relationship('Dataset', backref=backref('observation'), foreign_keys=[dataset_id])
+    protein = relationship('Protein', backref=backref('observation'), foreign_keys=[protein_id])
 
-    #FORMAT: foreign_table = relationship('foreign_class',backref=backref('self_table'),foreign_keys=[self_column])
+    # FORMAT: foreign_table = relationship('foreign_class',backref=backref('self_table'),foreign_keys=[self_column])
 
 """ ------------------------ Method for Finding Files ---------------------------------"""
-
 def find_files(path):
     """ Scan a directory (and its subdirectories) for files and sort by ncbi_id
 
@@ -117,10 +120,7 @@ def find_files(path):
     return data_files
 
 
-
 """ ----------------------------- Pax DB Class  ---------------------------------"""
-
-
 class Pax(data_source.HttpDataSource):
     """ A local sqlite copy of the Pax database
 
@@ -157,7 +157,6 @@ class Pax(data_source.HttpDataSource):
         z.extractall(self.cache_dirname)
         self.cwd_prot = self.cache_dirname+'/paxdb-uniprot-links-v4.1'
 
-
         # Insert Error Report in Cache
         new_file = '/report.txt'
         new_path = self.cache_dirname + '/report.txt'
@@ -165,19 +164,19 @@ class Pax(data_source.HttpDataSource):
         self.report.write('Errors found:\n')
 
         self.uniprot_pd = pd.read_csv(self.cwd_prot+'/paxdb-uniprot-links-v4.1.tsv',
-            delimiter='\t', names = ['string_id', 'uniprot_id'], index_col=0)
+                                      delimiter='\t', names=['string_id', 'uniprot_id'], index_col=0)
 
         # Find data and parse individual files
         for self.file_id in range(int(self.max_entries)):
             if self.verbose:
-                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(int(self.max_entries))+'; '+str(round(100*self.file_id/self.max_entries,2))+'%'+' already done)')
+                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(int(self.max_entries)) +
+                      '; '+str(round(100*self.file_id/self.max_entries, 2))+'%'+' already done)')
             self.parse_paxDB_files()
 
         # Commit Session
         if self.verbose:
-          print('Finished parsing files, committing to DB.')
+            print('Finished parsing files, committing to DB.')
         self.session.commit()
-
 
     def parse_paxDB_files(self):
         """ This function parses pax DB files and adds them to the SQL database
@@ -192,25 +191,24 @@ class Pax(data_source.HttpDataSource):
             print(file_path)
 
         # Get NCBI taxonomy ID from file name
-        start  = file_path.find('/',len(self.cwd)-1)+1
-        finish = file_path.find('/',len(self.cwd)+4)
+        start = file_path.find('/', len(self.cwd)-1)+1
+        finish = file_path.find('/', len(self.cwd)+4)
         ncbi_id = int(file_path[start:finish])
 
-
         # Get file_name
-        start   = file_path.find('/',len(self.cwd))+1
+        start = file_path.find('/', len(self.cwd))+1
         file_name = file_path[start:]
 
-        with open(file_path,'r') as f:
-            lines=f.readlines()
+        with open(file_path, 'r') as f:
+            lines = f.readlines()
 
             # Get species name
-            start  = lines[1].find(':')+2
+            start = lines[1].find(':')+2
             finish = lines[1].find('-')-1
             species_name = lines[1][start:finish]
 
-            field_name,_,_ = lines[1].partition(':')
-            if field_name=='#name':
+            field_name, _, _ = lines[1].partition(':')
+            if field_name == '#name':
                 pass
             else:
                 print('Error found, see reports.txt')
@@ -221,8 +219,8 @@ class Pax(data_source.HttpDataSource):
             finish = len(lines[2])-1
             score = float(lines[2][8:finish])
 
-            field_name,_,_ = lines[2].partition(':')
-            if field_name=='#score':
+            field_name, _, _ = lines[2].partition(':')
+            if field_name == '#score':
                 pass
             else:
                 print('Error found, see reports.txt')
@@ -231,39 +229,41 @@ class Pax(data_source.HttpDataSource):
 
             # Get weight
             finish = lines[3].find('%')
-            if finish==-1:
+            if finish == -1:
                 weight = None
             else:
                 weight = float(lines[3][9:finish])
 
-            field_name,_,_ = lines[3].partition(':')
-            if field_name=='#weight':
+            field_name, _, _ = lines[3].partition(':')
+            if field_name == '#weight':
                 pass
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #weight field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write('Warning: invalid #weight field, excluding file form DB (file_id=' +
+                                  str(self.file_id)+'; '+file_name+')\n')
                 return
 
             # Get publication link
-            start  = lines[4].find('http:')
-            finish = lines[4].find('"',start)
+            start = lines[4].find('http:')
+            finish = lines[4].find('"', start)
             publication = lines[4][start:finish]
 
-            field_name,_,_ = lines[4].partition(':')
-            if field_name=='#description':
+            field_name, _, _ = lines[4].partition(':')
+            if field_name == '#description':
                 pass
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #description field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write('Warning: invalid #description field, excluding file form DB (file_id=' +
+                                  str(self.file_id)+'; '+file_name+')\n')
                 return
 
             # Get organ
-            start  = lines[5].find(':')+2
+            start = lines[5].find(':')+2
             finish = len(lines[5])-1
-            organ  = lines[5][start:finish]
+            organ = lines[5][start:finish]
 
-            field_name,_,_ = lines[5].partition(':')
-            if field_name=='#organ':
+            field_name, _, _ = lines[5].partition(':')
+            if field_name == '#organ':
                 pass
             else:
                 print('Error found, see reports.txt')
@@ -271,30 +271,34 @@ class Pax(data_source.HttpDataSource):
                 return
 
             # Get coverage
-            start    = lines[7].find(':')+2
-            finish   = len(lines[7])-1
+            start = lines[7].find(':')+2
+            finish = len(lines[7])-1
             coverage = float(lines[7][start:finish])
 
-            field_name,_,_ = lines[7].partition(':')
-            if field_name=='#coverage':
+            field_name, _, _ = lines[7].partition(':')
+            if field_name == '#coverage':
                 pass
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #coverage field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write('Warning: invalid #coverage field, excluding file form DB (file_id=' +
+                                  str(self.file_id)+'; '+file_name+')\n')
                 return
 
             # Check column header
             column_headers = lines[11].split()
-            if column_headers[0]=='#internal_id' and column_headers[1]=='string_external_id' and column_headers[2]=='abundance' and len(column_headers)<5:
+            if column_headers[0] == '#internal_id' \
+                    and column_headers[1] == 'string_external_id' \
+                    and column_headers[2] == 'abundance' \
+                    and len(column_headers) < 5:
                 pass
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid column headers, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write('Warning: invalid column headers, excluding file form DB (file_id=' +
+                                  str(self.file_id)+'; '+file_name+')\n')
                 return
 
             """ --- Add taxon and database (metadata info) to session ---------- """
-
-            q = self.session.query(Taxon).filter(Taxon.ncbi_id==ncbi_id)
+            q = self.session.query(Taxon).filter(Taxon.ncbi_id == ncbi_id)
             if self.session.query(q.exists()).scalar():
                 taxon = q.first()
             else:
@@ -303,24 +307,21 @@ class Pax(data_source.HttpDataSource):
 
             dataset = Dataset(publication=publication, file_name=file_name, score=score, weight=weight, coverage=coverage, taxon=taxon)
             self.session.add(dataset)
-            #print(taxon.species_name)
 
             """ --- Parse individual measurements and add them to DB ----------- """
-
-            for i in range(11,len(lines)):
+            for i in range(11, len(lines)):
                 split_line = lines[i].split()
                 protein_id = split_line[0]
-                string_id  = split_line[1]
-                abundance  = split_line[2]
-
+                string_id = split_line[1]
+                abundance = split_line[2]
 
                 # Insert relevant table entries
-                q = self.session.query(Protein).filter(Protein.protein_id==protein_id)
+                q = self.session.query(Protein).filter(Protein.protein_id == protein_id)
                 if self.session.query(q.exists()).scalar():
                     protein = q.first()
                 else:
                     if string_id in self.uniprot_pd.index.values:
-                        protein = Protein(string_id=string_id, uniprot_id = str(self.uniprot_pd.loc[string_id]))
+                        protein = Protein(string_id=string_id, uniprot_id=str(self.uniprot_pd.loc[string_id]))
                         self.session.add(protein)
                     else:
                         protein = Protein(string_id=string_id)

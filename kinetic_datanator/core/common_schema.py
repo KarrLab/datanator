@@ -654,7 +654,7 @@ class CommonSchema(data_source.HttpDataSource):
     base_model = Base
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False, load_entire_small_DBs = False,
+                 commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs = False,
                   clear_requests_cache=False, download_request_backup=False):
 
         """
@@ -666,19 +666,19 @@ class CommonSchema(data_source.HttpDataSource):
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
         """
 
         super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                       load_content=False, max_entries=max_entries,
                                       commit_intermediate_results=commit_intermediate_results,
-                                      download_backup=download_backup, verbose=verbose,
+                                      download_backups=download_backups, verbose=verbose,
                                       clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
         self.load_entire_small_DBs = load_entire_small_DBs
 
-        if download_backup and load_content:
+        if download_backups and load_content:
             self.pax_loaded = self.session.query(Progress).filter_by(database_name = 'Pax').first().amount_loaded
             self.sabio_loaded = self.session.query(Progress).filter_by(database_name = 'Sabio').first().amount_loaded
             self.intact_loaded = self.session.query(Progress).filter_by(database_name = 'IntAct').first().amount_loaded

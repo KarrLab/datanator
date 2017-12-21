@@ -25,7 +25,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True ,load_entire_small_DBs = False,
-                                download_backup= False, load_content = True, max_entries = 10,
+                                download_backups= False, load_content = True, max_entries = 10,
                                 verbose = True)
 
         flask_whooshalchemy.whoosh_index(models.app, models.Compound)
@@ -55,7 +55,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     def test_pax(self):
         session = self.cs.session
 
-        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backup = True, load_content = False)
+        pax_compare = pax.Pax(cache_dirname = self.cache_dirname, download_backups = True, load_content = False)
         pax_session = pax_compare.session
 
         dataset = session.query(models.AbundanceDataSet).first()

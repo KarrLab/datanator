@@ -18,7 +18,7 @@ class QuickTest(unittest.TestCase):
 
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
@@ -155,7 +155,7 @@ class TestLoadFASTQ_Url(unittest.TestCase):
 
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backup=False, load_content=False)
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)

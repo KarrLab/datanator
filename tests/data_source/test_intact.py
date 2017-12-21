@@ -14,7 +14,7 @@ class TestIntAct(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.intact = intact.IntAct(cache_dirname = self.cache_dirname,
                                 clear_content = False,
-                                download_backup= True, load_content = False,
+                                download_backups= True, load_content = False,
                                 verbose = True)
 
     @classmethod

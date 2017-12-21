@@ -19,7 +19,6 @@ import tarfile
 import wc_utils.config.core
 
 
-
 config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
 # :obj:`wc_utils.config.core.ConfigManager`: configuration manager
 
@@ -65,7 +64,7 @@ class CachedDataSource(DataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False, flask=False):
+                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -75,7 +74,7 @@ class CachedDataSource(DataSource):
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
         """
 
@@ -102,7 +101,7 @@ class CachedDataSource(DataSource):
         # verbosity
         self.verbose = verbose
 
-        #flaskosity
+        # flaskosity
         self.flask = flask
 
         """ Create SQLAlchemy session and load content if necessary """
@@ -113,8 +112,8 @@ class CachedDataSource(DataSource):
             self.session = self.get_session()
             if load_content:
                 self.load_content()
-        elif download_backup and self.backup_server_hostname:
-            self.download_backup()
+        elif download_backups and self.backup_server_hostname:
+            self.download_backups()
             self.engine = self.get_engine()
             self.session = self.get_session()
             if load_content:
@@ -138,12 +137,12 @@ class CachedDataSource(DataSource):
 
         if self.flask:
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
-            self.app.config['WHOOSH_BASE'] = self.cache_dirname +'/whoosh_cache/'
+            self.app.config['WHOOSH_BASE'] = self.cache_dirname + '/whoosh_cache/'
             engine = self.base_model.create_all()
         else:
             engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
             if not os.path.isfile(self.filename):
-                    self.base_model.metadata.create_all(engine)
+                self.base_model.metadata.create_all(engine)
 
         return engine
 
@@ -167,58 +166,47 @@ class CachedDataSource(DataSource):
         else:
             return sqlalchemy.orm.sessionmaker(bind=self.engine)()
 
-    def upload_backup(self):
+    def upload_backups(self):
         """ Backup the local sqlite database to the Karr Lab server """
-        for file in self.get_backup_files(set_metadata=True):
+        for a_backup in self.get_backups(set_metadata=True):
             backup.BackupManager(
-                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
-                file.arcname + '.tar.gz',
                 hostname=self.backup_server_hostname, username=self.backup_server_username,
                 password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname) \
-                .create([file]) \
-                .upload() \
-                .cleanup()
+                .create(a_backup) \
+                .upload(a_backup) \
+                .cleanup(a_backup)
 
-    def download_backup(self):
+    def download_backups(self):
         """ Download the local sqlite database from the Karr Lab server """
-        for file in self.get_backup_files(download=True):
+        for a_backup in self.get_backups(download=True):
             backup_manager = backup.BackupManager(
-                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
-                file.arcname + '.tar.gz',
                 hostname=self.backup_server_hostname, username=self.backup_server_username,
                 password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname)
-            backup_manager.download()
+            backup_manager \
+                .download(a_backup) \
+                .extract(a_backup) \
+                .cleanup(a_backup)
 
-        for file in self.get_backup_files(download=True, get_metadata=True):
-            backup_manager = backup.BackupManager(
-                os.path.join(os.path.dirname(self.filename), file.arcname + '.tar.gz'),
-                file.arcname + '.tar.gz',
-                hostname=self.backup_server_hostname, username=self.backup_server_username,
-                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname)
-            backup_manager.extract([file])
-            backup_manager.cleanup()
-
-    def get_backup_files(self, download=False, get_metadata=False, set_metadata=False):
+    def get_backups(self, download=False, set_metadata=False):
         """ Get a list of the files to backup/unpack
 
         Args:
             download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-            get_metadata (:obj:`bool`, optional): if :obj:`True`, get the metadata of the backup files
             set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
 
         Returns:
-            :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
+            :obj:`list` of :obj:`backup.Backup`: backups
         """
-        files = []
+        a_backup = backup.Backup()
+        path = backup.BackupPath(self.filename, self.name + '.sqlite')
+        a_backup.paths.append(path)
+        a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
+        a_backup.remote_filename = path.arc_path + '.tar.gz'
 
-        file = backup.BackupFile(self.filename, self.name + '.sqlite')
         if set_metadata:
-            file.set_created_modified_time()
-            file.set_username_ip()
-            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-        files.append(file)
-
-        return files
+            a_backup.set_username_ip_date()
+            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+        return [a_backup]
 
     @abc.abstractmethod
     def load_content(self):
@@ -245,6 +233,7 @@ class CachedDataSource(DataSource):
             self.session.add(obj)
             return obj
 
+
 class HttpDataSource(CachedDataSource):
     """ An external data source which can be obtained via a HTTP interface
 
@@ -259,8 +248,8 @@ class HttpDataSource(CachedDataSource):
     MAX_HTTP_RETRIES = 5
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False,
-                 clear_requests_cache=False, download_request_backup=False, flask = False):
+                 commit_intermediate_results=False, download_backups=True, verbose=False,
+                 clear_requests_cache=False, download_request_backup=False, flask=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -270,7 +259,7 @@ class HttpDataSource(CachedDataSource):
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
@@ -297,7 +286,7 @@ class HttpDataSource(CachedDataSource):
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
                                              commit_intermediate_results=commit_intermediate_results,
-                                             download_backup=download_backup, verbose=verbose, flask = flask)
+                                             download_backups=download_backups, verbose=verbose, flask=flask)
 
     def get_requests_session(self):
         """ Setup an cache-enabled HTTP request session
@@ -322,42 +311,33 @@ class HttpDataSource(CachedDataSource):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
 
-    def get_backup_files(self, download=False, get_metadata=False, set_metadata=False):
+    def get_backups(self, download=False, set_metadata=False):
         """ Get a list of the files to backup/unpack
 
         Args:
             download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-            get_metadata (:obj:`bool`, optional): if :obj:`True`, get the metadata of the backup files
             set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
 
         Returns:
-            :obj:`list` of :obj:`backup.BackupFile`: list of files to backup/unpack
+            :obj:`list` of :obj:`backup.Backup`: backups
         """
-        files = super(HttpDataSource, self).get_backup_files(download=download, get_metadata=get_metadata, set_metadata=set_metadata)
+        backups = super(HttpDataSource, self).get_backups(download=download, set_metadata=set_metadata)
         if download and not self.download_request_backup:
-            return files
-
-        if get_metadata:
-            tar_file = tarfile.open(self.filename + '.tar.gz', "r:gz")
+            return backups
 
         requests_cache_basename = self.name + '.requests.py{}.sqlite'.format(sys.version_info[0])
         requests_cache_filename = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename)
-        file = backup.BackupFile(requests_cache_filename, requests_cache_basename)
-        if get_metadata:
-            try:
-                tar_file.getmember(file.arcname)
-            except KeyError:
-                pass
-        elif set_metadata and os.path.isfile(file.filename):
-            file.set_created_modified_time()
-            file.set_username_ip()
-            file.set_program_version_from_repo(os.path.join(os.path.dirname(__file__), '..', '..'))
-        files.append(file)
+        a_backup = backup.Backup()
+        path = backup.BackupPath(requests_cache_filename, requests_cache_basename)
+        a_backup.paths.append(path)
+        a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
+        a_backup.remote_filename = path.arc_path + '.tar.gz'
+        if set_metadata:
+            a_backup.set_username_ip_date()
+            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-        if get_metadata:
-            tar_file.close()
-
-        return files
+        backups.append(a_backup)
+        return backups
 
 
 class WebserviceDataSource(DataSource):
