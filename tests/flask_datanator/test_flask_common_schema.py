@@ -154,7 +154,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
 
-
+@unittest.skip('temporary skip')
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
