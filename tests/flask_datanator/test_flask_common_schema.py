@@ -28,15 +28,8 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
                                 download_backups= False, load_content = True, max_entries = 10,
                                 verbose = True)
 
-        flask_whooshalchemy.whoosh_index(models.app, models.Compound)
-        flask_whooshalchemy.whoosh_index(models.app, models.ProteinComplex)
-        flask_whooshalchemy.whoosh_index(models.app, models.ProteinInteractions)
-        flask_whooshalchemy.whoosh_index(models.app, models.Taxon)
-        flask_whooshalchemy.whoosh_index(models.app, models.Synonym)
-        flask_whooshalchemy.whoosh_index(models.app, models.CellLine)
-        flask_whooshalchemy.whoosh_index(models.app, models.CellCompartment)
-        flask_whooshalchemy.whoosh_index(models.app, models.ProteinSubunit)
-
+        for item in self.cs.text_indicies:
+            flask_whooshalchemy.whoosh_index(self.cs.app, item)
 
     @classmethod
     def tearDownClass(self):

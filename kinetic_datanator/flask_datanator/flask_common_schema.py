@@ -24,6 +24,7 @@ import time
 import re
 from kinetic_datanator.flask_datanator.models import app, db
 import kinetic_datanator.flask_datanator.models as model
+import flask_whooshalchemy
 # from sqlalchemy import MetaData
 # from sqlalchemy_schemadisplay import create_schema_graph
 
@@ -35,6 +36,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     base_model = db
     app = app
+    text_indicies = [model.Compound, model.ProteinComplex, model.ProteinInteractions,\
+    model.Taxon, model.Synonym, model.CellLine, model.CellCompartment, model.ProteinSubunit]
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs = False,
@@ -60,6 +63,9 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                                       clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
         self.load_entire_small_DBs = load_entire_small_DBs
+
+        for item in self.text_indicies:
+            flask_whooshalchemy.whoosh_index(self.app, item)
 
         if download_backups and load_content:
             self.pax_loaded = self.session.query(model.Progress).filter_by(database_name = 'Pax').first().amount_loaded
@@ -264,6 +270,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for Corum: ' + str(time.time()-t0) + ' secs')
+
     def add_jaspardb(self):
         t0 = time.time()
         jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname,verbose = self.verbose)
@@ -391,6 +398,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for ECMDB: ' + str(time.time()-t0) + ' secs')
+
     def add_sabiodb(self):
         """
         Adds Sabio Database from sabio.sqlite file in Karr Server
@@ -498,7 +506,6 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
-
 
     def add_intact_interactions(self):
         t0 = time.time()

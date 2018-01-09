@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from kinetic_datanator.flask_datanator import config
-import flask_whooshalchemy
+
 
 app = Flask(__name__)
 app.config.from_object(config.Config)
@@ -692,13 +692,3 @@ class Progress(db.Model):
 
     database_name = db.Column(db.String, primary_key=True)
     amount_loaded = db.Column(db.Integer)
-
-
-flask_whooshalchemy.whoosh_index(app, Compound)
-flask_whooshalchemy.whoosh_index(app, ProteinComplex)
-flask_whooshalchemy.whoosh_index(app, ProteinInteractions)
-flask_whooshalchemy.whoosh_index(app, Taxon)
-flask_whooshalchemy.whoosh_index(app, Synonym)
-flask_whooshalchemy.whoosh_index(app, CellLine)
-flask_whooshalchemy.whoosh_index(app, CellCompartment)
-flask_whooshalchemy.whoosh_index(app, ProteinSubunit)
