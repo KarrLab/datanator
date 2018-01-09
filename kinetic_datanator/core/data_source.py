@@ -203,6 +203,13 @@ class CachedDataSource(DataSource):
         a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
         a_backup.remote_filename = path.arc_path + '.tar.gz'
 
+        if self.flask:
+            path = backup.BackupPath(self.cache_dirname + '/whoosh_cache/', 'whoosh_cache')
+            a_backup.paths.append(path)
+            a_backup.local_filename = path.arc_path
+            a_backup.remote_filename = path.arc_path + '.tar.gz'
+
+
         if set_metadata:
             a_backup.set_username_ip_date()
             a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
