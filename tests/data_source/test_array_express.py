@@ -11,11 +11,14 @@ import shutil
 import tempfile
 import unittest
 import datetime
+from kinetic_datanator.data_source.ProcessRNASeq import main
+from kinetic_datanator.data_source.ProcessRNASeq import download_cDNA
+import os
+import pandas as pd
+from kinetic_datanator.data_source.array_express_tools import ensembl_tools
 
 
 class QuickTest(unittest.TestCase):
-
-
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
@@ -59,7 +62,9 @@ class QuickTest(unittest.TestCase):
         experiment = session.query(array_express.Experiment).filter_by(id='E-SNGR-7').first()
         self.assertEqual(experiment.designs, [session.query(array_express.ExperimentDesign).filter_by(name='time series').first()])
 
+    @unittest.skip("need to use an example of RNA-SEQ sample")
     def test_load_experiment_samples(self):
+
         src = self.src
         session = src.session
 
@@ -213,3 +218,320 @@ class TestLoadFASTQ_Url(unittest.TestCase):
         exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-32190").first()
         self.assertFalse(exp.has_fastq_files)
         self.assertEqual(exp.read_type, "paired") #even though the fastq files aren't available, it is still important to record the read type for the user
+
+
+
+class TestProcessRNASeq(unittest.TestCase):
+    def setUp(self):
+        #self.cache_dirname = tempfile.mkdtemp()
+        self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+
+
+    def test_get_processed_data_eukaryote_single_end(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5149")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-5149").first()
+        main.get_processed_data(exp, self.cache_dirname)
+
+    def test_get_processed_data_prokaryote_paired(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-3381")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-3381").first()
+        main.get_processed_data(exp, self.cache_dirname)
+
+class TestDownloadCDNA(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_get_processed_data_substrain_1(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5971")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-5971").first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        #"escherichia_coli_str_k_12_substr_mg1655"
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/escherichia_coli_k_12_mg1655.cdna.all.fa.gz'.format(self.cache_dirname)))
+
+
+    def test_get_processed_data_substrain_2(self):
+        #the strain is added to the organism and found
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        #self.assertTrue(os.path.isfile("/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz"))
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_3(self):
+        #in this sample, the strain ("avian pathogen") is not recognized, and therefore only the organism (escherichia coli k12) is downloaded
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-3396"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/escherichia_coli_k_12.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/escherichia_coli_k_12.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_4(self):
+        src = self.src
+        session = src.session
+        #ax = "E-GEOD-65711" #This one is a problem because strain is listed as "K-12 MG1655" instead of "str. K-12 subtr MG1655"
+        #E-MTAB-3699
+        ax = "E-GEOD-65711"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/escherichia_coli_k_12_mg1655.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/escherichia_coli_k_12_mg1655.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_5(self):
+        #test baccillus subtilis
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-35641"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = []
+        for sam in exp.samples:
+            if sam.name == 'GSM872395 1':
+                sample = sam
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/bacillus_subtilis_subtilis_168.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/bacillus_subtilis_subtilis_168.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_6(self):
+        #Staphylococcus aureus subsp. aureus USA300
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-5666"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/staphylococcus_aureus_aureus.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/staphylococcus_aureus_aureus.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_7(self):
+        #Streptococcus pneumoniae R6
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-77749"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/streptococcus_pneumoniae_r6.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/streptococcus_pneumoniae_r6.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_8(self):
+        #Listeria monocytogenes 10403S
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-70265"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/listeria_monocytogenes_10403s.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/listeria_monocytogenes_10403s.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_9(self):
+        #Desulfovibrio vulgaris str. Hildenborough
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-79022"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/desulfovibrio_vulgaris_hildenborough.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/desulfovibrio_vulgaris_hildenborough.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_10(self):
+        #Desulfovibrio vulgaris Hildenborough
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-78834"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/desulfovibrio_vulgaris_hildenborough.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/desulfovibrio_vulgaris_hildenborough.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_11(self):
+        #Listeria monocytogenes EGD
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-65558"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/listeria_monocytogenes_egd.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/listeria_monocytogenes_egd.idx'.format(self.cache_dirname)))
+
+    def test_get_processed_data_substrain_12(self):
+        #Streptococcus pneumoniae D39
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-74421"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/streptococcus_pneumoniae_d39.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/streptococcus_pneumoniae_d39.idx'.format(self.cache_dirname)))
+
+
+class TestDownloadCDNAPlants(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_get_cdna_1(self):
+        #Arabidopsis thaliana
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-61293"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/arabidopsis_thaliana.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/arabidopsis_thaliana.idx'.format(self.cache_dirname)))
+
+class TestDownloadCDNAEukaryotes(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_get_cdna_1(self):
+        #Arabidopsis thaliana
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-5149"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        download_cDNA.run(sample, self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/CDNA_FILES/saccharomyces_cerevisiae.cdna.all.fa.gz'.format(self.cache_dirname)))
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/saccharomyces_cerevisiae.idx'.format(self.cache_dirname)))
+
+class TestConvertAbundanceToPandas(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/test_pandas2"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+        #self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_1(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-3252")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-3252").first()
+        main.get_processed_data(exp, self.cache_dirname)
+        self.assertTrue(os.path.isfile("{}/E-MTAB-3252/Sample 1/Sample 1_abundances_binary".format(self.cache_dirname)))
+        pandas = pd.read_pickle("""{}/E-MTAB-3252/Sample 1/Sample 1_abundances_binary""".format(self.cache_dirname))
+        print(pandas["percent total"][0])
+        self.assertEqual(pandas.loc["CCP42723", "percent total"], 0.00044199100205569983)
+
+
+class TestEnsemblTools(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_prokaryote_1(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5971")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-5971").first()
+        sample = exp.samples[0]
+        ensembl_info = ensembl_tools.get_ensembl_info(sample)
+        self.assertEqual(ensembl_info.organism_strain, "escherichia_coli_k_12_mg1655")
+        self.assertTrue(ensembl_info.full_strain_specificity)
+        self.assertEqual(ensembl_info.download_url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current//fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
+        #"escherichia_coli_str_k_12_substr_mg1655"
+ 
+
+    def test_prokaryote_2(self):
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-3396"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        ensembl_info = ensembl_tools.get_ensembl_info(sample)
+        self.assertEqual(ensembl_info.organism_strain, "escherichia_coli_k_12")
+        self.assertFalse(ensembl_info.full_strain_specificity)
+
+
+    def test_eukaryote(self):
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-5149"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        ensembl_info = ensembl_tools.get_ensembl_info(sample)
+        self.assertEqual(ensembl_info.organism_strain, "saccharomyces_cerevisiae")
+        self.assertTrue(ensembl_info.full_strain_specificity)
+        self.assertEqual(ensembl_info.download_url, "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz")
+
+    def test_plant(self):
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-61293"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        ensembl_info = ensembl_tools.get_ensembl_info(sample)
+        #print(ensembl_info.organism_strain)
+        #print(ensembl_info.download_url)
+        self.assertEqual(sample.ensembl_info[0].organism_strain, "arabidopsis_thaliana")
+        self.assertTrue(sample.full_strain_specificity)
+        self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/arabidopsis_thaliana/cdna/Arabidopsis_thaliana.TAIR10.cdna.all.fa.gz")
