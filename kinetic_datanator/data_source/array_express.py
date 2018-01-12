@@ -13,6 +13,7 @@ import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
+from kinetic_datanator.data_source.array_express_tools import ensembl_tools
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -80,6 +81,12 @@ sample_url = sqlalchemy.Table(
     sqlalchemy.Column('url_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('url._id'), index=True),
 )
 
+sample_ensemblInfo = sqlalchemy.Table(
+    'sample_ensemblInfo', Base.metadata,
+    sqlalchemy.Column('sample__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('sample._id'), index=True),
+    sqlalchemy.Column('ensemblInfo_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('ensemblInfo._id'), index=True),
+)
+
 class Characteristic(Base):
     """ Represents an experimental characteristic
     Attributes:
@@ -128,6 +135,20 @@ class Url(Base):
 
     __tablename__ = 'url'
 
+class EnsemblInfo(Base):
+    """ Represents a url
+    Attributes:
+        _id (:obj:`int`): unique id
+        category (:obj:`str`): name of the characteristic (e.g. organism)
+        value (:obj:`str`): value of characteristic (e.g. Mus musculus)
+        samples (:obj:`list` of :obj:`Sample`): samples
+    """
+    _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+    organism_strain = sqlalchemy.Column(sqlalchemy.String())
+    url = sqlalchemy.Column(sqlalchemy.String())
+    sqlalchemy.schema.UniqueConstraint(url)
+
+    __tablename__ = 'ensemblInfo'
 class Sample(Base):
     """ Represents an observed concentration
     Attributes:
@@ -146,11 +167,14 @@ class Sample(Base):
     index = sqlalchemy.Column(sqlalchemy.Integer())
     name = sqlalchemy.Column(sqlalchemy.String())
     assay = sqlalchemy.Column(sqlalchemy.String())
+    ensembl_organism_strain = sqlalchemy.Column(sqlalchemy.String())
     characteristics = sqlalchemy.orm.relationship(
         'Characteristic', secondary=sample_characteristic, backref=sqlalchemy.orm.backref('samples'))
     variables = sqlalchemy.orm.relationship('Variable', secondary=sample_variable, backref=sqlalchemy.orm.backref('samples'))
     fastq_urls = sqlalchemy.orm.relationship('Url', secondary=sample_url, backref=sqlalchemy.orm.backref('samples'))
     read_type = sqlalchemy.Column(sqlalchemy.String())
+    ensembl_info = sqlalchemy.orm.relationship('EnsemblInfo', secondary=sample_ensemblInfo, backref=sqlalchemy.orm.backref('samples'))
+    full_strain_specificity = sqlalchemy.Column(sqlalchemy.Boolean())
     sqlalchemy.schema.UniqueConstraint(experiment_id, name)
     sqlalchemy.schema.UniqueConstraint(experiment_id, index)
     __tablename__ = 'sample'
@@ -300,7 +324,7 @@ class ArrayExpress(data_source.HttpDataSource):
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            download_backup (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
@@ -353,7 +377,7 @@ class ArrayExpress(data_source.HttpDataSource):
                 rna_seq_experiments.append(experiment)
         for i_experiment, experiment in enumerate(rna_seq_experiments):
             if self.verbose and i_experiment % 500 == 0:
-                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, len(list_of_experiments)))
+                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, len(rna_seq_experiments)))
 
             if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
                 self.load_experiment_samples(experiment)
@@ -543,6 +567,10 @@ class ArrayExpress(data_source.HttpDataSource):
                     unit = variable['unit']
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
+
+        ensembl = ensembl_tools.get_ensembl_info(sample)
+        sample.ensembl_info.append(self.get_or_create_object(EnsemblInfo, organism_strain=ensembl.organism_strain, url = ensembl.download_url))
+        sample.full_strain_specificity = ensembl.full_strain_specificity
         return sample
 
     def load_experiment_protocols(self, experiment):
