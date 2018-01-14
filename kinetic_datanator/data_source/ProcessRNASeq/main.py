@@ -1,4 +1,4 @@
-from ProcessRNASeq import download_cDNA
+from . import download_cDNA
 import requests
 from six.moves.urllib.request import urlretrieve
 import os

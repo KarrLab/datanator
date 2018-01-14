@@ -11,6 +11,7 @@ import copy
 import enum
 import numpy
 import obj_model.core
+import obj_model.extra_attributes
 import six.moves
 
 
@@ -209,12 +210,11 @@ class PolymerSpecie(Specie):
 
 class DnaSpecie(PolymerSpecie):
     """ Represents a DNA polymer
+
     Attributes:
         binding_matrix (:obj:`Bio.motifs.matrix.FrequencyPositionMatrix`): Binding motif
     """
-    binding_matrix = obj_model.core.Attribute()
-
-
+    binding_matrix = obj_model.extra_attributes.FrequencyPositionMatrixAttribute()
 
 
 class RnaSpecie(PolymerSpecie):
