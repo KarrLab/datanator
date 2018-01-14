@@ -223,8 +223,8 @@ class TestLoadFASTQ_Url(unittest.TestCase):
 
 class TestProcessRNASeq(unittest.TestCase):
     def setUp(self):
-        #self.cache_dirname = tempfile.mkdtemp()
-        self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
+        self.cache_dirname = tempfile.mkdtemp()
+        #self.cache_dirname = "/home/yosef/Desktop/KineticDatanator/ProcessRNASeq/explore"
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
