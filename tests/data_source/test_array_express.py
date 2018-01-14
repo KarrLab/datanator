@@ -482,8 +482,8 @@ class TestEnsemblTools(unittest.TestCase):
 
     def tearDown(self):
         os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        #shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
+        #shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
 
     def test_prokaryote_1(self):
         src = self.src
