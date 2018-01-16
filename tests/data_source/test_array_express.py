@@ -226,7 +226,7 @@ class TestProcessRnaseq(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_get_processed_data_eukaryote_single_end(self):
         src = self.src
@@ -250,9 +250,7 @@ class TestDownloadCDNA(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_get_processed_data_substrain_1(self):
         src = self.src
@@ -408,9 +406,7 @@ class TestDownloadCDNAPlants(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_get_cdna_1(self):
         # Arabidopsis thaliana
@@ -432,9 +428,7 @@ class TestDownloadCDNAEukaryotes(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_get_cdna_1(self):
         # Arabidopsis thaliana
@@ -456,9 +450,7 @@ class TestConvertAbundanceToPandas(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_1(self):
         src = self.src
@@ -478,9 +470,7 @@ class TestEnsemblTools(unittest.TestCase):
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
     def tearDown(self):
-        os.remove("{}/ArrayExpress.sqlite".format(self.cache_dirname))
-        # shutil.rmtree("{}/CDNA_FILES".format(self.cache_dirname))
-        # shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.rmtree(self.cache_dirname)
 
     def test_prokaryote_1(self):
         src = self.src
