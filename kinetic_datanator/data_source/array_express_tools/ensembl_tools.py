@@ -63,7 +63,7 @@ def get_ensembl_info(sample):
                         try_org = try_org + word + " "
                     try_org = try_org[:-1]
                     for line in file.readlines():
-                        sep = line.split("    ")
+                        sep = line.split("\t")
                         if format_org_name(sep[0].lower()) == format_org_name(try_org):
                             spec_name = format_org_name(sep[1])
                             end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
