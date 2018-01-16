@@ -87,6 +87,7 @@ sample_ensemblInfo = sqlalchemy.Table(
     sqlalchemy.Column('ensemblInfo_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('ensemblInfo._id'), index=True),
 )
 
+
 class Characteristic(Base):
     """ Represents an experimental characteristic
     Attributes:
@@ -102,6 +103,7 @@ class Characteristic(Base):
     sqlalchemy.schema.UniqueConstraint(category, value)
 
     __tablename__ = 'characteristic'
+
 
 class Variable(Base):
     """ Represents an experimental variable
@@ -121,6 +123,7 @@ class Variable(Base):
 
     __tablename__ = 'variable'
 
+
 class Url(Base):
     """ Represents a url
     Attributes:
@@ -134,6 +137,7 @@ class Url(Base):
     sqlalchemy.schema.UniqueConstraint(url)
 
     __tablename__ = 'url'
+
 
 class EnsemblInfo(Base):
     """ Represents a url
@@ -149,6 +153,8 @@ class EnsemblInfo(Base):
     sqlalchemy.schema.UniqueConstraint(url)
 
     __tablename__ = 'ensemblInfo'
+
+
 class Sample(Base):
     """ Represents an observed concentration
     Attributes:
@@ -178,6 +184,7 @@ class Sample(Base):
     sqlalchemy.schema.UniqueConstraint(experiment_id, name)
     sqlalchemy.schema.UniqueConstraint(experiment_id, index)
     __tablename__ = 'sample'
+
 
 class Experiment(Base):
     """ Represents an experiment
@@ -216,6 +223,7 @@ class Experiment(Base):
 
     __tablename__ = 'experiment'
 
+
 class ExperimentDesign(Base):
     """ Represents and experimental design
     Attributes:
@@ -226,6 +234,7 @@ class ExperimentDesign(Base):
     name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
 
     __tablename__ = 'experiment_design'
+
 
 class ExperimentType(Base):
     """ Represents a type of experiment
@@ -238,6 +247,7 @@ class ExperimentType(Base):
 
     __tablename__ = 'experiment_type'
 
+
 class DataFormat(Base):
     """ Represents a data format
     Attributes:
@@ -247,10 +257,11 @@ class DataFormat(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String())
-    bio_assay_data_cubes =  sqlalchemy.Column(sqlalchemy.Integer())
+    bio_assay_data_cubes = sqlalchemy.Column(sqlalchemy.Integer())
 
     sqlalchemy.schema.UniqueConstraint(name, bio_assay_data_cubes)
     __tablename__ = 'data_format'
+
 
 class Organism(Base):
     """ Represents an organism
@@ -277,6 +288,7 @@ class Extract(Base):
 
     __tablename__ = 'extract'
 
+
 class Protocol(Base):
     """ Represents a protocol for an experiment
     Attributes:
@@ -299,6 +311,7 @@ class Protocol(Base):
     experiments = sqlalchemy.orm.relationship('Experiment', secondary=experiment_protocol, backref=sqlalchemy.orm.backref('protocols'))
 
     __tablename__ = 'protocol'
+
 
 class ArrayExpress(data_source.HttpDataSource):
     """ A local sqlite copy of the ArrayExpress database
@@ -365,7 +378,7 @@ class ArrayExpress(data_source.HttpDataSource):
 
         if self.verbose:
             print('Loading samples and protocols for experiments ...')
-                
+
        # download and parse experiments
         if self.verbose:
             print('Loading samples and protocols for experiments ...')
@@ -382,7 +395,7 @@ class ArrayExpress(data_source.HttpDataSource):
             if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
                 self.load_experiment_samples(experiment)
                 self.load_experiment_protocols(experiment)
-        
+
         if self.verbose:
             print('  done.')
         self.session.commit()
@@ -405,7 +418,8 @@ class ArrayExpress(data_source.HttpDataSource):
 
         for year in range(start_year, end_year + 1):
             if not test_url:
-                response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
+                response = self.requests_session.get(
+                    self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
             if test_url:
                 response = self.requests_session.get(test_url)
             response.raise_for_status()
@@ -442,7 +456,8 @@ class ArrayExpress(data_source.HttpDataSource):
 
                 if 'bioassaydatagroup' in expt_json:
                     for entry in expt_json['bioassaydatagroup']:
-                        experiment.data_formats.append(self.get_or_create_object(DataFormat, name=entry['dataformat'], bio_assay_data_cubes = entry['bioassaydatacubes']))
+                        experiment.data_formats.append(self.get_or_create_object(
+                            DataFormat, name=entry['dataformat'], bio_assay_data_cubes=entry['bioassaydatacubes']))
 
                 if 'submissiondate' in expt_json:
                     experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
@@ -452,7 +467,6 @@ class ArrayExpress(data_source.HttpDataSource):
 
                 db_session.add(experiment)
 
-
     def load_experiment_samples(self, experiment):
         """ Load the samples for an experiment
         Args:
@@ -460,8 +474,8 @@ class ArrayExpress(data_source.HttpDataSource):
         """
 
         url = self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id)
-       	response = self.requests_session.get(url)
-        
+        response = self.requests_session.get(url)
+
         response.raise_for_status()
         json = response.json()
 
@@ -471,18 +485,18 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'sample' not in experiment_json:
             return
         samples = experiment_json['sample']
-        
+
         paired_end = False
         list_of_source_names = []
         for sample in samples:
             if "source" in sample:
                 list_of_source_names.append(sample['source']['name'])
-        if ((len(samples) == len(set(list(list_of_source_names)))*2) #if its paried end, then there two sample entries to every one source name
-                and (list_of_source_names.count(list_of_source_names[0]) == 2) #if its paired end, then each source name must appear twice
-                and (list_of_source_names.count(list_of_source_names[len(list_of_source_names)-1:len(list_of_source_names)][0])==2)
+        if ((len(samples) == len(set(list(list_of_source_names)))*2)  # if its paried end, then there two sample entries to every one source name
+                # if its paired end, then each source name must appear twice
+                and (list_of_source_names.count(list_of_source_names[0]) == 2)
+                and (list_of_source_names.count(list_of_source_names[len(list_of_source_names)-1:len(list_of_source_names)][0]) == 2)
             ):
             paired_end = True
-
 
         if paired_end:
             experiment.read_type = "paired"
@@ -492,8 +506,8 @@ class ArrayExpress(data_source.HttpDataSource):
 
         if not isinstance(samples, list):
             samples = [samples]
-        experiment.has_fastq_files = False 
-        
+        experiment.has_fastq_files = False
+
         sample_indeces = {}
         for name in set(list(list_of_source_names)):
             sample_indeces[name] = [i for i, j in enumerate(list_of_source_names) if j == name]
@@ -517,8 +531,6 @@ class ArrayExpress(data_source.HttpDataSource):
                                 if comment['value'] not in [u.url for u in new_sample.fastq_urls]:
                                     new_sample.fastq_urls.append(self.get_or_create_object(Url, url=comment['value']))
                                     experiment.has_fastq_files = True
-
-        
 
     def load_experiment_sample(self, experiment, sample_json, index):
         """ Load the samples for an experiment
@@ -569,17 +581,17 @@ class ArrayExpress(data_source.HttpDataSource):
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
 
         ensembl = ensembl_tools.get_ensembl_info(sample)
-        sample.ensembl_info.append(self.get_or_create_object(EnsemblInfo, organism_strain=ensembl.organism_strain, url = ensembl.download_url))
+        sample.ensembl_info.append(self.get_or_create_object(
+            EnsemblInfo, organism_strain=ensembl.organism_strain, url=ensembl.download_url))
         sample.full_strain_specificity = ensembl.full_strain_specificity
         return sample
 
     def load_experiment_protocols(self, experiment):
-
         """ Load the protocols for an experiment
         Args:
             experiment (:obj:`Experiment`): experiment
-        """        
-        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))    
+        """
+        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
         json = response.json()
         session = self.session
         if 'protocols' not in json:
@@ -593,9 +605,8 @@ class ArrayExpress(data_source.HttpDataSource):
             protocols = [protocols]
         for protocol in protocols:
             self.load_experiment_protocol(experiment, protocol)
-       
-    def load_experiment_protocol(self, experiment, protocol_json):
 
+    def load_experiment_protocol(self, experiment, protocol_json):
         """ Load the protocols for an experiment
         Args:
             experiment (:obj:`Experiment`): experiment
@@ -630,7 +641,7 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'software' in protocol_json:
             protocol.software = protocol_json['software']
         protocol.experiments.append(experiment)
-                   
+
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
         if there is no instance with the property-values pairs described by kwargs
