@@ -67,10 +67,10 @@ def get_ensembl_info(sample):
                         if format_org_name(sep[0].lower()) == format_org_name(try_org):
                             spec_name = format_org_name(sep[1])
                             end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
-            start_url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current//fasta/{}/cdna/".format(end_url)
+            start_url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/{}/cdna/".format(end_url)
             ftp = ftplib.FTP("ftp.ensemblgenomes.org")
             ftp.login()
-            ftp.cwd("/pub/bacteria/current//fasta/{}/cdna/".format(end_url))
+            ftp.cwd("/pub/bacteria/current/fasta/{}/cdna/".format(end_url))
             files = ftp.nlst()
             for file in files:
                 if file[-14:] == "cdna.all.fa.gz":

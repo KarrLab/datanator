@@ -481,7 +481,7 @@ class TestEnsemblTools(unittest.TestCase):
         ensembl_info = ensembl_tools.get_ensembl_info(sample)
         self.assertEqual(ensembl_info.organism_strain, "escherichia_coli_k_12_mg1655")
         self.assertTrue(ensembl_info.full_strain_specificity)
-        self.assertEqual(ensembl_info.download_url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current//fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
+        self.assertEqual(ensembl_info.download_url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
         #"escherichia_coli_str_k_12_substr_mg1655"
 
     def test_prokaryote_2(self):
