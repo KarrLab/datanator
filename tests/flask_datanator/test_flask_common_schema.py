@@ -79,10 +79,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
-        metadata  = session.query(models.Metadata).filter_by(name = 'Deoxycytidine').first()
-        synonym = session.query(models._metadata_synonym).filter_by(_metadata_id = metadata.id).first()
-        name = session.query(models.Synonym).get(synonym.synonym_id)
-        self.assertEqual(name.name , '4-amino-1-[(2R,4S,5R)-4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-1,2-dihydropyrimidin-2-one')
 
     def test_sabio(self):
         session = self.cs.session
@@ -154,7 +150,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
 
-@unittest.skip('temporary skip')
+
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
@@ -218,10 +214,6 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
-        metadata  = session.query(models.Metadata).filter_by(name = 'Deoxycytidine').first()
-        synonym = session.query(models._metadata_synonym).filter_by(_metadata_id = metadata.id).first()
-        name = session.query(models.Synonym).get(synonym.synonym_id)
-        self.assertEqual(name.name , '4-amino-1-[(2R,4S,5R)-4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-1,2-dihydropyrimidin-2-one')
 
     def test_sabio(self):
         session = self.cs.session
@@ -288,7 +280,3 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(uni.subunit_name, 'PYRH_DESVH')
         self.assertEqual(uni.entrez_id, 2795170)
         self.assertEqual(uni.length, 238)
-
-    def test_whoosh(self):
-        self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
-            set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))

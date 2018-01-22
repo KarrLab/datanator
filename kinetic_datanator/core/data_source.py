@@ -233,6 +233,7 @@ class CachedDataSource(DataSource):
             :obj:`base_model`: SQLAlchemy object of type :obj:`cls`
         """
         q = self.session.query(cls).filter_by(**kwargs)
+        self.session.flush()
         if q.count():
             return q.first()
         else:
