@@ -111,7 +111,7 @@ class ProteintoDNAInteractionQueryGenerator(data_query.CachedDataSourceQueryGene
 
 
 class DNAtoProteinInteractionQueryGenerator(data_query.CachedDataSourceQueryGenerator):
-    """ Finds relevant concentration observations for metabolites """
+    """ Queries DNA reigons for relevant proteins """
 
     def __init__(self,
                  taxon=None, max_taxon_dist=None, taxon_dist_scale=None, include_variants=False,
