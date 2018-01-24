@@ -229,7 +229,7 @@ class FlaskProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryG
                 specie=data_model.ProteinSpecie(name=protein.subunit_name,
                                                 uniprot_id=protein.uniprot_id, entrez_id=protein.entrez_id,
                                                 gene_name=protein.gene_name, length=protein.length,
-                                                mass=protein.mass)
+                                                mass=protein.mass, sequence = protein.canonical_sequence)
             )
 
             observable.specie.cross_references = [
