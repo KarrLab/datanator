@@ -91,13 +91,18 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         observation.physical_property = model.PhysicalProperty()
         self.property = observation.physical_property
 
-        # Add all DBs
+        # Chunk Larger DBs
         self.add_intact_interactions()
         if self.verbose:
             print('IntAct Interactions Done')
         self.add_paxdb()
         if self.verbose:
             print('Pax Done')
+        self.add_sabiodb()
+        if self.verbose:
+            print('Sabio Done')
+
+        # Add complete smaller DBs
         if self.load_small_db_switch:
             self.add_intact_complexes()
             if self.verbose:
@@ -111,17 +116,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             self.add_ecmdb()
             if self.verbose:
                 print('ECMDB Done')
-        self.add_sabiodb()
-        if self.verbose:
-            print('Sabio Done')
 
-        # ## Add missing subunit information
+
+        ## Add missing subunit information
         self.add_uniprot()
         if self.verbose:
             print('Uniprot Done')
 
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
+        if self.verbose:
+            print('NCBI Done')
 
     def create_schema_png(self):
         if switch:
@@ -134,32 +139,54 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             )
             graph.write_png(os.getcwd())
 
-    def fill_missing_ncbi_names(self):
+    def add_intact_interactions(self):
         t0 = time.time()
+        intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
 
-        ncbi = NCBITaxa()
+        intact_ses = intactdb.session
+        _entity = self.entity
+        _property = self.property
 
-        ncbi_ids = []
-        species = self.session.query(model.Taxon).all()
-        for items in species:
-            ncbi_ids.append(items.ncbi_id)
+        if self.max_entries == float('inf'):
+            interactiondb = intactdb.session.query(intact.ProteinInteractions).all()
+        else:
+            interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_\
+                (range(self.max_entries))).all()
 
-        species_dict = ncbi.get_taxid_translator(ncbi_ids)
+        self.session.bulk_insert_mappings(model.ProteinInteractions,
+            [{'name' : e.interactor_a + "+" + e.interactor_b, 'type' : 'Protein Interaction',
+            'participant_a' : e.interactor_a, 'participant_b' : e.interactor_b, 'publication' : e.publications,
+            'interaction' : e.interaction, 'site_a' : e.feature_a, 'site_b' : e.feature_b,
+            'stoich_a' : e.stoich_a, 'stoich_b' : e.stoich_b, 'interaction_type': e.interaction_type} for e in interactiondb]
+            )
 
-        for tax in species:
-            if tax.ncbi_id in species_dict.keys():
-                tax.name = species_dict[tax.ncbi_id]
+        index = self.intact_loaded
+        for row in self.session.query(model.ProteinInteractions).all():
+            metadata = self.get_or_create_object(model.Metadata, name = 'Protein Interaction ' + str(index))
+            metadata.resource.append(self.get_or_create_object(model.Resource, namespace = 'pubmed', _id = re.split(':||', row.publication)[1]))
+            row._metadata = metadata
+            if 'uniprotkb:' in  row.participant_a:
+                row.protein_subunit.append(self.get_or_create_object(model.ProteinSubunit,\
+                uniprot_id = str(row.participant_a.replace('uniprotkb:', ''))))
+            if 'uniprotkb:' in  row.participant_b:
+                row.protein_subunit.append(self.get_or_create_object(model.ProteinSubunit,\
+                uniprot_id = str(row.participant_b.replace('uniprotkb:', ''))))
+            index += 1
+
+        self.get_or_create_object(model.Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
+
+        if self.verbose:
+            print('Total time taken for IntAct Interactions: ' + str(time.time()-t0) + ' secs')
 
         if self.verbose:
             print('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
-
     def add_paxdb(self):
         """
-        Adds Pax Database from Pax.sqlite file in Karr Server
+        Collects Pax.sqlite file and integrates it into flask common schema
+
+        Total datasets: 493
 
         """
 
@@ -217,6 +244,114 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
+
+    def add_sabiodb(self):
+        """
+        Adds Sabio Database from sabio.sqlite file in Karr Server
+
+        """
+        t0 = time.time()
+        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, verbose = self.verbose)
+        sabio_ses = sabiodb.session
+
+        _entity = self.entity
+        _property = self.property
+
+        if self.max_entries == float('inf'):
+            sabio_entry = sabio_ses.query(sabio_rk.Entry)
+        else:
+            sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
+                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*10))))
+
+        counter = 1
+        for item in sabio_entry:
+            metadata = self.get_or_create_object(model.Metadata, name = 'Kinetic Law ' + str(item.id)) if item._type == 'kinetic_law' else self.get_or_create_object(model.Metadata, name = item.name)
+            metadata.synonym = [self.get_or_create_object(model.Synonym, name = synonyms.name) for synonyms in item.synonyms]
+            metadata.taxon = [self.get_or_create_object(model.Taxon, ncbi_id = docs.id) for docs in item.cross_references if docs.namespace == 'taxonomy']
+            uniprot = [docs.id for docs in item.cross_references if docs.namespace == 'uniprot']
+            metadata.resource = [self.get_or_create_object(model.Resource, namespace = docs.namespace, _id = docs.id) for docs in item.cross_references]
+            compartment = self.get_or_create_object(model.CellCompartment, name = item.name) if item._type == 'compartment' else None
+            if compartment: continue
+
+            if item._type == 'compound':
+                structure = item.structures
+                for struct in structure:
+                    _property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = item.name,
+                        _value_smiles = struct.value, _value_inchi = struct._value_inchi,
+                        _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)\
+                        if struct.format == 'smiles' else None
+                _entity.compound = self.get_or_create_object(model.Compound, type = 'Compound',
+                    name = item.name, compound_name = item.name,
+                    _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
+                    structure = _property.structure, _metadata = metadata)
+                continue
+
+            elif item._type == 'enzyme':
+                complx = sabio_ses.query(sabio_rk.Enzyme).get(item._id)
+                _entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Enzyme' ,
+                    name = item.name , complex_name = item.name,
+                    molecular_weight = item.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
+                continue
+
+            elif item._type == 'enzyme_subunit':
+                result = self.session.query(model.ProteinComplex).filter_by(complex_name = item.enzyme.name).first()
+                _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, type = 'Enzyme Subunit',
+                    name = item.name, subunit_name = item.name,
+                    uniprot_id = uniprot, coefficient = item.coefficient,
+                    molecular_weight = item.molecular_weight,
+                    proteincomplex = result, _metadata = metadata)
+                continue
+
+            elif item._type == 'kinetic_law':
+
+                catalyst = self.session.query(model.ProteinComplex).filter_by(complex_name = item.enzyme.name).first() if item.enzyme_id else None
+                metadata.resource.extend([self.get_or_create_object(model.Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references])
+                metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = item.taxon))
+                metadata.cell_line.append(self.get_or_create_object(model.CellLine, name = item.taxon_variant))
+                metadata.conditions.append(self.get_or_create_object(model.Conditions, temperature = item.temperature, ph = item.ph, media = item.media))
+                _property.kinetic_law = self.get_or_create_object(model.KineticLaw, type = 'Kinetic Law', enzyme = catalyst,
+                    enzyme_type = item.enzyme_type, tissue = item.tissue, mechanism = item.mechanism, equation = item.equation, _metadata = metadata)
+
+                def common_schema_compound(sabio_object):
+                    compound_name = sabio_object.name
+                    return self.session.query(model.Compound).filter_by(compound_name = compound_name).first()
+
+                def common_schema_compartment(sabio_object):
+                    if sabio_object:
+                        compartment_name = sabio_object.name
+                        return self.session.query(model.CellCompartment).filter_by(name = compartment_name).first()
+                    else: return None
+
+                reactants = [model.Reaction(compound = common_schema_compound(r.compound),
+                    compartment = common_schema_compartment(r.compartment), _is_reactant = 1, rxn_type = r.type,
+                     kinetic_law_id = _property.kinetic_law.kineticlaw_id) for r in item.reactants if item.reactants]
+
+                products = [model.Reaction(compound = common_schema_compound(p.compound),
+                    compartment = common_schema_compartment(p.compartment), _is_product = 1, rxn_type = p.type,
+                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for p in item.products if item.products]
+
+                modifier = [model.Reaction(compound = common_schema_compound(m.compound),
+                    compartment = common_schema_compartment(m.compartment), _is_modifier = 1, rxn_type = m.type,
+                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for m in item.modifiers if item.products]
+
+                for param in item.parameters:
+                    parameter = model.Parameter(sabio_type = param.type, value = param.value, error = param.error,
+                        units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
+                        observed_sabio_type = param.observed_type, observed_value = param.observed_value,
+                        observed_error = param.observed_error, observed_units = param.observed_units)
+                    parameter.compound = common_schema_compound(param.compound) if param.compound else None
+                continue
+
+
+        self.get_or_create_object(model.Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))
+
+        if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
+
+        if self.verbose:
+            print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
 
     def add_corumdb(self):
         """
@@ -399,157 +534,6 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Total time taken for ECMDB: ' + str(time.time()-t0) + ' secs')
 
-    def add_sabiodb(self):
-        """
-        Adds Sabio Database from sabio.sqlite file in Karr Server
-
-        """
-        t0 = time.time()
-        sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, verbose = self.verbose)
-        sabio_ses = sabiodb.session
-
-        _entity = self.entity
-        _property = self.property
-
-        if self.max_entries == float('inf'):
-            sabio_entry = sabio_ses.query(sabio_rk.Entry)
-        else:
-            sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
-                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*10))))
-
-        counter = 1
-        for item in sabio_entry:
-            metadata = self.get_or_create_object(model.Metadata, name = 'Kinetic Law ' + str(item.id)) if item._type == 'kinetic_law' else self.get_or_create_object(model.Metadata, name = item.name)
-            metadata.synonym = [self.get_or_create_object(model.Synonym, name = synonyms.name) for synonyms in item.synonyms]
-            metadata.taxon = [self.get_or_create_object(model.Taxon, ncbi_id = docs.id) for docs in item.cross_references if docs.namespace == 'taxonomy']
-            uniprot = [docs.id for docs in item.cross_references if docs.namespace == 'uniprot']
-            metadata.resource = [self.get_or_create_object(model.Resource, namespace = docs.namespace, _id = docs.id) for docs in item.cross_references]
-            compartment = self.get_or_create_object(model.CellCompartment, name = item.name) if item._type == 'compartment' else None
-            if compartment: continue
-
-            if item._type == 'compound':
-                structure = item.structures
-                for struct in structure:
-                    _property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = item.name,
-                        _value_smiles = struct.value, _value_inchi = struct._value_inchi,
-                        _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)\
-                        if struct.format == 'smiles' else None
-                _entity.compound = self.get_or_create_object(model.Compound, type = 'Compound',
-                    name = item.name, compound_name = item.name,
-                    _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
-                    structure = _property.structure, _metadata = metadata)
-                continue
-
-            elif item._type == 'enzyme':
-                complx = sabio_ses.query(sabio_rk.Enzyme).get(item._id)
-                _entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Enzyme' ,
-                    name = item.name , complex_name = item.name,
-                    molecular_weight = item.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
-                continue
-
-            elif item._type == 'enzyme_subunit':
-                result = self.session.query(model.ProteinComplex).filter_by(complex_name = item.enzyme.name).first()
-                _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, type = 'Enzyme Subunit',
-                    name = item.name, subunit_name = item.name,
-                    uniprot_id = uniprot, coefficient = item.coefficient,
-                    molecular_weight = item.molecular_weight,
-                    proteincomplex = result, _metadata = metadata)
-                continue
-
-            elif item._type == 'kinetic_law':
-
-                catalyst = self.session.query(model.ProteinComplex).filter_by(complex_name = item.enzyme.name).first() if item.enzyme_id else None
-                metadata.resource.extend([self.get_or_create_object(model.Resource, namespace = resource.namespace, _id = resource.id) for resource in item.references])
-                metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = item.taxon))
-                metadata.cell_line.append(self.get_or_create_object(model.CellLine, name = item.taxon_variant))
-                metadata.conditions.append(self.get_or_create_object(model.Conditions, temperature = item.temperature, ph = item.ph, media = item.media))
-                _property.kinetic_law = self.get_or_create_object(model.KineticLaw, type = 'Kinetic Law', enzyme = catalyst,
-                    enzyme_type = item.enzyme_type, tissue = item.tissue, mechanism = item.mechanism, equation = item.equation, _metadata = metadata)
-
-                def common_schema_compound(sabio_object):
-                    compound_name = sabio_object.name
-                    return self.session.query(model.Compound).filter_by(compound_name = compound_name).first()
-
-                def common_schema_compartment(sabio_object):
-                    if sabio_object:
-                        compartment_name = sabio_object.name
-                        return self.session.query(model.CellCompartment).filter_by(name = compartment_name).first()
-                    else: return None
-
-                reactants = [model.Reaction(compound = common_schema_compound(r.compound),
-                    compartment = common_schema_compartment(r.compartment), _is_reactant = 1, rxn_type = r.type,
-                     kinetic_law_id = _property.kinetic_law.kineticlaw_id) for r in item.reactants if item.reactants]
-
-                products = [model.Reaction(compound = common_schema_compound(p.compound),
-                    compartment = common_schema_compartment(p.compartment), _is_product = 1, rxn_type = p.type,
-                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for p in item.products if item.products]
-
-                modifier = [model.Reaction(compound = common_schema_compound(m.compound),
-                    compartment = common_schema_compartment(m.compartment), _is_modifier = 1, rxn_type = m.type,
-                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for m in item.modifiers if item.products]
-
-                for param in item.parameters:
-                    parameter = model.Parameter(sabio_type = param.type, value = param.value, error = param.error,
-                        units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
-                        observed_sabio_type = param.observed_type, observed_value = param.observed_value,
-                        observed_error = param.observed_error, observed_units = param.observed_units)
-                    parameter.compound = common_schema_compound(param.compound) if param.compound else None
-                continue
-
-
-        self.get_or_create_object(model.Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
-
-
-        if self.verbose:
-            print('Total time taken for Sabio: ' + str(time.time()-t0) + ' secs')
-
-    def add_intact_interactions(self):
-        t0 = time.time()
-        intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
-
-        intact_ses = intactdb.session
-        _entity = self.entity
-        _property = self.property
-
-        if self.max_entries == float('inf'):
-            interactiondb = intactdb.session.query(intact.ProteinInteractions).all()
-        else:
-            interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_\
-                (range(self.max_entries))).all()
-
-        self.session.bulk_insert_mappings(model.ProteinInteractions,
-            [{'name' : e.interactor_a + "+" + e.interactor_b, 'type' : 'Protein Interaction',
-            'participant_a' : e.interactor_a, 'participant_b' : e.interactor_b, 'publication' : e.publications,
-            'interaction' : e.interaction, 'site_a' : e.feature_a, 'site_b' : e.feature_b,
-            'stoich_a' : e.stoich_a, 'stoich_b' : e.stoich_b, 'interaction_type': e.interaction_type} for e in interactiondb]
-            )
-
-        index = self.intact_loaded
-        for row in self.session.query(model.ProteinInteractions).all():
-            metadata = self.get_or_create_object(model.Metadata, name = 'Protein Interaction ' + str(index))
-            metadata.resource.append(self.get_or_create_object(model.Resource, namespace = 'pubmed', _id = re.split(':||', row.publication)[1]))
-            row._metadata = metadata
-            if 'uniprotkb:' in  row.participant_a:
-                row.protein_subunit.append(self.get_or_create_object(model.ProteinSubunit,\
-                uniprot_id = str(row.participant_a.replace('uniprotkb:', ''))))
-            if 'uniprotkb:' in  row.participant_b:
-                row.protein_subunit.append(self.get_or_create_object(model.ProteinSubunit,\
-                uniprot_id = str(row.participant_b.replace('uniprotkb:', ''))))
-            index += 1
-
-        self.get_or_create_object(model.Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
-
-        if self.verbose:
-            print('Total time taken for IntAct Interactions: ' + str(time.time()-t0) + ' secs')
-
-        if self.verbose:
-            print('Comitting')
-        self.session.commit()
-
     def add_intact_complexes(self):
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
@@ -588,13 +572,12 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit,
                         type = 'Protein Subunit', uniprot_id = sub,
                         proteincomplex = _entity.protein_complex, _metadata = metadata)
-
-        if self.verbose:
-            print('Total time taken for IntAct Complex: ' + str(time.time()-t0) + ' secs')
-
         if self.verbose:
             print('Comitting')
         self.session.commit()
+
+        if self.verbose:
+            print('Total time taken for IntAct Complex: ' + str(time.time()-t0) + ' secs')
 
     def add_uniprot(self):
         t0 = time.time()
@@ -617,8 +600,31 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 subunit.mass = info.mass if not subunit.mass else subunit.mass
 
         if self.verbose:
+            print('Comitting')
+        self.session.commit()
+
+        if self.verbose:
             print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
+
+    def fill_missing_ncbi_names(self):
+        t0 = time.time()
+
+        ncbi = NCBITaxa()
+
+        ncbi_ids = []
+        species = self.session.query(model.Taxon).all()
+        for items in species:
+            ncbi_ids.append(items.ncbi_id)
+
+        species_dict = ncbi.get_taxid_translator(ncbi_ids)
+
+        for tax in species:
+            if tax.ncbi_id in species_dict.keys():
+                tax.name = species_dict[tax.ncbi_id]
 
         if self.verbose:
             print('Comitting')
         self.session.commit()
+
+        if self.verbose:
+            print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
