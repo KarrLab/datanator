@@ -214,8 +214,7 @@ class FlaskProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryG
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
 
         """
-        abundances = self.get_abundance_by_sequence(
-            protein.canonical_sequence).all()
+        abundances = self.get_abundance_by_uniprot(protein.uniprot_id).all()
         observed_vals = []
 
         for abundance in abundances:
