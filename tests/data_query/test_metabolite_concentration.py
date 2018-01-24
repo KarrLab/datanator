@@ -8,6 +8,7 @@
 
 from kinetic_datanator.core import data_model, common_schema
 from kinetic_datanator.data_query import metabolite_concentrations
+from kinetic_datanator.flask_datanator import models, flask_common_schema
 import unittest
 
 class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
@@ -41,4 +42,33 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
         self.assertEqual(set(c.value for c in concentrations.all()), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
 
         concentrations = q.get_concentration_by_structure(self.uridine_tp.structure, only_formula_and_connectivity=False )
+        self.assertEqual(set(c.value for c in concentrations.all()), set([8290.0, 3990.0, 2370.0, 663.0]))
+
+class TestFlaskMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
+
+    def setUp(self):
+
+        flk = flask_common_schema.FlaskCommonSchema()
+
+        self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
+
+        self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
+
+
+    def test_filter_observed_values(self):
+        q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
+
+        obs = q.get_observed_values(self.proline)
+        self.assertEqual(set(c.value for c in obs), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
+        self.assertEqual(set(c.error for c in obs), set([0.0,0.0,0.0,0.0,45.0,11.37]))
+        for c in obs:
+            self.assertEqual(c.observation.genetics.taxon, 'Escherichia coli')
+
+    def test_get_concentration_by_structure(self):
+        q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
+
+        concentrations = q.get_concentration_by_structure(self.proline.structure._value_inchi, only_formula_and_connectivity=False )
+        self.assertEqual(set(c.value for c in concentrations.all()), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
+
+        concentrations = q.get_concentration_by_structure(self.uridine_tp.structure._value_inchi, only_formula_and_connectivity=False )
         self.assertEqual(set(c.value for c in concentrations.all()), set([8290.0, 3990.0, 2370.0, 663.0]))
