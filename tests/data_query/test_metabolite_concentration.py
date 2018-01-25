@@ -9,6 +9,8 @@
 from kinetic_datanator.core import data_model, common_schema
 from kinetic_datanator.data_query import metabolite_concentrations
 from kinetic_datanator.flask_datanator import models, flask_common_schema
+import tempfile
+import shutil
 import unittest
 
 class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
@@ -46,14 +48,17 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
 
 class TestFlaskMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
 
-    def setUp(self):
-
-        flk = flask_common_schema.FlaskCommonSchema()
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
-
         self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
 
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
 
     def test_filter_observed_values(self):
         q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()

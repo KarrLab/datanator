@@ -11,6 +11,8 @@
 from kinetic_datanator.core import data_model, common_schema
 from kinetic_datanator.data_query import protein_concentrations
 from kinetic_datanator.flask_datanator import models, flask_common_schema
+import tempfile
+import shutil
 import unittest
 
 
@@ -90,11 +92,16 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
 
 class TestFlaskProteinConcentrationsQueryGenerator(unittest.TestCase):
 
-    def setUp(self):
-
-        flk = flask_common_schema.FlaskCommonSchema()
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.protein_P00323 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
 
     def test_filter_observed_values(self):
         q = protein_concentrations.FlaskProteinConcentrationsQueryGenerator()
