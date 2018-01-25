@@ -58,8 +58,11 @@ class TestFlaskMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
         self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
         self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
 
-        with mock.patch('kinetic_datanator.app.flask_common_schema.FlaskCommonSchema', return_value=flk):
-            self.q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
+        # with mock.patch('flask_common_schema.FlaskCommonSchema', return_value=flk):
+        #     self.q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
+
+        self.q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
+        self.q.data_source = flk
 
 
     @classmethod
