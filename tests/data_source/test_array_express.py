@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import unittest
 
+
 class QuickTest(unittest.TestCase):
 
     def setUp(self):
@@ -153,7 +154,7 @@ class QuickTest(unittest.TestCase):
             "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
         ])), list(set([u.url for u in a_sample.fastq_urls])))
 
-@unittest.skip("too long")
+
 class TestLoadFASTQ_Url(unittest.TestCase):
 
     def setUp(self):
@@ -174,78 +175,8 @@ class TestLoadFASTQ_Url(unittest.TestCase):
         self.assertEqual(a_sample.read_type, "single")
         self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR580/SRR580556/SRR580556.fastq.gz")
 
-    def test_paired_read(self):
-        session = self.src.session
-        self.src.load_experiment_samples(array_express.Experiment(id="E-MTAB-4262"))
-        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-4262").first()
-        self.assertTrue(exp.has_fastq_files)
-        self.assertEqual(exp.read_type, "paired")
-        self.assertEqual(len(exp.samples), 12)
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="R1_0mM_24h").first()
-        self.assertEqual(a_sample.read_type, "paired")
-        self.assertEqual(list(set([
-            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_1.fastq.gz",
-            "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
-        ])), list(set([u.url for u in a_sample.fastq_urls])))
-
-    def test_multiple_reads(self):
-        session = self.src.session
-        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-58388"))
-        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-58388").first()
-        self.assertEqual(exp.read_type, "single")
-        self.assertEqual(len(exp.samples), 12)
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710 1").first()
-        self.assertEqual(a_sample.read_type, "single")
-        self.assertEqual(len(a_sample.fastq_urls), 1)  # this sample has one entry
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409720 1").first()
-        self.assertEqual(len(a_sample.fastq_urls), 1)  # this sample has two entries, but the url is the same
-        self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR137/000/SRR1377310/SRR1377310.fastq.gz")
-
-        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-45474"))
-        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-45474").first()
-        self.assertEqual(exp.read_type, "single")
-        self.assertEqual(len(exp.samples), 33)
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1105145 1").first()
-        self.assertEqual(a_sample.read_type, "single")
-        self.assertEqual(len(a_sample.fastq_urls), 2)  # this sample has two entries, but the urls are different, so they are both added
-
-    def test_without_fastq_files(self):
-        session = self.src.session
-        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-32190"))
-        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-32190").first()
-        self.assertFalse(exp.has_fastq_files)
-        # even though the fastq files aren't available, it is still important to record the read type for the user
-        self.assertEqual(exp.read_type, "paired")
-
-@unittest.skip("too long")
-class TestProcessRnaseq(unittest.TestCase):
-
-    def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
-
-    def tearDown(self):
-        shutil.rmtree(self.cache_dirname)
 
 
-    def test_get_processed_data_prokaryote_paired(self):
-        src = self.src
-        session = src.session
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-3381")
-        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-3381").first()
-        core.get_processed_data(exp, self.cache_dirname)
-
-    def test_total_eukaryote_single_end(self):
-        src = self.src
-        session = src.session
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-3252")
-        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-3252").first()
-        core.get_processed_data(exp, self.cache_dirname)
-        self.assertTrue(os.path.isfile("{}/E-MTAB-3252/Sample 1/Sample 1_abundances_binary".format(self.cache_dirname)))
-        data = pandas.read_pickle("""{}/E-MTAB-3252/Sample 1/Sample 1_abundances_binary""".format(self.cache_dirname))
-        self.assertEqual(data.loc["CCP42723", "percent total"], 0.00044199100205569983)
-
-@unittest.skip("too long")
 class TestDownloadCDNA(unittest.TestCase):
 
     def setUp(self):
@@ -254,7 +185,6 @@ class TestDownloadCDNA(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
-
 
     def test_get_cdna_prokaryotes(self):
         # the strain is added to the organism and found
@@ -267,32 +197,7 @@ class TestDownloadCDNA(unittest.TestCase):
         self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
         self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
 
-    def test_get_cdna_plants(self):
-        # Arabidopsis thaliana
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-61293"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        download_cdna.run(sample, self.cache_dirname)
-        self.assertTrue(os.path.isfile('{}/CDNA_FILES/arabidopsis_thaliana.cdna.all.fa.gz'.format(self.cache_dirname)))
-        self.assertTrue(os.path.isfile('{}/kallisto_index_files/arabidopsis_thaliana.idx'.format(self.cache_dirname)))
 
-    def test_get_cdna_eukaryotes(self):
-        # Arabidopsis thaliana
-        src = self.src
-        session = src.session
-        ax = "E-MTAB-5149"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        download_cdna.run(sample, self.cache_dirname)
-        self.assertTrue(os.path.isfile('{}/CDNA_FILES/saccharomyces_cerevisiae.cdna.all.fa.gz'.format(self.cache_dirname)))
-        self.assertTrue(os.path.isfile('{}/kallisto_index_files/saccharomyces_cerevisiae.idx'.format(self.cache_dirname)))
-
-
-@unittest.skip("too long")
 class TestEnsemblTools(unittest.TestCase):
 
     def setUp(self):
@@ -308,22 +213,9 @@ class TestEnsemblTools(unittest.TestCase):
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5971")
         exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-5971").first()
         sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(ensembl_info.organism_strain, "escherichia_coli_k_12_mg1655")
-        self.assertTrue(ensembl_info.full_strain_specificity)
-        self.assertEqual(ensembl_info.download_url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
-        #"escherichia_coli_str_k_12_substr_mg1655"
-
-    def test_prokaryote_2(self):
-        src = self.src
-        session = src.session
-        ax = "E-MTAB-3396"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(ensembl_info.organism_strain, "escherichia_coli_k_12")
-        self.assertFalse(ensembl_info.full_strain_specificity)
+        self.assertEqual(sample.ensembl_info[0].organism_strain, "escherichia_coli_k_12_mg1655")
+        self.assertTrue(sample.full_strain_specificity)
+        self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
 
     def test_eukaryote(self):
         src = self.src
@@ -332,10 +224,9 @@ class TestEnsemblTools(unittest.TestCase):
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         exp = session.query(array_express.Experiment).filter_by(id=ax).first()
         sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(ensembl_info.organism_strain, "saccharomyces_cerevisiae")
-        self.assertTrue(ensembl_info.full_strain_specificity)
-        self.assertEqual(ensembl_info.download_url,
+        self.assertEqual(sample.ensembl_info[0].organism_strain, "saccharomyces_cerevisiae")
+        self.assertTrue(sample.full_strain_specificity)
+        self.assertEqual(sample.ensembl_info[0].url,
                          "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz")
 
     def test_plant(self):
@@ -345,95 +236,24 @@ class TestEnsemblTools(unittest.TestCase):
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         exp = session.query(array_express.Experiment).filter_by(id=ax).first()
         sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
         self.assertEqual(sample.ensembl_info[0].organism_strain, "arabidopsis_thaliana")
         self.assertTrue(sample.full_strain_specificity)
         self.assertEqual(sample.ensembl_info[
                          0].url, "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/arabidopsis_thaliana/cdna/Arabidopsis_thaliana.TAIR10.cdna.all.fa.gz")
 
+    def test_error_multiple_organisms(self):
+        session = self.src.session
+        self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-58388"))
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-58388").first()
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710 1").first()
+        with self.assertRaises(LookupError):
+            ensembl_tools.get_ensembl_info(a_sample)
 
-    def test_substrain_3(self):
-        # in this sample, the strain ("avian pathogen") is not recognized, and
-        # therefore only the organism (escherichia coli k12) is downloaded
+    def test_error(self):
         src = self.src
         session = src.session
-        ax = "E-MTAB-3396"
+        ax = "E-GEOD-58388"
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         exp = session.query(array_express.Experiment).filter_by(id=ax).first()
         sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "escherichia_coli_k_12")
-
-
-    def test_substrain_4(self):
-        src = self.src
-        session = src.session
-        # ax = "E-GEOD-65711" #This one is a problem because strain is listed as "K-12 MG1655" instead of "str. K-12 subtr MG1655"
-        # E-MTAB-3699
-        ax = "E-GEOD-65711"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "escherichia_coli_k_12_mg1655")
-
-    def test_substrain_5(self):
-        # test baccillus subtilis
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-35641"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = []
-        for sam in exp.samples:
-            if sam.name == 'GSM872395 1':
-                sample = sam
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "bacillus_subtilis_subtilis_168")
-
-
-    def test_substrain_6(self):
-        # Staphylococcus aureus subsp. aureus USA300
-        src = self.src
-        session = src.session
-        ax = "E-MTAB-5666"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "staphylococcus_aureus_aureus")
-
-
-    def test_substrain_8(self):
-        # Listeria monocytogenes 10403S
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-70265"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "listeria_monocytogenes_10403s")
-
-    def test_substrain_9(self):
-        # Desulfovibrio vulgaris str. Hildenborough
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-79022"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "desulfovibrio_vulgaris_hildenborough")
-
-
-    def test_substrain_11(self):
-        # Listeria monocytogenes EGD
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-65558"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
-        ensembl_info = ensembl_tools.get_ensembl_info(sample)
-        self.assertEqual(sample.ensembl_info[0].organism_strain, "listeria_monocytogenes_egd")
+        self.assertEqual(sample.ensembl_info, [])
