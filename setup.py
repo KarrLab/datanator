@@ -60,7 +60,3 @@ setuptools.setup(
     tests_require=md.tests_require,
     dependency_links=md.dependency_links,
 )
-
-# download NCBI taxonomy database
-from kinetic_datanator.util import taxonomy_util
-taxonomy_util.setup_database()
