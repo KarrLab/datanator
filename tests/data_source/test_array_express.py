@@ -18,7 +18,6 @@ import shutil
 import tempfile
 import unittest
 
-
 class QuickTest(unittest.TestCase):
 
     def setUp(self):
@@ -154,7 +153,7 @@ class QuickTest(unittest.TestCase):
             "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
         ])), list(set([u.url for u in a_sample.fastq_urls])))
 
-
+@unittest.skip("too long")
 class TestLoadFASTQ_Url(unittest.TestCase):
 
     def setUp(self):
@@ -218,7 +217,7 @@ class TestLoadFASTQ_Url(unittest.TestCase):
         # even though the fastq files aren't available, it is still important to record the read type for the user
         self.assertEqual(exp.read_type, "paired")
 
-
+@unittest.skip("too long")
 class TestProcessRnaseq(unittest.TestCase):
 
     def setUp(self):
@@ -246,7 +245,7 @@ class TestProcessRnaseq(unittest.TestCase):
         data = pandas.read_pickle("""{}/E-MTAB-3252/Sample 1/Sample 1_abundances_binary""".format(self.cache_dirname))
         self.assertEqual(data.loc["CCP42723", "percent total"], 0.00044199100205569983)
 
-
+@unittest.skip("too long")
 class TestDownloadCDNA(unittest.TestCase):
 
     def setUp(self):
@@ -293,7 +292,7 @@ class TestDownloadCDNA(unittest.TestCase):
         self.assertTrue(os.path.isfile('{}/kallisto_index_files/saccharomyces_cerevisiae.idx'.format(self.cache_dirname)))
 
 
-
+@unittest.skip("too long")
 class TestEnsemblTools(unittest.TestCase):
 
     def setUp(self):
