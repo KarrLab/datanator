@@ -579,11 +579,15 @@ class ArrayExpress(data_source.HttpDataSource):
                     unit = variable['unit']
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
-
-        ensembl = ensembl_tools.get_ensembl_info(sample)
-        sample.ensembl_info.append(self.get_or_create_object(
-            EnsemblInfo, organism_strain=ensembl.organism_strain, url=ensembl.download_url))
-        sample.full_strain_specificity = ensembl.full_strain_specificity
+        try:
+            ensembl = ensembl_tools.get_ensembl_info(sample)
+        except LookupError:
+            ensembl = None
+            print("blue blue bleu blue belueljnadsfjadfs")
+        if ensembl != None:
+            sample.ensembl_info.append(self.get_or_create_object(
+                EnsemblInfo, organism_strain=ensembl.organism_strain, url=ensembl.download_url))
+            sample.full_strain_specificity = ensembl.full_strain_specificity
         return sample
 
     def load_experiment_protocols(self, experiment):
