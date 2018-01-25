@@ -39,11 +39,16 @@ def get_ensembl_info(sample):
     strain = ""
     url = ""
     full_strain_specificity = True
-    for characteristic in sample.characteristics:
-        if characteristic.category.lower() == 'organism':
-            organism = characteristic.value
-        if (characteristic.category.lower() == 'strain') or (characteristic.category.lower() == "strain background"):
-            strain = characteristic.value
+    list_of_characteristics = [ch.category for ch in sample.characteristics]
+
+    if list_of_characteristics.count('organism') == 1:
+        for characteristic in sample.characteristics:
+            if characteristic.category.lower() == 'organism':
+                organism = characteristic.value
+            if (characteristic.category.lower() == 'strain') or (characteristic.category.lower() == "strain background"):
+                strain = characteristic.value
+    else:
+        raise LookupError("No organism single organism recorded for this sample")
 
     spec_name = ""
     domain = get_taxonomic_lineage(organism)[-3:-2][0]
