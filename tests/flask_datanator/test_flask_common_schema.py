@@ -21,7 +21,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        print(self.cache_dirname)
         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
                                 clear_content = True ,load_entire_small_DBs = False,
                                 download_backups= False, load_content = True, max_entries = 10,
@@ -151,12 +150,12 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
 
+@unittest.skip('Conflicting caches')
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        print(self.cache_dirname)
         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
                                 clear_content = False ,load_entire_small_DBs = False,
                                 download_backups= True, load_content = False, max_entries = 10,
