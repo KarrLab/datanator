@@ -22,8 +22,8 @@ import numpy
 import os
 import time
 import re
-from kinetic_datanator.flask_datanator.models import app, db
-import kinetic_datanator.flask_datanator.models as model
+from kinetic_datanator.app.models import app, db
+import kinetic_datanator.app.models as model
 import flask_whooshalchemy
 # from sqlalchemy import MetaData
 # from sqlalchemy_schemadisplay import create_schema_graph

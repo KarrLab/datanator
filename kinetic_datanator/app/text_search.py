@@ -10,7 +10,7 @@
 
 
 from kinetic_datanator.data_query import dna_protein_interactions, metabolite_concentrations, protein_concentrations, protein_protein_interactions, reaction_kinetics
-from kinetic_datanator.flask_datanator import flask_common_schema, models
+from kinetic_datanator.app import flask_common_schema, models
 import flask_whooshalchemy
 
 
@@ -78,6 +78,13 @@ class TextSearchSession(object):
 
 
     def text_return_metabolite_concentration(self):
+        """
+        Runs metabolite concentration query to gather concentrations for all compounds collected in db_models
+
+        Returns:
+            ans (:obj:`list` of :obj:`list` of :obj:`Observed_values`): Observed values for matching compounds
+
+        """
         ans = []
         for items in self.db_models['Compound']:
             ans.append(self.metabolite_concentration_query.get_observed_values(items))
@@ -85,6 +92,13 @@ class TextSearchSession(object):
         return ans
 
     def text_return_protein_concentration(self):
+        """
+        Runs protein concentration query to gather concentrations for all compounds collected in db_models
+
+        Returns:
+            ans (:obj:`list` of :obj:`list` of :obj:`Observed_values`): Observed values for matching compounds
+
+        """
         ans = []
         for items in self.db_models['ProteinSubunit']:
             ans.append(self.protein_concentration_query.get_observed_values(items))

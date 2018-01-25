@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from kinetic_datanator.flask_datanator import config
+from kinetic_datanator.app import config
 
 
 app = Flask(__name__)

@@ -10,7 +10,7 @@
 from kinetic_datanator.core import data_model
 from kinetic_datanator.core import data_query
 from kinetic_datanator.core import common_schema
-from kinetic_datanator.flask_datanator import flask_common_schema, models
+from kinetic_datanator.app import flask_common_schema, models
 
 
 class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):

@@ -1,7 +1,16 @@
-from kinetic_datanator.flask_datanator import text_search
+""" Test of text search
+
+:Author: Saahith Pochiraju <saahith116@gmail.com>
+:Date: 2017-12-18
+:Copyright: 2017, Karr Lab
+:License: MIT
+"""
+
+
+from kinetic_datanator.app import text_search
 import unittest
 
-
+@unittest.skip('under development')
 class TestTextSearchSession(unittest.TestCase):
 
     @classmethod
@@ -50,16 +59,19 @@ class TestTextSearchSession(unittest.TestCase):
     def test_text_return_metabolite_concentration(self):
         search_dict = self.sesh.collect_objects('Xylulose')
         concentrations = self.sesh.text_return_metabolite_concentration()
-        for items in concentrations:
-            self.assertIn(items[0].value, [1020.0, 686.0, 1320.0])
-            break
+        self.assertEqual(len(search_dict['Compound']), len(concentrations))
+        for i in range(len(concentrations)):
+            if search_dict['Compound'][i].compound_name == 'Xylulose 5-phosphate':
+                self.assertEqual(set([c.value for c in concentrations[i]]), set([1020.0, 686.0, 1320.0]))
 
     def test_text_return_protein_concentration(self):
-        # search_dict = self.sesh.collect_objects('Q72D86')
-        # print(search_dict)
-        # abundances = self.sesh.text_return_protein_concentration()
-        # print(abundances)
-        pass
+        search_dict = self.sesh.collect_objects('Q72D86')
+        abundances = self.sesh.text_return_protein_concentration()
+        self.assertEqual(len(search_dict['ProteinSubunit']), len(abundances))
+        for i in range(len(abundances)):
+            if search_dict['ProteinSubunit'][i].uniprot_id == 'Q72D86':
+                self.assertEqual(set([c.value for c in abundances[i]]),
+                    set([891.0, 1941.0, 1121.0, 1451.0]))
 
     def test_text_return_reaction_kinetics(self):
         pass
@@ -67,7 +79,7 @@ class TestTextSearchSession(unittest.TestCase):
     def test_text_return_protein_protein_interactions(self):
         search_dict = self.sesh.collect_objects('O43426')
         interactions, plex = self.sesh.text_return_protein_protein_interactions()
-        print(interactions, plex)
+        pass
 
     def test_text_return_protein_dna_interactions(self):
         pass
