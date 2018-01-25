@@ -48,7 +48,7 @@ def get_processed_data(experiment, top_dirname):
         elif sample.experiment.read_type == "paired":
             rna_seq_util.Kallisto().quant(fastq_filenames, index_filename=index_filename, output_dirname=output_dirname)
 
-        new_pandas = pd.read_csv('{}/output/abundance.tsv'.format(sample_dirname), sep='    ').set_index("target_id")
+        new_pandas = pd.read_csv('{}/output/abundance.tsv'.format(sample_dirname), sep='\t').set_index("target_id")
         total_tpm = 0
         for num in new_pandas['tpm']:
             total_tpm = total_tpm + num
