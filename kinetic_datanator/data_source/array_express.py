@@ -99,7 +99,6 @@ class Characteristic(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     category = sqlalchemy.Column(sqlalchemy.String())
     value = sqlalchemy.Column(sqlalchemy.String())
-
     sqlalchemy.schema.UniqueConstraint(category, value)
 
     __tablename__ = 'characteristic'
@@ -128,8 +127,7 @@ class Url(Base):
     """ Represents a url
     Attributes:
         _id (:obj:`int`): unique id
-        category (:obj:`str`): name of the characteristic (e.g. organism)
-        value (:obj:`str`): value of characteristic (e.g. Mus musculus)
+        url (:obj:`str`): the text of the url
         samples (:obj:`list` of :obj:`Sample`): samples
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -143,9 +141,8 @@ class EnsemblInfo(Base):
     """ Represents a url
     Attributes:
         _id (:obj:`int`): unique id
-        category (:obj:`str`): name of the characteristic (e.g. organism)
-        value (:obj:`str`): value of characteristic (e.g. Mus musculus)
-        samples (:obj:`list` of :obj:`Sample`): samples
+        organism_strain (:obj:`str`): the particular strain that relates to the ensembl reference genome (e.g. escherichia_coli_k12)
+        url (:obj:`str`): the download url for the CDNA file from ensembl
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     organism_strain = sqlalchemy.Column(sqlalchemy.String())
@@ -159,13 +156,18 @@ class Sample(Base):
     """ Represents an observed concentration
     Attributes:
         _id (:obj:`int`): unique id
-        experiment_id: (:obj:`int`): the accesion number of the experiment
+        experiment_id: (:obj:`int`): the id of the experiment the samaple belongs in
         experiment (:obj:`Experiment`): experiment that the sample belongs to
         index (:obj:`int`): index of the sample within the experiment
-        name (:obj:`str`): name of the source of the sample
-        assay (:obj:`str`): assay
+        name (:obj:`str`): name of the source of the sample (this is used to identify the sample in arraya express)
+        assay (:obj:`str`): name of the assay
+        ensembl_organism_strain (:obj:`str`): the particular strain that relates to the ensembl reference genome (e.g. escherichia_coli_k12)
         characteristics (:obj:`list` of :obj:`Characteristic'): characteristics
-        variables (:obj:`list` of :obj:`Variable'): variables
+        variables (:obj:`list` of :obj:`Variable'): variablesassay (:obj:`str`): name of the assay
+        fastq_urls (:obj:`list` of :obj:`Url'): variablesassay (:obj:`str`): name of the assay
+        read_type (:obj:`str`): the nature of the FASTQ file reads. Either 'single', 'multiple', or 'parallel'
+        ensembl_info (:obj:`list` of :obj:`Variable'): informtation about the ensembl reference genome
+        full_strain_specificity (:obj:`bool`): whether or not ensembl reference genome matches the full strain specifity recoreded in array express
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
@@ -200,8 +202,8 @@ class Experiment(Base):
         submission_date (:obj:`datetime.date`): submission date
         release_date (:obj:`datetime.date`): release date
         data_formats (:obj:`list` of :obj:`DataFormat`): list of data formats
-        samples (:obj:`list` of :obj:`Sample`): list of samples
-        genes (:obj:`list` of :obj:`Gene`): list of genes in the experiment
+        read_type (:obj:`str`): type of FASTQ files (in an RNA-Seq experiment)
+        has_fastq_files (:obj:`bool`): whether this experiment has FASTQ files or not
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     id = sqlalchemy.Column(sqlalchemy.String(), unique=True, index=True)
@@ -219,7 +221,6 @@ class Experiment(Base):
                                                backref=sqlalchemy.orm.backref('experiments'))
     read_type = sqlalchemy.Column(sqlalchemy.String())
     has_fastq_files = sqlalchemy.Column(sqlalchemy.Boolean())
-    whole_genome = sqlalchemy.Column(sqlalchemy.Boolean())
 
     __tablename__ = 'experiment'
 
@@ -253,7 +254,7 @@ class DataFormat(Base):
     Attributes:
         _id (:obj:`int`): unique id
         name (:obj:`str`): name
-        experiments (:obj:`list` of :obj:`Experiment`): list of experiments
+        bio_assay_data_cubes (:obj:`int`): number of dimensions to the data
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String())
