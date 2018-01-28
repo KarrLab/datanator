@@ -4,6 +4,14 @@ import os
 
 
 class EnsembleInfo(object):
+    """ Represents information about an ensembl reference genome
+
+    Attributes:
+        organism_strain (:obj:`str`): the ensembl strain in the reference genome
+        download_url (:obj:`str`): the url for that strain's refernce genome
+        full_strain_specificity (:obj:`bool`): whether or not the strain mathces the full specifity
+            provided in the arra express sample
+    """
 
     def __init__(self, organism_strain, download_url, full_strain_specificity):
         self.organism_strain = organism_strain
@@ -11,10 +19,19 @@ class EnsembleInfo(object):
         self.full_strain_specificity = full_strain_specificity
 
 
-def get_taxonomic_lineage(baseSpecies):
+def get_taxonomic_lineage(base_species):
+    """ Get the lineage of a species
+
+        Args:
+            base_species (:obj:`bool`): a species (e.g. escherichia coli)
+
+        Returns:
+            :`list` of :obj:`str`: a list of strings corresponding to the layer of its taxonomy
+    """
+
     ncbi = NCBITaxa()
-    baseSpecies = ncbi.get_name_translator([baseSpecies])[baseSpecies][0]
-    lineage = ncbi.get_lineage(baseSpecies)
+    base_species = ncbi.get_name_translator([base_species])[base_species][0]
+    lineage = ncbi.get_lineage(base_species)
     names = ncbi.get_taxid_translator(lineage)
     chain = [names[taxid] for taxid in lineage]
     i = len(chain)
@@ -26,6 +43,15 @@ def get_taxonomic_lineage(baseSpecies):
 
 
 def format_org_name(name):
+    """ 
+    Format the name of an organism so normalize all species names
+
+        Args:
+            name (:obj:`bool`): the name of a spcies (e.g. escherichia coli str. k12)
+
+        Returns:
+            :obj:`str`: the normalized version of the strain name (e.g. escherichia coli k12)
+    """
 
     name = name.replace("substr. ", "").replace("str. ", "").replace("subsp. ", "")
     name = name.replace("substr ", "").replace("str ", "").replace("subsp ", "")
@@ -34,6 +60,15 @@ def format_org_name(name):
 
 
 def get_ensembl_info(sample):
+    """ 
+    Get information about the refernce genome that should be used for a given sample
+
+        Args:
+            sample (:obj:`array_express.Sample`): an RNA-Seq sample
+
+        Returns:
+            :obj:`EnsembleInfo`: Ensembl information about the reference genome
+    """
 
     organism = ""
     strain = ""
