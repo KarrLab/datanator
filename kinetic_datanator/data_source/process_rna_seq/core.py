@@ -6,23 +6,15 @@ import os
 import pandas as pd
 import requests
 
-
-class Sample(object):
-
-    def __init__(self, name, organism, url):
-        self.name = name
-        self.organism = organism
-        self.url = url
-
-
-class Experiment(object):
-
-    def __init__(self, name, samples):
-        self.name = name
-        self.samples = samples
-
-
 def get_processed_data(experiment, top_dirname):
+    """ Download FASTQ files and CDNA for all samples in an expirement, and processes the data. 
+            All the data is downloaded into the top directory. 
+
+        Args:
+            experiment(:obj:`array_express.Experiment`): the array express experiment
+            top_dirname(:obj:`str`): the name of the directory where the overall data is being stored
+
+        """
     exp_dirname = "{}/{}".format(top_dirname, experiment.id)
     if not os.path.isdir(exp_dirname):
         os.makedirs(exp_dirname)
@@ -37,7 +29,7 @@ def get_processed_data(experiment, top_dirname):
         fastq_filenames = []
         for num, url in enumerate(sample.fastq_urls):
             file = urlretrieve(url.url, '{}/{}_{}.fastq.gz'.format(sample_dirname, sample.name, num)
-                               )  # there used to be a spacae after "gz". I removed it
+                               )  # there used to be a space after "gz". I removed it
             fastq_filenames.append('{}/{}_{}.fastq.gz'.format(sample_dirname, sample.name, num))
 
         index_filename = '{}/kallisto_index_files/{}.idx'.format(top_dirname, species_name)
@@ -56,3 +48,4 @@ def get_processed_data(experiment, top_dirname):
         new_pandas['percent total'] = new_column
         new_pandas.to_pickle("{}/{}_abundances_binary".format(sample_dirname, sample.name))
         new_pandas.to_csv("{}/{}_abundances_csv".format(sample_dirname, sample.name))
+
