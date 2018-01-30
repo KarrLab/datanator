@@ -197,23 +197,30 @@ class CachedDataSource(DataSource):
         Returns:
             :obj:`list` of :obj:`backup.Backup`: backups
         """
+        list_backups = []
         a_backup = backup.Backup()
         path = backup.BackupPath(self.filename, self.name + '.sqlite')
         a_backup.paths.append(path)
         a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
         a_backup.remote_filename = path.arc_path + '.tar.gz'
 
-        if self.flask:
-            path = backup.BackupPath(self.cache_dirname + '/whoosh_cache/', 'whoosh_cache')
-            a_backup.paths.append(path)
-            a_backup.local_filename = path.arc_path
-            a_backup.remote_filename = path.arc_path + '.tar.gz'
-
-
         if set_metadata:
             a_backup.set_username_ip_date()
             a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-        return [a_backup]
+
+        if self.flask:
+            whoosh_backup = backup.Backup()
+            path = backup.BackupPath(self.cache_dirname + '/whoosh_cache/', 'whoosh_cache')
+            whoosh_backup.paths.append(path)
+            whoosh_backup.local_filename = path.arc_path
+            whoosh_backup.remote_filename = path.arc_path + '.tar.gz'
+            whoosh_backup.set_username_ip_date()
+            whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+            list_backups.append(whoosh_backup)
+
+        list_backups.append(a_backup)
+
+        return list_backups
 
     @abc.abstractmethod
     def load_content(self):

@@ -456,7 +456,7 @@ class KineticLaw(PhysicalProperty):
     __tablename__ = 'kinetic_law'
     __mapper_args__ = {'polymorphic_identity': 'kinetic_law'}
 
-    kineticlaw_id = db.Column(db.Integer, db.ForeignKey(
+    kinetic_law_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
 
     enzyme_id = db.Column(db.Integer, db.ForeignKey(
@@ -498,7 +498,8 @@ class Reaction(db.Model):
     rxn_type = db.Column(db.String(255))
 
     kinetic_law_id = db.Column(
-        db.Integer, db.ForeignKey('kinetic_law.kineticlaw_id'))
+        db.Integer, db.ForeignKey('kinetic_law.kinetic_law_id'))
+    kinetic_law = db.relationship(KineticLaw, backref='reaction')
 
 
 class AbundanceDataSet(PhysicalProperty):
@@ -572,7 +573,7 @@ class Parameter(db.Model):
     parameter_id = db.Column(db.Integer, primary_key=True)
 
     kinetic_law_id = db.Column(
-        db.Integer, db.ForeignKey('kinetic_law.kineticlaw_id'))
+        db.Integer, db.ForeignKey('kinetic_law.kinetic_law_id'))
     kinetic_law = db.relationship(KineticLaw, backref='parameter')
 
     sabio_type = db.Column(db.Integer, index=True)

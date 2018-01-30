@@ -41,7 +41,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs = False,
-                  clear_requests_cache=False, download_request_backup=False, flask = True):
+                  clear_requests_cache=False, download_request_backup=False, flask = True, test = False):
 
         """
         Args:
@@ -63,6 +63,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                                       clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
         self.load_entire_small_DBs = load_entire_small_DBs
+        self.test = test
 
         for item in self.text_indicies:
             flask_whooshalchemy.whoosh_index(self.app, item)
@@ -91,7 +92,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         observation.physical_property = model.PhysicalProperty()
         self.property = observation.physical_property
 
-        # Chunk Larger DBs
+        ## Chunk Larger DBs
         self.add_intact_interactions()
         if self.verbose:
             print('IntAct Interactions Done')
@@ -102,7 +103,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('Sabio Done')
 
-        # Add complete smaller DBs
+        ## Add complete smaller DBs
         if self.load_small_db_switch:
             self.add_intact_complexes()
             if self.verbose:
@@ -146,12 +147,13 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         intact_ses = intactdb.session
         _entity = self.entity
         _property = self.property
+        multiplier = 1 if self.test else 1000
 
         if self.max_entries == float('inf'):
             interactiondb = intactdb.session.query(intact.ProteinInteractions).all()
         else:
             interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_\
-                (range(self.max_entries))).all()
+                (range(self.max_entries*multiplier))).all()
 
         self.session.bulk_insert_mappings(model.ProteinInteractions,
             [{'name' : e.interactor_a + "+" + e.interactor_b, 'type' : 'Protein Interaction',
@@ -196,13 +198,14 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         _entity = self.entity
         _property = self.property
+        multiplier = .1 if self.test else .5
 
 
         if self.max_entries == float('inf'):
             pax_dataset = pax_ses.query(pax.Dataset).all()
         else:
             pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_\
-                (range(self.pax_loaded+1, self.pax_loaded+1 + int(self.max_entries/10))))
+                (range(self.pax_loaded+1, self.pax_loaded+1 + int(self.max_entries*multiplier))))
 
         for dataset in pax_dataset:
             metadata = self.get_or_create_object(model.Metadata, name = dataset.file_name)
@@ -236,7 +239,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 rows.subunit = self.session.query(model.ProteinSubunit).filter_by(pax_load = dataset.id).filter_by(uniprot_id = rows.uniprot_id).first()
                 rows.dataset = _property.abundance_dataset
 
-        self.get_or_create_object(model.Progress, database_name = 'Pax', amount_loaded = self.pax_loaded + (self.max_entries/10))
+        self.get_or_create_object(model.Progress, database_name = 'Pax', amount_loaded = self.pax_loaded + (self.max_entries*multiplier))
 
         if self.verbose:
             print('Comitting')
@@ -256,12 +259,13 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         _entity = self.entity
         _property = self.property
+        multiplier = 10 if self.test else 1000
 
         if self.max_entries == float('inf'):
             sabio_entry = sabio_ses.query(sabio_rk.Entry)
         else:
             sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_\
-                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*10))))
+                (range(self.sabio_loaded+1, self.sabio_loaded+1 + int(self.max_entries*multiplier))))
 
         counter = 1
         for item in sabio_entry:
@@ -324,15 +328,15 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
                 reactants = [model.Reaction(compound = common_schema_compound(r.compound),
                     compartment = common_schema_compartment(r.compartment), _is_reactant = 1, rxn_type = r.type,
-                     kinetic_law_id = _property.kinetic_law.kineticlaw_id) for r in item.reactants if item.reactants]
+                     kinetic_law = _property.kinetic_law) for r in item.reactants if item.reactants]
 
                 products = [model.Reaction(compound = common_schema_compound(p.compound),
                     compartment = common_schema_compartment(p.compartment), _is_product = 1, rxn_type = p.type,
-                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for p in item.products if item.products]
+                    kinetic_law = _property.kinetic_law) for p in item.products if item.products]
 
                 modifier = [model.Reaction(compound = common_schema_compound(m.compound),
                     compartment = common_schema_compartment(m.compartment), _is_modifier = 1, rxn_type = m.type,
-                    kinetic_law_id = _property.kinetic_law.kineticlaw_id) for m in item.modifiers if item.products]
+                    kinetic_law = _property.kinetic_law) for m in item.modifiers if item.products]
 
                 for param in item.parameters:
                     parameter = model.Parameter(sabio_type = param.type, value = param.value, error = param.error,
@@ -343,7 +347,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 continue
 
 
-        self.get_or_create_object(model.Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*50))
+        self.get_or_create_object(model.Progress, database_name = 'Sabio', amount_loaded = self.sabio_loaded+ (self.max_entries*multiplier))
 
         if self.verbose:
             print('Comitting')
@@ -501,7 +505,12 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 compart = compound.compartments
                 syn = compound.synonyms
                 metadata = self.get_or_create_object(model.Metadata, name = compound.name)
-                metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = 562, name = 'E.Coli'))
+                tax = self.session.query(model.Taxon).filter_by(ncbi_id = 562).first()
+                if tax:
+                    metadata.taxon.append(tax)
+                else:
+                    metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = 562))
+
                 metadata.resource = [self.get_or_create_object(model.Resource, namespace = docs.namespace, _id = docs.id) for docs in ref]
                 metadata.cell_compartment = [self.get_or_create_object(model.CellCompartment, name = areas.name) for areas in compart]
                 metadata.synonym = [self.get_or_create_object(model.Synonym, name = syns.name) for syns in syn]
