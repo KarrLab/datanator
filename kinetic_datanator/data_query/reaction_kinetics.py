@@ -92,14 +92,14 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
             reaction = data_model.Reaction(
                 cross_references=[
-                    data_model.Resource(namespace='common_schema.kineticlaw_id', id=str(law.kineticlaw_id)),
+                    data_model.Resource(namespace='common_schema.kinetic_law_id', id=str(law.kinetic_law_id)),
                     data_model.Resource(namespace='sabiork.reaction', id=common_schema_reaction_id),
                 ],
             )
             species = {}
             compartments = {}
 
-            cs_rxn = self.data_source.session.query(common_schema.Reaction).filter_by(kinetic_law_id = law.kineticlaw_id)
+            cs_rxn = self.data_source.session.query(common_schema.Reaction).filter_by(kinetic_law_id = law.kinetic_law_id)
             reactants = cs_rxn.filter_by(_is_reactant = 1).all()
             products = cs_rxn.filter_by(_is_product = 1).all()
             modifiers = cs_rxn.filter_by(_is_modifier = 1).all()
@@ -249,7 +249,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 try:
                     structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
                 except ValueError:
-                    return self.data_source.session.query(select).filter(common_schema.KineticLaw.kineticlaw_id == -1)
+                    return self.data_source.session.query(select).filter(common_schema.KineticLaw.kinetic_law_id == -1)
             else:
                 structure = part.specie.structure
 
@@ -306,7 +306,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         session = self.data_source.session
 
-        law = session.query(select).join(common_schema.Reaction, common_schema.KineticLaw.kineticlaw_id == common_schema.Reaction.kinetic_law_id)\
+        law = session.query(select).join(common_schema.Reaction, common_schema.KineticLaw.kinetic_law_id == common_schema.Reaction.kinetic_law_id)\
             .filter(participant_condition).join(common_schema.Compound, common_schema.Reaction.compound)\
             .join(common_schema.Structure, common_schema.Compound.structure).filter(condition)
 
@@ -441,14 +441,14 @@ class FlaskReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenera
 
             reaction = data_model.Reaction(
                 cross_references=[
-                    data_model.Resource(namespace='common_schema.kineticlaw_id', id=str(law.kineticlaw_id)),
+                    data_model.Resource(namespace='common_schema.kinetic_law_id', id=str(law.kinetic_law_id)),
                     data_model.Resource(namespace='sabiork.reaction', id=common_schema_reaction_id),
                 ],
             )
             species = {}
             compartments = {}
 
-            cs_rxn = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id = law.kineticlaw_id)
+            cs_rxn = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id = law.kinetic_law_id)
             reactants = cs_rxn.filter_by(_is_reactant = 1).all()
             products = cs_rxn.filter_by(_is_product = 1).all()
             modifiers = cs_rxn.filter_by(_is_modifier = 1).all()
@@ -576,57 +576,43 @@ class FlaskReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenera
         # return empty list if no relevant observations were found
         return self.data_source.session.query(select).filter_by(id=-1)
 
-    def get_kinetic_laws_by_participants(self, participants, only_formula_and_connectivity=True, include_water_hydrogen=False,
-                                         select=models.KineticLaw):
-        """ Get kinetic laws with the participants :obj:`participants`
+
+    def get_reaction_by_compound(self, compound, select=models.Reaction):
+        """ Get reaction that contains the compound role :obj:`models.Compound`
 
         Args:
-            participants (:obj:`list` of :obj:`data_model.ReactionParticipant`): list of reaction participants
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find kinetic laws which contain species with the same
-                InChI formula and connectivity layers
-            include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict kinetic laws based on their water, hydroxide, and
-                hydrogen participants
+            structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.KineticLaw` or one of its columns
+                :obj:`models.Reaction` or one of its columns
 
         Returns:
-            :obj:`list` of :obj:`models.KineticLaw`: a list kinetic laws that contain all of the participants
+            reaction_list (:obj:`data_model.Reaction`): reaction to find data for
         """
-        q_laws = None
-        for i_part, part in enumerate(participants):
-            if only_formula_and_connectivity == True:
-                try:
-                    structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
-                except ValueError:
-                    return self.data_source.session.query(select).filter(models.KineticLaw.kineticlaw_id == -1)
-            else:
-                structure = part.specie.structure
 
-            if not include_water_hydrogen:
-                if only_formula_and_connectivity:
-                    formula_and_connectivity = structure
-                else:
-                    formula_and_connectivity = part.specie.to_inchi(only_formula_and_connectivity=True)
-                if formula_and_connectivity in ['', 'H2O', 'H2O']:
-                    continue
+        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
 
-            if part.coefficient < 0:
-                role = 'reactant'
-            elif part.coefficient > 0:
-                role = 'product'
+        reaction_list = []
+        for rxn in rxn_cluster:
+            participants = []
+            for rxn_part in rxn:
+                coef = -1 if rxn_part._is_reactant else 0
+                coef = 1 if rxn_part._is_product else 0
+                part = data_model.ReactionParticipant(
+                    specie = data_model.Specie(
+                        id = rxn_part.compound.compound_name,
+                        structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
+                    coefficient = coef)
+                participants.append(part)
+            reaction = self.reaction = data_model.Reaction(participants = participants)
+            reaction_list.append(reaction)
 
-            q_part = self.get_kinetic_laws_by_compound(
-                structure, only_formula_and_connectivity=only_formula_and_connectivity, role=role,
-                select=select).all()
+            #TODO: ADD CROSSREFERENCES
 
-            if not q_laws:
-                q_laws = q_part
-            else:
-                q_laws = [val for val in q_laws if val in q_part]
+        return reaction_list
 
-        return q_laws
 
-    def get_kinetic_laws_by_compound(self, structure, only_formula_and_connectivity=False, role='reactant', select=models.KineticLaw):
+
+    def get_kinetic_laws_by_compound(self, compound, role='reactant', select=models.KineticLaw):
         """ Get kinetic laws that contain a structure in role :obj:`role`
 
         Args:
@@ -641,10 +627,8 @@ class FlaskReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenera
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
         """
 
-        if only_formula_and_connectivity:
-            condition = models.Structure._structure_formula_connectivity == structure
-        else:
-            condition = models.Structure._value_inchi == structure
+
+        condition = models.Compound.compound_id == compound.compound_id
 
         if role == 'reactant':
             participant_condition = models.Reaction._is_reactant == 1
@@ -655,9 +639,8 @@ class FlaskReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenera
 
         session = self.data_source.session
 
-        law = session.query(select).join(models.Reaction, models.KineticLaw.kineticlaw_id == models.Reaction.kinetic_law_id)\
-            .filter(participant_condition).join(models.Compound, models.Reaction.compound)\
-            .join(models.Structure, models.Compound.structure).filter(condition)
+        law = session.query(select).join(models.Reaction, models.KineticLaw.reaction)\
+            .filter(participant_condition).join(models.Compound, models.Reaction.compound).filter(condition)
 
         return law
 
