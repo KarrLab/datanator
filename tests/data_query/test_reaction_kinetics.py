@@ -9,17 +9,18 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
+from kinetic_datanator.core import data_model, common_schema
 from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.core import common_schema
 from kinetic_datanator.data_query import reaction_kinetics
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import taxonomy_util
+from kinetic_datanator.util import taxonomy_util, molecule_util
+from kinetic_datanator.app import models, flask_common_schema
 import unittest
 import random
+import tempfile
+import shutil
 
 #TODO: Make Print and Filtering functions
-
+@unittest.skip('skip')
 class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
     """
     Tests for 10000 entry limited Common Schema on Karr Lab Server
@@ -255,3 +256,62 @@ class TestwPartialCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
         rxn = data_model.Reaction(cross_references=[
             data_model.Resource(namespace='ec-code', id=ec_number),
         ])
+
+class TestFlaskCommonSchemaReactionKineticsQueryGenerator(unittest.TestCase):
+    """
+    Tests for 10000 entry limited Common Schema on Karr Lab Server
+
+    Used for development purposes
+    """
+
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+
+        self.q = reaction_kinetics.FlaskReactionKineticsQueryGenerator()
+
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
+
+
+    def test_get_kinetic_laws_by_ec_numbers(self):
+
+
+        # single EC, match_levels=4
+        laws_62 = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.62'], match_levels=4).all()
+        compare = self.flk.session.query(models.KineticLaw).filter_by(enzyme_id = laws_62[0].enzyme_id).all()
+        ids_62 = set([c.kineticlaw_id for c in compare])
+        self.assertEqual(set(l.id for l in laws_62), ids_62)
+
+        laws_73 = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.73'], match_levels=4).all()
+        compare = self.flk.session.query(models.KineticLaw).filter_by(enzyme_id = laws_73[0].enzyme_id).all()
+        ids_73 = set([c.kineticlaw_id for c in compare])
+        self.assertEqual(set(l.id for l in laws_73), ids_73)
+
+        #multiple EC, match_levels=4
+
+        laws = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.62', '3.4.21.73'], match_levels=4).all()
+        self.assertEqual(set([l.id for l in laws]), ids_62 | ids_73)
+
+
+    def test_get_kinetic_laws_by_compound(self):
+        pass
+
+    def test_get_compounds_by_structure(self):
+        struct = self.flk.session.query(models.Structure).all()
+
+        ans = self.q.get_compounds_by_structure(struct[3414]._value_inchi).all()
+        self.assertEqual(ans, struct[3414].compound)
+
+
+    def test_get_kinetic_laws_by_participants(self):
+        pass
+
+    def test_get_kinetic_laws_by_reaction(self):
+        pass
+
+    def test_get_observed_values(self):
+        pass

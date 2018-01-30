@@ -60,9 +60,9 @@ class TestFlaskMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
 
         # with mock.patch('flask_common_schema.FlaskCommonSchema', return_value=flk):
         #     self.q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
-
+        #
         self.q = metabolite_concentrations.FlaskMetaboliteConcentrationsQueryGenerator()
-        self.q.data_source = flk
+        # self.q.data_source = flk
 
 
     @classmethod

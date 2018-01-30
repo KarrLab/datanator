@@ -24,6 +24,7 @@ var/
 .installed.cfg
 *.egg
 src/
+*.DS_Store
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -114,3 +115,4 @@ kinetic_datanator.cfg
 
 # whoosh index
 whoosh_index/
+kinetic_datanator/data_source/.DS_Store
