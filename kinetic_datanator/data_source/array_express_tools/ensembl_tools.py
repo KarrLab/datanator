@@ -1,7 +1,7 @@
 from ete3 import NCBITaxa
 import ftplib
 import os
-
+import socket
 
 class EnsembleInfo(object):
     """ Represents information about an ensembl reference genome
@@ -60,6 +60,19 @@ def format_org_name(name):
 
 
 def get_ensembl_info(sample):
+    attempts = 0
+    while attempts < 10:
+        try:
+            return get_ensembl_info_lower(sample)
+            break
+        except socket.error:
+            attempts += 1
+            print("ERROR:")
+            if attempts==10:
+                raise LookupError("No organism single organism recorded for this sample")
+
+
+def get_ensembl_info_lower(sample):
     """ 
     Get information about the refernce genome that should be used for a given sample
 
@@ -70,11 +83,12 @@ def get_ensembl_info(sample):
             :obj:`EnsembleInfo`: Ensembl information about the reference genome
     """
 
+    print(sample.experiment_id)
     organism = ""
     strain = ""
     url = ""
     full_strain_specificity = True
-    list_of_characteristics = [ch.category for ch in sample.characteristics]
+    list_of_characteristics = [ch.category.lower() for ch in sample.characteristics]
 
     if list_of_characteristics.count('organism') == 1:
         for characteristic in sample.characteristics:
@@ -116,7 +130,7 @@ def get_ensembl_info(sample):
                 if file[-14:] == "cdna.all.fa.gz":
                     url = start_url + file
         except ftplib.error_perm as resp:
-            if str(resp) == "550 No files found":
+            if str(resp) == "550 No files found" or str(resp) == "550 Failed to change directory.":
                 print("No files in this directory")
             else:
                 raise
@@ -137,14 +151,18 @@ def get_ensembl_info(sample):
             ftp = ftplib.FTP("ftp.ensemblgenomes.org")
         try:
             ftp.login()
+            print("Here: {}/{}/cdna/".format(cwd, spec_name))
             ftp.cwd("{}/{}/cdna/".format(cwd, spec_name))
             files = ftp.nlst()
             for file in files:
                 if file[-14:] == "cdna.all.fa.gz":
                     url = ("{}/{}/cdna/{}".format(URL, spec_name, file))
         except ftplib.error_perm as resp:
-            if str(resp) == "550 No files found":
+            if str(resp) == "550 No files found" or str(resp) == "550 Failed to change directory.":
                 print("No files in this directory")
+                raise LookupError("No organism single organism recorded for this sample")
             else:
+                print("Here2: {}/{}/cdna/".format(cwd, spec_name))
                 raise
     return EnsembleInfo(spec_name, url, full_strain_specificity)
+

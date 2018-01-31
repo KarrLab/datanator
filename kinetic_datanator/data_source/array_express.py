@@ -170,7 +170,7 @@ class Sample(Base):
         full_strain_specificity (:obj:`bool`): whether or not ensembl reference genome matches the full strain specifity recoreded in array express
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-    experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment._id'), index=True)
+    experiment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('experiment.id'), index=True)
     experiment = sqlalchemy.orm.relationship('Experiment', backref=sqlalchemy.orm.backref('samples'), foreign_keys=[experiment_id])
     index = sqlalchemy.Column(sqlalchemy.Integer())
     name = sqlalchemy.Column(sqlalchemy.String())
@@ -343,12 +343,14 @@ class ArrayExpress(data_source.HttpDataSource):
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
         """
+        with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+            self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
         super(ArrayExpress, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                            load_content=load_content, max_entries=max_entries,
                                            commit_intermediate_results=commit_intermediate_results,
                                            download_backups=download_backups, verbose=verbose,
                                            clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
-
+        
         with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
             self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
@@ -360,6 +362,7 @@ class ArrayExpress(data_source.HttpDataSource):
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
             end_year (:obj:`int`, optional): the last year to retrieve experiments for
         """
+
         if not end_year:
             end_year = datetime.datetime.now().year
         session = self.session
@@ -533,6 +536,7 @@ class ArrayExpress(data_source.HttpDataSource):
                                     new_sample.fastq_urls.append(self.get_or_create_object(Url, url=comment['value']))
                                     experiment.has_fastq_files = True
 
+
     def load_experiment_sample(self, experiment, sample_json, index):
         """ Load the samples for an experiment
         Args:
@@ -584,7 +588,7 @@ class ArrayExpress(data_source.HttpDataSource):
             ensembl = ensembl_tools.get_ensembl_info(sample)
         except LookupError:
             ensembl = None
-            print("blue blue bleu blue belueljnadsfjadfs")
+            print(experiment.id)
         if ensembl != None:
             sample.ensembl_info.append(self.get_or_create_object(
                 EnsemblInfo, organism_strain=ensembl.organism_strain, url=ensembl.download_url))

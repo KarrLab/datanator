@@ -8,6 +8,7 @@
 
 from kinetic_datanator.data_source import array_express
 from kinetic_datanator.data_source.array_express_tools import ensembl_tools
+#from kinetic_datanator.data_source.array_express_tools import get_strain_name
 from kinetic_datanator.data_source.process_rna_seq import core
 from kinetic_datanator.data_source.process_rna_seq import download_cdna
 from six.moves.urllib.request import urlretrieve
@@ -247,7 +248,7 @@ class TestEnsemblTools(unittest.TestCase):
         exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-58388").first()
         a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710 1").first()
         with self.assertRaises(LookupError):
-            ensembl_tools.get_ensembl_info(a_sample)
+            ensembl_tools.get_ensembl_info_lower(a_sample)
 
     def test_error(self):
         src = self.src
@@ -257,3 +258,41 @@ class TestEnsemblTools(unittest.TestCase):
         exp = session.query(array_express.Experiment).filter_by(id=ax).first()
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
+
+
+
+"""
+class TestGetStrain(unittest.TestCase):
+
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dirname)
+
+    def test_prokaryote_1(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5971")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-5971").first()
+        sample = exp.samples[0]
+        strain_info = get_strain_name.get_ensembl_info(sample)
+        self.assertEqual(strain_info.organism_strain, "escherichia_coli_k_12_mg1655")
+        self.assertTrue(strain_info.full_strain_specificity)
+        self.assertEqual(strain_info.download_url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/")
+
+    def test_eukaryote(self):
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-5149"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+        sample = exp.samples[0]
+        strain_info = get_strain_name.get_ensembl_info(sample)
+        self.assertEqual(strain_info.organism_strain, "saccharomyces_cerevisiae")
+        self.assertTrue(strain_info.full_strain_specificity)
+        self.assertEqual(strain_info.download_url,
+                         "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/")
+
+"""
