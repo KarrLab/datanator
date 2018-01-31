@@ -9,7 +9,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, common_schema
+from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_query import reaction_kinetics
 from kinetic_datanator.util import taxonomy_util, molecule_util
