@@ -18,6 +18,7 @@ import random
 import os
 from six.moves import reload_module
 
+@unittest.skip('skipping due to hidden testing flask issue')
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
@@ -56,8 +57,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
-        
-@unittest.skip('skipping due to hidden testing flask issue')
+
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
