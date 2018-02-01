@@ -3,7 +3,8 @@ import ftplib
 import os
 import socket
 
-class EnsembleInfo(object):
+
+class StrainInfo(object):
     """ Represents information about an ensembl reference genome
 
     Attributes:
@@ -59,20 +60,7 @@ def format_org_name(name):
     return name.lower()
 
 
-def get_ensembl_info(sample):
-    attempts = 0
-    while attempts < 10:
-        try:
-            return get_ensembl_info_lower(sample)
-            break
-        except socket.error:
-            attempts += 1
-            print("ERROR:")
-            if attempts==10:
-                raise LookupError("No organism single organism recorded for this sample")
-
-
-def get_ensembl_info_lower(sample):
+def get_strain_info(sample):
     """ 
     Get information about the refernce genome that should be used for a given sample
 
@@ -82,11 +70,11 @@ def get_ensembl_info_lower(sample):
         Returns:
             :obj:`EnsembleInfo`: Ensembl information about the reference genome
     """
-
     print(sample.experiment_id)
     organism = ""
     strain = ""
     url = ""
+    spec_name = ""
     full_strain_specificity = True
     list_of_characteristics = [ch.category.lower() for ch in sample.characteristics]
 
@@ -99,41 +87,27 @@ def get_ensembl_info_lower(sample):
     else:
         raise LookupError("No organism single organism recorded for this sample")
 
-    spec_name = ""
     domain = get_taxonomic_lineage(organism)[-3:-2][0]
     if domain == "Bacteria":
-        try:
-            end_url = ""
-            if strain:
-                organism = "{} {}".format(organism.lower(), strain.lower())
-            org_tree = organism.split(" ")
-            for num in range(len(org_tree), 0, -1):
-                if not(end_url) and num >= 2:
-                    if num < len(org_tree):
-                        full_strain_specificity = False  # this means it didnt find the specificity on the first try
-                    file = open("{}/find_cdna_url.txt".format(os.path.dirname(os.path.abspath(__file__))))
-                    try_org = ""
-                    for word in org_tree[:num]:
-                        try_org = try_org + word + " "
-                    try_org = try_org[:-1]
-                    for line in file.readlines():
-                        sep = line.split("\t")
-                        if format_org_name(sep[0].lower()) == format_org_name(try_org):
-                            spec_name = format_org_name(sep[1])
-                            end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
-            start_url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/{}/cdna/".format(end_url)
-            ftp = ftplib.FTP("ftp.ensemblgenomes.org")
-            ftp.login()
-            ftp.cwd("/pub/bacteria/current/fasta/{}/cdna/".format(end_url))
-            files = ftp.nlst()
-            for file in files:
-                if file[-14:] == "cdna.all.fa.gz":
-                    url = start_url + file
-        except ftplib.error_perm as resp:
-            if str(resp) == "550 No files found" or str(resp) == "550 Failed to change directory.":
-                print("No files in this directory")
-            else:
-                raise
+        end_url = ""
+        if strain:
+            organism = "{} {}".format(organism.lower(), strain.lower())
+        org_tree = organism.split(" ")
+        for num in range(len(org_tree), 0, -1):
+            if not(end_url) and num >= 2:
+                if num < len(org_tree):
+                    full_strain_specificity = False  # this means it didnt find the specificity on the first try
+                file = open("{}/find_cdna_url.txt".format(os.path.dirname(os.path.abspath(__file__))))
+                try_org = ""
+                for word in org_tree[:num]:
+                    try_org = try_org + word + " "
+                try_org = try_org[:-1]
+                for line in file.readlines():
+                    sep = line.split("\t")
+                    if format_org_name(sep[0].lower()) == format_org_name(try_org):
+                        spec_name = format_org_name(sep[1])
+                        end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
+        url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/{}/cdna/".format(end_url)
 
     if domain == 'Eukaryota':
         for name in organism.split(" "):
@@ -141,28 +115,31 @@ def get_ensembl_info_lower(sample):
                 name = name[:-1]
             spec_name = spec_name + name + "_"
         spec_name = spec_name[:-1].lower().replace("-", "_")
+
         if get_taxonomic_lineage(organism)[-4:-3][0] != "Viridiplantae":
-            URL = "ftp://ftp.ensembl.org/pub/current_fasta"
-            cwd = "/pub/current_fasta"
-            ftp = ftplib.FTP("ftp.ensembl.org")
+            url = "ftp://ftp.ensembl.org/pub/current_fasta/{}/cdna/".format(spec_name)
         elif get_taxonomic_lineage(organism)[-4:-3][0] == "Viridiplantae":
-            URL = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta"
-            cwd = "/pub/current/plants/fasta"
-            ftp = ftplib.FTP("ftp.ensemblgenomes.org")
+            url = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/{}/cdna/".format(spec_name)            
+    return StrainInfo(spec_name, url, full_strain_specificity)
+
+
+def get_ftp_url(url):
+    ftp_url = None
+    attempts = 0
+    while attempts < 10:
         try:
+            host = url[url.find("ftp",1):url.find("org")+3]
+            directory = url[url.find("org")+3:]
+            ftp = ftplib.FTP(host)
             ftp.login()
-            print("Here: {}/{}/cdna/".format(cwd, spec_name))
-            ftp.cwd("{}/{}/cdna/".format(cwd, spec_name))
+            ftp.cwd(directory)
             files = ftp.nlst()
             for file in files:
                 if file[-14:] == "cdna.all.fa.gz":
-                    url = ("{}/{}/cdna/{}".format(URL, spec_name, file))
-        except ftplib.error_perm as resp:
-            if str(resp) == "550 No files found" or str(resp) == "550 Failed to change directory.":
-                print("No files in this directory")
-                raise LookupError("No organism single organism recorded for this sample")
-            else:
-                print("Here2: {}/{}/cdna/".format(cwd, spec_name))
-                raise
-    return EnsembleInfo(spec_name, url, full_strain_specificity)
-
+                    ftp_url = "{}{}".format(url,file)
+            return ftp_url
+        except socket.error:
+            attempts += 1
+            if attempts==10:
+                raise LookupError("FTP not responding")
+    return ftp_url

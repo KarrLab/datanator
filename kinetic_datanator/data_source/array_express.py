@@ -16,6 +16,7 @@ from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source.array_express_tools import ensembl_tools
 
 
+
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
 
@@ -145,7 +146,7 @@ class EnsemblInfo(Base):
         url (:obj:`str`): the download url for the CDNA file from ensembl
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-    organism_strain = sqlalchemy.Column(sqlalchemy.String())
+    organism_strain = sqlalchemy.Column(sqlalchemy.String(), index=True)
     url = sqlalchemy.Column(sqlalchemy.String())
     sqlalchemy.schema.UniqueConstraint(url)
 
@@ -362,7 +363,6 @@ class ArrayExpress(data_source.HttpDataSource):
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
             end_year (:obj:`int`, optional): the last year to retrieve experiments for
         """
-
         if not end_year:
             end_year = datetime.datetime.now().year
         session = self.session
@@ -584,15 +584,25 @@ class ArrayExpress(data_source.HttpDataSource):
                     unit = variable['unit']
                 sample.variables.append(self.get_or_create_object(
                     Variable, name=variable['name'], value=variable['value'], unit=unit))
+        
         try:
-            ensembl = ensembl_tools.get_ensembl_info(sample)
+            strain_info = ensembl_tools.get_strain_info(sample)
         except LookupError:
-            ensembl = None
-            print(experiment.id)
-        if ensembl != None:
-            sample.ensembl_info.append(self.get_or_create_object(
-                EnsemblInfo, organism_strain=ensembl.organism_strain, url=ensembl.download_url))
-            sample.full_strain_specificity = ensembl.full_strain_specificity
+            strain_info = None
+        if strain_info:
+            ensembl_info = self.session.query(EnsemblInfo).filter_by(organism_strain = strain_info.organism_strain).first()
+            if ensembl_info:
+                sample.ensembl_info.append(ensembl_info)
+            else:
+                try:
+                    ftp_url = ensembl_tools.get_ftp_url(strain_info.download_url)
+                except LookupError:
+                    ftp_url = None
+                if ftp_url != None:
+                    sample.ensembl_info.append(
+                        EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url))
+                    sample.full_strain_specificity = strain_info.full_strain_specificity
+            
         return sample
 
     def load_experiment_protocols(self, experiment):
