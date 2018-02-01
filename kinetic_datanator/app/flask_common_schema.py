@@ -8,25 +8,23 @@ This code is a common schema for all the kinetic_datanator modules
 :Copyright: 2017, Karr Lab
 :License: MIT
 """
-
-from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
-from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.core import data_source
-from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, array_express, ecmdb, sabio_rk, intact, uniprot
-import sqlalchemy.ext.declarative
-from six import BytesIO
-import six
-from ete3 import NCBITaxa
-import pandas as pd
-import numpy
 import os
 import time
 import re
+import numpy
+import six
+from six import BytesIO
+from ete3 import NCBITaxa
+import pandas as pd
+import flask_whooshalchemy
+import sqlalchemy.ext.declarative
+from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
+from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.app.models import app, db
 import kinetic_datanator.app.models as model
-import flask_whooshalchemy
-# from sqlalchemy import MetaData
-# from sqlalchemy_schemadisplay import create_schema_graph
+from kinetic_datanator.core import data_source
+from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, array_express, ecmdb, sabio_rk, intact, uniprot
+
 
 class FlaskCommonSchema(data_source.HttpDataSource):
     """
@@ -54,6 +52,9 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 process. This is particularly helpful for restarting this method when webservices go offline.
             download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
+            flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask Model
+            test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
         """
 
         super(FlaskCommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
@@ -84,7 +85,10 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
 
     def load_content(self):
+        """
+        A wrapper for loading all the databases into common ORM database
 
+        """
         ## Initiate Observation and direct Subclasses
         observation = model.Observation()
         observation.physical_entity = model.PhysicalEntity()
@@ -129,24 +133,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         if self.verbose:
             print('NCBI Done')
 
-    def create_schema_png(self):
-        if switch:
-            # create the pydot graph object by autoloading all tables via a bound metadata object
-            graph = create_schema_graph(metadata=MetaData(self.engine),
-               show_datatypes=False, # The image would get nasty big if we'd show the datatypes
-               show_indexes=False, # ditto for indexes
-               rankdir='TB', # From left to right (instead of top to bottom)
-               concentrate=False # Don't try to join the relation lines together
-            )
-            graph.write_png(os.getcwd())
-
     def add_intact_interactions(self):
+        """
+        Collects IntAct.sqlite file and integrates interaction data into the common ORM
+
+        """
+        if self.verbose:
+            print('Initializing IntAct filling...')
+
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
-
         intact_ses = intactdb.session
-        _entity = self.entity
-        _property = self.property
         multiplier = 1 if self.test else 1000
 
         if self.max_entries == float('inf'):
@@ -156,10 +153,10 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 (range(self.max_entries*multiplier))).all()
 
         self.session.bulk_insert_mappings(model.ProteinInteractions,
-            [{'name' : e.interactor_a + "+" + e.interactor_b, 'type' : 'Protein Interaction',
-            'participant_a' : e.interactor_a, 'participant_b' : e.interactor_b, 'publication' : e.publications,
-            'interaction' : e.interaction, 'site_a' : e.feature_a, 'site_b' : e.feature_b,
-            'stoich_a' : e.stoich_a, 'stoich_b' : e.stoich_b, 'interaction_type': e.interaction_type} for e in interactiondb]
+            [{'name' : i.interactor_a + "+" + i.interactor_b, 'type' : 'Protein Interaction',
+            'participant_a' : i.interactor_a, 'participant_b' : i.interactor_b, 'publication' : i.publications,
+            'interaction' : i.interaction, 'site_a' : i.feature_a, 'site_b' : i.feature_b,
+            'stoich_a' : i.stoich_a, 'stoich_b' : i.stoich_b, 'interaction_type': i.interaction_type} for i in interactiondb]
             )
 
         index = self.intact_loaded
@@ -186,18 +183,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def add_paxdb(self):
         """
-        Collects Pax.sqlite file and integrates it into flask common schema
+        Collects Pax.sqlite file and integrates its data into the common ORM
 
         Total datasets: 493
 
         """
+        if self.verbose:
+            print('Initializing Pax filling...')
 
         t0 = time.time()
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, verbose = self.verbose)
         pax_ses = paxdb.session
-
-        _entity = self.entity
-        _property = self.property
         multiplier = .1 if self.test else .5
 
 
@@ -211,7 +207,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             metadata = self.get_or_create_object(model.Metadata, name = dataset.file_name)
             metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = dataset.taxon_ncbi_id))
             metadata.resource.append(self.get_or_create_object(model.Resource, namespace = 'url', _id = dataset.publication))
-            _property.abundance_dataset = self.get_or_create_object(model.AbundanceDataSet, type = 'Protein Abundance Dataset',
+            self.property.abundance_dataset = self.get_or_create_object(model.AbundanceDataSet, type = 'Protein Abundance Dataset',
                 name = dataset.file_name, file_name = dataset.file_name, score = dataset.score, weight = dataset.weight,
                 coverage= dataset.coverage, _metadata = metadata)
             abundance = pax_ses.query(pax.Observation).filter_by(dataset_id = dataset.id).all()
@@ -237,7 +233,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
             for rows in self.session.query(model.AbundanceData).filter_by(pax_load = dataset.id).all():
                 rows.subunit = self.session.query(model.ProteinSubunit).filter_by(pax_load = dataset.id).filter_by(uniprot_id = rows.uniprot_id).first()
-                rows.dataset = _property.abundance_dataset
+                rows.dataset = self.property.abundance_dataset
 
         self.get_or_create_object(model.Progress, database_name = 'Pax', amount_loaded = self.pax_loaded + (self.max_entries*multiplier))
 
@@ -250,15 +246,15 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def add_sabiodb(self):
         """
-        Adds Sabio Database from sabio.sqlite file in Karr Server
+        Collects SabioRK.sqlite file and integrates its data into the common ORM
 
         """
+        if self.verbose:
+            print('Initializing SabioRk filling...')
+
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, verbose = self.verbose)
         sabio_ses = sabiodb.session
-
-        _entity = self.entity
-        _property = self.property
         multiplier = 10 if self.test else 1000
 
         if self.max_entries == float('inf'):
@@ -280,26 +276,26 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             if item._type == 'compound':
                 structure = item.structures
                 for struct in structure:
-                    _property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = item.name,
+                    self.property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = item.name,
                         _value_smiles = struct.value, _value_inchi = struct._value_inchi,
                         _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)\
                         if struct.format == 'smiles' else None
-                _entity.compound = self.get_or_create_object(model.Compound, type = 'Compound',
+                self.entity.compound = self.get_or_create_object(model.Compound, type = 'Compound',
                     name = item.name, compound_name = item.name,
                     _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
-                    structure = _property.structure, _metadata = metadata)
+                    structure = self.property.structure, _metadata = metadata)
                 continue
 
             elif item._type == 'enzyme':
                 complx = sabio_ses.query(sabio_rk.Enzyme).get(item._id)
-                _entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Enzyme' ,
+                self.entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Enzyme' ,
                     name = item.name , complex_name = item.name,
                     molecular_weight = item.molecular_weight, funcat_dsc = 'Enzyme', _metadata = metadata)
                 continue
 
             elif item._type == 'enzyme_subunit':
                 result = self.session.query(model.ProteinComplex).filter_by(complex_name = item.enzyme.name).first()
-                _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, type = 'Enzyme Subunit',
+                self.entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, type = 'Enzyme Subunit',
                     name = item.name, subunit_name = item.name,
                     uniprot_id = uniprot, coefficient = item.coefficient,
                     molecular_weight = item.molecular_weight,
@@ -313,7 +309,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 metadata.taxon.append(self.get_or_create_object(model.Taxon, ncbi_id = item.taxon))
                 metadata.cell_line.append(self.get_or_create_object(model.CellLine, name = item.taxon_variant))
                 metadata.conditions.append(self.get_or_create_object(model.Conditions, temperature = item.temperature, ph = item.ph, media = item.media))
-                _property.kinetic_law = self.get_or_create_object(model.KineticLaw, type = 'Kinetic Law', enzyme = catalyst,
+                self.property.kinetic_law = self.get_or_create_object(model.KineticLaw, type = 'Kinetic Law', enzyme = catalyst,
                     enzyme_type = item.enzyme_type, tissue = item.tissue, mechanism = item.mechanism, equation = item.equation, _metadata = metadata)
 
                 def common_schema_compound(sabio_object):
@@ -328,19 +324,19 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
                 reactants = [model.Reaction(compound = common_schema_compound(r.compound),
                     compartment = common_schema_compartment(r.compartment), _is_reactant = 1, rxn_type = r.type,
-                     kinetic_law = _property.kinetic_law) for r in item.reactants if item.reactants]
+                     kinetic_law = self.property.kinetic_law) for r in item.reactants if item.reactants]
 
                 products = [model.Reaction(compound = common_schema_compound(p.compound),
                     compartment = common_schema_compartment(p.compartment), _is_product = 1, rxn_type = p.type,
-                    kinetic_law = _property.kinetic_law) for p in item.products if item.products]
+                    kinetic_law = self.property.kinetic_law) for p in item.products if item.products]
 
                 modifier = [model.Reaction(compound = common_schema_compound(m.compound),
                     compartment = common_schema_compartment(m.compartment), _is_modifier = 1, rxn_type = m.type,
-                    kinetic_law = _property.kinetic_law) for m in item.modifiers if item.products]
+                    kinetic_law = self.property.kinetic_law) for m in item.modifiers if item.products]
 
                 for param in item.parameters:
                     parameter = model.Parameter(sabio_type = param.type, value = param.value, error = param.error,
-                        units = param.units, observed_name = param.observed_name, kinetic_law = _property.kinetic_law,
+                        units = param.units, observed_name = param.observed_name, kinetic_law = self.property.kinetic_law,
                         observed_sabio_type = param.observed_type, observed_value = param.observed_value,
                         observed_error = param.observed_error, observed_units = param.observed_units)
                     parameter.compound = common_schema_compound(param.compound) if param.compound else None
@@ -359,15 +355,15 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def add_corumdb(self):
         """
-        Adds Corum Database from Corum.sqlite file in Karr Server
+        Collects Corum.sqlite file and integrates its data into the common ORM
 
         """
+        if self.verbose:
+            print('Initializing Corum filling...')
+
         t0 = time.time()
         corumdb = corum.Corum(cache_dirname = self.cache_dirname, verbose = self.verbose)
         corum_ses = corumdb.session
-
-        _entity = self.entity
-        _property = self.property
 
         corum_complex = corum_ses.query(corum.Complex).all()
         corum_subunit = corum_ses.query(corum.Subunit).all()
@@ -386,7 +382,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 metadata.resource.append(self.get_or_create_object(model.Resource, namespace = 'pubmed', _id = str(entry.pubmed_id)))
                 metadata.method.append(self.get_or_create_object(model.Method, name = 'purification', comments = entry.pur_method))
                 metadata.cell_line.append(self.get_or_create_object(model.CellLine, name = entry.cell_line))
-                _entity.protein_complex = self.get_or_create_object(model.ProteinComplex,
+                self.entity.protein_complex = self.get_or_create_object(model.ProteinComplex,
                     type = 'Protein Complex', name = complx.complex_name, complex_name = complx.complex_name, go_id = complx.go_id,
                     go_dsc = complx.go_dsc, funcat_id = complx.funcat_id, funcat_dsc = complx.funcat_dsc, su_cmt = complx.su_cmt,
                     complex_cmt = complx.complex_cmt, disease_cmt = complx.disease_cmt,  _metadata = metadata)
@@ -397,7 +393,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             if entries < max_entries:
                 complx = self.session.query(model.ProteinComplex).filter_by(complex_name = subunit.complex.complex_name).first()
                 entry = self.session.query(model.Observation).get(complx.complex_id)
-                _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit,
+                self.entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit,
                     type = 'Protein Subunit', uniprot_id = subunit.su_uniprot,
                     entrez_id = subunit.su_entrezs, name = subunit.protein_name, subunit_name = subunit.protein_name, gene_name=subunit.gene_name,
                     gene_syn = subunit.gene_syn, proteincomplex = complx, _metadata = self.session.query(model.Metadata).get(entry._metadata_id))
@@ -411,13 +407,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for Corum: ' + str(time.time()-t0) + ' secs')
 
     def add_jaspardb(self):
+        """
+        Collects Jaspar.sqlite file and integrates its data into the common ORM
+
+        Total datasets: 2404
+
+        """
+        if self.verbose:
+            print('Initializing Jaspar filling...')
+
         t0 = time.time()
         jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname,verbose = self.verbose)
 
         jasp_ses = jaspardb.session
 
-        _entity = self.entity
-        _property = self.property
+        self.entity = self.entity
+        self.property = self.property
 
         def list_to_string(list_):
             if list_:
@@ -451,24 +456,24 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 metadata.resource = [self.get_or_create_object(model.Resource, namespace = 'pubmed', _id = ref) for ref in pubmed]
                 metadata.taxon = [self.get_or_create_object(model.Taxon, ncbi_id = int(tax)) for tax in species if tax != '-' ]
                 if '::' in entry.NAME:
-                    _entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Transcription Factor Complex',
+                    self.entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Transcription Factor Complex',
                     name = entry.NAME, complex_name = entry.NAME, complex_cmt = 'transcription factor', class_name = list_to_string(class_),
                     family_name = list_to_string(family_), _metadata = metadata)
-                    _property.dna_binding_dataset = self.get_or_create_object(model.DNABindingDataset, type = 'DNA Binding Dataset',
-                    name = entry.NAME, version = entry.VERSION, tf= _entity.protein_complex, _metadata = metadata)
+                    self.property.dna_binding_dataset = self.get_or_create_object(model.DNABindingDataset, type = 'DNA Binding Dataset',
+                    name = entry.NAME, version = entry.VERSION, tf= self.entity.protein_complex, _metadata = metadata)
                 else:
                     prot = protein[0] if protein else None
-                    _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, uniprot_id = prot,
+                    self.entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit, uniprot_id = prot,
                     type = 'Transcription Factor Subunit', name = entry.NAME, subunit_name = entry.NAME, gene_name = entry.NAME,
                     class_name = list_to_string(class_), family_name = list_to_string(family_), _metadata = metadata)
-                    _property.dna_binding_dataset = self.get_or_create_object(model.DNABindingDataset, type = 'DNA Binding Dataset',
-                    name = entry.NAME, version = entry.VERSION, subunit = _entity.protein_subunit, _metadata = metadata)
+                    self.property.dna_binding_dataset = self.get_or_create_object(model.DNABindingDataset, type = 'DNA Binding Dataset',
+                    name = entry.NAME, version = entry.VERSION, subunit = self.entity.protein_subunit, _metadata = metadata)
                 subquery = jasp_ses.query(jaspar.Data).filter_by(ID = entry.ID)
                 for position in range(1,1+max(set([c.col for c in subquery.all()]))):
                     freq = subquery.filter_by(col = position)
                     self.get_or_create_object(model.DNABindingData, position = position, frequency_a = freq.filter_by(row = 'A').first().val,
                     frequency_c = freq.filter_by(row = 'C').first().val, frequency_t = freq.filter_by(row = 'T').first().val,
-                    frequency_g = freq.filter_by(row = 'G').first().val, jaspar_id = entry.ID, dataset = _property.dna_binding_dataset)
+                    frequency_g = freq.filter_by(row = 'G').first().val, jaspar_id = entry.ID, dataset = self.property.dna_binding_dataset)
             entries += 1
 
         if self.verbose:
@@ -480,16 +485,15 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def add_ecmdb(self):
         """
-        Adds ECMDB Database from Ecmdb.sqlite file in Karr Server
+        Collects ECMDB.sqlite file and integrates its data into the common ORM
 
         """
+        if self.verbose:
+            print('Initializing ECMDB filling...')
+
         t0 = time.time()
         ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, verbose = self.verbose)
         ecm_ses = ecmDB.session
-
-        _entity = self.entity
-        _property = self.property
-
         ecmdb_compound = ecm_ses.query(ecmdb.Compound).all()
 
         max_entries = self.max_entries
@@ -514,11 +518,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 metadata.resource = [self.get_or_create_object(model.Resource, namespace = docs.namespace, _id = docs.id) for docs in ref]
                 metadata.cell_compartment = [self.get_or_create_object(model.CellCompartment, name = areas.name) for areas in compart]
                 metadata.synonym = [self.get_or_create_object(model.Synonym, name = syns.name) for syns in syn]
-                _property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = compound.name,
+                self.property.structure = self.get_or_create_object(model.Structure, type = 'Structure', name = compound.name,
                     _value_inchi = compound.structure,
                    _structure_formula_connectivity = compound._structure_formula_connectivity, _metadata = metadata)
-                _entity.compound = self.get_or_create_object(model.Compound, type = 'Compound', name = compound.name,
-                    compound_name = compound.name, description = compound.description, comment = compound.comment, structure = _property.structure,
+                self.entity.compound = self.get_or_create_object(model.Compound, type = 'Compound', name = compound.name,
+                    compound_name = compound.name, description = compound.description, comment = compound.comment, structure = self.property.structure,
                     _metadata = metadata)
                 index = 0 if concentration else -1
                 if index == -1: continue
@@ -531,8 +535,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     new_metadata.conditions.append(self.get_or_create_object(model.Conditions, growth_status = rows.growth_status,
                         media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
                     new_metadata.resource = [self.get_or_create_object(model.Resource, namespace = docs.namespace, _id = docs.id) for docs in rows.references]
-                    _property.concentration = self.get_or_create_object(model.Concentration, type = 'Concentration', name = compound.name+ ' Concentration '+str(index),
-                        value = rows.value, error = rows.error, _metadata = new_metadata, compound = _entity.compound)
+                    self.property.concentration = self.get_or_create_object(model.Concentration, type = 'Concentration', name = compound.name+ ' Concentration '+str(index),
+                        value = rows.value, error = rows.error, _metadata = new_metadata, compound = self.entity.compound)
                     index += 1
                 entries += 1
 
@@ -544,12 +548,16 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for ECMDB: ' + str(time.time()-t0) + ' secs')
 
     def add_intact_complexes(self):
+        """
+        Collects IntAct.sqlite file and integrates complex data into the common ORM
+
+        """
+        if self.verbose:
+            print('Initializing IntAct Complex filling...')
+
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
-
         intact_ses = intactdb.session
-        _entity = self.entity
-        _property = self.property
 
         def parse_string(regex, string):
             result = re.findall(regex,string)
@@ -573,14 +581,14 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             go_dsc =  parse_string(re.compile(".*?\((.*?)\)"), row.go_annot)
             go_id = parse_string(re.compile("GO:(.*?)\("), row.go_annot)
             subunits = re.findall(re.compile(".*?\|(.*?)\("), '|'+row.subunits)
-            _entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Protein Comlplex',
+            self.entity.protein_complex = self.get_or_create_object(model.ProteinComplex, type = 'Protein Comlplex',
             complex_name = row.name, su_cmt = row.subunits, go_dsc = go_dsc, go_id = go_id,
             complex_cmt = row.desc, _metadata = metadata)
             for sub in subunits:
                 if 'CHEBI' not in sub:
-                    _entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit,
+                    self.entity.protein_subunit = self.get_or_create_object(model.ProteinSubunit,
                         type = 'Protein Subunit', uniprot_id = sub,
-                        proteincomplex = _entity.protein_complex, _metadata = metadata)
+                        proteincomplex = self.entity.protein_complex, _metadata = metadata)
         if self.verbose:
             print('Comitting')
         self.session.commit()
@@ -589,12 +597,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for IntAct Complex: ' + str(time.time()-t0) + ' secs')
 
     def add_uniprot(self):
+        """
+        Collects Uniprot.sqlite file and integrates data into existing ProteinSubunit table
+
+        """
+        if self.verbose:
+            print('Initializing Uniprot filling...')
+
         t0 = time.time()
 
         unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
         unidb_ses = unidb.session
-        _entity = self.entity
-        _property = self.property
 
         com_unis = self.session.query(model.ProteinSubunit).all()
 
@@ -616,6 +629,13 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for Uniprot: ' + str(time.time()-t0) + ' secs')
 
     def fill_missing_ncbi_names(self):
+        """
+        Uses NCBI package to integrate data into existing Taxon table
+
+        """
+        if self.verbose:
+            print('Initializing NCBI filling...')
+
         t0 = time.time()
 
         ncbi = NCBITaxa()

@@ -56,7 +56,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
-        
+
 @unittest.skip('skipping due to hidden testing flask issue')
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
