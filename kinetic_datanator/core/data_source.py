@@ -138,7 +138,9 @@ class CachedDataSource(DataSource):
         if self.flask:
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
             self.app.config['WHOOSH_BASE'] = self.cache_dirname + '/whoosh_cache/'
-            engine = self.base_model.create_all()
+            engine = self.base_model.engine
+            if not os.path.isfile(self.filename):
+                self.base_model.metadata.create_all(engine)
         else:
             engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
             if not os.path.isfile(self.filename):
