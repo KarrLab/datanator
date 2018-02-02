@@ -75,7 +75,8 @@ class TestPaxDBCreation(unittest.TestCase):
 
         self.assertEqual(data.taxon_ncbi_id, 882)
         self.assertIsInstance(data.score, float)
-        self.assertIsInstance(data.weight, int)
+        if data.weight:
+            self.assertIsInstance(data.weight, int)
         self.assertIsInstance(data.coverage, int)
 
         prot = obs.protein
