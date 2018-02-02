@@ -3,6 +3,81 @@ import ftplib
 import os
 import socket
 
+STRAIN_SYNONYMS_1 = [
+        'strain',
+        'strain info.',
+        'strain or line',
+        'strainorline',
+        'strain name',
+        'parent strain',
+        'strain/genotype',
+        'substrain',
+        'strain info',
+        'strain/sex',
+        'strain type',
+        ]
+
+STRAIN_SYNONYMS_2 = [
+         'culture strain',
+         'zebrafish strain',
+         'strain - genotype',
+         'lab or wild strain',
+         'candida strain background',
+         'wild or lab strain',
+         'drosophila host strain',
+         'strain genotype',
+         'maternal strain',
+         'yeast strain',
+         'sub strain',
+         'mouse strain',
+         'strain backgroud',
+         'background mouse strain',
+         'strain background',
+         'pathogen strain',
+         'sclerotinia sclerotiorum strain',
+         'mouse strain/background',
+         'strain phenotype',
+         'strain/variation',
+         'strain id',
+         'ehrlichia strain',
+         'm.tb strain',
+         'parental strain',
+         'rat strain/background',
+         'paternal strain',
+         'esc strain',
+         'strain, lifestage',
+         'xenograft strain',
+         'host strain',
+         'strain genetic background',
+         'mite strain',
+         'strain/ecotype background',
+         'candida strain',
+         'strain name jackson lab',
+         'strain status',
+         'mouse strain of origin',
+         'strain that es cell-line is derived from',
+         'strain description',
+         'fungal strain',
+         'internal strain reference',
+         'strain balb/cnctr-npc1m1n/j',
+         'insect strain',
+         'strain  background',
+         'strain, toxoplasma gondii',
+         'brassica napus strain',
+         'strain background bloomington stock number',
+         'strain number',
+         'xam strain',
+         'strain backround',
+         'strains',
+         'strain/background',
+         'parental strains',
+         'recipient strain',
+         'strain source',
+         'background strain',
+         'strain genotype/variation']
+
+SYNONYMS_PRIORITY_LIST = [STRAIN_SYNONYMS_1, STRAIN_SYNONYMS_2]
+
 
 class StrainInfo(object):
     """ Represents information about an ensembl reference genome
@@ -70,7 +145,7 @@ def get_strain_info(sample):
         Returns:
             :obj:`EnsembleInfo`: Ensembl information about the reference genome
     """
-    print(sample.experiment_id)
+    3print(sample.experiment_id)
     organism = ""
     strain = ""
     url = ""
@@ -79,11 +154,16 @@ def get_strain_info(sample):
     list_of_characteristics = [ch.category.lower() for ch in sample.characteristics]
 
     if list_of_characteristics.count('organism') == 1:
-        for characteristic in sample.characteristics:
-            if characteristic.category.lower() == 'organism':
-                organism = characteristic.value
-            if (characteristic.category.lower() == 'strain') or (characteristic.category.lower() == "strain background"):
-                strain = characteristic.value
+        for i in range(2):
+            if not strain:
+                for characteristic in sample.characteristics:
+                    if characteristic.category.lower() == 'organism':
+                        organism = characteristic.value
+                    if characteristic.category.lower() in SYNONYMS_PRIORITY_LIST[i]:
+                        try:
+                            strain = "{}".format(characteristic.value)
+                        except UnicodeEncodeError:
+                            pass 
     else:
         raise LookupError("No organism single organism recorded for this sample")
 
@@ -109,7 +189,7 @@ def get_strain_info(sample):
                         end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
         url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/{}/cdna/".format(end_url)
 
-    if domain == 'Eukaryota':
+    elif domain == 'Eukaryota':
         for name in organism.split(" "):
             if name[-1:] == ".":
                 name = name[:-1]
@@ -119,7 +199,9 @@ def get_strain_info(sample):
         if get_taxonomic_lineage(organism)[-4:-3][0] != "Viridiplantae":
             url = "ftp://ftp.ensembl.org/pub/current_fasta/{}/cdna/".format(spec_name)
         elif get_taxonomic_lineage(organism)[-4:-3][0] == "Viridiplantae":
-            url = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/{}/cdna/".format(spec_name)            
+            url = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/{}/cdna/".format(spec_name)
+    else:
+        raise LookupError("organism not recognized")  
     return StrainInfo(spec_name, url, full_strain_specificity)
 
 
@@ -138,6 +220,8 @@ def get_ftp_url(url):
                 if file[-14:] == "cdna.all.fa.gz":
                     ftp_url = "{}{}".format(url,file)
             return ftp_url
+        except ftplib.error_perm as resp:
+            raise LookupError("no files found")
         except socket.error:
             attempts += 1
             if attempts==10:

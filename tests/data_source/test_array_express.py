@@ -259,15 +259,17 @@ class TestEnsemblTools(unittest.TestCase):
         self.assertEqual(sample.ensembl_info, [])
 
 
-    def test_weird(self):
-        src = self.src
-        session = src.session
-        ax = "E-GEOD-21544"
-        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
-        exp = session.query(array_express.Experiment).filter_by(id=ax).first()
-        sample = exp.samples[0]
+    #def test_weird(self):
+    #    src = self.src
+    #    session = src.session
+    #    ax = "E-GEOD-32228"
+    #    ax = "E-GEOD-50870"
+    #    src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+    #    exp = session.query(array_express.Experiment).filter_by(id=ax).first()
+    #    sample = exp.samples[0]
         #self.assertEqual(sample.ensembl_info[0].organism_strain, "saccharomyces_cerevisiae")
         #self.assertTrue(sample.full_strain_specificity)
         #self.assertEqual(sample.ensembl_info[0].url,
         #                 "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz")
+
 
