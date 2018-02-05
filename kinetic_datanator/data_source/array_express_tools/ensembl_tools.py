@@ -119,7 +119,7 @@ def get_taxonomic_lineage(base_species):
 
 
 def format_org_name(name):
-    """ 
+    """
     Format the name of an organism so normalize all species names
 
         Args:
@@ -136,7 +136,7 @@ def format_org_name(name):
 
 
 def get_strain_info(sample):
-    """ 
+    """
     Get information about the refernce genome that should be used for a given sample
 
         Args:
@@ -163,7 +163,7 @@ def get_strain_info(sample):
                         try:
                             strain = "{}".format(characteristic.value)
                         except UnicodeEncodeError:
-                            pass 
+                            pass
     else:
         raise LookupError("No organism single organism recorded for this sample")
 
@@ -201,7 +201,7 @@ def get_strain_info(sample):
         elif get_taxonomic_lineage(organism)[-4:-3][0] == "Viridiplantae":
             url = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/{}/cdna/".format(spec_name)
     else:
-        raise LookupError("organism not recognized")  
+        raise LookupError("organism not recognized")
     return StrainInfo(spec_name, url, full_strain_specificity)
 
 

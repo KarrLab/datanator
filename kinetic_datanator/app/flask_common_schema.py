@@ -23,7 +23,7 @@ from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.app.models import app, db
 import kinetic_datanator.app.models as model
 from kinetic_datanator.core import data_source
-from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, array_express, ecmdb, sabio_rk, intact, uniprot
+from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot
 
 
 class FlaskCommonSchema(data_source.HttpDataSource):

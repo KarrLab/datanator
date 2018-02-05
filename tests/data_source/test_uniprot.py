@@ -18,8 +18,7 @@ class TestPortionUniprot(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.uni = uniprot.Uniprot()
-        #FIXME: Fix when db is being loaded as a module
+        self.uni = uniprot.Uniprot(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
@@ -31,17 +30,6 @@ class TestPortionUniprot(unittest.TestCase):
         self.assertEqual(test[0].entry_name, 'AAEA_SALA4')
         self.assertEqual(test[0].protein_name,
         'p-hydroxybenzoic acid efflux pump subunit AaeA (pHBA efflux pump protein A)')
-
-class TestFullUniprot(unittest.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.uni = uniprot.Uniprot()
-        #FIXME: Fix when db is being loaded as a module
-
-    @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
 
     def test_load1(self):
         test = self.uni.session.query(uniprot.UniprotData).filter_by(uniprot_id = 'Q39RX3').all()
