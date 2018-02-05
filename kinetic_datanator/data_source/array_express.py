@@ -344,18 +344,18 @@ class ArrayExpress(data_source.HttpDataSource):
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
         """
-        with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
-            self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
+        #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+        #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
         super(ArrayExpress, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                            load_content=load_content, max_entries=max_entries,
                                            commit_intermediate_results=commit_intermediate_results,
                                            download_backups=download_backups, verbose=verbose,
                                            clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
         
-        with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
-            self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
+        #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+        #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
-    def load_content(self, start_year=2001, end_year=None, test_url=""):
+    def load_content(self, test_url=""):
         """
         Downloads all medatata from array exrpess on their samples and experiments. The metadata
         is saved as the text file. Within the text files, the data is stored as a JSON object.
@@ -363,15 +363,14 @@ class ArrayExpress(data_source.HttpDataSource):
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
             end_year (:obj:`int`, optional): the last year to retrieve experiments for
         """
-        if not end_year:
-            end_year = datetime.datetime.now().year
+
         session = self.session
 
         # download and parse experiment ids
         if self.verbose:
             print('Loading metadata for experiments ...')
 
-        self.load_experiment_metadata(start_year, end_year, test_url)
+        self.load_experiment_metadata(test_url)
         self.session.commit()
 
         if self.verbose:
@@ -388,23 +387,17 @@ class ArrayExpress(data_source.HttpDataSource):
             print('Loading samples and protocols for experiments ...')
 
         total_experiments = session.query(Experiment).all()
-        rna_seq_experiments = []
-        for experiment in total_experiments:
-            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                rna_seq_experiments.append(experiment)
-        for i_experiment, experiment in enumerate(rna_seq_experiments):
+        for i_experiment, experiment in enumerate(total_experiments):
             if self.verbose and i_experiment % 500 == 0:
-                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, len(rna_seq_experiments)))
-
-            if ("RNA-seq of coding RNA" in [d.name for d in experiment.types]):
-                self.load_experiment_samples(experiment)
-                self.load_experiment_protocols(experiment)
+                print('  Loading samples and protocols for experiment {} of {}'.format(i_experiment + 1, len(total_experiments)))
+            self.load_experiment_samples(experiment)
+            self.load_experiment_protocols(experiment)
 
         if self.verbose:
             print('  done.')
         self.session.commit()
 
-    def load_experiment_metadata(self, start_year=2001, end_year=None, test_url=""):
+    def load_experiment_metadata(self, test_url=""):
         """ Get a list of accession identifiers for the experiments from the year :obj:`start_year` to year :obj:`end_year`
         Args:
             start_year (:obj:`int`, optional): the first year to retrieve experiment acession ids for
@@ -412,64 +405,58 @@ class ArrayExpress(data_source.HttpDataSource):
         Returns:
             :obj:`list` of :obj:`str`: list of experiment accession identifiers
         """
-        if not end_year:
-            end_year = datetime.datetime.now().year
 
         db_session = self.session
+        #?date=[{}-01-01+{}-12-31]
+        if not test_url:
+            response = self.requests_session.get(
+                self.ENDPOINT_DOMAINS['array_express'] + '?exptype="RNA-seq of coding RNA from single cells"+OR+"RNA-seq of coding RNA"')
+        elif test_url:
+            response = self.requests_session.get(test_url)
+        response.raise_for_status()
+        for expt_json in response.json()['experiments']['experiment']:
 
-        if test_url:
-            end_year = 2002
+            id = expt_json['accession']
+            #if id in self.EXCLUDED_DATASET_IDS:
+            #    continue
 
-        for year in range(start_year, end_year + 1):
-            if not test_url:
-                response = self.requests_session.get(
-                    self.ENDPOINT_DOMAINS['array_express'] + '?date=[{}-01-01+{}-12-31]'.format(year, year))
-            if test_url:
-                response = self.requests_session.get(test_url)
-            response.raise_for_status()
-            for expt_json in response.json()['experiments']['experiment']:
+            experiment = self.get_or_create_object(Experiment, id=id)
 
-                id = expt_json['accession']
-                if id in self.EXCLUDED_DATASET_IDS:
-                    continue
+            if isinstance(expt_json['name'], list):
+                experiment.name = expt_json['name'][0]
+                experiment.name_2 = expt_json['name'][1]
+            else:
+                experiment.name = expt_json['name']
 
-                experiment = self.get_or_create_object(Experiment, id=id)
+            if 'organism' in expt_json:
+                for organism_name in expt_json['organism']:
+                    experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name))
 
-                if isinstance(expt_json['name'], list):
-                    experiment.name = expt_json['name'][0]
-                    experiment.name_2 = expt_json['name'][1]
-                else:
-                    experiment.name = expt_json['name']
+            if 'description' in expt_json:
+                experiment.description = expt_json['description'][0]['text']
 
-                if 'organism' in expt_json:
-                    for organism_name in expt_json['organism']:
-                        experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name))
+            if 'experimenttype' in expt_json:
+                entries = expt_json['experimenttype']
+                for entry in entries:
+                    experiment.types.append(self.get_or_create_object(ExperimentType, name=entry))
 
-                if 'description' in expt_json:
-                    experiment.description = expt_json['description'][0]['text']
+            if 'experimentdesign' in expt_json:
+                entries = expt_json['experimentdesign']
+                for entry in entries:
+                    experiment.designs.append(self.get_or_create_object(ExperimentDesign, name=entry))
 
-                if 'experimenttype' in expt_json:
-                    entries = expt_json['experimenttype']
-                    for entry in entries:
-                        experiment.types.append(self.get_or_create_object(ExperimentType, name=entry))
+            if 'bioassaydatagroup' in expt_json:
+                for entry in expt_json['bioassaydatagroup']:
+                    experiment.data_formats.append(self.get_or_create_object(
+                        DataFormat, name=entry['dataformat'], bio_assay_data_cubes=entry['bioassaydatacubes']))
 
-                if 'experimentdesign' in expt_json:
-                    entries = expt_json['experimentdesign']
-                    for entry in entries:
-                        experiment.designs.append(self.get_or_create_object(ExperimentDesign, name=entry))
+            if 'submissiondate' in expt_json:
+                experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
 
-                if 'bioassaydatagroup' in expt_json:
-                    for entry in expt_json['bioassaydatagroup']:
-                        experiment.data_formats.append(self.get_or_create_object(
-                            DataFormat, name=entry['dataformat'], bio_assay_data_cubes=entry['bioassaydatacubes']))
+            if 'releasedate' in expt_json:
+                experiment.release_date = dateutil.parser.parse(expt_json['releasedate']).date()
 
-                if 'submissiondate' in expt_json:
-                    experiment.submission_date = dateutil.parser.parse(expt_json['submissiondate']).date()
-
-                if 'releasedate' in expt_json:
-                    experiment.release_date = dateutil.parser.parse(expt_json['releasedate']).date()
-
-                db_session.add(experiment)
+            db_session.add(experiment)
 
     def load_experiment_samples(self, experiment):
         """ Load the samples for an experiment

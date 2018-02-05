@@ -34,7 +34,7 @@ class QuickTest(unittest.TestCase):
 
         self.assertEqual.__self__.maxDiff = None
 
-        src.load_experiment_metadata(2001, 2002)
+        src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/?date=[2001-01-01+2002-12-31]")
         q = session.query(array_express.Experiment)
         self.assertGreater(q.count(), 3)
         self.assertEqual(session.query(array_express.Experiment).filter_by(id='E-GEOD-6').count(), 1)
@@ -68,7 +68,7 @@ class QuickTest(unittest.TestCase):
         src = self.src
         session = src.session
 
-        src.load_experiment_metadata(2001, 2002)
+        src.load_experiment_metadata(src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/?date=[2001-01-01+2002-12-31]"))
 
         # E-GEOD-10
         experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-10').first()
@@ -109,7 +109,7 @@ class QuickTest(unittest.TestCase):
         src = self.src
         session = src.session
 
-        src.load_experiment_metadata(2001, 2002)
+        src.load_experiment_metadata(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/?date=[2001-01-01+2002-12-31]")
 
         # E-GEOD-10
         experiment = session.query(array_express.Experiment).filter_by(id='E-GEOD-6').first()
@@ -273,3 +273,19 @@ class TestEnsemblTools(unittest.TestCase):
         #                 "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz")
 
 
+"""
+class TestError(unittest.TestCase):
+    def setUp(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        shutil.rmtree(self.cache_dirname)
+
+    def test_error(self):
+        src = self.src
+        session = src.session
+        ax = "E-GEOD-61635"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        print("blue")
+"""

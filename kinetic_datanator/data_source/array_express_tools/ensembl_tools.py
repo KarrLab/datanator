@@ -145,7 +145,7 @@ def get_strain_info(sample):
         Returns:
             :obj:`EnsembleInfo`: Ensembl information about the reference genome
     """
-    3print(sample.experiment_id)
+    print(sample.experiment_id)
     organism = ""
     strain = ""
     url = ""
