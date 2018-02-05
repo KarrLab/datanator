@@ -30,6 +30,8 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
+        models.db.session.remove()
+        models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
 
@@ -57,12 +59,11 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
 
-@unittest.skip('skipping due to hidden testing flask issue')
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = flask_common_schema.FlaskCommonSchema(name='TestDB', cache_dirname = self.cache_dirname,
+        self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname = self.cache_dirname,
                                 clear_content = True ,load_entire_small_DBs = False,
                                 download_backups= False, load_content = True, max_entries = 10,
                                 verbose = True, test=True)
@@ -72,6 +73,8 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
+        models.db.session.remove()
+        models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
 
