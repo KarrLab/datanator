@@ -510,10 +510,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 syn = compound.synonyms
                 metadata = self.get_or_create_object(models.Metadata, name = compound.name)
                 tax = self.session.query(models.Taxon).filter_by(ncbi_id = 562).first()
-                if tax:
-                    metadata.taxon.append(tax)
-                else:
-                    metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = 562))
+                metadata.taxon.append(tax) if tax else metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = 562))
+                # if tax:
+                #     metadata.taxon.append(tax)
+                # else:
+                #     metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = 562))
 
                 metadata.resource = [self.get_or_create_object(models.Resource, namespace = docs.namespace, _id = docs.id) for docs in ref]
                 metadata.cell_compartment = [self.get_or_create_object(models.CellCompartment, name = areas.name) for areas in compart]
@@ -568,11 +569,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         if self.load_entire_small_DBs:
             max_entries = float('inf')
 
-        if max_entries == float('inf'):
-            complexdb = intactdb.session.query(intact.ProteinComplex).all()
-        else:
-            complexdb = intactdb.session.query(intact.ProteinComplex).limit(self.max_entries).all()
-
+        complexdb = intactdb.session.query(intact.ProteinComplex).all() if max_entries == float('inf') \
+            else intactdb.session.query(intact.ProteinComplex).limit(self.max_entries).all()
         for row in complexdb:
             metadata = self.get_or_create_object(models.Metadata, name = row.name)
             metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = row.ncbi))
@@ -595,6 +593,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for IntAct Complex: ' + str(time.time()-t0) + ' secs')
+
 
     def add_uniprot(self):
         """
