@@ -1,5 +1,4 @@
-from kinetic_datanator.core import data_model, data_query
-from kinetic_datanator.app import flask_common_schema, models
+from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 from sqlalchemy import or_
 
 class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQueryGenerator):

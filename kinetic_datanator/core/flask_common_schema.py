@@ -20,9 +20,8 @@ import flask_whooshalchemy
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.app import config
-from kinetic_datanator.app import models
-from kinetic_datanator.core import data_source
+from kinetic_datanator.config import config
+from kinetic_datanator.core import data_source, models
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot
 
 

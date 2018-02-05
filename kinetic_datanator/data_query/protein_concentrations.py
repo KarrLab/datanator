@@ -7,8 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query
-from kinetic_datanator.app import flask_common_schema, models
+from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 
 class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for proteins """

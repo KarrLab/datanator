@@ -8,7 +8,7 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.app import flask_common_schema, models
+from kinetic_datanator.core import flask_common_schema, models
 from kinetic_datanator.data_source import pax
 import flask_whooshalchemy
 import flask

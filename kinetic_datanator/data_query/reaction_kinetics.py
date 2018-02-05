@@ -7,8 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query
-from kinetic_datanator.app import models, flask_common_schema
+from kinetic_datanator.core import data_model, data_query, models, flask_common_schema
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
