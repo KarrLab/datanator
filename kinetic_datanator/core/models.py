@@ -90,6 +90,24 @@ _metadata_compartment = db.Table(
 )
 # :obj:`db.Table`: Metadata:Conditions many-to-many association table
 
+_metadata_category = db.Table(
+    '_metadata_category', db.Model.metadata,
+    db.Column('_metadata_id', db.Integer,
+              db.ForeignKey('_metadata.id'), index=True),
+    db.Column('category_id', db.Integer, db.ForeignKey(
+        'category.id'), index=True),
+)
+# :obj:`db.Table`: Metadata:Conditions many-to-many association table
+
+_metadata_variable = db.Table(
+    '_metadata_variable', db.Model.metadata,
+    db.Column('_metadata_id', db.Integer,
+              db.ForeignKey('_metadata.id'), index=True),
+    db.Column('variable_id', db.Integer, db.ForeignKey(
+        'variable.id'), index=True),
+)
+# :obj:`db.Table`: Metadata:Conditions many-to-many association table
+
 subunit_interaction = db.Table(
     'subunit_interaction', db.Model.metadata,
     db.Column('protein_subunit_id', db.Integer, db.ForeignKey(
@@ -126,6 +144,10 @@ class Metadata(db.Model):
         'Conditions', secondary=_metadata_conditions, backref='_metadata')
     cell_compartment = db.relationship(
         'CellCompartment', secondary=_metadata_compartment, backref='_metadata')
+    category = db.relationship(
+        'Category', secondary=_metadata_category, backref='_metadata')
+    variable = db.relationship(
+        'Variable', secondary=_metadata_variable, backref='_metadata')
 
 
 class Method(db.Model):
@@ -138,6 +160,38 @@ class Method(db.Model):
 
     """
     __tablename__ = 'method'
+    __searchable__ = ['name']
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    comments = db.Column(db.String(255))
+
+class Category(db.Model):
+    """
+    Represents the method of collection for a given entity or Property
+
+    Attributes:
+        name (:obj:`str`): Name of the Method
+        comments (:obj:`str`): Comments on the method
+
+    """
+    __tablename__ = 'category'
+    __searchable__ = ['name']
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    comments = db.Column(db.String(255))
+
+class Variable(db.Model):
+    """
+    Represents the method of collection for a given entity or Property
+
+    Attributes:
+        name (:obj:`str`): Name of the variable
+        comments (:obj:`str`): Comments on the method
+
+    """
+    __tablename__ = 'variable'
     __searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key=True)
@@ -522,6 +576,9 @@ class AbundanceDataSet(PhysicalProperty):
     score = db.Column(db.Float)
     weight = db.Column(db.Integer)
     coverage = db.Column(db.Integer)
+
+class RNASeqDataSet(PhysicalProperty):
+    pass
 
 
 class DNABindingDataset(PhysicalProperty):
