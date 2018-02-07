@@ -8,7 +8,7 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_query import dna_protein_interactions as dpi
-from kinetic_datanator.app import models, flask_common_schema
+from kinetic_datanator.core import models, flask_common_schema
 import unittest
 from Bio import motifs
 import tempfile

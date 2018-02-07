@@ -2,7 +2,7 @@
 import unittest
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_query import protein_protein_interactions as ppi
-from kinetic_datanator.app import models, flask_common_schema
+from kinetic_datanator.core import models, flask_common_schema
 import tempfile
 import shutil
 import unittest

@@ -7,7 +7,8 @@
 """
 
 
-from kinetic_datanator.app import text_search, flask_common_schema, models
+from kinetic_datanator.core import flask_common_schema, models
+from kinetic_datanator.data_query import text_search
 import tempfile
 import shutil
 import flask_whooshalchemy
