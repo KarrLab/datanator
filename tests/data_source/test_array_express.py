@@ -273,8 +273,8 @@ class TestEnsemblTools(unittest.TestCase):
         #                 "ftp://ftp.ensembl.org/pub/current_fasta/saccharomyces_cerevisiae/cdna/Saccharomyces_cerevisiae.R64-1-1.cdna.all.fa.gz")
 
 
-"""
-class TestError(unittest.TestCase):
+#@unittest.skip("need to use an example of RNA-SEQ sample")
+class TestHTTPError(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
@@ -285,7 +285,6 @@ class TestError(unittest.TestCase):
     def test_error(self):
         src = self.src
         session = src.session
-        ax = "E-GEOD-61635"
+        ax = "E-MTAB-5530"
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         print("blue")
-"""

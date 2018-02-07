@@ -14,7 +14,8 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source.array_express_tools import ensembl_tools
-
+import requests
+import time
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -463,11 +464,18 @@ class ArrayExpress(data_source.HttpDataSource):
         Args:
             experiment (:obj:`Experiment`): experiment
         """
+        #while time.clock>1
+        try:
+            url = self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id)
+            response = self.requests_session.get(url)
+            response.raise_for_status()
+        except requests.HTTPError as resp:
+            print(str(resp))
+            if str(resp).startswith("500 Server Error: Internal Server Error for url:"):
+                return 
+            else:
+                raise
 
-        url = self.ENDPOINT_DOMAINS['array_express'] + "/{}/samples".format(experiment.id)
-        response = self.requests_session.get(url)
-
-        response.raise_for_status()
         json = response.json()
 
         if 'experiment' not in json:
