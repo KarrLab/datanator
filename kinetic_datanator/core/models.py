@@ -369,6 +369,10 @@ class ProteinSubunit(PhysicalEntity):
     proteincomplex = db.relationship(
         'ProteinComplex', backref='protein_subunit', foreign_keys=[proteincomplex_id])
 
+    def __name__(self):
+        return 'ProteinSubunit'
+
+
 
 class ProteinComplex(PhysicalEntity):
     """
@@ -406,6 +410,9 @@ class ProteinComplex(PhysicalEntity):
     family_name = db.Column(db.String(255))
     molecular_weight = db.Column(db.Float)
 
+    def __name__(self):
+        return 'ProteinComplex'
+
 
 class Compound(PhysicalEntity):
     """
@@ -432,6 +439,9 @@ class Compound(PhysicalEntity):
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
     structure = db.relationship('Structure', backref='compound')
+
+    def __name__(self):
+        return 'Compound'
 
 
 class PhysicalProperty(Observation):
