@@ -21,7 +21,7 @@ class TestTextSearchSession(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.sesh = text_search.TextSearchSession(db_cache_dirname=self.cache_dirname)
 
-        flaskdb = flask_common_schema.FlaskCommonSchema()
+        flaskdb = flask_common_schema.FlaskCommonSchema(cache_dirname = self.cache_dirname)
 
         for item in flaskdb.text_indicies:
             flask_whooshalchemy.whoosh_index(models.app, item)
@@ -36,14 +36,10 @@ class TestTextSearchSession(unittest.TestCase):
         """
         Tests ability to collect objects from full text search of database
         """
-        search_dict= self.sesh.return_search('2-Oxopentanoate')
-        for c in search_dict['Compound']:
+        search= self.sesh.return_search('2-Oxopentanoate')
+        for c in search:
             self.assertIn(c, models.Compound.query.whoosh_search('2-Oxopentanoate').all())
 
-        search_dict= self.sesh.return_search('MCM complex')
-        self.assertEqual(set([c for c in search_dict['ProteinComplex']]),
-                         set(models.ProteinComplex.query.whoosh_search('MCM complex').all()))
-
-        search_dict = self.sesh.return_search('P49418')
-        for c in search_dict['ProteinInteractions']:
-            self.assertIn(c, set(models.ProteinInteractions.query.whoosh_search('P49418').all()))
+        search= self.sesh.return_search('MCM complex')
+        for c in search:
+            self.assertIn(c, set(models.ProteinComplex.query.whoosh_search('MCM complex').all()))

@@ -44,14 +44,33 @@ class TextSearchSession(six.with_metaclass(abc.ABCMeta, object)):
 
         """
 
-        db_models = {}
-        db_models['Compound'] = models.Compound.query.whoosh_search(string).all()
-        db_models['ProteinComplex'] = models.ProteinComplex.query.whoosh_search(string).all()
-        db_models['ProteinInteractions'] = models.ProteinInteractions.query.whoosh_search(string).all()
-        db_models['Taxon'] = models.Taxon.query.whoosh_search(string).all()
-        db_models['Synonym'] = models.Synonym.query.whoosh_search(string).all()
-        db_models['CellLine'] = models.CellLine.query.whoosh_search(string).all()
-        db_models['CellCompartment'] = models.CellCompartment.query.whoosh_search(string).all()
-        db_models['ProteinSubunit'] = models.ProteinSubunit.query.whoosh_search(string).all()
+        compound = models.Compound.query.whoosh_search(string).all()
+        complex = models.ProteinComplex.query.whoosh_search(string).all()
+        subunit = models.ProteinSubunit.query.whoosh_search(string).all()
+
+        db_models = self.rank([compound, complex, subunit])
 
         return db_models
+
+
+    def rank(self, lists):
+        """
+        Ranks based on number of results in the list
+        """
+        ans = []
+        len_lists = [len(l) for l in lists]
+        sorted_index = sorted(range(len(len_lists)), key=lambda k: len_lists[k], reverse=True)
+
+        ## Put top results
+        for i in sorted_index:
+            if lists[i]:
+                ans += lists[i][:3]
+            else: continue
+
+        ## Fill in bottom results
+        for i in sorted_index:
+            if lists[i]:
+                ans += lists[i][3:]
+            else: continue
+
+        return ans
