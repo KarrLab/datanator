@@ -22,7 +22,7 @@ from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, Foreign
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
-from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot
+from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 
 
 
