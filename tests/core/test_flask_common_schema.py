@@ -124,7 +124,14 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
-
+    def test_arrayexpress(self):
+        session = self.cs.session
+        sample = session.query(models.RNASeqDataSet).filter_by(experiment_id = 'E-MTAB-5678', sample_name='IEC_5').first()
+        self.assertEqual(sample.assay, "IEC_5")
+        self.assertEqual(sample.ensembl_organism_strain, "homo_sapiens")
+        self.assertEqual(sample.read_type, "paired")
+        self.assertEqual(sample.full_strain_specificity, True)
+        
     def test_sabio(self):
         session = self.cs.session
         compound = session.query(models.Compound).filter_by(compound_name = 'Peptide').first()
