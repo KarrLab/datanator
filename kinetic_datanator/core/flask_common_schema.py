@@ -96,6 +96,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.property = observation.physical_property
 
         ## Chunk Larger DBs
+        self.add_arrayexpress()
         self.add_intact_interactions()
         if self.verbose:
             print('IntAct Interactions Done')
@@ -242,6 +243,46 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
+            
+    def add_arrayexpress(self):
+        if self.verbose:
+            print('Initializing Array Express filling...')
+        ae = array_express.ArrayExpress(download_backups=False)
+        ae.load_content(test_url=" https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5678")#,E-MTAB-5971")
+        total_experiments = ae.session.query(array_express.Experiment).all()
+        print(total_experiments)
+        total_samples = ae.session.query(array_express.Sample).all()
+        for sample in total_samples:
+            m_name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name #{}_{}".format(sample.experiment_id, s_name)
+            metadata = self.get_or_create_object(
+                models.Metadata,
+                name = m_name
+                )
+
+            metadata.characteristic = [
+                self.get_or_create_object(models.Characteristic, 
+                    category = characteristic.category, 
+                    value = characteristic.value) 
+                for characteristic in sample.characteristics
+                ]
+            
+            metadata.variable = [
+                self.get_or_create_object(models.Variable, 
+                    category = variable.name, 
+                    value = variable.value,
+                    units = variable.unit) 
+                for variable in sample.variables
+                ]
+
+            flask_sample = self.get_or_create_object(
+                models.RNASeqDataSet,
+                experiment_id = sample.experiment_id,
+                sample_name = sample.name,
+                assay = sample.assay,
+                ensembl_organism_strain = sample.ensembl_organism_strain,
+                read_type = sample.read_type,
+                full_strain_specificity = sample.full_strain_specificity
+            )
 
     def add_sabiodb(self):
         """
