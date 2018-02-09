@@ -116,6 +116,14 @@ subunit_interaction = db.Table(
         'protein_interactions.interaction_id'), index=True)
 )
 
+rnaseqdataset_rnaseqexperiment = db.Table(
+    'rnaseqdataset_rnaseqexperiment', db.Model.metadata,
+    db.Column('experiment_id', db.Integer, db.ForeignKey(
+        'rna_seq_experiment.experiment_id'), index=True),
+    db.Column('sample_id', db.Integer, db.ForeignKey(
+        'rna_seq_dataset.sample_id'), index=True)
+)
+
 
 class Metadata(db.Model):
     """
@@ -130,6 +138,7 @@ class Metadata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True)
 
+    description = db.Column(db.Text())
     taxon = db.relationship(
         'Taxon', secondary=_metadata_taxon, backref='_metadata')
     method = db.relationship(
@@ -165,6 +174,9 @@ class Method(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
     comments = db.Column(db.String(255))
+    performer = db.Column(db.String(255))
+    hardware = db.Column(db.String(255))
+    software = db.Column(db.String(255))
 
 class Characteristic(db.Model):
     """
@@ -240,11 +252,13 @@ class Resource(db.Model):
     Attributes:
         namespace (:obj:`str`): Name of the classifier of the resource (Ex. Pubmed)
         _id (:obj:`str`): Identifier of the resource
+        release_date(:obj:`str`): The date that resource released the data
 
     """
     id = db.Column(db.Integer, primary_key=True)
     namespace = db.Column(db.String(255))
     _id = db.Column(db.String(255))
+    release_date = db.Column(db.String(255))
 
     __tablename__ = 'resource'
 
@@ -594,12 +608,25 @@ class RNASeqDataSet(PhysicalProperty):
 
     sample_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    experiment_id = db.Column(db.String)
+    experiment_accession_number = db.Column(db.String)
     sample_name = db.Column(db.String)
     assay = db.Column(db.String)
     ensembl_organism_strain = db.Column(db.String)
     read_type = db.Column(db.String)
     full_strain_specificity = db.Column(db.Boolean)
+
+class RNASeqExperiment(PhysicalProperty):
+    __tablename__ = 'rna_seq_experiment'
+    __mapper_args__ = {'polymorphic_identity': 'rna_seq_experiment'}
+    
+    experiment_id = db.Column(db.Integer, db.ForeignKey(
+        'physical_property.observation_id'), primary_key=True)
+    samples = db.relationship(
+        'RNASeqDataSet', secondary= rnaseqdataset_rnaseqexperiment, backref='experiment')
+    accesion_number = db.Column(db.String)
+    exp_name = db.Column(db.String)
+    has_fastq_files = db.Column(db.Boolean)
+
 
 
 
