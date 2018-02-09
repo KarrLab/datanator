@@ -90,12 +90,12 @@ _metadata_compartment = db.Table(
 )
 # :obj:`db.Table`: Metadata:Conditions many-to-many association table
 
-_metadata_category = db.Table(
-    '_metadata_category', db.Model.metadata,
+_metadata_characteristic = db.Table(
+    '_metadata_characteristic', db.Model.metadata,
     db.Column('_metadata_id', db.Integer,
               db.ForeignKey('_metadata.id'), index=True),
-    db.Column('category_id', db.Integer, db.ForeignKey(
-        'category.id'), index=True),
+    db.Column('characteristic_id', db.Integer, db.ForeignKey(
+        'characteristic.id'), index=True),
 )
 # :obj:`db.Table`: Metadata:Conditions many-to-many association table
 
@@ -144,8 +144,8 @@ class Metadata(db.Model):
         'Conditions', secondary=_metadata_conditions, backref='_metadata')
     cell_compartment = db.relationship(
         'CellCompartment', secondary=_metadata_compartment, backref='_metadata')
-    category = db.relationship(
-        'Category', secondary=_metadata_category, backref='_metadata')
+    characteristic = db.relationship(
+        'Characteristic', secondary=_metadata_characteristic, backref='_metadata')
     variable = db.relationship(
         'Variable', secondary=_metadata_variable, backref='_metadata')
 
@@ -166,7 +166,7 @@ class Method(db.Model):
     name = db.Column(db.String(255))
     comments = db.Column(db.String(255))
 
-class Category(db.Model):
+class Characteristic(db.Model):
     """
     Represents the method of collection for a given entity or Property
 
@@ -175,12 +175,12 @@ class Category(db.Model):
         comments (:obj:`str`): Comments on the method
 
     """
-    __tablename__ = 'category'
-    __searchable__ = ['name']
+    __tablename__ = 'characteristic'
+    #__searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-    comments = db.Column(db.String(255))
+    category = db.Column(db.String(255))
+    value = db.Column(db.String(255))
 
 class Variable(db.Model):
     """
@@ -192,11 +192,12 @@ class Variable(db.Model):
 
     """
     __tablename__ = 'variable'
-    __searchable__ = ['name']
+    #__searchable__ = ['name']
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-    comments = db.Column(db.String(255))
+    category = db.Column(db.String(255))
+    value = db.Column(db.String(255))
+    units = db.Column(db.String(255))
 
 
 class Taxon(db.Model):
@@ -578,7 +579,19 @@ class AbundanceDataSet(PhysicalProperty):
     coverage = db.Column(db.Integer)
 
 class RNASeqDataSet(PhysicalProperty):
-    pass
+    __tablename__ = 'rna_seq_dataset'
+    __mapper_args__ = {'polymorphic_identity': 'rna_seq_dataset'}
+
+    sample_id = db.Column(db.Integer, db.ForeignKey(
+        'physical_property.observation_id'), primary_key=True)
+    experiment_id = db.Column(db.String)
+    sample_name = db.Column(db.String)
+    assay = db.Column(db.String)
+    ensembl_organism_strain = db.Column(db.String)
+    read_type = db.Column(db.String)
+    full_strain_specificity = db.Column(db.Boolean)
+
+
 
 
 class DNABindingDataset(PhysicalProperty):
