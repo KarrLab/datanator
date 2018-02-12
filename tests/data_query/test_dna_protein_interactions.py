@@ -32,7 +32,7 @@ class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
         self.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
 
     def test_filter_observed_values(self):
-        q = dpi.ProteintoDNAInteractionQueryGenerator()
+        q = dpi.ProteintoDNAInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
         observable = q.get_observed_values(self.arnt)
 
@@ -41,7 +41,7 @@ class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
 
 
     def test_get_DNA_by_protein(self):
-        q = dpi.ProteintoDNAInteractionQueryGenerator()
+        q = dpi.ProteintoDNAInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
         position = q.get_DNA_by_protein(self.arnt)
 
@@ -57,18 +57,19 @@ class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
     """
     @classmethod
     def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
         self.dna_segment1 = data_model.DnaSpecie(sequence = 'CCTTTGTT')
         self.dna_segment2 = data_model.DnaSpecie(sequence = 'AAGGTCAA')
 
     def test_filter_observed_values(self):
-        q = dpi.DNAtoProteinInteractionQueryGenerator()
+        q = dpi.DNAtoProteinInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
         observe = q.get_observed_values(self.dna_segment2)
         self.assertEqual(set(c.specie.gene_name for c in observe), set(['NR4A2', 'TRP(MYB) class']))
 
 
     def test_get_protein_by_binding_matrix(self):
-        q = dpi.DNAtoProteinInteractionQueryGenerator()
+        q = dpi.DNAtoProteinInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
         query = q.get_protein_by_DNA_sequence(self.dna_segment1.sequence)
 

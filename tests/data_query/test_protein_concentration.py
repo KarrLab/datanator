@@ -29,7 +29,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
     def test_filter_observed_values(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         vals = q.get_observed_values(self.protein_P00323)
 
@@ -40,7 +40,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                 self.assertEqual(items.value, 1003.0)
 
     def test_get_abundance_by_uniprot(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         uniprot = self.protein_P00323.uniprot_id
         abundances = q.get_abundance_by_uniprot(uniprot).filter(
@@ -49,7 +49,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                          set([1003.0, 1336.0]))
 
     def test_get_abundance_by_gene_name(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         gene_name = 'rplO'
         abundances = q.get_abundance_by_gene_name(gene_name).filter(
@@ -58,7 +58,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                          set([1027.0, 1861.0]))
 
     def test_get_abundance_by_sequence(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         sequence = self.protein_P00323.canonical_sequence
         abundances = q.get_abundance_by_sequence(sequence).filter(
@@ -67,7 +67,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                          set([1003.0, 1336.0]))
 
     def test_get_abundance_by_entrez(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         entrez_id = self.protein_P00323.entrez_id
         abundances = q.get_abundance_by_entrez(entrez_id).filter(
@@ -76,7 +76,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                          set([1003.0, 1336.0]))
 
     def test_get_abundance_by_mass(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         mass = self.protein_P00323.mass
         abundances = q.get_abundance_by_mass(mass).filter(
@@ -85,7 +85,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
                          set([1003.0, 1336.0]))
 
     def test_get_abundance_by_length(self):
-        q = protein_concentrations.ProteinConcentrationsQueryGenerator()
+        q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
         length = self.protein_P00323.length
         abundances = q.get_abundance_by_length(length).filter(

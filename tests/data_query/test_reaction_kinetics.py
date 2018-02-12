@@ -31,7 +31,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
-        self.q = reaction_kinetics.ReactionKineticsQueryGenerator()
+        self.q = reaction_kinetics.ReactionKineticsQueryGenerator(cache_dirname=self.cache_dirname)
 
         self.reaction = data_model.Reaction(
             participants = [

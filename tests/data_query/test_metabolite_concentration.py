@@ -24,7 +24,7 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
         self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
         self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
 
-        self.q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator()
+        self.q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
