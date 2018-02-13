@@ -1,21 +1,21 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from kinetic_datanator.config import config
 
 
 app = Flask(__name__)
 app.config.from_object(config.Config)
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 class Observation(db.Model):
     """
     Represents an Observation of a Physical Entity or Property in the Common Schema
-
     Attributes:
         id (:obj:`int`): Common Schema Observation Identifier
         _metadata_id (:obj:`int` of :obj:`Metadata`): Related Metadata ID
-
     """
 
     __tablename__ = 'observation'
@@ -128,10 +128,8 @@ rnaseqdataset_rnaseqexperiment = db.Table(
 class Metadata(db.Model):
     """
     db.Table representing Metadata identifiers for entities and properties
-
     Attributes:
         name (:obj:`str`): Name of the entity or property
-
     """
     __tablename__ = '_metadata'
 
@@ -162,11 +160,9 @@ class Metadata(db.Model):
 class Method(db.Model):
     """
     Represents the method of collection for a given entity or Property
-
     Attributes:
         name (:obj:`str`): Name of the Method
         comments (:obj:`str`): Comments on the method
-
     """
     __tablename__ = 'method'
     __searchable__ = ['name']
@@ -181,11 +177,9 @@ class Method(db.Model):
 class Characteristic(db.Model):
     """
     Represents the method of collection for a given entity or Property
-
     Attributes:
         name (:obj:`str`): Name of the Method
         comments (:obj:`str`): Comments on the method
-
     """
     __tablename__ = 'characteristic'
     #__searchable__ = ['name']
@@ -197,11 +191,9 @@ class Characteristic(db.Model):
 class Variable(db.Model):
     """
     Represents the method of collection for a given entity or Property
-
     Attributes:
         name (:obj:`str`): Name of the variable
         comments (:obj:`str`): Comments on the method
-
     """
     __tablename__ = 'variable'
     #__searchable__ = ['name']
@@ -215,11 +207,9 @@ class Variable(db.Model):
 class Taxon(db.Model):
     """
     Represents the species of a given physical entity or property
-
     Attributes:
         ncbi_id (:obj:`int`): NCBI id of the species
         name (:obj:`str`): Name of the species
-
     """
     __tablename__ = 'taxon'
     __searchable__ = ['ncbi_id', 'name']
@@ -231,10 +221,8 @@ class Taxon(db.Model):
 class Synonym(db.Model):
     """
     Represents a synonym of a given physical entity or property
-
     Attributes:
         name (:obj:`str`): Name of the Synonym
-
     """
 
     __searchable__ = ['name']
@@ -248,12 +236,10 @@ class Synonym(db.Model):
 class Resource(db.Model):
     """
     Represents a resource of a given physical entity or property
-
     Attributes:
         namespace (:obj:`str`): Name of the classifier of the resource (Ex. Pubmed)
         _id (:obj:`str`): Identifier of the resource
         release_date(:obj:`str`): The date that resource released the data
-
     """
     id = db.Column(db.Integer, primary_key=True)
     namespace = db.Column(db.String(255))
@@ -266,10 +252,8 @@ class Resource(db.Model):
 class CellLine(db.Model):
     """
     Represents a cell line of a given physical entity or property
-
     Attributes:
         name (:obj:`str`): Name of the Cell Line
-
     """
     __tablename__ = 'cell_line'
     __searchable__ = ['name']
@@ -281,14 +265,12 @@ class CellLine(db.Model):
 class Conditions(db.Model):
     """
     Represents the conditions of a given physical entity or property
-
     Attributes:
         growth_status (:obj:`str`): Type of growth status
         media (:obj:`str`): Media composition
         temperature (:obj:`float`): Temperature of the sample (C)
         ph (:obj:`float`): pH of the sample
         growth_system (:obj:`str`): Type of growth system
-
     """
 
     id = db.Column(db.Integer, primary_key=True)
@@ -304,12 +286,9 @@ class Conditions(db.Model):
 class CellCompartment(db.Model):
     """
     Represents a cell compartment of a given physical entity or property
-
     Ties especially to the reacitons because this is where the reactions occur
-
     Attributes:
         name (:obj:`str`): Name of the Cell Compartment
-
     """
     __tablename__ = 'cell_compartment'
     __searchable__ = ['name']
@@ -321,7 +300,6 @@ class CellCompartment(db.Model):
 class PhysicalEntity(Observation):
     """
     Represents a Physical Entity in the Common Schema
-
     Attributes:
         observation_id (:obj:`int`): Common Schema Observation Identifier
         type (:obj:`str`): Type of Physical Entity (Ex. Compound)
@@ -340,7 +318,6 @@ class PhysicalEntity(Observation):
 class ProteinSubunit(PhysicalEntity):
     """
     Represents a Protein Subunit - An instance of Physical Entity
-
     Attributes:
         subunit_id (:obj:`int`): Common Schema Observation Identifier
         subunit_name (:obj:`str`): Name of the Protein Subunit
@@ -392,7 +369,6 @@ class ProteinSubunit(PhysicalEntity):
 class ProteinComplex(PhysicalEntity):
     """
     Represents a Protein Complex - An instance of Physical Entity
-
     Attributes:
         complex_id (:obj:`int`): Common Schema Observation Identifier
         complex_name (:obj:`str`): Name of the Protein Complex
@@ -432,14 +408,12 @@ class ProteinComplex(PhysicalEntity):
 class Compound(PhysicalEntity):
     """
     Represents a Compound - An instance of Physical Entity
-
     Attributes:
         compound_id (:obj:`int`): Common Schema Observation Identifier
         compound_name (:obj:`str`): Name of the Compound
         description (:obj:`str`):
         comment = db.Column(db.String(255))
         _is_name_ambiguous = db.Column(db.Boolean)
-
     """
     __tablename__ = 'compound'
     __searchable__ = ['compound_name', 'description']
@@ -462,7 +436,6 @@ class Compound(PhysicalEntity):
 class PhysicalProperty(Observation):
     """
     Represents a Physical Property in the Common Schema
-
     Attributes:
         observation_id (:obj:`int`): Common Schema Observation Identifier
         type (:obj:`str`): Type of Physical Property (Ex. Concentration)
@@ -480,12 +453,10 @@ class PhysicalProperty(Observation):
 class Structure(PhysicalProperty):
     """
     Represents a structure of a compound
-
     Attributes:
         _value_smiles (:obj:`str`): Smiles format for compound representation
         _value_inchi (:obj:`str`): Inchi format for compound representation
         _structure_formula_connectivity (:obj:`str`): Connectivity of compound
-
     """
 
     __tablename__ = 'structure'
@@ -501,7 +472,6 @@ class Structure(PhysicalProperty):
 class Concentration(PhysicalProperty):
     """
     Represents the concentration of an entity
-
     Attributes:
         value (:obj:`float`): concentration of a tagged compound
         error (:obj:`float`): uncertainty of corresponding concentration value
@@ -523,7 +493,6 @@ class Concentration(PhysicalProperty):
 class KineticLaw(PhysicalProperty):
     """
     Represents the concentration of an entity
-
     Attributes:
         enzyme_id (:obj:`int`): ID of enzyme driving the kinetic law
             enzyme_type (:obj:`str`): Enzyme classification (Ex. Modifier-Catalyst)
@@ -551,7 +520,6 @@ class KineticLaw(PhysicalProperty):
 class Reaction(db.Model):
     """
     Represents a reaction
-
     Attributes:
         compound_id (:obj:`int`): ID of the corresponding compound
         coefficient (:obj:`float`): Stoichiometric coefficient
@@ -559,7 +527,6 @@ class Reaction(db.Model):
         _is_product (:obj:`bool`): Indicates of corresponding compound is a product
         _is_modifier (:obj:`bool`): Indicates of corresponding compound is a modifier
         rxn_type (:obj:`str`): Classifer of reaction
-
     """
 
     __tablename__ = 'reaction'
@@ -584,7 +551,6 @@ class Reaction(db.Model):
 class AbundanceDataSet(PhysicalProperty):
     """
     Represents a dataset for protein abundance
-
     Attributes:
         file_name (:obj:`str`): Name of data set which data stems from
         score (:obj:`float`): Quality of the experimental analysis (PAXdb Measure)
@@ -618,7 +584,7 @@ class RNASeqDataSet(PhysicalProperty):
 class RNASeqExperiment(PhysicalProperty):
     __tablename__ = 'rna_seq_experiment'
     __mapper_args__ = {'polymorphic_identity': 'rna_seq_experiment'}
-    
+
     experiment_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
     samples = db.relationship(
@@ -628,13 +594,9 @@ class RNASeqExperiment(PhysicalProperty):
     has_fastq_files = db.Column(db.Boolean)
 
 
-
-
-
 class DNABindingDataset(PhysicalProperty):
     """
     Represents a dataset for Transcription Factor Binding
-
     Attributes:
         version (:obj:`int`): Represents the version of binding matrix
         complex_id (:obj:`int`): Relation ID for transcription factor complex
@@ -659,7 +621,6 @@ class DNABindingDataset(PhysicalProperty):
 class Parameter(db.Model):
     """
     Represents a parameter for a given kinetic law and compound
-
     Attributes:
         kinetic_law_id (:obj:`int`): corresponding kinetic law to the parameter
         sabio_type (:obj:`int`): sabio identifier for type of parameter
@@ -672,7 +633,6 @@ class Parameter(db.Model):
         observed_value (:obj:`float`): observed value of parameter
         observed_error (:obj:`float`): observed error of parameter
         observed_units (:obj:`str`): observed units of parameter
-
     """
 
     __tablename__ = 'parameter'
@@ -702,7 +662,6 @@ class Parameter(db.Model):
 class AbundanceData(db.Model):
     """
     Represents protein abundance data from the Pax DB database
-
     Attributes:
         abundance (:obj:`float`): Represents protein abundance from given observation in ppm
         dataset_id  (:obj:`int`): Represents the dataset from which the abundance stems from
@@ -730,7 +689,6 @@ class AbundanceData(db.Model):
 class DNABindingData(db.Model):
     """
     Represents Matrix binding profile for a protein transcription factor
-
     Attributes:
         position (:obj:`int`): Position in the sequence
         frequency_a (:obj:`int`): Frequency of A
@@ -759,7 +717,6 @@ class DNABindingData(db.Model):
 class ProteinInteractions(PhysicalProperty):
     """
     Represents a protein-protein interaction
-
     Attributes:
         participant_a (:obj:`str`): Participant A in the interaction
         participant_b (:obj:`str`): Participant B in the interaction
@@ -768,7 +725,6 @@ class ProteinInteractions(PhysicalProperty):
         site_b (:obj:`str`): Binding Site of Participant B
         stoich_a (:obj:`str`): Stoichiometry of Participant A
         stoich_b (:obj:`str`): Stoichiometry of Participant B
-
     """
     __tablename__ = 'protein_interactions'
     __searchable__ = ['participant_a', 'participant_b']
@@ -793,7 +749,6 @@ class Progress(db.Model):
     Attributes:
         database_name (:obj:`str`): Name of observed databse
         amount_loaded (:obj:`int`): Amount of entries loaded in Common Schema
-
     """
     __tablename__ = 'progress'
 

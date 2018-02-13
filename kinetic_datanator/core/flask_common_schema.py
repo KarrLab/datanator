@@ -96,7 +96,6 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.property = observation.physical_property
 
         ## Chunk Larger DBs
-        self.add_arrayexpress()
         self.add_intact_interactions()
         if self.verbose:
             print('IntAct Interactions Done')
@@ -106,6 +105,9 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
+        self.add_arrayexpress()
+        if self.verbose:
+            print('Array Express Done')
 
         ## Add complete smaller DBs
         if self.load_small_db_switch:
@@ -243,17 +245,19 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.verbose:
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
-            
+
     def add_arrayexpress(self):
         if self.verbose:
             print('Initializing Array Express filling...')
-        ae = array_express.ArrayExpress(download_backups=False)
+
+        t0 = time.time()
+        ae = array_express.ArrayExpress(cache_dirname = self.cache_dirname, download_backups=False)
         ae.load_content(test_url=" https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5678")#,E-MTAB-5971")
         total_experiments = ae.session.query(array_express.Experiment).all()
         print(total_experiments)
         total_samples = ae.session.query(array_express.Sample).all()
-        
-        
+
+
         total_experiments = ae.session.query(array_express.Experiment).all()
         for exp in total_experiments:
             flask_experiment = self.get_or_create_object(
@@ -268,17 +272,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     )
 
                 metadata.characteristic = [
-                    self.get_or_create_object(models.Characteristic, 
-                        category = characteristic.category, 
-                        value = characteristic.value) 
+                    self.get_or_create_object(models.Characteristic,
+                        category = characteristic.category,
+                        value = characteristic.value)
                     for characteristic in sample.characteristics
                     ]
-                
+
                 metadata.variable = [
-                    self.get_or_create_object(models.Variable, 
-                        category = variable.name, 
+                    self.get_or_create_object(models.Variable,
+                        category = variable.name,
                         value = variable.value,
-                        units = variable.unit) 
+                        units = variable.unit)
                     for variable in sample.variables
                     ]
 
@@ -305,8 +309,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             for org in exp.organisms]
 
             metadata.resource.append(self.get_or_create_object(
-                models.Resource, 
-                namespace = "ArrayExpress", 
+                models.Resource,
+                namespace = "ArrayExpress",
                 _id = exp.id,
                 release_date = exp.release_date
                 ))
@@ -324,8 +328,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
 
         if self.verbose:
-            print('Comitting1')
+            print('Comitting')
         self.session.commit()
+
+        if self.verbose:
+            print('Total time taken for Array Express: ' + str(time.time()-t0) + ' secs')
 
     def add_sabiodb(self):
         """
