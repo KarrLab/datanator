@@ -257,7 +257,8 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if only_formula_and_connectivity:
                     formula_and_connectivity = structure
                 else:
-                    formula_and_connectivity = part.specie.to_inchi(only_formula_and_connectivity=True)
+                    if structure:
+                        formula_and_connectivity = part.specie.to_inchi(only_formula_and_connectivity=True)
                 if formula_and_connectivity in ['', 'H2O', 'H2O']:
                     continue
 
