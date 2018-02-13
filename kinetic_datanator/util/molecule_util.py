@@ -49,7 +49,7 @@ class Molecule(object):
         """
         mol = openbabel.OBMol()
         obConversion = openbabel.OBConversion()
-        if len(self.structure) >= 7 and self.structure[0:6] == 'InChI=' and \
+        if self.structure and len(self.structure) >= 7 and self.structure[0:6] == 'InChI=' and \
                 obConversion.SetInFormat('inchi') and \
                 obConversion.ReadString(mol, self.structure):
             return 'inchi'
