@@ -261,6 +261,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if formula_and_connectivity in ['', 'H2O', 'H2O']:
                     continue
 
+            role = None
             if part.coefficient < 0:
                 role = 'reactant'
             elif part.coefficient > 0:
