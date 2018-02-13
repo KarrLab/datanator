@@ -49,19 +49,22 @@ class Molecule(object):
         """
         mol = openbabel.OBMol()
         obConversion = openbabel.OBConversion()
-        if self.structure and len(self.structure) >= 7 and self.structure[0:6] == 'InChI=' and \
-                obConversion.SetInFormat('inchi') and \
-                obConversion.ReadString(mol, self.structure):
-            return 'inchi'
-        elif obConversion.SetInFormat('can') and \
-                obConversion.ReadString(mol, self.structure):
-            return 'can'
-        elif obConversion.SetInFormat('smiles') and \
-                obConversion.ReadString(mol, self.structure):
-            return 'smiles'
-        elif obConversion.SetInFormat('mol') and \
-                obConversion.ReadString(mol, self.structure):
-            return 'mol'
+        if self.structure:
+            if len(self.structure) >= 7 and self.structure[0:6] == 'InChI=' and \
+                    obConversion.SetInFormat('inchi') and \
+                    obConversion.ReadString(mol, self.structure):
+                return 'inchi'
+            elif obConversion.SetInFormat('can') and \
+                    obConversion.ReadString(mol, self.structure):
+                return 'can'
+            elif obConversion.SetInFormat('smiles') and \
+                    obConversion.ReadString(mol, self.structure):
+                return 'smiles'
+            elif obConversion.SetInFormat('mol') and \
+                    obConversion.ReadString(mol, self.structure):
+                return 'mol'
+            else:
+                return None
         else:
             return None
 
