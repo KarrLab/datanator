@@ -42,8 +42,8 @@ setuptools.setup(
     package_data={
         name: [
             'VERSION',
-            'config/schema.cfg',
-            'config/default.cfg',
+            'config/core.schema.cfg',
+            'config/core.default.cfg',
             'data_source/*.txt',
             'data/*.txt',
             'data/*.xlsx',
