@@ -648,16 +648,6 @@ class TestFilterRunner(unittest.TestCase):
 
 class TestConsensusGenerator(unittest.TestCase):
 
-    def test_group_observed_values_by_properties(self):
-        observed_values = [
-            data_model.ObservedValue(
-                observable=data_model.Observable(property='Km'),
-                value=1.,
-                units=''
-            )
-        ]
-        gen = data_query.ConsensusGenerator(observed_values)
-
     def test_calc_average(self):
         gen = data_query.ConsensusGenerator()
 
