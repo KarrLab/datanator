@@ -23,8 +23,8 @@ def get_config(extra=None):
         :obj:`configobj.ConfigObj`: nested dictionary with the configuration settings loaded from the configuration source(s).
     """
     paths = wc_utils.config.core.ConfigPaths(
-        default=pkg_resources.resource_filename('kinetic_datanator', 'config/default.cfg'),
-        schema=pkg_resources.resource_filename('kinetic_datanator', 'config/schema.cfg'),
+        default=pkg_resources.resource_filename('kinetic_datanator', 'config/core.default.cfg'),
+        schema=pkg_resources.resource_filename('kinetic_datanator', 'config/core.schema.cfg'),
         user=(
             'kinetic_datanator.cfg',
             os.path.expanduser('~/.wc/kinetic_datanator.cfg'),
