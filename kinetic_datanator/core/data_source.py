@@ -7,7 +7,7 @@
 
 from wc_utils import backup
 import abc
-import kinetic_datanator.config.paths
+import kinetic_datanator.config.core
 import os
 import requests
 import requests_cache
@@ -16,11 +16,6 @@ import sqlalchemy
 import sqlalchemy.orm
 import sys
 import tarfile
-import wc_utils.config.core
-
-
-config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
-# :obj:`wc_utils.config.core.ConfigManager`: configuration manager
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 # :obj:`str`: default path for the sqlite database
@@ -93,10 +88,11 @@ class CachedDataSource(DataSource):
         self.commit_intermediate_results = commit_intermediate_results
 
         # backup settings
-        self.backup_server_hostname = config_manager.get_config()['wc_utils']['backup']['hostname']
-        self.backup_server_username = config_manager.get_config()['wc_utils']['backup']['username']
-        self.backup_server_password = config_manager.get_config()['wc_utils']['backup']['password']
-        self.backup_server_remote_dirname = config_manager.get_config()['wc_utils']['backup']['remote_dirname']
+        config = kinetic_datanator.config.core.get_config()
+        self.backup_server_hostname = config['wc_utils']['backup']['hostname']
+        self.backup_server_username = config['wc_utils']['backup']['username']
+        self.backup_server_password = config['wc_utils']['backup']['password']
+        self.backup_server_remote_dirname = config['wc_utils']['backup']['remote_dirname']
 
         # verbosity
         self.verbose = verbose
