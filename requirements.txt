@@ -1,9 +1,14 @@
 git+https://github.com/cokelaer/bioservices.git#egg=bioservices-1.5.0
-bs4
+beautifulsoup4
+biopython
 cement
 demjson
 enum34
 ete3
+flask
+flask_migrate
+flask_sqlalchemy
+git+https://github.com/Karrlab/Flask-WhooshAlchemy.git#egg=flask_whooshalchemy-0.80 >= 0.80
 jxmlease
 mock
 natsort
@@ -12,6 +17,7 @@ git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.5
 openbabel
 openpyxl
 pandas
+pint
 pronto
 pubchempy
 python_dateutil
@@ -20,10 +26,8 @@ python_libsbml
 requests
 requests_cache
 scipy
+setuptools
 six
 sqlalchemy
-git+https://github.com/Karrlab/Flask-WhooshAlchemy.git#egg=flask_whooshalchemy-0.80 >= 0.80
-flask
-flask_migrate
 unicodecsv
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils-0.0.1a5
