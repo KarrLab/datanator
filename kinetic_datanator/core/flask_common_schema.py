@@ -23,7 +23,7 @@ from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
-
+from ete3 import NCBITaxa
 
 
 class FlaskCommonSchema(data_source.HttpDataSource):
@@ -105,7 +105,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
-        self.add_arrayexpress()
+        #self.add_arrayexpress()
         if self.verbose:
             print('Array Express Done')
 
@@ -247,75 +247,44 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
 
     def add_arrayexpress(self):
+
         if self.verbose:
             print('Initializing Array Express filling...')
-
-        t0 = time.time()
-        ae = array_express.ArrayExpress(cache_dirname = self.cache_dirname, download_backups=False)
-        ae.load_content(test_url=" https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5678")#,E-MTAB-5971")
+        ae = array_express.ArrayExpress(download_backups=False)
+        ae.load_content(test_url=" https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5678,E-MTAB-5971")
         total_experiments = ae.session.query(array_express.Experiment).all()
         print(total_experiments)
         total_samples = ae.session.query(array_express.Sample).all()
+        
 
 
+        
         total_experiments = ae.session.query(array_express.Experiment).all()
         for exp in total_experiments:
-            flask_experiment = self.get_or_create_object(
-                models.RNASeqExperiment,
-                accesion_number = exp.id
-            )
-            for sample in total_samples:
-                #m_name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name #{}_{}".format(sample.experiment_id, s_name)
-                metadata = self.get_or_create_object(
-                    models.Metadata,
-                    name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name
-                    )
-
-                metadata.characteristic = [
-                    self.get_or_create_object(models.Characteristic,
-                        category = characteristic.category,
-                        value = characteristic.value)
-                    for characteristic in sample.characteristics
-                    ]
-
-                metadata.variable = [
-                    self.get_or_create_object(models.Variable,
-                        category = variable.name,
-                        value = variable.value,
-                        units = variable.unit)
-                    for variable in sample.variables
-                    ]
-
-                flask_sample = self.get_or_create_object(
-                    models.RNASeqDataSet,
-                    experiment_accession_number = sample.experiment_id,
-                    sample_name = sample.name,
-                    assay = sample.assay,
-                    ensembl_organism_strain = sample.ensembl_organism_strain,
-                    read_type = sample.read_type,
-                    full_strain_specificity = sample.full_strain_specificity
-                )
-                flask_experiment.samples.append(flask_sample)
-            metadata = self.get_or_create_object(
-                    models.Metadata,
+            
+            exp_metadata = self.get_or_create_object(
+                    models.ExperimentMetadata,
                     name = "RNA-Seq Experiment Info: " + exp.id,
                     description = exp.description
                     )
-            metadata.taxon = [
+            
+            exp_metadata.taxon = [
             self.get_or_create_object(
                 models.Taxon,
-                name = org.name
+                name = org.name,
+                ncbi_id = NCBITaxa().get_name_translator([org.name])[org.name][0]
                 )
             for org in exp.organisms]
-
-            metadata.resource.append(self.get_or_create_object(
-                models.Resource,
-                namespace = "ArrayExpress",
+            
+            exp_metadata.resource.append(self.get_or_create_object(
+                models.Resource, 
+                namespace = "ArrayExpress", 
                 _id = exp.id,
                 release_date = exp.release_date
                 ))
+            
 
-            metadata.method = [
+            exp_metadata.method = [
             self.get_or_create_object(
                 models.Method,
                 name = protocol.protocol_type,
@@ -325,6 +294,84 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 software = protocol.software,
                 )
             for protocol in exp.protocols]
+
+            exp_metadata.experiment_design = [
+            self.get_or_create_object(
+                models.ExperimentDesign,
+                name = exp_des.name,
+                )
+            for exp_des in exp.designs]
+
+            exp_metadata.experiment_type = [
+            self.get_or_create_object(
+                models.ExperimentType,
+                name = exp_type.name,
+                )
+            for exp_type in exp.types]
+
+            
+            exp_metadata.data_format = [
+            self.get_or_create_object(
+                models.DataFormat,
+                name = data_format.name,
+                bio_assay_data_cubes = data_format.bio_assay_data_cubes,
+                )
+            for data_format in exp.data_formats]
+            
+
+            flask_experiment = self.get_or_create_object(
+                models.RNASeqExperiment,
+                #name = "exp.id",
+                #type = "Array Express Experiment",
+                exp_name = exp.name,
+                accession_number = exp.id,
+                _experimentmetadata = exp_metadata
+            )
+            for sample in total_samples:
+                #m_name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name #{}_{}".format(sample.experiment_id, s_name)
+                metadata = self.get_or_create_object(
+                    models.Metadata,
+                    name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name
+                    )
+
+                metadata.characteristic = [
+                    self.get_or_create_object(models.Characteristic, 
+                        category = characteristic.category, 
+                        value = characteristic.value) 
+                    for characteristic in sample.characteristics
+                    ]
+                
+                metadata.variable = [
+                    self.get_or_create_object(models.Variable, 
+                        category = variable.name, 
+                        value = variable.value,
+                        units = variable.unit) 
+                    for variable in sample.variables
+                    ]
+
+
+                flask_sample = self.get_or_create_object(
+                    models.RNASeqDataSet,
+                    name = sample.experiment_id + "_" + sample.name,
+                    type = "Array Express Sample",
+                    experiment_accession_number = sample.experiment_id,
+                    sample_name = sample.name,
+                    assay = sample.assay,
+                    ensembl_organism_strain = sample.ensembl_organism_strain,
+                    read_type = sample.read_type,
+                    full_strain_specificity = sample.full_strain_specificity,
+                    _metadata = metadata
+                )
+
+                flask_sample.reference_genome = [
+                self.get_or_create_object(models.ReferenceGenome, 
+                        namespace = "Ensembl",
+                        organism_strain = ensembl_info.organism_strain,
+                        download_url = ensembl_info.url,
+                        ) 
+                    for ensembl_info in sample.ensembl_info]
+
+                flask_experiment.samples.append(flask_sample)
 
 
         if self.verbose:
