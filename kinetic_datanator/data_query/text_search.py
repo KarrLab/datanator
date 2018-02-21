@@ -40,17 +40,18 @@ class TextSearchSession(six.with_metaclass(abc.ABCMeta, object)):
             string (:obj:`str`): item to be searched for
 
         Returns:
-            db_models (:obj:`dict`): Dictionary of collected items from text search
-
+            ranked_db_models (:obj:`list`): List of ranked collected items from text search
+            dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
         compound = models.Compound.query.whoosh_search(string).all()
         complex = models.ProteinComplex.query.whoosh_search(string).all()
         subunit = models.ProteinSubunit.query.whoosh_search(string).all()
 
-        db_models = self.rank([compound, complex, subunit])
+        dict_db_models = {'Compound':compound, 'ProteinComplex':complex, 'ProteinSubunit':subunit}
+        ranked_db_models = self.rank([compound, complex, subunit])
 
-        return db_models
+        return ranked_db_models, dict_db_models
 
 
     def rank(self, lists):

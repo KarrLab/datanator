@@ -32,14 +32,28 @@ class TestTextSearchSession(unittest.TestCase):
 
 
 
-    def test_return_objects(self):
+    def test_rank_return_objects(self):
         """
         Tests ability to collect objects from full text search of database
         """
-        search= self.sesh.return_search('2-Oxopentanoate')
-        for c in search:
+        rank, dict_search = self.sesh.return_search('2-Oxopentanoate')
+        for c in rank:
             self.assertIn(c, models.Compound.query.whoosh_search('2-Oxopentanoate').all())
 
-        search= self.sesh.return_search('MCM complex')
-        for c in search:
+        rank, dict_search =  self.sesh.return_search('MCM complex')
+        for c in rank:
             self.assertIn(c, set(models.ProteinComplex.query.whoosh_search('MCM complex').all()))
+
+    def test_dict_return_objects(self):
+        """
+        Tests ability to collect objects from full text search of database
+        """
+        rank, dict_search = self.sesh.return_search('2-Oxopentanoate')
+        self.assertGreater(len(dict_search['Compound']), 0)
+        self.assertEqual(len(dict_search['ProteinComplex']), 0)
+        self.assertEqual(len(dict_search['ProteinSubunit']), 0)
+
+        rank, dict_search =  self.sesh.return_search('MCM complex')
+        self.assertEqual(len(dict_search['Compound']), 0)
+        self.assertGreater(len(dict_search['ProteinComplex']), 0)
+        self.assertEqual(len(dict_search['ProteinSubunit']), 0)
