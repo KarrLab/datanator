@@ -126,26 +126,25 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
-    @unittest.skip("currently conflicts with pax and intact")
     def test_arrayexpress(self):
         session = self.cs.session
-        sample = session.query(models.RNASeqDataSet).filter_by(experiment_accession_number = 'E-MTAB-5678', sample_name='IEC_5').first()
-        self.assertEqual(sample.assay, "IEC_5")
-        self.assertEqual(sample.ensembl_organism_strain, "homo_sapiens")
-        self.assertEqual(sample.read_type, "paired")
+        sample = session.query(models.RNASeqDataSet).filter_by(experiment_accession_number = 'E-MTAB-6272', sample_name='Sample 13').first()
+        self.assertEqual(sample.assay, 'Sample 13')
+        self.assertEqual(sample.ensembl_organism_strain, "mus_musculus")
+        self.assertEqual(sample.read_type, "single")
         self.assertEqual(sample.full_strain_specificity, True)
-        self.assertEqual(sample.reference_genome[0].download_url, "ftp://ftp.ensembl.org/pub/current_fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz")
+        self.assertEqual(sample.reference_genome[0].download_url, "ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz")
         #print("here:{}".format(sample._metadata_id))
-        self.assertEqual(len(sample._metadata.characteristic), 4)
+        self.assertEqual(len(sample._metadata.characteristic), 7)
         #print("here:{}".format(sample._metadata_id))
         self.assertEqual(len(sample._metadata.variable), 2)
 
 
-        experiment = session.query(models.RNASeqExperiment).filter_by(accession_number = 'E-MTAB-5678').first()
-        self.assertEqual(len(experiment.samples), 33)
-        self.assertEqual(experiment.accession_number, 'E-MTAB-5678')
-        self.assertEqual(experiment.exp_name, "RNA-seq of a panel of non-melanoma skin cancer lesions")
-        self.assertEqual(experiment._experimentmetadata.description[:8], "The goal")
+        experiment = session.query(models.RNASeqExperiment).filter_by(accession_number = 'E-MTAB-6454').first()
+        self.assertEqual(len(experiment.samples), 36)
+        self.assertEqual(experiment.accession_number, 'E-MTAB-6454')
+        self.assertEqual(experiment.exp_name, "Gene expression profiling across ontogenetic stages in wood white (Leptidea sinapis) reveals pathways linked to butterfly diapause regulation")
+        self.assertEqual(experiment._experimentmetadata.description[:12], "In temperate")
         #self.assertEqual(experiment.has_fastq_files
 
     def test_sabio(self):

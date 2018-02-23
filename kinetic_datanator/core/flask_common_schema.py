@@ -79,6 +79,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             self.pax_loaded = 0
             self.sabio_loaded = 0
             self.intact_loaded = 0
+            self.array_loaded = 0
             self.load_small_db_switch = True
             self.load_content()
 
@@ -105,11 +106,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.add_sabiodb()
         if self.verbose:
             print('Sabio Done')
-        #self.add_arrayexpress()
+        self.add_arrayexpress()
         if self.verbose:
             print('Array Express Done')
 
-        ## Add complete smaller DBs
+        # Add complete smaller DBs
         if self.load_small_db_switch:
             self.add_intact_complexes()
             if self.verbose:
@@ -247,42 +248,42 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('Total time taken for Pax: ' + str(time.time()-t0) + ' secs')
 
     def add_arrayexpress(self):
-
         if self.verbose:
             print('Initializing Array Express filling...')
-        ae = array_express.ArrayExpress(download_backups=False)
-        ae.load_content(test_url=" https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-5678,E-MTAB-5971")
-        total_experiments = ae.session.query(array_express.Experiment).all()
-        print(total_experiments)
-        total_samples = ae.session.query(array_express.Sample).all()
-        
+
+        t0 = time.time()
+
+        ae = array_express.ArrayExpress(cache_dirname = self.cache_dirname)
+
+        if self.max_entries == float('inf'):
+            experiments = ae.session.query(array_express.Experiment).all()
+        else:
+            experiments = ae.session.query(array_express.Experiment).filter(array_express.Experiment._id.in_\
+                (range(self.array_loaded+1, self.array_loaded+1 + self.max_entries)))
 
 
-        
-        total_experiments = ae.session.query(array_express.Experiment).all()
-        for exp in total_experiments:
-            
+        for exp in experiments:
+
             exp_metadata = self.get_or_create_object(
                     models.ExperimentMetadata,
                     name = "RNA-Seq Experiment Info: " + exp.id,
                     description = exp.description
                     )
-            
+
             exp_metadata.taxon = [
             self.get_or_create_object(
                 models.Taxon,
-                name = org.name,
                 ncbi_id = NCBITaxa().get_name_translator([org.name])[org.name][0]
                 )
             for org in exp.organisms]
-            
+
             exp_metadata.resource.append(self.get_or_create_object(
-                models.Resource, 
-                namespace = "ArrayExpress", 
+                models.Resource,
+                namespace = "ArrayExpress",
                 _id = exp.id,
                 release_date = exp.release_date
                 ))
-            
+
 
             exp_metadata.method = [
             self.get_or_create_object(
@@ -309,7 +310,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 )
             for exp_type in exp.types]
 
-            
+
             exp_metadata.data_format = [
             self.get_or_create_object(
                 models.DataFormat,
@@ -317,7 +318,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 bio_assay_data_cubes = data_format.bio_assay_data_cubes,
                 )
             for data_format in exp.data_formats]
-            
+
 
             flask_experiment = self.get_or_create_object(
                 models.RNASeqExperiment,
@@ -327,7 +328,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 accession_number = exp.id,
                 _experimentmetadata = exp_metadata
             )
-            for sample in total_samples:
+            for sample in ae.session.query(array_express.Sample).filter_by(experiment_id = exp.id).all():
                 #m_name = "RNA-Seq Sample Info: " + sample.experiment_id + "_" + sample.name #{}_{}".format(sample.experiment_id, s_name)
                 metadata = self.get_or_create_object(
                     models.Metadata,
@@ -335,17 +336,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     )
 
                 metadata.characteristic = [
-                    self.get_or_create_object(models.Characteristic, 
-                        category = characteristic.category, 
-                        value = characteristic.value) 
+                    self.get_or_create_object(models.Characteristic,
+                        category = characteristic.category,
+                        value = characteristic.value)
                     for characteristic in sample.characteristics
                     ]
-                
+
                 metadata.variable = [
-                    self.get_or_create_object(models.Variable, 
-                        category = variable.name, 
+                    self.get_or_create_object(models.Variable,
+                        category = variable.name,
                         value = variable.value,
-                        units = variable.unit) 
+                        units = variable.unit)
                     for variable in sample.variables
                     ]
 
@@ -364,15 +365,16 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 )
 
                 flask_sample.reference_genome = [
-                self.get_or_create_object(models.ReferenceGenome, 
+                self.get_or_create_object(models.ReferenceGenome,
                         namespace = "Ensembl",
                         organism_strain = ensembl_info.organism_strain,
                         download_url = ensembl_info.url,
-                        ) 
+                        )
                     for ensembl_info in sample.ensembl_info]
 
                 flask_experiment.samples.append(flask_sample)
 
+        self.get_or_create_object(models.Progress, database_name = 'Array Express', amount_loaded = self.array_loaded + self.max_entries)
 
         if self.verbose:
             print('Comitting')
