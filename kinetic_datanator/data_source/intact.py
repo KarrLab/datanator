@@ -1,5 +1,9 @@
-# -*- coding: utf-8 -*-
-
+""" Downloads and parses the Intact
+:Author: Saahith Pochiraju <saahith116@gmail.com>
+:Date: 2017-08-16
+:Copyright: 2017, Karr Lab
+:License: MIT
+"""
 import pandas as pd
 from sqlalchemy import Column, Integer, String
 import sqlalchemy.ext.declarative

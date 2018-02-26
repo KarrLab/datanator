@@ -12,6 +12,8 @@ class Config(BaseConfig):
     """Development configuration."""
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    ## The below URI is meant for migrations
+    #SQLALCHEMY_DATABASE_URI = 'sqlite:////Users/pochis01/Desktop/GitHub/kinetic_datanator/kinetic_datanator/data_source/cache/FlaskCommonSchema.sqlite'
     DEBUG_TB_ENABLED = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     TESTING = True

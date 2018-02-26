@@ -1,17 +1,13 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from kinetic_datanator.config import config
 
 
 app = Flask(__name__)
 app.config.from_object(config.Config)
 db = SQLAlchemy(app)
-
-
-
-
-
-
+migrate = Migrate(app, db)
 
 class Observation(db.Model):
     """
@@ -31,8 +27,6 @@ class Observation(db.Model):
     _metadata = db.relationship('Metadata', backref='observation')
 
     __mapper_args__ = {'polymorphic_identity': 'observation'}
-
-
 
 
 """
@@ -746,7 +740,7 @@ class RNASeqDataSet(PhysicalProperty):
 class RNASeqExperiment(Experiment):
     __tablename__ = 'rna_seq_experiment'
     __mapper_args__ = {'polymorphic_identity': 'rna_seq_experiment'}
-    
+
     experiment_id = db.Column(db.Integer, db.ForeignKey(
         'experiment.id'), primary_key=True)
     samples = db.relationship(
