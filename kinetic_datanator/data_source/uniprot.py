@@ -54,9 +54,9 @@ class Uniprot(data_source.HttpDataSource):
 
         if test:
             self.write_data_to_txt()
-            pand = pd.read_csv('kinetic_datanator/data_source/cache/uniprot-test.txt', delimiter = '\t')
+            pand = pd.read_csv(self.cache_dirname+'/uniprot-test.txt', delimiter = '\t')
         else:
-            pand = pd.read_csv('kinetic_datanator/data_source/cache/uniprot-all.txt', delimiter = '\t')
+            pand = pd.read_csv(self.cache_dirname+'/uniprot-all.txt', delimiter = '\t')
 
         new_columns = ['uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status']
