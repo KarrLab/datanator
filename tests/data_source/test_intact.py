@@ -4,7 +4,7 @@ import tempfile
 import shutil
 
 
-class TestIntAct(unittest.TestCase):
+class TestFromServerIntAct(unittest.TestCase):
     """
 
     """
@@ -37,3 +37,29 @@ class TestIntAct(unittest.TestCase):
         q = self.intact.session.query(intact.ProteinInteractions).filter_by(interactor_a = 'uniprotkb:Q61824').first()
         self.assertEqual(q.interactor_b, 'uniprotkb:Q60631')
         self.assertEqual(q.publications, 'pubmed:11127814|mint:MINT-5213342')
+
+
+class TetstLoadingIntAct(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.intact = intact.IntAct(cache_dirname=self.cache_dirname, download_backups=False, load_content=True, max_entries=10)
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
+
+    def testloadedcomplex(self):
+        q = self.intact.session.query(intact.ProteinComplex).get('EBI-1256672')
+
+        self.assertEqual(q.name, 'INO80 chromatin remodeling complex')
+        self.assertEqual(q.ncbi, '559292')
+        self.assertEqual(q.evidence, 'intact:EBI-515508')
+
+
+    def testloadedinteractions(self):
+        q = self.intact.session.query(intact.ProteinInteractions).all()
+
+        self.assertEqual(len(q), self.intact.max_entries)
+        self.assertEqual(q[0].interactor_a, 'intact:EBI-7121510')

@@ -12,6 +12,8 @@ import os
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+test = True
+
 
 class ProteinInteractions(Base):
     """ Represents protein interactions in from the IntAct Database
@@ -71,6 +73,7 @@ class IntAct(data_source.HttpDataSource):
     base_model = Base
 
     ENDPOINT_DOMAINS = {'intact' : 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip',
+                        'intact-partial': 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact-micluster.zip' ,
                         'complex' : 'ftp://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/'}
 
 
@@ -117,16 +120,16 @@ class IntAct(data_source.HttpDataSource):
 
     def add_interactions(self):
 
-        if not self.cache_dirname + '/intact.txt':
-            path = urlretrieve(self.ENDPOINT_DOMAINS['intact'])
-            zipped = zipfile.ZipFile(BytesIO(path[0]))
-            zipped.extractall(self.cache_dirname)
-
         columns = ['#ID(s) interactor A', 'ID(s) interactor B', 'Publication Identifier(s)', 'Interaction identifier(s)',
                     'Feature(s) interactor A', 'Feature(s) interactor B' , 'Stoichiometry(s) interactor A', 'Stoichiometry(s) interactor B',
                     'Interaction type(s)']
 
-        dt = pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
+        path = urlretrieve(self.ENDPOINT_DOMAINS['intact-partial']) if test else urlretrieve(self.ENDPOINT_DOMAINS['intact'])
+
+        zipped = zipfile.ZipFile(file = path[0])
+        zipped.extractall(self.cache_dirname)
+
+        dt = pd.read_csv(self.cache_dirname + '/intact-micluster.txt', delimiter = '\t', encoding = 'utf-8') if test else pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
 
         pand = dt.loc[:, columns]
         new_columns = ['interactor_a', 'interactor_b', 'publications', 'interaction', 'feature_a', 'feature_b', 'stoich_a', 'stoich_b', 'interaction_type']
