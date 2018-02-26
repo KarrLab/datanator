@@ -35,6 +35,12 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
+    def test_serialization(self):
+        pass
+
+    def test_repr(self):
+        pass
+
 
     def test_data_loaded(self):
         session = self.flk.session
