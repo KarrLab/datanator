@@ -36,7 +36,9 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
     def test_serialization(self):
-        pass
+        test_json = self.flk.session.query(models.Compound).filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
+        self.assertEqual(test_json['main']['compound_name'], '2-Hydroxyisocaproate')
+        self.assertEqual(test_json['main']['_is_name_ambiguous'], False)
 
     def test_repr(self):
         pass

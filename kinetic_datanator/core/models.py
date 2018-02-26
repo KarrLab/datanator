@@ -581,9 +581,14 @@ class Compound(PhysicalEntity):
         return 'Compound'
 
     def serialize(self):
-        return {'main': {c.name: getattr(self, c.name) for c in self.__table__.columns},
-                'structure': {c.name: getattr(self.structure, c.name) for c in self.structure.__table__.columns if self.structure},
-                }
+        ##TODO: Make this less redundant
+        if self.structure:
+            return {'main': {c.name: getattr(self, c.name) for c in self.__table__.columns},
+                'structure': {c.name: getattr(self.structure, c.name) for c in self.structure.__table__.columns},
+                    }
+        else:
+            return {'main': {c.name: getattr(self, c.name) for c in self.__table__.columns}}
+
 
 
 class PhysicalProperty(Observation):
