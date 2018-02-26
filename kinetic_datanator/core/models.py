@@ -577,6 +577,21 @@ class Compound(PhysicalEntity):
     def __name__(self):
         return 'Compound'
 
+    def serialize(self):
+        return{
+            'compound_id': self.compound_id,
+            'compound_name': self.compound_name,
+            'description':self.description,
+            'comment':self.comment,
+            '_is_name_ambiguous': self._is_name_ambiguous,
+            'structure': {'structure_id': self.structure_id,
+                            '_value_smiles': self.structure._value_smiles,
+                            '_value_inchi': self.structure._value_inchi,
+                            '_structure_formula_connectivity': self.structure._structure_formula_connectivity
+                            }
+
+        }
+
 
 class PhysicalProperty(Observation):
     """
