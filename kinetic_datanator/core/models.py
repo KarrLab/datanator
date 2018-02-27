@@ -39,6 +39,12 @@ class Observation(db.Model):
 
     __mapper_args__ = {'polymorphic_identity': 'observation'}
 
+    def __repr__(self):
+        return 'Observation(%s)' % (self.id)
+
+    def __name__(self):
+        return 'Observation'
+
 
 """
 _exeperimentmetadata_method = db.Table(
@@ -216,6 +222,14 @@ class Metadata(db.Model):
     variable = db.relationship(
         'Variable', secondary=_metadata_variable, backref='_metadata')
 
+    def __repr__(self):
+        return 'Metadata(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'Metadata'
+
+
+
 class ExperimentMetadata(db.Model):
     """
     db.Table representing Metadata identifiers for entities and properties
@@ -241,6 +255,12 @@ class ExperimentMetadata(db.Model):
     resource = db.relationship(
         'Resource', secondary=_experimentmetadata_resource, backref='_experimentmetadata')
 
+    def __repr__(self):
+        return 'ExperimentMetadata(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'ExperimentMetadata'
+
 class Experiment(db.Model):
 
     __tablename__ = 'experiment'
@@ -250,6 +270,13 @@ class Experiment(db.Model):
     _experimentmetadata_id = db.Column(db.Integer, db.ForeignKey('_experimentmetadata.id'))
     _experimentmetadata = db.relationship('ExperimentMetadata', backref='experiment')
     __mapper_args__ = {'polymorphic_identity': 'observation'}
+
+    def __repr__(self):
+        return 'Experiment(%s, %s)' % (self.id, self._experimentmetadata_id)
+
+    def __name__(self):
+        return 'Experiment'
+
 
 class Method(db.Model):
     """
@@ -270,6 +297,12 @@ class Method(db.Model):
     hardware = db.Column(db.String(255))
     software = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'Method(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'Method'
+
 class Characteristic(db.Model):
     """
     Represents the method of collection for a given entity or Property
@@ -285,6 +318,12 @@ class Characteristic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.String(255))
     value = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'Charactaristic(%s)' % (self.id)
+
+    def __name__(self):
+        return 'Charactaristic'
 
 class Variable(db.Model):
     """
@@ -303,6 +342,12 @@ class Variable(db.Model):
     value = db.Column(db.String(255))
     units = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'Variable(%s)' % (self.id)
+
+    def __name__(self):
+        return 'Variable'
+
 class ExperimentDesign(db.Model):
     """ Represents and experimental design
     Attributes:
@@ -313,6 +358,12 @@ class ExperimentDesign(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'ExperimentDesign(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'ExperimentalDesign'
 
 class ExperimentType(db.Model):
     """ Represents a type of experiment
@@ -325,6 +376,12 @@ class ExperimentType(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'ExperimentType(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'ExperimentalType'
 
 class DataFormat(db.Model):
     """ Represents a data format
@@ -339,7 +396,11 @@ class DataFormat(db.Model):
     name = db.Column(db.String(255))
     bio_assay_data_cubes = db.Column(db.Integer)
 
+    def __repr__(self):
+        return 'DataFormat(%s, %s)' % (self.name, self._id)
 
+    def __name__(self):
+        return 'DataFormat'
 
 
 class Taxon(db.Model):
@@ -356,6 +417,12 @@ class Taxon(db.Model):
 
     ncbi_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'Taxon(%s, %s)' % (self.name, self.ncbi_id)
+
+    def __name__(self):
+        return 'Taxon'
 
 
 class Synonym(db.Model):
@@ -374,6 +441,11 @@ class Synonym(db.Model):
 
     __tablename__ = 'synonym'
 
+    def __repr__(self):
+        return 'Synonym(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'Synonym'
 
 class Resource(db.Model):
     """
@@ -393,6 +465,12 @@ class Resource(db.Model):
     __tablename__ = 'resource'
 
 
+    def __repr__(self):
+        return 'Resource(%s)' % (self.id)
+
+    def __name__(self):
+        return 'Resource'
+
 class CellLine(db.Model):
     """
     Represents a cell line of a given physical entity or property
@@ -407,6 +485,11 @@ class CellLine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'CellLine(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'CellLine'
 
 class Conditions(db.Model):
     """
@@ -430,6 +513,11 @@ class Conditions(db.Model):
 
     __tablename__ = 'conditions'
 
+    def __repr__(self):
+        return 'Conditions(%s)' % (self.id)
+
+    def __name__(self):
+        return 'Conditions'
 
 class CellCompartment(db.Model):
     """
@@ -447,6 +535,11 @@ class CellCompartment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True, index=True)
 
+    def __repr__(self):
+        return 'CellCompartment(%s, %s)' % (self.name, self.id)
+
+    def __name__(self):
+        return 'CellCompartment'
 
 class PhysicalEntity(Observation):
     """
@@ -465,6 +558,14 @@ class PhysicalEntity(Observation):
         'observation.id'), primary_key=True)
     type = db.Column(db.String(255))
     name = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'PhysicalEntity(%s, %s)' % (self.name, self.observation_id)
+
+    def __name__(self):
+        return 'PhysicalEntity'
+
+
 
 
 class ProteinSubunit(PhysicalEntity):
@@ -514,6 +615,9 @@ class ProteinSubunit(PhysicalEntity):
     proteincomplex = db.relationship(
         'ProteinComplex', backref='protein_subunit', foreign_keys=[proteincomplex_id])
 
+    def __repr__(self):
+        return 'ProteinSubunit(%s, %s)' % (self.subunit_name, self.subunit_id)
+
     def __name__(self):
         return 'ProteinSubunit'
 
@@ -554,6 +658,9 @@ class ProteinComplex(PhysicalEntity):
     class_name = db.Column(db.String(255))
     family_name = db.Column(db.String(255))
     molecular_weight = db.Column(db.Float)
+
+    def __repr__(self):
+        return 'ProteinComplex(%s, %s)' % (self.complex_name, self.complex_id)
 
     def __name__(self):
         return 'ProteinComplex'
@@ -616,6 +723,11 @@ class PhysicalProperty(Observation):
     __tablename__ = 'physical_property'
     __mapper_args__ = {'polymorphic_identity': 'physical_property'}
 
+    def __repr__(self):
+        return 'PhysicalProperty(%s, %s)' % (self.name, self.observation_id)
+
+    def __name__(self):
+        return 'PhysicalProperty'
 
 class Structure(PhysicalProperty):
     """
@@ -637,6 +749,11 @@ class Structure(PhysicalProperty):
     _value_inchi = db.Column(db.String(255))
     _structure_formula_connectivity = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'Structure(%s)' % (self.struct_id)
+
+    def __name__(self):
+        return 'Structure'
 
 class Concentration(PhysicalProperty):
     """
@@ -658,6 +775,12 @@ class Concentration(PhysicalProperty):
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
+
+    def __repr__(self):
+        return 'Concentration(%s)' % (self.concentration_id)
+
+    def __name__(self):
+        return 'Concentration'
 
 
 class KineticLaw(PhysicalProperty):
@@ -687,6 +810,11 @@ class KineticLaw(PhysicalProperty):
     mechanism = db.Column(db.String(255))
     equation = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'KineticLaw(%s)' % (self.kinetic_law_id)
+
+    def __name__(self):
+        return 'KineticLaw'
 
 class Reaction(db.Model):
     """
@@ -720,6 +848,12 @@ class Reaction(db.Model):
         db.Integer, db.ForeignKey('kinetic_law.kinetic_law_id'))
     kinetic_law = db.relationship(KineticLaw, backref='reaction')
 
+    def __repr__(self):
+        return 'Reaction(%s)' % (self.reaction_id)
+
+    def __name__(self):
+        return 'Reaction'
+
 
 class AbundanceDataSet(PhysicalProperty):
     """
@@ -742,6 +876,13 @@ class AbundanceDataSet(PhysicalProperty):
     weight = db.Column(db.Integer)
     coverage = db.Column(db.Integer)
 
+    def __repr__(self):
+        return 'AbundanceDataset(%s)' % (self.dataset_id)
+
+    def __name__(self):
+        return 'AbundanceDataset'
+
+
 class RNASeqDataSet(PhysicalProperty):
     __tablename__ = 'rna_seq_dataset'
     __mapper_args__ = {'polymorphic_identity': 'rna_seq_dataset'}
@@ -757,6 +898,11 @@ class RNASeqDataSet(PhysicalProperty):
     reference_genome = db.relationship(
         'ReferenceGenome', secondary= rnaseqdataset_referencegenome, backref='sample')
 
+    def __repr__(self):
+        return 'RNASeqDataset(%s)' % (self.sample_id)
+
+    def __name__(self):
+        return 'RNASeqDataset'
 
 class RNASeqExperiment(Experiment):
     __tablename__ = 'rna_seq_experiment'
@@ -770,6 +916,13 @@ class RNASeqExperiment(Experiment):
     exp_name = db.Column(db.String)
     has_fastq_files = db.Column(db.Boolean)
 
+    def __repr__(self):
+        return 'RNASeqExperiment(%s)' % ( self.experiment_id)
+
+    def __name__(self):
+        return 'RNASeqExperiment'
+
+
 class ReferenceGenome(PhysicalProperty):
 
     __tablename__ = 'reference_genome'
@@ -779,10 +932,11 @@ class ReferenceGenome(PhysicalProperty):
     organism_strain = db.Column(db.String(255))
     download_url = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'ReferenceGenome(%s)' % ( self.reference_genome_id)
 
-
-
-
+    def __name__(self):
+        return 'ReferenceGenome'
 
 class DNABindingDataset(PhysicalProperty):
     """
@@ -808,6 +962,11 @@ class DNABindingDataset(PhysicalProperty):
         'protein_subunit.subunit_id'))
     subunit = db.relationship('ProteinSubunit', backref='dna_binding_dataset')
 
+    def __repr__(self):
+        return 'DNABindingDataset(%s)' % ( self.dataset_id)
+
+    def __name__(self):
+        return 'DNABindingDataset'
 
 class Parameter(db.Model):
     """
@@ -851,6 +1010,11 @@ class Parameter(db.Model):
     observed_error = db.Column(db.Float)
     observed_units = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'Parameter(%s)' % ( self.parameter_id)
+
+    def __name__(self):
+        return 'Parameter'
 
 class AbundanceData(db.Model):
     """
@@ -879,6 +1043,11 @@ class AbundanceData(db.Model):
     pax_load = db.Column(db.Integer)
     uniprot_id = db.Column(db.Integer)
 
+    def __repr__(self):
+        return 'AbundanceData(%s)' % ( self.abundance_id)
+
+    def __name__(self):
+        return 'AbundanceData'
 
 class DNABindingData(db.Model):
     """
@@ -908,6 +1077,11 @@ class DNABindingData(db.Model):
     dataset = db.relationship(
         'DNABindingDataset', backref='dna_binding_data', foreign_keys=[dataset_id])
 
+    def __repr__(self):
+        return 'DNABindingData(%s)' % (self.position_id)
+
+    def __name__(self):
+        return 'DNABindingData'
 
 class ProteinInteractions(PhysicalProperty):
     """
@@ -939,6 +1113,11 @@ class ProteinInteractions(PhysicalProperty):
     interaction_type = db.Column(db.String(255))
     publication = db.Column(db.String(255))
 
+    def __repr__(self):
+        return 'ProteinInteratctions(%s)' % (self.interaction_id)
+
+    def __name__(self):
+        return 'ProteinInteratctions'
 
 class Progress(db.Model):
     """
@@ -952,3 +1131,9 @@ class Progress(db.Model):
 
     database_name = db.Column(db.String, primary_key=True)
     amount_loaded = db.Column(db.Integer)
+
+    def __repr__(self):
+        return 'Progress(%s, %s)' % (self.database_name, self.amount_loaded)
+
+    def __name__(self):
+        return 'Progress'

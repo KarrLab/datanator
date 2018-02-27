@@ -42,9 +42,6 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
         #TODO: Write more comprehensive serialization tests
 
-    def test_repr(self):
-        pass
-
 
     def test_data_loaded(self):
         session = self.flk.session
