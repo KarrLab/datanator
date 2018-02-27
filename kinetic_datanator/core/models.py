@@ -22,7 +22,14 @@ class SerializeClassMixin(object):
             if relation == '_metadata':
                 continue
             objs = getattr(self, relation)
-            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)} if objs else None
+
+            if objs == None:
+                result_json[relation] = None
+            elif isinstance(objs, list):
+                result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)}
+            else:
+                result_json[relation] = {c.name: getattr(objs, c.name) for c in objs.__table__.columns}
+
         return(result_json)
 
     def serialize_metadata(self, obj):
