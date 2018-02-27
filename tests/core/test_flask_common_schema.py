@@ -40,6 +40,8 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(test_json['main']['compound_name'], '2-Hydroxyisocaproate')
         self.assertEqual(test_json['main']['_is_name_ambiguous'], False)
 
+        #TODO: Write more comprehensive serialization tests
+
     def test_repr(self):
         pass
 

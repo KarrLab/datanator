@@ -4,10 +4,21 @@ from flask_migrate import Migrate
 from kinetic_datanator.config import config
 
 
+
 app = Flask(__name__)
 app.config.from_object(config.Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+
+def serialize_metadata(_metadata):
+    result_json = {}
+    for relation in _metadata.__mapper__.relationships.keys():
+        objs = getattr(_metadata, relation)
+        if objs:
+            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)}
+
+    return(result_json)
 
 class Observation(db.Model):
     """
@@ -581,14 +592,11 @@ class Compound(PhysicalEntity):
         return 'Compound'
 
     def serialize(self):
-        ##TODO: Make this less redundant
-        if self.structure:
-            return {'main': {c.name: getattr(self, c.name) for c in self.__table__.columns},
-                'structure': {c.name: getattr(self.structure, c.name) for c in self.structure.__table__.columns},
-                    }
-        else:
-            return {'main': {c.name: getattr(self, c.name) for c in self.__table__.columns}}
+        main = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        structure = {c.name: getattr(self.structure, c.name) for c in self.structure.__table__.columns} if self.structure else None
+        metadata = serialize_metadata(self._metadata)
 
+        return {'main': main, 'structure': structure, 'metadata': metadata}
 
 
 class PhysicalProperty(Observation):
