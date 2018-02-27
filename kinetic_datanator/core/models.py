@@ -11,16 +11,37 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
-def serialize_metadata(_metadata):
-    result_json = {}
-    for relation in _metadata.__mapper__.relationships.keys():
-        objs = getattr(_metadata, relation)
-        if objs:
-            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)}
+class SerializeClassMixin(object):
+    """
+    Mixin class provides data object special functions such as serialization
+    """
 
-    return(result_json)
+    def serialize_relationships(self):
+        result_json = {}
+        for relation in self.__mapper__.relationships.keys():
+            if relation == '_metadata':
+                continue
+            objs = getattr(self, relation)
+            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)} if objs else None
+        return(result_json)
 
-class Observation(db.Model):
+    def serialize_metadata(self, obj):
+        result_json = {}
+        for relation in obj.__mapper__.relationships.keys():
+            if relation == 'observation':
+                continue
+            objs = getattr(obj, relation)
+            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)} if objs else None
+        return(result_json)
+
+    def serialize(self):
+        json = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        json['relationships'] = self.serialize_relationships()
+        json['metadata'] = self.serialize_metadata(self._metadata)
+        return json
+
+
+class Observation(SerializeClassMixin, db.Model):
     """
     Represents an Observation of a Physical Entity or Property in the Common Schema
 
@@ -697,13 +718,6 @@ class Compound(PhysicalEntity):
 
     def __name__(self):
         return 'Compound'
-
-    def serialize(self):
-        main = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        structure = {c.name: getattr(self.structure, c.name) for c in self.structure.__table__.columns} if self.structure else None
-        metadata = serialize_metadata(self._metadata)
-
-        return {'main': main, 'structure': structure, 'metadata': metadata}
 
 
 class PhysicalProperty(Observation):

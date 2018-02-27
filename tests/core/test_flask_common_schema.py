@@ -36,11 +36,14 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
     def test_serialization(self):
-        test_json = self.flk.session.query(models.Compound).filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
-        self.assertEqual(test_json['main']['compound_name'], '2-Hydroxyisocaproate')
-        self.assertEqual(test_json['main']['_is_name_ambiguous'], False)
+        test_json = models.Compound.query.filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
+        self.assertEqual(test_json['compound_name'], '2-Hydroxyisocaproate')
+        self.assertEqual(test_json['_is_name_ambiguous'], False)
 
-        #TODO: Write more comprehensive serialization tests
+        test_json = models.AbundanceDataSet.query.filter_by(file_name='882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first().serialize()
+        self.assertEqual(test_json['score'], 2.47)
+        self.assertEqual(test_json['weight'], 100)
+
 
 
     def test_data_loaded(self):
@@ -66,6 +69,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
+
 
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
