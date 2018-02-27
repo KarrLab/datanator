@@ -41,10 +41,19 @@ class SerializeClassMixin(object):
             result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)} if objs else None
         return(result_json)
 
-    def serialize(self):
+    def serialize(self, metadata=False, relationships=False):
+        """
+        Attributes:
+            metadata (:obj:`bool`): Switch for gathering metadata serialization data
+            relationships (:obj:`bool`): Switch for gathering relationship serialization data
+
+        """
+
         json = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        json['relationships'] = self.serialize_relationships()
-        json['metadata'] = self.serialize_metadata(self._metadata)
+        if relationships:
+            json['relationships'] = self.serialize_relationships()
+        if metadata:
+            json['metadata'] = self.serialize_metadata(self._metadata)
         return json
 
 
