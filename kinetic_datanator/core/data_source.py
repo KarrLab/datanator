@@ -212,8 +212,9 @@ class CachedDataSource(DataSource):
             whoosh_backup.paths.append(path)
             whoosh_backup.local_filename = path.arc_path
             whoosh_backup.remote_filename = path.arc_path + '.tar.gz'
-            whoosh_backup.set_username_ip_date()
-            whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+            if set_metadata:
+                whoosh_backup.set_username_ip_date()
+                whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
             list_backups.append(whoosh_backup)
 
         list_backups.append(a_backup)
