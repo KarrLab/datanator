@@ -144,4 +144,4 @@ class BioPortal(data_source.DataSource):
         Returns:
             :obj:`str`: key
         """
-        return kinetic_datanator.config.core.get_config()['bioportal']['key']
+        return kinetic_datanator.config.core.get_config()['kinetic_datanator']['bioportal']['key']
