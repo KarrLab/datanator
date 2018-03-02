@@ -16,7 +16,7 @@ from kinetic_datanator.core import flask_common_schema, models
 import flask_whooshalchemy
 
 
-class TextSearchSession(six.with_metaclass(abc.ABCMeta, object)):
+class TextSearchSession(object):
     """
     Represents a text search through the database grabbing relevant information
 
