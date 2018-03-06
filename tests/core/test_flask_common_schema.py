@@ -46,7 +46,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         test_json = models.Compound.query.filter_by(compound_name='Adenine').first().serialize(metadata=True, relationships=True)
         self.assertEqual(test_json['compound_name'], 'Adenine')
         self.assertEqual(test_json['relationships']['structure']['_value_inchi'], 'InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)')
-        self.assertEqual(test_json['metadata']['cell_compartment'][0]['id'], 21)
+
 
 
     def test_data_loaded(self):

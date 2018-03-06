@@ -78,7 +78,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             self.session.query(models.Progress).delete()
             self.load_content()
         elif load_content:
-            self.pax_loaded, self.sabio_loaded, self.intact_loaded, self.array_loaded  = 0, 0, 0, 0
+            self.pax_loaded, self.sabio_loaded, self.intact_loaded, self.array_loaded  = 0, 0, 0, 1
             self.load_small_db_switch = True
             self.load_content()
 
@@ -95,6 +95,10 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         A wrapper for loading all the databases into common ORM database
 
         """
+        if self.verbose:
+            print('\n------------------------ Starting ------------------------')
+            print('\n----------------------------------------------------------')
+        t0 = time.time()
 
         self.set_up_build()
 
@@ -137,6 +141,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.fill_missing_ncbi_names()
         if self.verbose:
             print('NCBI Completed')
+
+
+        if self.verbose:
+            print('\n------------------------ Finished ------------------------')
+            print('Total time taken for build: ' + str(time.time()-t0) + ' secs')
 
     def add_intact_interactions(self):
         """
@@ -253,14 +262,14 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             print('\n------------------------ Initializing Array Express Parsing ------------------------')
 
         t0 = time.time()
-
         ae = array_express.ArrayExpress(cache_dirname = self.cache_dirname)
+        multiplier = 1 if self.test else 2
 
         if self.max_entries == float('inf'):
             experiments = ae.session.query(array_express.Experiment).all()
         else:
             experiments = ae.session.query(array_express.Experiment).filter(array_express.Experiment._id.in_\
-                (range(self.array_loaded+1, self.array_loaded+1 + self.max_entries)))
+                (range(self.array_loaded, self.array_loaded + (int(self.max_entries*multiplier)))))
 
 
         for exp in experiments:
