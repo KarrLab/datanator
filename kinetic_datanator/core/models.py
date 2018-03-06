@@ -639,6 +639,7 @@ class ProteinSubunit(PhysicalEntity):
     length = db.Column(db.Integer)
     molecular_weight = db.Column(db.Float)
     pax_load = db.Column(db.Integer)
+    uniprot_checked = db.Column(db.Boolean)
 
     interaction = db.relationship(
         'ProteinInteractions', secondary=subunit_interaction, backref='protein_subunit')
