@@ -69,26 +69,20 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             flask_whooshalchemy.whoosh_index(self.app, item)
 
         if download_backups and load_content:
-            self.pax_loaded = self.session.query(models.Progress).filter_by(database_name = 'Pax').first().amount_loaded
-            self.sabio_loaded = self.session.query(models.Progress).filter_by(database_name = 'Sabio').first().amount_loaded
-            self.intact_loaded = self.session.query(models.Progress).filter_by(database_name = 'IntAct').first().amount_loaded
+            prog = self.session.query(models.Progress)
+            self.pax_loaded = prog.filter_by(database_name = 'Pax').first().amount_loaded
+            self.sabio_loaded = prog.filter_by(database_name = 'Sabio').first().amount_loaded
+            self.intact_loaded = prog.filter_by(database_name = 'IntAct').first().amount_loaded
+            self.array_loaded = prog.filter_by(database_name = 'Array Express').first().amount_loaded
             self.load_small_db_switch = False
             self.session.query(models.Progress).delete()
             self.load_content()
         elif load_content:
-            self.pax_loaded = 0
-            self.sabio_loaded = 0
-            self.intact_loaded = 0
-            self.array_loaded = 0
+            self.pax_loaded, self.sabio_loaded, self.intact_loaded, self.array_loaded  = 0, 0, 0, 0
             self.load_small_db_switch = True
             self.load_content()
 
-
-    def load_content(self):
-        """
-        A wrapper for loading all the databases into common ORM database
-
-        """
+    def set_up_build(self):
         ## Initiate Observation and direct Subclasses
         observation = models.Observation()
         observation.physical_entity = models.PhysicalEntity()
@@ -96,45 +90,53 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         observation.physical_property = models.PhysicalProperty()
         self.property = observation.physical_property
 
+    def load_content(self):
+        """
+        A wrapper for loading all the databases into common ORM database
+
+        """
+
+        self.set_up_build()
+
         ## Chunk Larger DBs
-        self.add_intact_interactions()
-        if self.verbose:
-            print('IntAct Interactions Done')
         self.add_paxdb()
         if self.verbose:
-            print('Pax Done')
+            print('Pax Completed')
+        self.add_intact_interactions()
+        if self.verbose:
+            print('IntAct Interactions Completed')
         self.add_sabiodb()
         if self.verbose:
-            print('Sabio Done')
+            print('Sabio Completed')
         self.add_arrayexpress()
         if self.verbose:
-            print('Array Express Done')
+            print('Array Express Completed')
 
         # Add complete smaller DBs
         if self.load_small_db_switch:
             self.add_intact_complexes()
             if self.verbose:
-                print('IntAct Complexes Done')
+                print('IntAct Complexes Completed')
             self.add_corumdb()
             if self.verbose:
-                print('Corum Done')
+                print('Corum Completed')
             self.add_jaspardb()
             if self.verbose:
-                print('Jaspar Done')
+                print('Jaspar Completed')
             self.add_ecmdb()
             if self.verbose:
-                print('ECMDB Done')
+                print('ECMDB Completed')
 
 
         ## Add missing subunit information
         self.add_uniprot()
         if self.verbose:
-            print('Uniprot Done')
+            print('Uniprot Completed')
 
         ## Add missing Taxon information
         self.fill_missing_ncbi_names()
         if self.verbose:
-            print('NCBI Done')
+            print('NCBI Completed')
 
     def add_intact_interactions(self):
         """
@@ -142,7 +144,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing IntAct filling...')
+            print('\n------------------------ Initializing IntAct Parsing ------------------------')
 
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
@@ -153,36 +155,35 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             interactiondb = intactdb.session.query(intact.ProteinInteractions).all()
         else:
             interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_\
-                (range(self.max_entries*multiplier))).all()
+                (range(self.intact_loaded, self.intact_loaded+(self.max_entries*multiplier)))).all()
 
-        self.session.bulk_insert_mappings(models.ProteinInteractions,
-            [{'name' : i.interactor_a + "+" + i.interactor_b, 'type' : 'Protein Interaction',
-            'participant_a' : i.interactor_a, 'participant_b' : i.interactor_b, 'publication' : i.publications,
-            'interaction' : i.interaction, 'site_a' : i.feature_a, 'site_b' : i.feature_b,
-            'stoich_a' : i.stoich_a, 'stoich_b' : i.stoich_b, 'interaction_type': i.interaction_type} for i in interactiondb]
-            )
 
         index = self.intact_loaded
-        for row in self.session.query(models.ProteinInteractions).all():
-            metadata = self.get_or_create_object(models.Metadata, name = 'Protein Interaction ' + str(index))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace = 'pubmed', _id = re.split(':||', row.publication)[1]))
-            row._metadata = metadata
-            if 'uniprotkb:' in  row.participant_a:
-                row.protein_subunit.append(self.get_or_create_object(models.ProteinSubunit,\
-                uniprot_id = str(row.participant_a.replace('uniprotkb:', ''))))
-            if 'uniprotkb:' in  row.participant_b:
-                row.protein_subunit.append(self.get_or_create_object(models.ProteinSubunit,\
-                uniprot_id = str(row.participant_b.replace('uniprotkb:', ''))))
+        batch = []
+        for i in interactiondb:
+            subunit = []
+            metadata = models.Metadata(name = 'protein_interaction_' + str(i.index))
+            metadata.resource.append(self.get_or_create_object(models.Resource, namespace = 'pubmed', _id = re.split(':||', i.publications)[1]))
+            if 'uniprotkb:' in  i.interactor_a:
+                subunit.append(self.get_or_create_object(models.ProteinSubunit,\
+                uniprot_id = str(i.interactor_a.replace('uniprotkb:', ''))))
+            if 'uniprotkb:' in  i.interactor_b:
+                subunit.append(self.get_or_create_object(models.ProteinSubunit,\
+                uniprot_id = str(i.interactor_b.replace('uniprotkb:', ''))))
+            batch.append(models.ProteinInteractions(name = i.interactor_a + "+" + i.interactor_b, type = 'Protein Interaction',
+                participant_a = i.interactor_a, participant_b = i.interactor_b, interaction =i.interaction, site_a = i.feature_a, site_b = i.feature_b,
+                stoich_a = i.stoich_a, stoich_b = i.stoich_b, interaction_type= i.interaction_type, _metadata = metadata, protein_subunit = subunit))
             index += 1
 
-        self.get_or_create_object(models.Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + index)
-
-        if self.verbose:
-            print('Total time taken for IntAct Interactions: ' + str(time.time()-t0) + ' secs')
+        self.session.add_all(batch)
+        self.get_or_create_object(models.Progress, database_name = 'IntAct', amount_loaded = self.intact_loaded + (self.max_entries*multiplier))
 
         if self.verbose:
             print('Comitting')
         self.session.commit()
+
+        if self.verbose:
+            print('Total time taken for IntAct Interactions: ' + str(time.time()-t0) + ' secs')
 
     def add_paxdb(self):
         """
@@ -192,7 +193,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing Pax filling...')
+            print('\n------------------------ Initializing Pax Parsing ------------------------')
 
         t0 = time.time()
         paxdb = pax.Pax(cache_dirname = self.cache_dirname, verbose = self.verbose)
@@ -249,7 +250,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def add_arrayexpress(self):
         if self.verbose:
-            print('Initializing Array Express filling...')
+            print('\n------------------------ Initializing Array Express Parsing ------------------------')
 
         t0 = time.time()
 
@@ -389,7 +390,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing SabioRk filling...')
+            print('\n------------------------ Initializing SabioRk Parsing ------------------------')
 
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(cache_dirname = self.cache_dirname, verbose = self.verbose)
@@ -413,16 +414,17 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             if compartment: continue
 
             if item._type == 'compound':
-                structure = item.structures
-                for struct in structure:
-                    self.property.structure = self.get_or_create_object(models.Structure, type = 'Structure', name = item.name,
+                structure = None
+                for struct in item.structures:
+                    structure = self.get_or_create_object(models.Structure, type = 'Structure', name = item.name,
                         _value_smiles = struct.value, _value_inchi = struct._value_inchi,
                         _structure_formula_connectivity = struct._value_inchi_formula_connectivity, _metadata = metadata)\
                         if struct.format == 'smiles' else None
+
                 self.entity.compound = self.get_or_create_object(models.Compound, type = 'Compound',
                     name = item.name, compound_name = item.name,
                     _is_name_ambiguous = sabio_ses.query(sabio_rk.Compound).get(item._id)._is_name_ambiguous,
-                    structure = self.property.structure, _metadata = metadata)
+                    structure = structure, _metadata = metadata)
                 continue
 
             elif item._type == 'enzyme':
@@ -498,7 +500,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing Corum filling...')
+            print('\n------------------------ Initializing Corum Parsing ------------------------')
 
         t0 = time.time()
         corumdb = corum.Corum(cache_dirname = self.cache_dirname, verbose = self.verbose)
@@ -553,7 +555,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing Jaspar filling...')
+            print('\n------------------------ Initializing Jaspar Parsing ------------------------')
 
         t0 = time.time()
         jaspardb = jaspar.Jaspar(cache_dirname = self.cache_dirname,verbose = self.verbose)
@@ -628,7 +630,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing ECMDB filling...')
+            print('\n------------------------ Initializing ECMDB Parsing ------------------------')
 
         t0 = time.time()
         ecmDB = ecmdb.Ecmdb(cache_dirname = self.cache_dirname, verbose = self.verbose)
@@ -693,7 +695,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing IntAct Complex filling...')
+            print('\n------------------------ Initializing IntAct Complex Parsing ------------------------')
 
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname = self.cache_dirname)
@@ -740,7 +742,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing Uniprot filling...')
+            print('\n------------------------ Initializing Uniprot Parsing ------------------------')
 
         t0 = time.time()
 
@@ -772,7 +774,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('Initializing NCBI filling...')
+            print('\n------------------------ Initializing NCBI Parsing ------------------------')
 
         t0 = time.time()
 
@@ -794,4 +796,4 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.session.commit()
 
         if self.verbose:
-            print('Total time taken for NCBI fillings: ' + str(time.time()-t0) + ' secs')
+            print('Total time taken for NCBI: ' + str(time.time()-t0) + ' secs')

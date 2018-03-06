@@ -1141,7 +1141,6 @@ class ProteinInteractions(PhysicalProperty):
     stoich_a = db.Column(db.String(255))
     stoich_b = db.Column(db.String(255))
     interaction_type = db.Column(db.String(255))
-    publication = db.Column(db.String(255))
 
     def __repr__(self):
         return 'ProteinInteratctions(%s)' % (self.interaction_id)

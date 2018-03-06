@@ -18,7 +18,6 @@ import random
 import os
 from six.moves import reload_module
 
-
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
@@ -74,13 +73,14 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
 
+
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
-                                clear_content = True ,load_entire_small_DBs = False,
-                                download_backups= False, load_content = True, max_entries = 10,
+                                clear_content = True, download_backups= False,
+                                load_content = True, max_entries = 10,
                                 verbose = True, test=True)
 
         for item in self.cs.text_indicies:
@@ -208,6 +208,14 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'uniprotkb:P49418').all()
         self.assertEqual(set([c.site_b for c in interact]), set(['binding-associated region:1063-1070(MINT-376288)', '-']))
 
+        for testcase in [interaction.protein_subunit for interaction in interact\
+            if interaction.participant_b != 'uniprotkb:O43426']:
+            self.assertEqual(len(testcase), 1)
+            self.assertEqual(testcase[0].uniprot_id, 'P49418')
+
+        for items in interact:
+            self.assertTrue(items._metadata)
+
         interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'intact:EBI-7121765').first()
         self.assertEqual(interact._metadata.resource[0]._id, '10542231|mint')
 
@@ -231,3 +239,31 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     def test_whoosh(self):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
+
+
+# class DownloadLoadingTestFlaskCommonSchema(unittest.TestCase):
+#
+#     @classmethod
+#     def setUpClass(self):
+#         self.cache_dirname = tempfile.mkdtemp()
+#
+#         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
+#                                 download_backups= True, load_content = True, max_entries = 10,
+#                                 verbose = True, test=True)
+#
+#         for item in self.cs.text_indicies:
+#             flask_whooshalchemy.whoosh_index(self.cs.app, item)
+#
+#         self.session = self.cs.session
+#
+#
+#     @classmethod
+#     def tearDownClass(self):
+#         models.db.session.remove()
+#         models.db.drop_all()
+#
+#         shutil.rmtree(self.cache_dirname)
+#
+#     def test_progress_check(self):
+#         for prog in self.session.query(models.Progress).all():
+#             self.assertGreaterEqual(prog.amount_loaded, self.prev_load[prog.database_name])
