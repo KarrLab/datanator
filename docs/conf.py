@@ -187,7 +187,7 @@ html_theme_options = {
     'collapse_navigation': False,
     'display_version': True,
     'navigation_depth': 4,
-    'canonical_url': 'http://kinetic_datanator.readthedocs.io/en/latest/',
+    'canonical_url': 'http://docs.karrlab.org/kinetic_datanator',
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

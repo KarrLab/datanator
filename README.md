@@ -1,5 +1,5 @@
 [//]: # ( [![PyPI package](https://img.shields.io/pypi/v/Kinetic-Datanator.svg)](https://pypi.python.org/pypi/Kinetic-Datanator) )
-[![Documentation](https://readthedocs.org/projects/kinetic_datanator/badge/?version=latest)](http://kinetic_datanator.readthedocs.org)
+[![Documentation](https://img.shields.io/badge/docs-latest-green.svg)](http://docs.karrlab.org/kinetic_datanator)
 [![Test results](https://circleci.com/gh/KarrLab/kinetic_datanator.svg?style=shield)](https://circleci.com/gh/KarrLab/kinetic_datanator)
 [![Test coverage](https://coveralls.io/repos/github/KarrLab/kinetic_datanator/badge.svg)](https://coveralls.io/github/KarrLab/kinetic_datanator)
 [![Code analysis](https://api.codeclimate.com/v1/badges/62e495c53a118f35afea/maintainability)](https://codeclimate.com/github/KarrLab/kinetic_datanator)
@@ -23,7 +23,7 @@
 `kinetic_datanator` is a software tool for finding experimental data for building and calibrating dynamical models of cellular biochemistry such as metabolite, RNA, and protein abundances; protein complex compositions; transcription factor binding motifs; and kinetic parameters. ``kinetic_datanator`` is particularly useful for building large models, such as whole-cell models, that require large amounts of data to constrain large numbers of parameters. ``kinetic_datanator`` was motivated by the need for large amounts of data to constrain whole-cell models and the fact that this data is hard to utilize because it is scattered across numerous siloed repositories.
 
 ## Installation instructions, user instructions, and code documentation
-Please see the [documentation](http://kinetic_datanator.readthedocs.org) at the Read the Docs for installation instructions, user instructions, and code documentation.
+Please see the [documentation](http://docs.karrlab.org/kinetic_datanator) at the Read the Docs for installation instructions, user instructions, and code documentation.
 
 ## Testing `kinetic_datanator`
 To ensure `kinetic_datanator` works properly, we have developed extensive units tests of every aspect of `kinetic_datanator`. We recommend using `pytest` to run these tests as follows:
