@@ -13,14 +13,17 @@ from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound
                                                     ReactionParticipant, KineticLaw, Parameter, Resource)
 from kinetic_datanator.util import warning_util
 import datetime
+import ftputil
 import math
 import numpy
 import os
 import scipy.constants
 import shutil
 import sqlalchemy
+import sys
 import tempfile
 import unittest
+import wc_utils.backup
 
 warning_util.disable_warnings()
 
@@ -822,6 +825,16 @@ class TestBackupAndInstall(unittest.TestCase):
         shutil.rmtree(self.cache_dirname_3)
         shutil.rmtree(self.cache_dirname_4)
         shutil.rmtree(self.cache_dirname_5)
+
+        mgr = wc_utils.backup.BackupManager()
+        with ftputil.FTPHost(mgr.hostname, mgr.username, mgr.password) as ftp:
+            dirname = ftp.path.join(mgr.remote_dirname,
+                                    'test.sabio_rk.sqlite.tar.gz')
+            ftp.rmtree(dirname)
+
+            dirname = ftp.path.join(mgr.remote_dirname,
+                                    'test.sabio_rk.requests.py{}.sqlite.tar.gz'.format(sys.version_info[0]))
+            ftp.rmtree(dirname)
 
     def test(self):
         # backup and download
