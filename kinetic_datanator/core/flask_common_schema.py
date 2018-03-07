@@ -782,7 +782,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         unidb = uniprot.Uniprot(cache_dirname = self.cache_dirname)
         unidb_ses = unidb.session
 
-        com_unis = self.session.query(models.ProteinSubunit).filter_by(uniprot_checked=False).all()
+        com_unis = self.session.query(models.ProteinSubunit).filter_by(uniprot_checked=None).all()
 
         for subunit in com_unis:
             info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
