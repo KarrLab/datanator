@@ -96,8 +96,16 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         """
         if self.verbose:
-            print('\n------------------------ Starting ------------------------')
-            print('\n----------------------------------------------------------')
+            print(''' \n
+                ===================================
+                |                                 |
+                |                                 |
+                |    Starting Datanator Build     |
+                |                                 |
+                |                                 |
+                ===================================
+
+                ''')
         t0 = time.time()
 
         self.set_up_build()
@@ -115,37 +123,43 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.add_arrayexpress()
         if self.verbose:
             print('Array Express Completed')
-        #
-        # # Add complete smaller DBs
-        # if self.load_small_db_switch:
-        #     self.add_intact_complexes()
-        #     if self.verbose:
-        #         print('IntAct Complexes Completed')
-        #     self.add_corumdb()
-        #     if self.verbose:
-        #         print('Corum Completed')
-        #     self.add_jaspardb()
-        #     if self.verbose:
-        #         print('Jaspar Completed')
-        #     self.add_ecmdb()
-        #     if self.verbose:
-        #         print('ECMDB Completed')
+
+        # Add complete smaller DBs
+        if self.load_small_db_switch:
+            self.add_intact_complexes()
+            if self.verbose:
+                print('IntAct Complexes Completed')
+            self.add_corumdb()
+            if self.verbose:
+                print('Corum Completed')
+            self.add_jaspardb()
+            if self.verbose:
+                print('Jaspar Completed')
+            self.add_ecmdb()
+            if self.verbose:
+                print('ECMDB Completed')
 
 
         ## Add missing subunit information
-        # self.add_uniprot()
-        # if self.verbose:
-        #     print('Uniprot Completed')
-        #
-        # ## Add missing Taxon information
-        # self.fill_missing_ncbi_names()
-        # if self.verbose:
-        #     print('NCBI Completed')
+        self.add_uniprot()
+        if self.verbose:
+            print('Uniprot Completed')
+
+        ## Add missing Taxon information
+        self.fill_missing_ncbi_names()
+        if self.verbose:
+            print('NCBI Completed')
 
 
         if self.verbose:
-            print('\n------------------------ Finished ------------------------')
-            print('Total time taken for build: ' + str(time.time()-t0) + ' secs')
+            print(''' \n
+                =============================================
+                |                                           |
+                |             Finished Build                |
+                |   Total time taken for build: %s secs   |
+                |                                           |
+                =============================================
+                ''' % (str(round(time.time()-t0, 1))))
 
     def add_intact_interactions(self):
         """
