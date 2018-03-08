@@ -43,5 +43,5 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
         concentrations = self.q.get_concentration_by_structure(self.proline.structure._value_inchi, only_formula_and_connectivity=False )
         self.assertEqual(set(c.value for c in concentrations.all()), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
 
-        concentrations = self.q.get_concentration_by_structure(self.uridine_tp.structure._value_inchi, only_formula_and_connectivity=False )
+        concentrations = self.q.get_concentration_by_structure(self.uridine_tp.structure._value_inchi, only_formula_and_connectivity=True)
         self.assertEqual(set(c.value for c in concentrations.all()), set([8290.0, 3990.0, 2370.0, 663.0]))
