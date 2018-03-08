@@ -78,7 +78,6 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 else:
                     self.get_or_create_object(models.Progress, database_name=db, amount_loaded=1)
             self.session.commit()
-            self.pax_loaded, self.sabio_loaded, self.intact_loaded, self.array_loaded  = 0, 0, 0, 1
             self.load_small_db_switch = True
             self.load_content()
 

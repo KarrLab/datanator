@@ -1079,7 +1079,7 @@ class DNABindingData(db.Model):
         jaspar_id (:obj:`int`): ID of Jaspar Matrix (used for bulk insert mapping)
         dataset_id  (:obj:`int`): Represents the dataset from which the data stems from
     """
-    __tablename__ = 'dna_bidning_data'
+    __tablename__ = 'dna_binding_data'
 
     position_id = db.Column(db.Integer, primary_key=True)
     position = db.Column(db.Integer, index=True)
