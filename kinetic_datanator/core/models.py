@@ -1028,7 +1028,7 @@ class Parameter(db.Model):
     observed_units = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'Parameter(%s)' % ( self.parameter_id)
+        return 'Parameter(%s)' % (self.parameter_id)
 
     def __name__(self):
         return 'Parameter'
@@ -1061,7 +1061,7 @@ class AbundanceData(db.Model):
     uniprot_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return 'AbundanceData(%s)' % ( self.abundance_id)
+        return 'AbundanceData(%s)' % (self.abundance_id)
 
     def __name__(self):
         return 'AbundanceData'

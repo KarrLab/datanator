@@ -19,7 +19,7 @@ import os
 from six.moves import reload_module
 
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
-
+    
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
@@ -47,6 +47,13 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(test_json['compound_name'], 'Adenine')
         self.assertEqual(test_json['relationships']['structure']['_value_inchi'], 'InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)')
 
+    def test_magic_methods(self):
+
+        for tablename in self.flk.base_model.metadata.tables.keys():
+            for c in models.db.Model._decl_class_registry.values():
+                if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+                    self.assertEqual(tablename.replace('_',''), c.__name__.lower())
+                    self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
 
 
     def test_data_loaded(self):
