@@ -2,11 +2,13 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
+import os 
 
 
 
 app = Flask(__name__)
-app.config.from_object(config.Config)
+app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.Config')
+app.config.from_object(app_settings)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -72,9 +74,8 @@ class Observation(SerializeClassMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     _metadata_id = db.Column(db.Integer, db.ForeignKey('_metadata.id'))
-    _metadata = db.relationship('Metadata', backref='observation')
+    _metadata = db.relationship('Metadata')
 
-    __mapper_args__ = {'polymorphic_identity': 'observation'}
 
     def __repr__(self):
         return 'Observation(%s)' % (self.id)
@@ -306,7 +307,6 @@ class Experiment(db.Model):
     #observations = db.relationship('Observation', backref='experiment')
     _experimentmetadata_id = db.Column(db.Integer, db.ForeignKey('_experimentmetadata.id'))
     _experimentmetadata = db.relationship('ExperimentMetadata', backref='experiment')
-    __mapper_args__ = {'polymorphic_identity': 'observation'}
 
     def __repr__(self):
         return 'Experiment(%s, %s)' % (self.id, self._experimentmetadata_id)
@@ -589,7 +589,6 @@ class PhysicalEntity(Observation):
     """
 
     __tablename__ = 'physical_entity'
-    __mapper_args__ = {'polymorphic_identity': 'physical_entity'}
 
     observation_id = db.Column(db.Integer, db.ForeignKey(
         'observation.id'), primary_key=True)
@@ -625,7 +624,6 @@ class ProteinSubunit(PhysicalEntity):
 
     __tablename__ = 'protein_subunit'
     __searchable__ = ['subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence']
-    __mapper_args__ = {'polymorphic_identity': 'protein_subunit'}
 
     subunit_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
@@ -643,6 +641,7 @@ class ProteinSubunit(PhysicalEntity):
     length = db.Column(db.Integer)
     molecular_weight = db.Column(db.Float)
     pax_load = db.Column(db.Integer)
+    uniprot_checked = db.Column(db.Boolean)
 
     interaction = db.relationship(
         'ProteinInteractions', secondary=subunit_interaction, backref='protein_subunit')
@@ -680,7 +679,6 @@ class ProteinComplex(PhysicalEntity):
     """
     __tablename__ = 'protein_complex'
     __searchable__ = ['complex_name', 'go_id', 'funcat_id', 'su_cmt']
-    __mapper_args__ = {'polymorphic_identity': 'protein_complex'}
 
     complex_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
@@ -717,7 +715,6 @@ class Compound(PhysicalEntity):
     """
     __tablename__ = 'compound'
     __searchable__ = ['compound_name', 'description']
-    __mapper_args__ = {'polymorphic_identity': 'compound'}
 
     compound_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
@@ -751,7 +748,6 @@ class PhysicalProperty(Observation):
     name = db.Column(db.String(255))
 
     __tablename__ = 'physical_property'
-    __mapper_args__ = {'polymorphic_identity': 'physical_property'}
 
     def __repr__(self):
         return 'PhysicalProperty(%s, %s)' % (self.name, self.observation_id)
@@ -771,7 +767,6 @@ class Structure(PhysicalProperty):
     """
 
     __tablename__ = 'structure'
-    __mapper_args__ = {'polymorphic_identity': 'structure'}
 
     struct_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -795,7 +790,6 @@ class Concentration(PhysicalProperty):
     """
 
     __tablename__ = 'concentration'
-    __mapper_args__ = {'polymorphic_identity': 'concentration'}
 
     concentration_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -826,7 +820,6 @@ class KineticLaw(PhysicalProperty):
     """
 
     __tablename__ = 'kinetic_law'
-    __mapper_args__ = {'polymorphic_identity': 'kinetic_law'}
 
     kinetic_law_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -897,7 +890,6 @@ class AbundanceDataSet(PhysicalProperty):
     """
 
     __tablename__ = 'abundance_dataset'
-    __mapper_args__ = {'polymorphic_identity': 'abundance_dataset'}
 
     dataset_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -915,7 +907,6 @@ class AbundanceDataSet(PhysicalProperty):
 
 class RNASeqDataSet(PhysicalProperty):
     __tablename__ = 'rna_seq_dataset'
-    __mapper_args__ = {'polymorphic_identity': 'rna_seq_dataset'}
 
     sample_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -936,7 +927,6 @@ class RNASeqDataSet(PhysicalProperty):
 
 class RNASeqExperiment(Experiment):
     __tablename__ = 'rna_seq_experiment'
-    __mapper_args__ = {'polymorphic_identity': 'rna_seq_experiment'}
 
     experiment_id = db.Column(db.Integer, db.ForeignKey(
         'experiment.id'), primary_key=True)
@@ -978,7 +968,6 @@ class DNABindingDataset(PhysicalProperty):
         subunit_id (:obj:`int`):  Relation ID for transcription factor subunit
     """
     __tablename__ = 'dna_binding_dataset'
-    __mapper_args__ = {'polymorphic_identity': 'dna_binding_dataset'}
 
     dataset_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -1041,7 +1030,7 @@ class Parameter(db.Model):
     observed_units = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'Parameter(%s)' % ( self.parameter_id)
+        return 'Parameter(%s)' % (self.parameter_id)
 
     def __name__(self):
         return 'Parameter'
@@ -1074,7 +1063,7 @@ class AbundanceData(db.Model):
     uniprot_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return 'AbundanceData(%s)' % ( self.abundance_id)
+        return 'AbundanceData(%s)' % (self.abundance_id)
 
     def __name__(self):
         return 'AbundanceData'
@@ -1092,7 +1081,7 @@ class DNABindingData(db.Model):
         jaspar_id (:obj:`int`): ID of Jaspar Matrix (used for bulk insert mapping)
         dataset_id  (:obj:`int`): Represents the dataset from which the data stems from
     """
-    __tablename__ = 'dna_bidning_data'
+    __tablename__ = 'dna_binding_data'
 
     position_id = db.Column(db.Integer, primary_key=True)
     position = db.Column(db.Integer, index=True)
@@ -1129,7 +1118,9 @@ class ProteinInteractions(PhysicalProperty):
     """
     __tablename__ = 'protein_interactions'
     __searchable__ = ['participant_a', 'participant_b']
-    __mapper_args__ = {'polymorphic_identity': 'protein_interactions'}
+    __mapper_args__ = {
+        'polymorphic_identity':'observation',
+    }
 
     interaction_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -1141,7 +1132,6 @@ class ProteinInteractions(PhysicalProperty):
     stoich_a = db.Column(db.String(255))
     stoich_b = db.Column(db.String(255))
     interaction_type = db.Column(db.String(255))
-    publication = db.Column(db.String(255))
 
     def __repr__(self):
         return 'ProteinInteratctions(%s)' % (self.interaction_id)

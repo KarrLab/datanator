@@ -16,14 +16,13 @@ import unittest
 warning_util.disable_warnings()
 
 
-@unittest.skip('old. needs to be merged with new tests')
 class TestDatanator(unittest.TestCase):
 
     @classmethod
-    def setUpClass(cls):
-        cls.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
+    def setUpClass(self):
+        self.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
 
-        out_dir = cls.output_dir = path.join(path.dirname(__file__), "output")
+        out_dir = self.output_dir = path.join(path.dirname(__file__), "output")
         if not path.isdir(out_dir):
             os.makedirs(out_dir)
 
@@ -42,8 +41,9 @@ class TestDatanator(unittest.TestCase):
         d = datanator.Datanator()
         model = d.read_model(i_file)
         taxon, compartments, molecules, reactions = model
-        self.assertEqual(taxon.name, 'Mycoplasma pneumoniae M129')
+        self.assertEqual(taxon.taxon, 'Mycoplasma pneumoniae M129')
 
+    @unittest.skip('skipping/unclear how relevant')
     def test_annotate_model(self):
         i_file = path.join(self.fixtures_dir, "ump_kinase.xlsx")
         d = datanator.Datanator()
@@ -55,12 +55,14 @@ class TestDatanator(unittest.TestCase):
         mol = next(mol for mol in molecules if mol.id == 'UMP')
         ids = set(xr.id for xr in mol.cross_references if xr.namespace == 'sabio-id')
         names = set(xr.id for xr in mol.cross_references if xr.namespace == 'sabio-name')
+        print(ids)
         self.assertEqual(ids, set([7458, 1300, 25061]))
         self.assertEqual(names, set(["2,4-Dioxotetrahydropyrimidine D-ribonucleotide", "UMP", "Uridine 5'-phosphate"]))
 
         rxn = next(rxn for rxn in reactions if rxn.id == 'ump_kinase')
         self.assertEqual(rxn.get_ec_number(), '2.7.4')  # true EC is 2.7.4.22
 
+    @unittest.skip('skipping/unclear how relevant')
     def test_annotate_molecules(self):
         i_file = path.join(self.fixtures_dir, "ump_kinase.xlsx")
         d = datanator.Datanator()
@@ -75,6 +77,7 @@ class TestDatanator(unittest.TestCase):
         self.assertEqual(ids, set([7458, 1300, 25061]))
         self.assertEqual(names, set(["2,4-Dioxotetrahydropyrimidine D-ribonucleotide", "UMP", "Uridine 5'-phosphate"]))
 
+    @unittest.skip('skipping/unclear how relevant')
     def test_annotate_reactions(self):
         i_file = path.join(self.fixtures_dir, "ump_kinase.xlsx")
         d = datanator.Datanator()
@@ -85,7 +88,7 @@ class TestDatanator(unittest.TestCase):
         rxn = next(rxn for rxn in reactions if rxn.id == 'ump_kinase')
         self.assertEqual(rxn.get_ec_number(), '2.7.4')  # true EC is 2.7.4.22
 
-    @unittest.skip('me')
+    @unittest.skip('skipping/unclear how relevant')
     def test_datanator(self):
         # Test getting kinetic data about a reaction that is relevant for a species
 
@@ -93,7 +96,7 @@ class TestDatanator(unittest.TestCase):
         o_file = path.join(self.output_dir, "ump_kinase.xlsx")
 
         # get kinetic data for reations in Excel sheet
-        rxns = datanator.get_kinetic_data(i_file, o_file)
+        rxns = datanator.get_sabio_data(i_file, o_file)
 
         # test correct number of output reactions
         self.assertEqual(len(rxns), 1)
@@ -115,7 +118,7 @@ class TestDatanator(unittest.TestCase):
         self.assertEqual(median_entry.proximity, 6)
 
 
-@unittest.skip('old. needs to be merged with new tests')
+@unittest.skip('skipping/unclear how relevant')
 class TestProgram(unittest.TestCase):
 
     def test_datanator(self):

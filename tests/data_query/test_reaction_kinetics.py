@@ -87,6 +87,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         self.assertEqual(set(l.id for l in laws_62), ids_62)
 
         laws_73 = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.73'], match_levels=4).all()
+
         compare = self.flk.session.query(models.KineticLaw).filter_by(enzyme_id = laws_73[0].enzyme_id).all()
         ids_73 = set([c.kinetic_law_id for c in compare])
         self.assertEqual(set(l.id for l in laws_73), ids_73)
@@ -96,18 +97,35 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         laws = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.62', '3.4.21.73'], match_levels=4).all()
         self.assertEqual(set([l.id for l in laws]), ids_62 | ids_73)
 
+        # single EC, match_levels=3
+        laws_xx = self.q.get_kinetic_laws_by_ec_numbers(['3.4.21.73'], match_levels=3).all()
+        self.assertEqual(len(laws_xx), 55)
+
+
+    def test_get_kinetic_laws_by_structure(self):
+
+        #Modifier
+        compound = 'InChI=1S/Zn'
+        law = self.q.get_kinetic_laws_by_structure(compound, role = 'modifier')
+        self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ]), 24)
+
 
     def test_get_kinetic_laws_by_compound(self):
 
+        #Reactant
         compound = self.flk.session.query(models.Compound).filter_by(compound_name = '2-Hydroxyisocaproate').first()
-
         law = self.q.get_kinetic_laws_by_compound(compound, role = 'reactant')
-        self.assertEqual(set(c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ), set([20331, 20307]))
+        self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000]), 2)
 
+        #Product
         compound = self.flk.session.query(models.Compound).filter_by(compound_name = '4-Hydroxyphenylethyl alcohol').first()
-
         law = self.q.get_kinetic_laws_by_compound(compound, role = 'product')
-        self.assertEqual(set(c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ), set([23314]))
+        self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ]), 1)
+
+        #Modifier
+        compound = self.flk.session.query(models.Compound).filter_by(compound_name = 'Zn2+').first()
+        law = self.q.get_kinetic_laws_by_compound(compound, role = 'modifier')
+        self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ]), 24)
 
 
     def test_get_compounds_by_structure(self):
@@ -116,6 +134,9 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         ans = self.q.get_compounds_by_structure(struct[3414]._value_inchi).all()
         self.assertEqual(ans, struct[3414].compound)
 
+
+        ans = self.q.get_compounds_by_structure(struct[3414]._value_inchi, only_formula_and_connectivity=True).all()
+        self.assertEqual(ans, struct[3414].compound)
 
     def test_get_reaction_by_compound(self):
         compound = self.flk.session.query(models.Compound).filter_by(compound_name = '2-Hydroxyisocaproate').first()
@@ -128,12 +149,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
     def test_get_kinetic_laws_by_reaction(self):
         laws = self.q.get_kinetic_laws_by_reaction(self.reaction)
 
-        self.assertEqual([l.kinetic_law_id for l in laws], [20453, 20454, 20455, 20456, 20457,
-        20458, 20465, 20466, 20467, 20468, 20469, 20470, 20471, 20472, 20473, 20474, 20475,
-        20476, 20477, 20478, 20479, 20480, 20481, 20482, 20483, 20484, 20485, 20486, 20487,
-        20488, 20489, 20490, 20491, 20492, 20493, 20494, 20495, 20496, 20497, 20498, 20499,
-        20500, 20501, 20502, 20503, 20504, 20505, 20506, 20507, 20508, 20509, 20510, 20511,
-        20512, 20513, 20514, 20515, 20516])
+        self.assertEqual(len([l.kinetic_law_id for l in laws]), 58)
 
     def test_get_observed_values(self):
         vals = self.q.get_observed_values(self.reaction)
