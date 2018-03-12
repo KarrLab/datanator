@@ -2,11 +2,13 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
+import os 
 
 
 
 app = Flask(__name__)
-app.config.from_object(config.Config)
+app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.Config')
+app.config.from_object(app_settings)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
