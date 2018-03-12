@@ -368,8 +368,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             participant_condition = models.Reaction._is_reactant == 1
         elif role == 'product':
             participant_condition = models.Reaction._is_product == 1
-        else:
+        elif role == 'modifier':
             participant_condition = models.Reaction._is_modifier == 1
+        else:
+            raise ValueError('role does not exist')
 
         session = self.data_source.session
 
