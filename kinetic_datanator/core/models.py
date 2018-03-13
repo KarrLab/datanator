@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
-import os 
+import os
 
 
 
@@ -261,7 +261,7 @@ class Metadata(db.Model):
         'Variable', secondary=_metadata_variable, backref='_metadata')
 
     def __repr__(self):
-        return 'Metadata(%s, %s)' % (self.name, self.id)
+        return 'Metadata(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'Metadata'
@@ -294,7 +294,7 @@ class ExperimentMetadata(db.Model):
         'Resource', secondary=_experimentmetadata_resource, backref='_experimentmetadata')
 
     def __repr__(self):
-        return 'ExperimentMetadata(%s, %s)' % (self.name, self.id)
+        return 'ExperimentMetadata(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'ExperimentMetadata'
@@ -309,7 +309,7 @@ class Experiment(db.Model):
     _experimentmetadata = db.relationship('ExperimentMetadata', backref='experiment')
 
     def __repr__(self):
-        return 'Experiment(%s, %s)' % (self.id, self._experimentmetadata_id)
+        return 'Experiment(%s||%s)' % (self.id, self._experimentmetadata_id)
 
     def __name__(self):
         return 'Experiment'
@@ -335,7 +335,7 @@ class Method(db.Model):
     software = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'Method(%s, %s)' % (self.name, self.id)
+        return 'Method(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'Method'
@@ -397,7 +397,7 @@ class ExperimentDesign(db.Model):
     name = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'ExperimentDesign(%s, %s)' % (self.name, self.id)
+        return 'ExperimentDesign(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'ExperimentalDesign'
@@ -415,7 +415,7 @@ class ExperimentType(db.Model):
     name = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'ExperimentType(%s, %s)' % (self.name, self.id)
+        return 'ExperimentType(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'ExperimentalType'
@@ -434,7 +434,7 @@ class DataFormat(db.Model):
     bio_assay_data_cubes = db.Column(db.Integer)
 
     def __repr__(self):
-        return 'DataFormat(%s, %s)' % (self.name, self._id)
+        return 'DataFormat(%s||%s)' % (self.name, self._id)
 
     def __name__(self):
         return 'DataFormat'
@@ -456,7 +456,7 @@ class Taxon(db.Model):
     name = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'Taxon(%s, %s)' % (self.name, self.ncbi_id)
+        return 'Taxon(%s||%s)' % (self.name, self.ncbi_id)
 
     def __name__(self):
         return 'Taxon'
@@ -479,7 +479,7 @@ class Synonym(db.Model):
     __tablename__ = 'synonym'
 
     def __repr__(self):
-        return 'Synonym(%s, %s)' % (self.name, self.id)
+        return 'Synonym(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'Synonym'
@@ -523,7 +523,7 @@ class CellLine(db.Model):
     name = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'CellLine(%s, %s)' % (self.name, self.id)
+        return 'CellLine(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'CellLine'
@@ -573,7 +573,7 @@ class CellCompartment(db.Model):
     name = db.Column(db.String(255), unique=True, index=True)
 
     def __repr__(self):
-        return 'CellCompartment(%s, %s)' % (self.name, self.id)
+        return 'CellCompartment(%s||%s)' % (self.name, self.id)
 
     def __name__(self):
         return 'CellCompartment'
@@ -596,7 +596,7 @@ class PhysicalEntity(Observation):
     name = db.Column(db.String(255))
 
     def __repr__(self):
-        return 'PhysicalEntity(%s, %s)' % (self.name, self.observation_id)
+        return 'PhysicalEntity(%s||%s)' % (self.name, self.observation_id)
 
     def __name__(self):
         return 'PhysicalEntity'
@@ -652,7 +652,7 @@ class ProteinSubunit(PhysicalEntity):
         'ProteinComplex', backref='protein_subunit', foreign_keys=[proteincomplex_id])
 
     def __repr__(self):
-        return 'ProteinSubunit(%s, %s)' % (self.subunit_name, self.subunit_id)
+        return 'ProteinSubunit(%s||%s)' % (self.subunit_name, self.subunit_id)
 
     def __name__(self):
         return 'ProteinSubunit'
@@ -695,7 +695,7 @@ class ProteinComplex(PhysicalEntity):
     molecular_weight = db.Column(db.Float)
 
     def __repr__(self):
-        return 'ProteinComplex(%s, %s)' % (self.complex_name, self.complex_id)
+        return 'ProteinComplex(%s||%s)' % (self.complex_name, self.complex_id)
 
     def __name__(self):
         return 'ProteinComplex'
@@ -727,7 +727,7 @@ class Compound(PhysicalEntity):
     structure = db.relationship('Structure', backref='compound')
 
     def __repr__(self):
-        return 'Compound(%s, %s)' % (self.compound_name, self.compound_id)
+        return 'Compound(%s||%s)' % (self.compound_name, self.compound_id)
 
     def __name__(self):
         return 'Compound'
@@ -750,7 +750,7 @@ class PhysicalProperty(Observation):
     __tablename__ = 'physical_property'
 
     def __repr__(self):
-        return 'PhysicalProperty(%s, %s)' % (self.name, self.observation_id)
+        return 'PhysicalProperty(%s||%s)' % (self.name, self.observation_id)
 
     def __name__(self):
         return 'PhysicalProperty'
@@ -1153,7 +1153,7 @@ class Progress(db.Model):
     amount_loaded = db.Column(db.Integer)
 
     def __repr__(self):
-        return 'Progress(%s, %s)' % (self.database_name, self.amount_loaded)
+        return 'Progress(%s||%s)' % (self.database_name, self.amount_loaded)
 
     def __name__(self):
         return 'Progress'
