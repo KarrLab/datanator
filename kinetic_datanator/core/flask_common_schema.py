@@ -301,11 +301,12 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     )
 
             exp_metadata.taxon = [
-            self.get_or_create_object(
-                models.Taxon,
-                ncbi_id = NCBITaxa().get_name_translator([org.name])[org.name][0]
+                self.get_or_create_object(
+                    models.Taxon,
+                    name=org.name,
+                    ncbi_id=org.ncbi_id
                 )
-            for org in exp.organisms]
+                for org in exp.organisms]
 
             exp_metadata.resource.append(self.get_or_create_object(
                 models.Resource,
