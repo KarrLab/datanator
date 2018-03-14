@@ -16,6 +16,7 @@ from kinetic_datanator.core import data_source
 from kinetic_datanator.data_source.array_express_tools import ensembl_tools
 import requests
 import time
+from ete3 import NCBITaxa
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -274,6 +275,7 @@ class Organism(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String(), unique=True)
+    ncbi_id = sqlalchemy.Column(sqlalchemy.Integer())
 
     __tablename__ = 'organism'
 
@@ -429,9 +431,22 @@ class ArrayExpress(data_source.HttpDataSource):
             else:
                 experiment.name = expt_json['name']
 
+            taxon_exceptions = {}
+            exceptions_file = open("kinetic_datanator/data_source/array_express_tools/taxon_exceptions.txt")
+            for line in exceptions_file.readlines()[1:]:
+                split = line.split(" -- ")
+                taxon_exceptions[split[0]] = split[1][:-1]
             if 'organism' in expt_json:
                 for organism_name in expt_json['organism']:
-                    experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name))
+                    if organism_name[-1:] == " ":
+                        organism_name = organism_name[:-1]
+                    if organism_name not in taxon_exceptions:
+                        experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name, ncbi_id = NCBITaxa().get_name_translator([organism_name])[organism_name][0]))
+                    else:
+                        organisms = taxon_exceptions[organism_name].split(", ")
+                        for org in organisms:
+                            experiment.organisms.append(self.get_or_create_object(Organism, name=org, ncbi_id = NCBITaxa().get_name_translator([org])[org][0]))
+
 
             if 'description' in expt_json:
                 experiment.description = expt_json['description'][0]['text']
