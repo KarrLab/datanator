@@ -1,0 +1,48 @@
+Recorded Taxon -- Correct Taxon
+Homo sapiens + Aspergillus fumigatus -- Homo sapiens, Aspergillus fumigatus
+Homo sapiens + Candida albicans -- Homo sapiens, Candida albicans
+Homo sapiens + Candida parapsilosis -- Homo sapiens
+Homo sapiens + Saccharomyces cerevisiae -- Homo sapiens
+human -- Homo sapiens
+mouse -- mus musculus
+Homo Sapien -- Homo sapiens
+Trypanosma congolense -- Trypanosoma congolense
+mixed sample: human cell line AGS and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line CaCo-2 and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line HEK 293 and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line HT29 and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line LoVo and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line THP-1 (-PMA)and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: mouse cell line BMDM and Salmonella Typhimurium SL1344 -- mus musculus, Salmonella Typhimurium SL1344
+mixed sample: mouse cell line L929 and Salmonella Typhimurium SL1344 -- mus musculus, Salmonella Typhimurium SL1344
+mixed sample: mouse cell line MEF and Salmonella Typhimurium SL1344 -- mus musculus, Salmonella Typhimurium SL1344
+mixed sample: mouse cell line RAW264.7 and Salmonella Typhimurium SL1344 -- mus musculus, Salmonella Typhimurium SL1344
+mixed sample: pig cell line 3D4/31 and Salmonella Typhimurium SL1344 -- sus scrofa, Salmonella Typhimurium SL1344
+mixed sample: pig cell line IPEC-J2 and Salmonella Typhimurium SL1344 -- sus scrofa, Salmonella Typhimurium SL1344
+human cell line HeLa-S3 -- Homo sapiens
+mixed sample (human cell line HeLa-S3 + Salmonella typhimurium SL1344) -- Homo sapiens, Salmonella Typhimurium SL1344
+mixed sample: human cell line HeLa-S3 and Salmonella Typhimurium SL1344 -- Homo sapiens, Salmonella Typhimurium SL1344
+Xanthomonas oryzae pv. oryzae KACC10331 -- Xanthomonas oryzae
+Leishmania mexicana and Mus musculus -- Leishmania mexicana, Mus musculus
+Acinetobacter baumanii -- Acinetobacter baumannii
+Zebrafish -- Danio rerio
+Human -- Homo sapiens
+Japanese rice fish -- Oryzias latipes
+Japanses rice fish -- Oryzias latipes
+House mouse -- mus musculus
+ -- None
+Mouse -- mus musculus
+Homo sapien -- Homo sapiens
+Acinetobacter baumannii 1592897 -- Acinetobacter baumannii
+Acinetobacter baumannii 1564232 -- Acinetobacter baumannii
+Acinetobacter baumannii 983759 -- Acinetobacter baumannii
+Acinetobacter baumannii 478810 -- Acinetobacter baumannii
+Strongyloides_stercoralis -- Strongyloides stercoralis
+Solanum lycopersicum L. -- Solanum lycopersicum
+chimpanzee -- Pan troglodytes
+Holcus lanatus L -- Holcus lanatus
+Eupolybothrus sp. PS-2013 -- Eupolybothrus
+Oryctolagus cuniculus domesticus -- Oryctolagus cuniculus
+Reaumuria soongorica -- Reaumuria
+Lactococcus lactis subsp. cremoris CNCM I-1631 -- Lactococcus lactis subsp. cremoris
+Frankia sp. CcI3 -- Frankia
