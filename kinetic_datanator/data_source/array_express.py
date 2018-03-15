@@ -17,6 +17,7 @@ from kinetic_datanator.data_source.array_express_tools import ensembl_tools
 import requests
 import time
 from ete3 import NCBITaxa
+import os
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
@@ -432,7 +433,7 @@ class ArrayExpress(data_source.HttpDataSource):
                 experiment.name = expt_json['name']
 
             taxon_exceptions = {}
-            exceptions_file = open("kinetic_datanator/data_source/array_express_tools/taxon_exceptions.txt")
+            exceptions_file = open("{}/array_express_tools/taxon_exceptions.txt".format(os.path.dirname(os.path.realpath(__file__))))
             for line in exceptions_file.readlines()[1:]:
                 split = line.split(" -- ")
                 taxon_exceptions[split[0]] = split[1][:-1]
