@@ -52,4 +52,4 @@ def get_processed_data(experiment, top_dirname):
             new_pandas.to_pickle("{}/{}_abundances_binary".format(sample_dirname, sample.name))
             new_pandas.to_csv("{}/{}_abundances_csv".format(sample_dirname, sample.name))
         else:
-            pass
+            print("No Ensembl Info or Fastq files")
