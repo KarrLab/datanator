@@ -30,7 +30,7 @@ Human -- Homo sapiens
 Japanese rice fish -- Oryzias latipes
 Japanses rice fish -- Oryzias latipes
 House mouse -- mus musculus
- -- None
+  -- None
 Mouse -- mus musculus
 Homo sapien -- Homo sapiens
 Acinetobacter baumannii 1592897 -- Acinetobacter baumannii
