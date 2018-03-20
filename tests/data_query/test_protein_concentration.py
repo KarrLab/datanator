@@ -32,7 +32,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
 
     def test_filter_observed_values(self):
 
-        vals = self.q.run(self.protein_P00323).observed_values
+        vals = self.q.get_observed_values(self.protein_P00323)
 
         for items in vals:
             self.assertEqual(items.units, 'PPM')

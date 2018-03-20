@@ -619,7 +619,7 @@ class SpecieSequenceSimilarityFilter(SpecieSimilarityFilter):
         Returns:
             :obj:`float`: similarity between the observed and target sequences
         """
-        target_sequence = target_component.canonical_sequence
+        target_sequence = target_component.sequence
         observed_sequence = self.get_attribute_of_observed_value(observed_value)
 
         dist = Levenshtein.distance(target_sequence, observed_sequence)
