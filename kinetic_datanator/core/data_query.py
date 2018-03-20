@@ -90,7 +90,8 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """
         obs = self.get_observed_values(component)
         filter_result = self.filter_observed_values(component, obs)
-        return self.get_consensus(component, filter_result)
+        return filter_result
+        # return self.get_consensus(component, filter_result)
 
     @abc.abstractmethod
     def get_observed_values(self, component):
@@ -420,7 +421,6 @@ class OptionsFilter(Filter):
             return 1
         return -1
 
-
 class RangeFilter(Filter):
     """ Filters out observed values whose attributes have values that fall outside a specified range.
 
@@ -619,7 +619,7 @@ class SpecieSequenceSimilarityFilter(SpecieSimilarityFilter):
         Returns:
             :obj:`float`: similarity between the observed and target sequences
         """
-        target_sequence = target_component.sequence
+        target_sequence = target_component.canonical_sequence
         observed_sequence = self.get_attribute_of_observed_value(observed_value)
 
         dist = Levenshtein.distance(target_sequence, observed_sequence)
@@ -934,6 +934,8 @@ class TaxonomicDistanceFilter(Filter):
 
 class WildtypeFilter(OptionsFilter):
     """ Filter out observed values which were observed for taxa with genetic perturbations """
+
+    #TODO: Need to figure out what the options are for these
 
     def __init__(self):
         super(WildtypeFilter, self).__init__(('observation', 'genetics', 'variation', ), [''])

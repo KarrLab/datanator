@@ -32,11 +32,14 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
 
     def test_filter_observed_values(self):
 
-        obs = self.q.get_observed_values(self.proline)
+        q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator(cache_dirname=self.cache_dirname, include_variants=True)
+
+        obs = q.run(self.proline).observed_values
         self.assertEqual(set(c.value for c in obs), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
         self.assertEqual(set(c.error for c in obs), set([0.0,0.0,0.0,0.0,45.0,11.37]))
         for c in obs:
             self.assertEqual(c.observation.genetics.taxon, 'Escherichia coli')
+
 
     def test_get_concentration_by_structure(self):
 

@@ -36,7 +36,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             ph=ph, ph_std=ph_std,
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname= cache_dirname))
 
-        self.filters.append(data_query.SpecieStructuralSimilarityFilter())
+        # self.filters.append(data_query.SpecieStructuralSimilarityFilter())
         # self.filters.append(data_query.MolecularSimilarityFilter())
 
     def get_observed_values(self, compound):
