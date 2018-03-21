@@ -93,6 +93,28 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         return filter_result
         # return self.get_consensus(component, filter_result)
 
+
+    def serialize_observation(self, result):
+
+        ans = {}
+
+        def recurse(graph, dict_new, obj):
+            if not isinstance(graph, (str, int, float)) and graph is not None:
+                for item in graph.Meta.attribute_order:
+                    if item not in dict_new.keys():
+                        dict_new[item] = {}
+                    recurse(getattr(graph, item),dict_new[item], obj)
+            else:
+                if graph not in dict_new.keys():
+                    dict_new[graph] = []
+                dict_new[graph].append(obj)
+
+        for val,score in zip(result.observed_values, result.scores) :
+            recurse(val.observation, ans, (val, score))
+
+        return ans
+
+
     @abc.abstractmethod
     def get_observed_values(self, component):
         """ Find the observed values relevant to :obj:`component`

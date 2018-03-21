@@ -24,7 +24,7 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
         self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
         self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
 
-        self.q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
+        self.q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator(cache_dirname=self.cache_dirname, include_variants=True)
 
     @classmethod
     def tearDownClass(self):
@@ -32,13 +32,22 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
 
     def test_filter_observed_values(self):
 
-        q = metabolite_concentrations.MetaboliteConcentrationsQueryGenerator(cache_dirname=self.cache_dirname, include_variants=True)
+        obs = self.q.run(self.proline).observed_values
 
-        obs = q.run(self.proline).observed_values
         self.assertEqual(set(c.value for c in obs), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
         self.assertEqual(set(c.error for c in obs), set([0.0,0.0,0.0,0.0,45.0,11.37]))
         for c in obs:
             self.assertEqual(c.observation.genetics.taxon, 'Escherichia coli')
+
+
+    def test_serialization(self):
+
+        obs = self.q.run(self.uridine_tp)
+        json = self.q.serialize_observation(obs)
+
+        self.assertIn('BW25113', json['genetics']['variation'].keys())
+        self.assertEqual(4, len(json['environment']['temperature'][37.0]))
+
 
 
     def test_get_concentration_by_structure(self):
