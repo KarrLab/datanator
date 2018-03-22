@@ -31,7 +31,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
-        self.q = reaction_kinetics.ReactionKineticsQueryGenerator(cache_dirname=self.cache_dirname)
+        self.q = reaction_kinetics.ReactionKineticsQueryGenerator(cache_dirname=self.cache_dirname, include_variants=True)
 
         self.reaction = data_model.Reaction(
             participants = [
@@ -152,7 +152,8 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
         self.assertEqual(len([l.kinetic_law_id for l in laws]), 58)
 
     def test_get_observed_values(self):
-        vals = self.q.get_observed_values(self.reaction)
+
+        vals = self.q.run(self.reaction).observed_values
 
         for val in vals:
             sabiork_id = next(xr.id for xr in val.observable.interaction.cross_references if xr.namespace == 'sabiork.reaction')
