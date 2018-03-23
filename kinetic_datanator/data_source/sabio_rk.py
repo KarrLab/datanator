@@ -24,7 +24,6 @@ import pubchempy
 import re
 import requests
 import requests_cache
-import scipy.constants
 import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -1153,7 +1152,8 @@ class SabioRk(data_source.HttpDataSource):
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['katal', 'katal_base']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, scipy.constants.Avogadro * error if error else None, 's^(-1)')
+                # cannot be converted without knowing the enzyme amount in the measurement 
+                return (None, None, None, None, None)
 
             if units in ['M^(-1)*s^(-1)']:
                 # off by mol^(2) * liter^(-1)
@@ -1190,9 +1190,9 @@ class SabioRk(data_source.HttpDataSource):
             if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
                 return ('k_cat', 25, value, error, 's^(-1)')
 
-            ##FIXME: Unclear if this is working correctly
             if units in ['mol/s', 'katal', 'katal_base']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+                # cannot be converted without knowing the enzyme amount in the measurement 
+                return (None, None, None, None, None)
 
             if units in ['M*s^(-1)*g^(-1)']:
                 # has incorrect dimensionality from v_max by factor of liter^(-1)

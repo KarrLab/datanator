@@ -709,9 +709,9 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 's^(-1)', None),
                          ('k_cat', 25, 0.25, 0.15, 's^(-1)'))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, 0.15, 'katal_base', None),
-                         ('k_cat', 25, 0.25 * scipy.constants.Avogadro, 0.15 * scipy.constants.Avogadro, 's^(-1)'))
+                         (None, None, None, None, None))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'katal_base', None),
-                         ('k_cat', 25, 0.25 * scipy.constants.Avogadro, None, 's^(-1)'))
+                         (None, None, None, None, None))
         self.assertEqual(src.normalize_parameter_value('k_cat', 25, 0.25, None, 'mol*s^(-1)*g^(-1)', None),
                          (None, None, None, None, None))
 
