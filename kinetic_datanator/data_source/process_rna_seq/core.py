@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import requests
+import shutil
 
 def get_processed_data(experiment, top_dirname):
     """ Download FASTQ files and CDNA for all samples in an expirement, and processes the data. 
@@ -14,26 +15,32 @@ def get_processed_data(experiment, top_dirname):
             experiment(:obj:`array_express.Experiment`): the array express experiment
             top_dirname(:obj:`str`): the name of the directory where the overall data is being stored
 
-        """
+    """
+    samples = experiment.samples
+    get_processed_data(samples, top_dirname)
 
 
-    exp_dirname = "{}/{}".format(top_dirname, experiment.id)
-    if not os.path.isdir(exp_dirname):
-        os.makedirs(exp_dirname)
 
-    for sample in experiment.samples:
+def get_processed_data_samples(samples, top_dirname):
+
+    for sample in samples:
         if sample.ensembl_info and sample.fastq_urls:
-            download_cdna.run(sample, top_dirname)
+
+            exp_dirname = "{}/{}".format(top_dirname, sample.experiment_id)
+            if not os.path.isdir(exp_dirname):
+                os.makedirs(exp_dirname)
             species_name = sample.ensembl_info[0].organism_strain
-            sample_dirname = "{}/{}".format(exp_dirname, sample.name)
+            sample_name = sample.name.replace(" ", "_")
+            sample_dirname = "{}/{}".format(exp_dirname, sample_name)
+            print("here: {}".format(sample_dirname))
             if not os.path.isdir(sample_dirname):
                 os.makedirs(sample_dirname)
             sample_url = sample.fastq_urls[0].url
             fastq_filenames = []
             for num, url in enumerate(sample.fastq_urls):
-                file = urlretrieve(url.url, '{}/{}_{}.fastq.gz'.format(sample_dirname, sample.name, num)
+                file = urlretrieve(url.url, '{}/{}_{}.fastq.gz'.format(sample_dirname, sample_name, num)
                                    )  # there used to be a space after "gz". I removed it
-                fastq_filenames.append('{}/{}_{}.fastq.gz'.format(sample_dirname, sample.name, num))
+                fastq_filenames.append('{}/{}_{}.fastq.gz'.format(sample_dirname, sample_name, num))
 
             index_filename = '{}/kallisto_index_files/{}.idx'.format(top_dirname, species_name)
             output_dirname = '{}/output'.format(sample_dirname)
@@ -49,7 +56,7 @@ def get_processed_data(experiment, top_dirname):
                 total_tpm = total_tpm + num
             new_column = [num/total_tpm for num in new_pandas['tpm']]
             new_pandas['target_id'] = new_column
-            new_pandas.to_pickle("{}/{}_abundances_binary".format(sample_dirname, sample.name))
-            new_pandas.to_csv("{}/{}_abundances_csv".format(sample_dirname, sample.name))
+            new_pandas.to_pickle("{}/{}_abundances_binary".format(sample_dirname, sample_name))
+            new_pandas.to_csv("{}/{}_abundances_csv".format(sample_dirname, sample_name))
         else:
             print("No Ensembl Info or Fastq files")
