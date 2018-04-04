@@ -192,11 +192,10 @@ class TestDownloadCDNA(unittest.TestCase):
         session = src.session
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
         exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
-        sample = exp.samples[0]
-        download_cdna.run(sample, self.cache_dirname)
+        ensembl_info = exp.samples[0].ensembl_info[0]
+        download_cdna.run(ensembl_info, self.cache_dirname)
         self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
-        self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
-
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)
 
 class TestEnsemblTools(unittest.TestCase):
 
