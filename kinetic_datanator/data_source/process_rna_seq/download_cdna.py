@@ -28,5 +28,4 @@ def run(ensembl_info, top_dir):
         os.makedirs(KALLISTO_DIR)
     if not os.path.isfile("{}/{}.idx".format(KALLISTO_DIR, spec_name)):
         os.system("kallisto index -i {}.idx {}".format(spec_name, file_name))
-        shutil.move("{}/{}.idx".format(top_dir, spec_name), KALLISTO_
-        
+        shutil.move("{}/{}.idx".format(top_dir, spec_name), KALLISTO_DIR)
