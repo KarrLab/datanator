@@ -195,7 +195,7 @@ class TestDownloadCDNA(unittest.TestCase):
         ensembl_info = exp.samples[0].ensembl_info[0]
         download_cdna.run(ensembl_info, self.cache_dirname)
         self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
-        self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)
+        self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
 
 class TestEnsemblTools(unittest.TestCase):
 
