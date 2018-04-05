@@ -373,7 +373,6 @@ class ArrayExpress(data_source.HttpDataSource):
         # download and parse experiment ids
         if self.verbose:
             print('Loading metadata for experiments ...')
-
         self.load_experiment_metadata(test_url)
         self.session.commit()
 
@@ -433,16 +432,20 @@ class ArrayExpress(data_source.HttpDataSource):
                 experiment.name = expt_json['name']
 
             taxon_exceptions = {}
+            #os.path.dirname(os.path.realpath(__file__))
             exceptions_file = open("{}/array_express_tools/taxon_exceptions.txt".format(os.path.dirname(os.path.realpath(__file__))))
             for line in exceptions_file.readlines()[1:]:
                 split = line.split(" -- ")
                 taxon_exceptions[split[0]] = split[1][:-1]
+            print(" " in taxon_exceptions)
             if 'organism' in expt_json:
                 for organism_name in expt_json['organism']:
                     if organism_name[-1:] == " ":
                         organism_name = organism_name[:-1]
                     if organism_name not in taxon_exceptions:
                         experiment.organisms.append(self.get_or_create_object(Organism, name=organism_name, ncbi_id = NCBITaxa().get_name_translator([organism_name])[organism_name][0]))
+                    #if organism_name in taxon_exceptions:
+                    #    print("blueblueblue")
                     else:
                         organisms = taxon_exceptions[organism_name].split(", ")
                         for org in organisms:
@@ -604,6 +607,8 @@ class ArrayExpress(data_source.HttpDataSource):
             ensembl_info = self.session.query(EnsemblInfo).filter_by(organism_strain = strain_info.organism_strain).first()
             if ensembl_info:
                 sample.ensembl_info.append(ensembl_info)
+                sample.full_strain_specificity = strain_info.full_strain_specificity
+                sample.ensembl_organism_strain = strain_info.organism_strain
             else:
                 try:
                     ftp_url = ensembl_tools.get_ftp_url(strain_info.download_url)
@@ -613,6 +618,9 @@ class ArrayExpress(data_source.HttpDataSource):
                     sample.ensembl_info.append(
                         EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url))
                     sample.full_strain_specificity = strain_info.full_strain_specificity
+                    sample.ensembl_organism_strain = strain_info.organism_strain
+        else:
+            pass
             
         return sample
 
@@ -621,8 +629,16 @@ class ArrayExpress(data_source.HttpDataSource):
         Args:
             experiment (:obj:`Experiment`): experiment
         """
-        response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
-        json = response.json()
+        try:
+            response = self.requests_session.get(self.ENDPOINT_DOMAINS['array_express'] + "/{}/protocols".format(experiment.id))
+            json = response.json()
+        except requests.HTTPError as resp:
+            print(str(resp))
+            if str(resp).startswith("500 Server Error: Internal Server Error for url:"):
+                return 
+            else:
+                raise
+        
         session = self.session
         if 'protocols' not in json:
             return
