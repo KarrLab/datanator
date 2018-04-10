@@ -27,6 +27,8 @@ class TextSearchSession(object):
     def __init__(self, db_cache_dirname = os.getcwd()):
 
         flaskdb = flask_common_schema.FlaskCommonSchema(cache_dirname = db_cache_dirname)
+        self.q = reaction_kinetics.ReactionKineticsQueryGenerator(cache_dirname=db_cache_dirname, include_variants=True)
+
 
         for item in flaskdb.text_indicies:
             flask_whooshalchemy.whoosh_index(models.app, item)
@@ -48,8 +50,15 @@ class TextSearchSession(object):
         complex = models.ProteinComplex.query.whoosh_search(string).all()
         subunit = models.ProteinSubunit.query.whoosh_search(string).all()
 
-        dict_db_models = {'Compound':compound, 'ProteinComplex':complex, 'ProteinSubunit':subunit}
-        list_db_models = [item for sublist in [compound, complex, subunit] for item in sublist]
+        rxns = []
+        for item in compound:
+            rxn_list = self.q.get_reaction_by_compound(item)
+            if rxn_list:
+                rxns.append(rxn_list)
+        reactions = [y for x in rxns for y in x]
+
+        dict_db_models = {'Compound':compound, 'ProteinComplex':complex, 'ProteinSubunit':subunit, 'Reaction':reactions}
+        list_db_models = [item for sublist in [compound, complex, subunit, reactions] for item in sublist]
 
         return list_db_models, dict_db_models
 
