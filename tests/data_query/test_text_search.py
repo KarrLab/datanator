@@ -32,7 +32,7 @@ class TestTextSearchSession(unittest.TestCase):
 
 
 
-    def test_rank_return_objects(self):
+    def test_list_return_objects(self):
         """
         Tests ability to collect objects from full text search of database
         """

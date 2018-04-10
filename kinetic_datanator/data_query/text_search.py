@@ -37,10 +37,10 @@ class TextSearchSession(object):
         text search for related string
 
         Args:
-            string (:obj:`str`): item to be searched for
+            string (:obj :`str`): item to be searched for
 
         Returns:
-            ranked_db_models (:obj:`list`): List of ranked collected items from text search
+            list_db_models (:obj:`list`): List of ranked collected items from text search
             dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
@@ -49,29 +49,29 @@ class TextSearchSession(object):
         subunit = models.ProteinSubunit.query.whoosh_search(string).all()
 
         dict_db_models = {'Compound':compound, 'ProteinComplex':complex, 'ProteinSubunit':subunit}
-        ranked_db_models = self.rank([compound, complex, subunit])
+        list_db_models = [item for sublist in [compound, complex, subunit] for item in sublist]
 
-        return ranked_db_models, dict_db_models
+        return list_db_models, dict_db_models
 
 
-    def rank(self, lists):
-        """
-        Ranks based on number of results in the list
-        """
-        ans = []
-        len_lists = [len(l) for l in lists]
-        sorted_index = sorted(range(len(len_lists)), key=lambda k: len_lists[k], reverse=True)
-
-        ## Put top results
-        for i in sorted_index:
-            if lists[i]:
-                ans += lists[i][:3]
-            else: continue
-
-        ## Fill in bottom results
-        for i in sorted_index:
-            if lists[i]:
-                ans += lists[i][3:]
-            else: continue
-
-        return ans
+    # def rank(self, lists):
+    #     """
+    #     Ranks based on number of results in the list
+    #     """
+    #     ans = []
+    #     len_lists = [len(l) for l in lists]
+    #     sorted_index = sorted(range(len(len_lists)), key=lambda k: len_lists[k], reverse=True)
+    #
+    #     ## Put top results
+    #     for i in sorted_index:
+    #         if lists[i]:
+    #             ans += lists[i][:3]
+    #         else: continue
+    #
+    #     ## Fill in bottom results
+    #     for i in sorted_index:
+    #         if lists[i]:
+    #             ans += lists[i][3:]
+    #         else: continue
+    #
+    #     return ans
