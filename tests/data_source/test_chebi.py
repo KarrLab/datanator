@@ -19,7 +19,7 @@ class TestChebiDownload(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cheb = chebi.Chebi( download_backups=False, load_content=True, clear_content=False)
+        self.cheb = chebi.Chebi(cache_dirname=self.cache_dirname, download_backups=False, load_content=True, clear_content=False)
 
     @classmethod
     def tearDownClass(self):
@@ -30,3 +30,9 @@ class TestChebiDownload(unittest.TestCase):
         self.assertEqual(self.cheb.get_name(self.cheb.graph, 'CHEBI:17203'), 'L-proline')
         self.assertEqual(self.cheb.get_name(self.cheb.graph, 'CHEBI:22658'), 'aspartate family amino acid')
         self.assertEqual(self.cheb.get_name(self.cheb.graph, 'CHEBI:78668'), '(E)-10-hydroxydec-2-enoic acid')
+
+    def test_first_level_relatives(self):
+        pass
+
+    def test_generation(self):
+        pass
