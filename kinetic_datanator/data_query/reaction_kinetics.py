@@ -318,7 +318,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                         references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
 
                 reaction = self.reaction = data_model.Reaction(participants = participants, cross_references=references)
-                
+
             reaction_list.append(reaction)
 
 

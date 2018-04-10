@@ -367,6 +367,26 @@ class Reaction(Interaction):
         # return
         return participants
 
+    def stringify(self):
+        #TODO: Add the modifier
+
+        participants = self.get_ordered_participants()
+        result = ''
+        for item in participants:
+            if item.coefficient == -1 and len(result) < 1:
+                result += str(item.specie.id)
+            elif item.coefficient == -1 and len(result) > 1:
+                result += ' + ' + str(item.specie.id)
+            elif item.coefficient == 1 and '-->' not in result:
+                result += ' --> ' + str(item.specie.id)
+            elif item.coefficient == 1:
+                result += ' + ' + str(item.specie.id)
+            else:
+                continue
+
+        return result
+
+
     def __name__(self):
         return 'Reaction'
 

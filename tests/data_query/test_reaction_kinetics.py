@@ -143,8 +143,8 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
 
         rxn_list = self.q.get_reaction_by_compound(compound)
 
-        self.assertEqual(rxn_list[0].get_ec_number(), '1.1.99.31')
 
+        self.assertEqual(rxn_list[0].get_ec_number(), '1.1.99.31')
         self.assertEqual(len(rxn_list[0].participants), 4)
         self.assertEqual(rxn_list[0].participants[0].specie.id, '2-Hydroxyisocaproate')
 
