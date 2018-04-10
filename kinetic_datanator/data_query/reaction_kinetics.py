@@ -291,22 +291,36 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
 
+
         reaction_list = []
         for rxn in rxn_cluster:
+            references = []
             participants = []
             for rxn_part in rxn:
-                coef = -1 if rxn_part._is_reactant else 0
-                coef = 1 if rxn_part._is_product else 0
+
+                if rxn_part._is_reactant:
+                    coef = -1
+                elif rxn_part._is_product:
+                    coef = 1
+                elif rxn_part._is_modifier:
+                    coef = 0
+
                 part = data_model.ReactionParticipant(
                     specie = data_model.Specie(
                         id = rxn_part.compound.compound_name,
                         structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
                     coefficient = coef)
                 participants.append(part)
-            reaction = self.reaction = data_model.Reaction(participants = participants)
+
+
+                if len(references)<1:
+                    for item in rxn_part.kinetic_law._metadata.resource:
+                        references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
+
+                reaction = self.reaction = data_model.Reaction(participants = participants, cross_references=references)
+                
             reaction_list.append(reaction)
 
-            #TODO: ADD CROSSREFERENCES
 
         return reaction_list
 
