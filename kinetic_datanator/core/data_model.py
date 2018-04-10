@@ -367,8 +367,8 @@ class Reaction(Interaction):
         # return
         return participants
 
-        def __name__(self):
-            return 'Reaction'
+    def __name__(self):
+        return 'Reaction'
 
     def get_reactant_product_pairs(self):
         """ Get list of pairs of similar reactants and products
