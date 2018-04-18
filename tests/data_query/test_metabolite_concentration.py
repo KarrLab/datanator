@@ -43,10 +43,11 @@ class TestMetaboliteConcentrationsQueryGenerator(unittest.TestCase):
     def test_serialization(self):
 
         obs = self.q.run(self.uridine_tp)
-        json = self.q.serialize_observation(obs)
 
-        self.assertIn('BW25113', json['genetics']['variation'].keys())
-        self.assertEqual(4, len(json['environment']['temperature'][37.0]))
+        json = obs.observed_values[0].to_dict()
+
+        self.assertIn('BW25113', json['observation']['genetics']['variation'])
+        self.assertEqual(37.0 , json['observation']['environment']['temperature'])
 
 
 
