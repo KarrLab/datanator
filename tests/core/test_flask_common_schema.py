@@ -34,6 +34,26 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
+    def test_serialization(self):
+        test_json = models.Compound.query.filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
+        self.assertEqual(test_json['compound_name'], '2-Hydroxyisocaproate')
+        self.assertEqual(test_json['_is_name_ambiguous'], False)
+
+        test_json = models.AbundanceDataSet.query.filter_by(file_name='882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first().serialize()
+        self.assertEqual(test_json['score'], 2.47)
+        self.assertEqual(test_json['weight'], 100)
+
+        test_json = models.Compound.query.filter_by(compound_name='Adenine').first().serialize(metadata=True, relationships=True)
+        self.assertEqual(test_json['compound_name'], 'Adenine')
+        self.assertEqual(test_json['relationships']['structure']['_value_inchi'], 'InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)')
+
+    def test_magic_methods(self):
+
+        for tablename in self.flk.base_model.metadata.tables.keys():
+            for c in models.db.Model._decl_class_registry.values():
+                if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+                    self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
+
 
     def test_data_loaded(self):
         session = self.flk.session
@@ -59,13 +79,14 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
 
+
 class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname = self.cache_dirname,
-                                clear_content = True ,load_entire_small_DBs = False,
-                                download_backups= False, load_content = True, max_entries = 10,
+        self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
+                                clear_content = True, download_backups= False,
+                                load_content = True, max_entries = 10,
                                 verbose = True, test=True)
 
         for item in self.cs.text_indicies:
@@ -80,11 +101,12 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 
 
     def test_ncbi(self):
-        tax = models.Taxon.query.whoosh_search('Homo sapiens').all()
-        self.assertEqual(len(tax),1)
+        session = self.cs.session
+        tax = session.query(models.Taxon).filter_by(name = 'Homo sapiens').all()
+        self.assertGreaterEqual(len(tax), 1)
         self.assertEqual(tax[0].ncbi_id, 9606)
 
-        session = self.cs.session
+
         taxon = session.query(models.Taxon).filter_by(ncbi_id = 882).first()
         self.assertEqual(taxon.name, 'Desulfovibrio vulgaris str. Hildenborough')
 
@@ -124,6 +146,26 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
+    def test_arrayexpress(self):
+        session = self.cs.session
+        sample = session.query(models.RNASeqDataSet).filter_by(experiment_accession_number = 'E-MTAB-6272', sample_name='Sample 13').first()
+        self.assertEqual(sample.assay, 'Sample 13')
+        self.assertEqual(sample.ensembl_organism_strain, "mus_musculus")
+        self.assertEqual(sample.read_type, "single")
+        self.assertEqual(sample.full_strain_specificity, True)
+        self.assertEqual(sample.reference_genome[0].download_url, "ftp://ftp.ensembl.org/pub/current_fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz")
+        #print("here:{}".format(sample._metadata_id))
+        self.assertEqual(len(sample._metadata.characteristic), 7)
+        #print("here:{}".format(sample._metadata_id))
+        self.assertEqual(len(sample._metadata.variable), 2)
+
+
+        experiment = session.query(models.RNASeqExperiment).filter_by(accession_number = 'E-MTAB-6454').first()
+        self.assertEqual(len(experiment.samples), 36)
+        self.assertEqual(experiment.accession_number, 'E-MTAB-6454')
+        self.assertEqual(experiment.exp_name, "Gene expression profiling across ontogenetic stages in wood white (Leptidea sinapis) reveals pathways linked to butterfly diapause regulation")
+        self.assertEqual(experiment._experimentmetadata.description[:12], "In temperate")
+        #self.assertEqual(experiment.has_fastq_files
 
     def test_sabio(self):
         session = self.cs.session
@@ -172,6 +214,14 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'uniprotkb:P49418').all()
         self.assertEqual(set([c.site_b for c in interact]), set(['binding-associated region:1063-1070(MINT-376288)', '-']))
 
+        for testcase in [interaction.protein_subunit for interaction in interact\
+            if interaction.participant_b != 'uniprotkb:O43426']:
+            self.assertEqual(len(testcase), 1)
+            self.assertEqual(testcase[0].uniprot_id, 'P49418')
+
+        for items in interact:
+            self.assertTrue(items._metadata)
+
         interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'intact:EBI-7121765').first()
         self.assertEqual(interact._metadata.resource[0]._id, '10542231|mint')
 
@@ -195,3 +245,31 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     def test_whoosh(self):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
+
+
+# class DownloadLoadingTestFlaskCommonSchema(unittest.TestCase):
+#
+#     @classmethod
+#     def setUpClass(self):
+#         self.cache_dirname = tempfile.mkdtemp()
+#
+#         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
+#                                 download_backups= True, load_content = True, max_entries = 10,
+#                                 verbose = True, test=True)
+#
+#         for item in self.cs.text_indicies:
+#             flask_whooshalchemy.whoosh_index(self.cs.app, item)
+#
+#         self.session = self.cs.session
+#
+#
+#     @classmethod
+#     def tearDownClass(self):
+#         models.db.session.remove()
+#         models.db.drop_all()
+#
+#         shutil.rmtree(self.cache_dirname)
+#
+#     def test_progress_check(self):
+#         for prog in self.session.query(models.Progress).all():
+#             self.assertGreaterEqual(prog.amount_loaded, self.prev_load[prog.database_name])

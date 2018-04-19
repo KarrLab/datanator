@@ -14,7 +14,6 @@ import tempfile
 import unittest
 
 
-@unittest.skip("Test is variable -- Dependent on Ecmdb website")
 class TestEcmdbFromRemote(unittest.TestCase):
 
     @classmethod
@@ -180,7 +179,6 @@ class TestEcmdbFromRemote(unittest.TestCase):
         self.assertEqual(session.query(ecmdb.Compound).count(), n_compound)
         self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - 1)
 
-@unittest.skip("Test is variable -- Dependent on Ecmdb website")
 class TestEcmdbFromBlank(unittest.TestCase):
 
     def setUp(self):

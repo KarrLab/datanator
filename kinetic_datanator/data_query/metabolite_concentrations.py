@@ -17,7 +17,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
     def __init__(self,
                  taxon=None, max_taxon_dist=None, taxon_dist_scale=None, include_variants=False,
                  temperature=37., temperature_std=1.,
-                 ph=7.5, ph_std=0.3):
+                 ph=7.5, ph_std=0.3, cache_dirname = None):
         """
         Args:
             taxon (:obj:`str`, optional): target taxon
@@ -34,9 +34,9 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=flask_common_schema.FlaskCommonSchema())
+            data_source=flask_common_schema.FlaskCommonSchema(cache_dirname= cache_dirname))
 
-        self.filters.append(data_query.SpecieStructuralSimilarityFilter())
+        # self.filters.append(data_query.SpecieStructuralSimilarityFilter())
         # self.filters.append(data_query.MolecularSimilarityFilter())
 
     def get_observed_values(self, compound):

@@ -8,6 +8,7 @@ from sqlalchemy import Column, Integer, String, Float
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
+test = True
 
 class UniprotData(Base):
     """ Represents protein interactions in from the IntAct Database
@@ -45,14 +46,17 @@ class Uniprot(data_source.HttpDataSource):
 
     """
     base_model = Base
-    ENDPOINT_DOMAINS = {'uniprot' : 'http://www.uniprot.org/uniprot/?query=*&fil=reviewed%3Ayes#'}
+    ENDPOINT_DOMAINS = {'uniprot' : 'http://www.uniprot.org/uniprot/?query=*&fil=reviewed%3Ayes#',
+                        'uniprot-test': 'http://www.uniprot.org/uniprot/?sort=&desc=&compress=no&query=&fil=organism:%22Rattus%20norvegicus%20(Rat)%20[10116]%22%20AND%20reviewed:yes&limit=10&force=no&preview=true&format=tab&columns=id,entry%20name,genes(PREFERRED),protein%20names,sequence,length,mass,ec,database(GeneID),reviewed'}
 
 
     def load_content(self):
 
-        #TODO: Figure out way to get the textfile from uniprot website
-
-        pand = pd.read_csv('kinetic_datanator/data_source/cache/uniprot-all.txt', delimiter = '\t')
+        if test:
+            self.write_data_to_txt()
+            pand = pd.read_csv(self.cache_dirname+'/uniprot-test.txt', delimiter = '\t')
+        else:
+            pand = pd.read_csv(self.cache_dirname+'/uniprot-all.txt', delimiter = '\t')
 
         new_columns = ['uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status']
@@ -65,3 +69,15 @@ class Uniprot(data_source.HttpDataSource):
 
         pand.to_sql(name = 'uniprot', con=self.engine, if_exists = 'append', chunksize = 1000)
         self.session.commit()
+
+
+    def write_data_to_txt(self):
+
+        database_url = self.ENDPOINT_DOMAINS['uniprot-test']
+        req = self.requests_session
+        response = req.get(database_url)
+        response.raise_for_status()
+        content = str(response.content.decode('utf-8')).split('\n')
+        with open(self.cache_dirname+'/uniprot-test.txt', 'w') as text_file:
+            for line in content:
+                text_file.write(line+'\n')

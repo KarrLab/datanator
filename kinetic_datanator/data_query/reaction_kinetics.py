@@ -38,7 +38,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     def __init__(self,
                  taxon=None, max_taxon_dist=None, taxon_dist_scale=None, include_variants=False,
                  temperature=37., temperature_std=1.,
-                 ph=7.5, ph_std=0.3):
+                 ph=7.5, ph_std=0.3, cache_dirname=None):
         """
         Args:
             taxon (:obj:`str`, optional): target taxon
@@ -55,7 +55,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=flask_common_schema.FlaskCommonSchema())
+            data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
         self.filters.append(data_query.ReactionSimilarityFilter())
         self.filters.append(data_query.ReactionParticipantFilter())
@@ -257,10 +257,12 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 if only_formula_and_connectivity:
                     formula_and_connectivity = structure
                 else:
-                    formula_and_connectivity = part.specie.to_inchi(only_formula_and_connectivity=True)
-                if formula_and_connectivity in ['', 'H2O', 'H2O']:
-                    continue
+                    if structure:
+                        formula_and_connectivity = part.specie.to_inchi(only_formula_and_connectivity=True)
+                # if formula_and_connectivity in ['', 'H2O', 'H2O']:
+                #     continue
 
+            role = None
             if part.coefficient < 0:
                 role = 'reactant'
             elif part.coefficient > 0:
@@ -289,22 +291,36 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
         rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
 
+
         reaction_list = []
         for rxn in rxn_cluster:
+            references = []
             participants = []
             for rxn_part in rxn:
-                coef = -1 if rxn_part._is_reactant else 0
-                coef = 1 if rxn_part._is_product else 0
+
+                if rxn_part._is_reactant:
+                    coef = -1
+                elif rxn_part._is_product:
+                    coef = 1
+                elif rxn_part._is_modifier:
+                    coef = 0
+
                 part = data_model.ReactionParticipant(
                     specie = data_model.Specie(
                         id = rxn_part.compound.compound_name,
                         structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
                     coefficient = coef)
                 participants.append(part)
-            reaction = self.reaction = data_model.Reaction(participants = participants)
+
+
+                if len(references)<1:
+                    for item in rxn_part.kinetic_law._metadata.resource:
+                        references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
+
+                reaction = self.reaction = data_model.Reaction(participants = participants, cross_references=references)
+
             reaction_list.append(reaction)
 
-            #TODO: ADD CROSSREFERENCES
 
         return reaction_list
 
@@ -366,8 +382,10 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             participant_condition = models.Reaction._is_reactant == 1
         elif role == 'product':
             participant_condition = models.Reaction._is_product == 1
-        else:
+        elif role == 'modifier':
             participant_condition = models.Reaction._is_modifier == 1
+        else:
+            raise ValueError('role does not exist')
 
         session = self.data_source.session
 

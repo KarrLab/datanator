@@ -27,25 +27,25 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         pass
 
     def test_get_observable_complex(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
         complex = q.get_observable_complex(self.protein)
         self.assertEqual(complex[0].name,'COPI vesicle coat complex')
 
     def test_get_observable_interactions(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
         interaction = q.get_observable_interactions(self.protein)
         self.assertEqual(set([i.participant_a for i in interaction]),
             set([u'uniprotkb:P41810', u'uniprotkb:P41811', u'uniprotkb:P53622',
             u'uniprotkb:P33767', u'uniprotkb:P40509']))
 
     def test_get_observable_subunits(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
         subunits = q.get_observable_subunits(self.rhino_complex)
         self.assertEqual(set([c.uniprot_id for c in subunits]), set(['Q9VIF5', 'Q7JXA8', 'Q9V629']))
 
 
     def test_get_interaction_by_subunit(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
 
         ans = q.get_interaction_by_subunit('P49418').all()
 
@@ -65,7 +65,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         u'binding-associated region:626-695(MINT-8094654)', u'binding-associated region:626-695(MINT-8094709)']))
 
     def test_get_known_complex_by_subunit(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
 
         ans = q.get_known_complex_by_subunit(self.protein_Q9CWF2.uniprot_id).all()
 
@@ -74,7 +74,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         self.assertEqual(ans[0].go_id, 'GO:0006461;GO:0006897;GO:0030036')
 
     def test_get_subunits_by_known_complex(self):
-        q= ppi.ProteinInteractionandComplexQueryGenerator()
+        q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
 
         name = 'Succinyl-CoA synthetase, GDP-forming'
 

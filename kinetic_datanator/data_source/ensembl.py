@@ -12,7 +12,7 @@ import pkg_resources
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-import data_source
+from kinetic_datanator.core import data_source
 from Bio import SeqIO
 
 
@@ -63,7 +63,7 @@ class GetGenes(data_source.HttpDataSource):
 
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backup=True, verbose=False,
+                 commit_intermediate_results=False, download_backups=True, verbose=False,
                  clear_requests_cache=False, download_request_backup=False):
         """
         Args:
@@ -82,7 +82,7 @@ class GetGenes(data_source.HttpDataSource):
         super(GetGenes, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                            load_content=load_content, max_entries=max_entries,
                                            commit_intermediate_results=commit_intermediate_results,
-                                           download_backup=download_backup, verbose=verbose,
+                                           download_backups=download_backups, verbose=verbose,
                                            clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
 
 
@@ -95,51 +95,28 @@ class GetGenes(data_source.HttpDataSource):
             start_year (:obj:`int`, optional): the first year to retrieve experiments for
             end_year (:obj:`int`, optional): the last year to retrieve experiments for
         """
+        pass
 
-        session = self.session
-
-        # download and parse experiment ids
-
-        path_to_file = "/home/yosef/Desktop/CDNA_FILES/Streptococcus_pneumoniae_r6.ASM704v1.cdna.all.fa"
-        with open(path_to_file, mode='r') as handle:
-
-            # Use Biopython's parse function to process individual
-            # FASTA records (thus reducing memory footprint)
-            for record in SeqIO.parse(handle, 'fasta'):
-
-                # Extract individual parts of the FASTA record
-
-                #print(record.gene)
-                new_gene = GeneEntry(name=record.name)
-                session.add(new_gene)
-                #session.commit()
-                #print(record.name)
-                #print(record.id)
-                #print(record.description)
-
-
-
-        self.session.commit()
-
-
-
-
-    def get_or_create_object(self, cls, **kwargs):
-        """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
-        if there is no instance with the property-values pairs described by kwargs
-        Args:
-            cls (:obj:`class`): type of object to find or create
-            **kwargs: values of the properties of the object
-        Returns:
-            :obj:`Base`: instance of :obj:`cls` hat has the property-values pairs described by kwargs
-        """
-        q = self.session.query(cls).filter_by(**kwargs)
-        if self.session.query(q.exists()).scalar():
-            return q.first()
-
-        obj = cls(**kwargs)
-        self.session.add(obj)
-        return obj
-
-if __name__ == '__main__':
-    GetGenes().load_content()
+        # session = self.session
+        #
+        # # download and parse experiment ids
+        #
+        # path_to_file = "/home/yosef/Desktop/CDNA_FILES/Streptococcus_pneumoniae_r6.ASM704v1.cdna.all.fa"
+        # with open(path_to_file, mode='r') as handle:
+        #
+        #     # Use Biopython's parse function to process individual
+        #     # FASTA records (thus reducing memory footprint)
+        #     for record in SeqIO.parse(handle, 'fasta'):
+        #
+        #         # Extract individual parts of the FASTA record
+        #
+        #         #print(record.gene)
+        #         new_gene = self.get_or_create_object(GeneEntry, name=record.name)
+        #         #session.commit()
+        #         #print(record.name)
+        #         #print(record.id)
+        #         #print(record.description)
+        #
+        #
+        #
+        # self.session.commit()

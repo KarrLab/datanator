@@ -65,6 +65,7 @@ class Molecule(object):
         else:
             return None
 
+
     def get_fingerprint(self, type='fp2'):
         """ Calculate a fingerprint
 

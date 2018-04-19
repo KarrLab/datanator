@@ -13,7 +13,7 @@ import tempfile
 import shutil
 
 
-class TestPortionUniprot(unittest.TestCase):
+class TestServerDownloadUniprot(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
@@ -42,3 +42,21 @@ class TestPortionUniprot(unittest.TestCase):
         self.assertEqual(len(test),1)
         self.assertEqual(test[0].entrez_id, 5324858)
         self.assertEqual(test[0].ec_number, '2.1.1.166')
+
+class TestLoadingUniprot(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.uni = uniprot.Uniprot(cache_dirname=self.cache_dirname, download_backups=False, load_content=True)
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.cache_dirname)
+
+    def test_proper_loading(self):
+        all_data = self.uni.session.query(uniprot.UniprotData).all()
+        self.assertEqual(len(all_data), 10)
+        self.assertTrue(all_data[0].uniprot_id)
+        self.assertTrue(all_data[0].mass)
+        self.assertTrue(all_data[8].uniprot_id)

@@ -90,7 +90,30 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """
         obs = self.get_observed_values(component)
         filter_result = self.filter_observed_values(component, obs)
-        return self.get_consensus(component, filter_result)
+        return filter_result
+        # return self.get_consensus(component, filter_result)
+
+
+    # def serialize_observation(self, result):
+    #
+    #     ans = {}
+    #
+    #     def recurse(graph, dict_new, obj):
+    #         if not isinstance(graph, (str, int, float)) and graph is not None:
+    #             for item in graph.Meta.attribute_order:
+    #                 if item not in dict_new.keys():
+    #                     dict_new[item] = {}
+    #                 recurse(getattr(graph, item),dict_new[item], obj)
+    #         else:
+    #             if graph not in dict_new.keys():
+    #                 dict_new[graph] = []
+    #             dict_new[graph].append(obj)
+    #
+    #     for val,score in zip(result.observed_values, result.scores) :
+    #         recurse(val.observation, ans, (val, score))
+    #
+    #     return ans
+
 
     @abc.abstractmethod
     def get_observed_values(self, component):
@@ -419,7 +442,6 @@ class OptionsFilter(Filter):
         if val in self.options:
             return 1
         return -1
-
 
 class RangeFilter(Filter):
     """ Filters out observed values whose attributes have values that fall outside a specified range.
@@ -934,6 +956,8 @@ class TaxonomicDistanceFilter(Filter):
 
 class WildtypeFilter(OptionsFilter):
     """ Filter out observed values which were observed for taxa with genetic perturbations """
+
+    #TODO: Need to figure out what the options are for these
 
     def __init__(self):
         super(WildtypeFilter, self).__init__(('observation', 'genetics', 'variation', ), [''])

@@ -24,7 +24,6 @@ import pubchempy
 import re
 import requests
 import requests_cache
-import scipy.constants
 import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
@@ -915,11 +914,11 @@ class SabioRk(data_source.HttpDataSource):
             id (:obj:`int`): identifier
             sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction
             specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
-                
+
                 * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
                 * `variant` (:obj:`str`): description of the variant of the eznyme
                 * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
-                
+
             functions (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of rate law equations (keys = IDs in SBML, values = equations)
             units (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of units (keys = IDs in SBML, values = names)
 
@@ -1153,7 +1152,8 @@ class SabioRk(data_source.HttpDataSource):
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['katal', 'katal_base']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, scipy.constants.Avogadro * error if error else None, 's^(-1)')
+                # cannot be converted without knowing the enzyme amount in the measurement 
+                return (None, None, None, None, None)
 
             if units in ['M^(-1)*s^(-1)']:
                 # off by mol^(2) * liter^(-1)
@@ -1191,7 +1191,8 @@ class SabioRk(data_source.HttpDataSource):
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['mol/s', 'katal', 'katal_base']:
-                return ('k_cat', 25, value * scipy.constants.Avogadro, error * scipy.constants.Avogadro if error else None, 's^(-1)')
+                # cannot be converted without knowing the enzyme amount in the measurement 
+                return (None, None, None, None, None)
 
             if units in ['M*s^(-1)*g^(-1)']:
                 # has incorrect dimensionality from v_max by factor of liter^(-1)

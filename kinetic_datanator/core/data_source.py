@@ -7,7 +7,6 @@
 
 from wc_utils import backup
 import abc
-import kinetic_datanator.config.paths
 import os
 import requests
 import requests_cache
@@ -16,11 +15,6 @@ import sqlalchemy
 import sqlalchemy.orm
 import sys
 import tarfile
-import wc_utils.config.core
-
-
-config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
-# :obj:`wc_utils.config.core.ConfigManager`: configuration manager
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 # :obj:`str`: default path for the sqlite database
@@ -49,10 +43,6 @@ class CachedDataSource(DataSource):
     Attributes:
         filename (:obj:`str`): path to sqlite copy of the data source
         cache_dirname (:obj:`str`): directory to store the local copy of the data source
-        backup_server_hostname (:obj:`str`): hostname for server to upload/download copies of the data source to/from the Karr Lab server
-        backup_server_username (:obj:`str`): username for server to upload/download copies of the data source to/from the Karr Lab server
-        backup_server_password (:obj:`str`): password for server to upload/download copies of the data source to/from the Karr Lab server
-        backup_server_remote_dirname (:obj:`str`): remote directory on server to upload/download copies of the data source to/from the Karr Lab server
         engine (:obj:`sqlalchemy.engine.Engine`): sqlalchemy engine
         session (:obj:`sqlalchemy.orm.session.Session`): sqlalchemy session
         max_entries (:obj:`float`): maximum number of entries to save locally
@@ -92,12 +82,6 @@ class CachedDataSource(DataSource):
         # committing
         self.commit_intermediate_results = commit_intermediate_results
 
-        # backup settings
-        self.backup_server_hostname = config_manager.get_config()['wc_utils']['backup']['hostname']
-        self.backup_server_username = config_manager.get_config()['wc_utils']['backup']['username']
-        self.backup_server_password = config_manager.get_config()['wc_utils']['backup']['password']
-        self.backup_server_remote_dirname = config_manager.get_config()['wc_utils']['backup']['remote_dirname']
-
         # verbosity
         self.verbose = verbose
 
@@ -112,7 +96,7 @@ class CachedDataSource(DataSource):
             self.session = self.get_session()
             if load_content:
                 self.load_content()
-        elif download_backups and self.backup_server_hostname:
+        elif download_backups:
             self.download_backups()
             self.engine = self.get_engine()
             self.session = self.get_session()
@@ -171,9 +155,7 @@ class CachedDataSource(DataSource):
     def upload_backups(self):
         """ Backup the local sqlite database to the Karr Lab server """
         for a_backup in self.get_backups(set_metadata=True):
-            backup.BackupManager(
-                hostname=self.backup_server_hostname, username=self.backup_server_username,
-                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname) \
+            backup.BackupManager() \
                 .create(a_backup) \
                 .upload(a_backup) \
                 .cleanup(a_backup)
@@ -181,9 +163,7 @@ class CachedDataSource(DataSource):
     def download_backups(self):
         """ Download the local sqlite database from the Karr Lab server """
         for a_backup in self.get_backups(download=True):
-            backup_manager = backup.BackupManager(
-                hostname=self.backup_server_hostname, username=self.backup_server_username,
-                password=self.backup_server_password, remote_dirname=self.backup_server_remote_dirname)
+            backup_manager = backup.BackupManager()
             backup_manager \
                 .download(a_backup) \
                 .extract(a_backup) \
@@ -216,8 +196,9 @@ class CachedDataSource(DataSource):
             whoosh_backup.paths.append(path)
             whoosh_backup.local_filename = path.arc_path
             whoosh_backup.remote_filename = path.arc_path + '.tar.gz'
-            whoosh_backup.set_username_ip_date()
-            whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+            if set_metadata:
+                whoosh_backup.set_username_ip_date()
+                whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
             list_backups.append(whoosh_backup)
 
         list_backups.append(a_backup)

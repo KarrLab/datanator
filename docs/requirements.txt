@@ -1,15 +1,6 @@
-cement
-configparser
-demjson
-ete3
-jxmlease
-# openbabel
-python_dateutil
 robpol86_sphinxcontrib_googleanalytics
-six
-sphinx >= 1.6
+sphinx >= 1.7
 sphinx_rtd_theme
+sphinxcontrib_addmetahtml
 sphinxcontrib_bibtex
 sphinxcontrib_spelling
-sqlalchemy
-git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils-0.0.1a5

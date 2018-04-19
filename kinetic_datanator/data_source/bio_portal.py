@@ -8,16 +8,13 @@
 
 from kinetic_datanator.core import data_source
 import json
-import kinetic_datanator.config.paths
+import kinetic_datanator.config.core
 import os
 import pickle
 import pronto
 import re
 import requests
 import sys
-import wc_utils.config.core
-
-config_manager = wc_utils.config.core.ConfigManager(kinetic_datanator.config.paths.core)
 
 
 class BioPortal(data_source.DataSource):
@@ -147,4 +144,4 @@ class BioPortal(data_source.DataSource):
         Returns:
             :obj:`str`: key
         """
-        return config_manager.get_config()['bioportal']['key']
+        return kinetic_datanator.config.core.get_config()['kinetic_datanator']['bioportal']['key']
