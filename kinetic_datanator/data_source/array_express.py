@@ -566,15 +566,9 @@ class ArrayExpress(data_source.HttpDataSource):
         if 'source' in sample_json:
             source = sample_json['source']
             if isinstance(source, list):
-<<<<<<< HEAD
                 sample.name = source[0]['name'].encode('ascii', 'ignore').decode("utf-8").replace(" ", "_")
             else:
                 sample.name = source['name'].encode('ascii', 'ignore').decode("utf-8").replace(" ", "_")
-=======
-                sample.name = source[0]['name'].encode('ascii', 'ignore').decode("utf-8")
-            else:
-                sample.name = source['name'].encode('ascii', 'ignore').decode("utf-8")
->>>>>>> a6a94d8301672297d9b8fa4d2f015f34ea8033a3
 
         if 'extract' in sample_json:
             extracts = sample_json['extract']
