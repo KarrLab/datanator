@@ -1,0 +1,9 @@
+{
+	"n_targets": 3,
+	"n_bootstraps": 0,
+	"n_processed": 4,
+	"kallisto_version": "0.43.1",
+	"index_version": 10,
+	"start_time": "Thu Apr 19 17:30:24 2018",
+	"call": "kallisto quant --index=/home/yosef/Desktop/kinetic_datanator/tests/data_source/test_processing/kallisto_index_files/burkholderia_cenocepacia_j2315.idx --output-dir=/home/yosef/Desktop/kinetic_datanator/tests/data_source/test_processing/E-MTAB-6099/Control_2/output --bootstrap-samples=0 --seed=42 --single --fragment-length=180 --sd=20 --threads=1 /home/yosef/Desktop/kinetic_datanator/tests/data_source/test_processing/E-MTAB-6099/Control_2/Control_2_0.fastq.gz"
+}

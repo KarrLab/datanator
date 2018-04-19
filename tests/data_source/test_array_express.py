@@ -171,7 +171,7 @@ class TestLoadFASTQ_Url(unittest.TestCase):
         self.assertTrue(exp.has_fastq_files)
         self.assertEqual(exp.read_type, "single")
         self.assertEqual(len(exp.samples), 12)
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1015798 1").first()
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1015798_1").first()
         self.assertEqual(a_sample.read_type, "single")
         self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR580/SRR580556/SRR580556.fastq.gz")
 
@@ -192,8 +192,8 @@ class TestDownloadCDNA(unittest.TestCase):
         session = src.session
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
         exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
-        sample = exp.samples[0]
-        download_cdna.run(sample, self.cache_dirname)
+        ensembl_info = exp.samples[0].ensembl_info[0]
+        download_cdna.run(ensembl_info, self.cache_dirname)
         self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
         self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
 
@@ -245,7 +245,7 @@ class TestEnsemblTools(unittest.TestCase):
         session = self.src.session
         self.src.load_experiment_samples(array_express.Experiment(id="E-GEOD-58388"))
         exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-58388").first()
-        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710 1").first()
+        a_sample = session.query(array_express.Sample).filter_by(experiment=exp).filter_by(name="GSM1409710_1").first()
         with self.assertRaises(LookupError):
             ensembl_tools.get_strain_info(a_sample)
 
@@ -257,6 +257,33 @@ class TestEnsemblTools(unittest.TestCase):
         exp = session.query(array_express.Experiment).filter_by(id=ax).first()
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
+
+class TestProcessData(unittest.TestCase):
+
+    def setUp(self):
+        self.cache_dirname = '{}/test_processing'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
+        os.unlink('{}/E-MTAB-6099/Control_2/Control_2_abundances_binary'.format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+
+    def test_process_data(self):
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-6099"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        sample_name = 'Control_2'
+        sample = session.query(array_express.Sample).filter_by(name=sample_name).first()
+        core.get_processed_data_samples([sample], self.cache_dirname)
+        self.assertTrue(os.path.isfile("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname)))
+        data = pandas.read_pickle("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname))
+        self.assertEqual(data.loc["CAO00538", "est_counts"], 2)
+        self.assertEqual(data.loc["CAO00538", "tpm"], 361319)
+
+
+
 
 
     #def test_weird(self):
