@@ -80,9 +80,6 @@ class Observation(SerializeClassMixin, db.Model):
     def __repr__(self):
         return 'Observation(%s)' % (self.id)
 
-    def __name__(self):
-        return 'Observation'
-
 
 """
 _exeperimentmetadata_method = db.Table(
@@ -263,8 +260,7 @@ class Metadata(db.Model):
     def __repr__(self):
         return 'Metadata(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'Metadata'
+
 
 
 
@@ -296,8 +292,6 @@ class ExperimentMetadata(db.Model):
     def __repr__(self):
         return 'ExperimentMetadata(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'ExperimentMetadata'
 
 class Experiment(db.Model):
 
@@ -311,8 +305,7 @@ class Experiment(db.Model):
     def __repr__(self):
         return 'Experiment(%s||%s)' % (self.id, self._experimentmetadata_id)
 
-    def __name__(self):
-        return 'Experiment'
+
 
 
 class Method(db.Model):
@@ -337,8 +330,7 @@ class Method(db.Model):
     def __repr__(self):
         return 'Method(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'Method'
+
 
 class Characteristic(db.Model):
     """
@@ -359,8 +351,6 @@ class Characteristic(db.Model):
     def __repr__(self):
         return 'Charactaristic(%s)' % (self.id)
 
-    def __name__(self):
-        return 'Charactaristic'
 
 class Variable(db.Model):
     """
@@ -382,8 +372,7 @@ class Variable(db.Model):
     def __repr__(self):
         return 'Variable(%s)' % (self.id)
 
-    def __name__(self):
-        return 'Variable'
+
 
 class ExperimentDesign(db.Model):
     """ Represents and experimental design
@@ -399,8 +388,7 @@ class ExperimentDesign(db.Model):
     def __repr__(self):
         return 'ExperimentDesign(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'ExperimentalDesign'
+
 
 class ExperimentType(db.Model):
     """ Represents a type of experiment
@@ -417,8 +405,7 @@ class ExperimentType(db.Model):
     def __repr__(self):
         return 'ExperimentType(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'ExperimentalType'
+
 
 class DataFormat(db.Model):
     """ Represents a data format
@@ -436,8 +423,6 @@ class DataFormat(db.Model):
     def __repr__(self):
         return 'DataFormat(%s||%s)' % (self.name, self._id)
 
-    def __name__(self):
-        return 'DataFormat'
 
 
 class Taxon(db.Model):
@@ -458,8 +443,7 @@ class Taxon(db.Model):
     def __repr__(self):
         return 'Taxon(%s||%s)' % (self.name, self.ncbi_id)
 
-    def __name__(self):
-        return 'Taxon'
+
 
 
 class Synonym(db.Model):
@@ -481,8 +465,6 @@ class Synonym(db.Model):
     def __repr__(self):
         return 'Synonym(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'Synonym'
 
 class Resource(db.Model):
     """
@@ -505,8 +487,7 @@ class Resource(db.Model):
     def __repr__(self):
         return 'Resource(%s)' % (self.id)
 
-    def __name__(self):
-        return 'Resource'
+
 
 class CellLine(db.Model):
     """
@@ -525,8 +506,7 @@ class CellLine(db.Model):
     def __repr__(self):
         return 'CellLine(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'CellLine'
+
 
 class Conditions(db.Model):
     """
@@ -553,8 +533,7 @@ class Conditions(db.Model):
     def __repr__(self):
         return 'Conditions(%s)' % (self.id)
 
-    def __name__(self):
-        return 'Conditions'
+
 
 class CellCompartment(db.Model):
     """
@@ -575,8 +554,6 @@ class CellCompartment(db.Model):
     def __repr__(self):
         return 'CellCompartment(%s||%s)' % (self.name, self.id)
 
-    def __name__(self):
-        return 'CellCompartment'
 
 class PhysicalEntity(Observation):
     """
@@ -597,10 +574,6 @@ class PhysicalEntity(Observation):
 
     def __repr__(self):
         return 'PhysicalEntity(%s||%s)' % (self.name, self.observation_id)
-
-    def __name__(self):
-        return 'PhysicalEntity'
-
 
 
 
@@ -654,8 +627,6 @@ class ProteinSubunit(PhysicalEntity):
     def __repr__(self):
         return 'ProteinSubunit(%s||%s)' % (self.subunit_name, self.subunit_id)
 
-    def __name__(self):
-        return 'ProteinSubunit'
 
 
 
@@ -697,8 +668,6 @@ class ProteinComplex(PhysicalEntity):
     def __repr__(self):
         return 'ProteinComplex(%s||%s)' % (self.complex_name, self.complex_id)
 
-    def __name__(self):
-        return 'ProteinComplex'
 
 
 class Compound(PhysicalEntity):
@@ -729,10 +698,6 @@ class Compound(PhysicalEntity):
     def __repr__(self):
         return 'Compound(%s||%s)' % (self.compound_name, self.compound_id)
 
-    def __name__(self):
-        return 'Compound'
-
-
 class PhysicalProperty(Observation):
     """
     Represents a Physical Property in the Common Schema
@@ -752,8 +717,6 @@ class PhysicalProperty(Observation):
     def __repr__(self):
         return 'PhysicalProperty(%s||%s)' % (self.name, self.observation_id)
 
-    def __name__(self):
-        return 'PhysicalProperty'
 
 class Structure(PhysicalProperty):
     """
@@ -777,8 +740,6 @@ class Structure(PhysicalProperty):
     def __repr__(self):
         return 'Structure(%s)' % (self.struct_id)
 
-    def __name__(self):
-        return 'Structure'
 
 class Concentration(PhysicalProperty):
     """
@@ -803,8 +764,6 @@ class Concentration(PhysicalProperty):
     def __repr__(self):
         return 'Concentration(%s)' % (self.concentration_id)
 
-    def __name__(self):
-        return 'Concentration'
 
 
 class KineticLaw(PhysicalProperty):
@@ -836,8 +795,6 @@ class KineticLaw(PhysicalProperty):
     def __repr__(self):
         return 'KineticLaw(%s)' % (self.kinetic_law_id)
 
-    def __name__(self):
-        return 'KineticLaw'
 
 class Reaction(db.Model):
     """
@@ -874,9 +831,6 @@ class Reaction(db.Model):
     def __repr__(self):
         return 'Reaction(%s)' % (self.reaction_id)
 
-    def __name__(self):
-        return 'Reaction'
-
 
 class AbundanceDataSet(PhysicalProperty):
     """
@@ -901,9 +855,6 @@ class AbundanceDataSet(PhysicalProperty):
     def __repr__(self):
         return 'AbundanceDataset(%s)' % (self.dataset_id)
 
-    def __name__(self):
-        return 'AbundanceDataset'
-
 
 class RNASeqDataSet(PhysicalProperty):
     __tablename__ = 'rna_seq_dataset'
@@ -922,9 +873,6 @@ class RNASeqDataSet(PhysicalProperty):
     def __repr__(self):
         return 'RNASeqDataset(%s)' % (self.sample_id)
 
-    def __name__(self):
-        return 'RNASeqDataset'
-
 class RNASeqExperiment(Experiment):
     __tablename__ = 'rna_seq_experiment'
 
@@ -939,8 +887,7 @@ class RNASeqExperiment(Experiment):
     def __repr__(self):
         return 'RNASeqExperiment(%s)' % ( self.experiment_id)
 
-    def __name__(self):
-        return 'RNASeqExperiment'
+
 
 
 class ReferenceGenome(PhysicalProperty):
@@ -955,8 +902,6 @@ class ReferenceGenome(PhysicalProperty):
     def __repr__(self):
         return 'ReferenceGenome(%s)' % ( self.reference_genome_id)
 
-    def __name__(self):
-        return 'ReferenceGenome'
 
 class DNABindingDataset(PhysicalProperty):
     """
@@ -984,8 +929,7 @@ class DNABindingDataset(PhysicalProperty):
     def __repr__(self):
         return 'DNABindingDataset(%s)' % ( self.dataset_id)
 
-    def __name__(self):
-        return 'DNABindingDataset'
+
 
 class Parameter(db.Model):
     """
@@ -1032,8 +976,6 @@ class Parameter(db.Model):
     def __repr__(self):
         return 'Parameter(%s)' % (self.parameter_id)
 
-    def __name__(self):
-        return 'Parameter'
 
 class AbundanceData(db.Model):
     """
@@ -1065,8 +1007,6 @@ class AbundanceData(db.Model):
     def __repr__(self):
         return 'AbundanceData(%s)' % (self.abundance_id)
 
-    def __name__(self):
-        return 'AbundanceData'
 
 class DNABindingData(db.Model):
     """
@@ -1099,8 +1039,6 @@ class DNABindingData(db.Model):
     def __repr__(self):
         return 'DNABindingData(%s)' % (self.position_id)
 
-    def __name__(self):
-        return 'DNABindingData'
 
 class ProteinInteractions(PhysicalProperty):
     """
@@ -1136,8 +1074,6 @@ class ProteinInteractions(PhysicalProperty):
     def __repr__(self):
         return 'ProteinInteratctions(%s)' % (self.interaction_id)
 
-    def __name__(self):
-        return 'ProteinInteratctions'
 
 class Progress(db.Model):
     """
@@ -1154,6 +1090,3 @@ class Progress(db.Model):
 
     def __repr__(self):
         return 'Progress(%s||%s)' % (self.database_name, self.amount_loaded)
-
-    def __name__(self):
-        return 'Progress'
