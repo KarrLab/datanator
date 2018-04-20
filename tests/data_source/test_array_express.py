@@ -286,6 +286,56 @@ class TestProcessData(unittest.TestCase):
         self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
 
+class TestCommandLineProcessing(unittest.TestCase):
+
+    def setUp(self):
+        self.cache_dirname = '{}/test_processing'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
+        os.unlink('{}/E-MTAB-6099/Control_2/Control_2_abundances_binary'.format(self.cache_dirname))
+        shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.copy("{}/backup_temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname), "{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname))
+        shutil.copy("{}/backup_temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname), "{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname))
+
+    def test_process_data(self):
+        src = self.src
+        session = src.session
+        ax = "E-MTAB-6099"
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
+        sample_name = 'Control_2'
+        sample = session.query(array_express.Sample).filter_by(name=sample_name).first()
+        #core.get_processed_data_samples([sample], self.cache_dirname, "{}/temporary_files".format(self.cache_dirname))
+        python_file = "python kinetic_datanator/data_source/process_rna_seq/command_line_core.py"
+        output_directory = self.cache_dirname
+        temp_directory = "{}/temporary_files".format(self.cache_dirname)
+        
+        os.system("{} download-cdna {} {} {}".format(python_file, sample.ensembl_info[0].organism_strain, sample.ensembl_info[0].url, temp_directory))
+        
+        fastq_urls = ""
+        for url in sample.fastq_urls:
+            fastq_urls = fastq_urls + url.url + " "
+        fastq_urls = fastq_urls[:-1]
+
+        os.system("""{} download-fastq {} {} {} "{}" """.format(python_file, sample.experiment_id, sample.name, temp_directory, fastq_urls))
+
+        os.system("{} process-cdna {} {} {}".format(python_file, sample.ensembl_info[0].organism_strain, output_directory, temp_directory))
+
+        os.system("{} process-fastq {} {} {} {} {} {} {}".format(python_file, sample.experiment_id, sample.name, sample.ensembl_info[0].organism_strain, len(sample.fastq_urls), sample.experiment.read_type, output_directory, temp_directory))
+
+        os.system("{} delete-cdna {} {}".format(python_file, sample.ensembl_info[0].organism_strain, temp_directory))
+
+        os.system("{} delete-fastq {} {} {}".format(python_file, sample.experiment_id, sample.name, temp_directory))
+
+
+
+        self.assertTrue(os.path.isfile("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname)))
+        data = pandas.read_pickle("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname))
+        self.assertEqual(data.loc["CAO00538", "est_counts"], 2)
+        self.assertEqual(data.loc["CAO00538", "tpm"], 361319)
+        self.assertFalse(os.path.isfile("{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname)))
+        self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
 
     #def test_weird(self):
