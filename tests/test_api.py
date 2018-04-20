@@ -24,7 +24,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertIsInstance(kinetic_datanator.data_source.array_express_tools, types.ModuleType)
         self.assertIsInstance(kinetic_datanator.data_source.array_express_tools.ensembl_tools, types.ModuleType)
         self.assertIsInstance(kinetic_datanator.data_source.process_rna_seq, types.ModuleType)
-        self.assertIsInstance(kinetic_datanator.data_source.process_rna_seq.get_processed_data, types.FunctionType)
+        self.assertIsInstance(kinetic_datanator.data_source.process_rna_seq.get_processed_data_samples, types.FunctionType)
         self.assertIsInstance(kinetic_datanator.data_source.process_rna_seq.download_cdna, types.ModuleType)
         self.assertIsInstance(kinetic_datanator.util, types.ModuleType)
         self.assertIsInstance(kinetic_datanator.util.molecule_util, types.ModuleType)
