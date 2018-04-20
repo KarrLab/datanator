@@ -267,6 +267,8 @@ class TestProcessData(unittest.TestCase):
         os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
         os.unlink('{}/E-MTAB-6099/Control_2/Control_2_abundances_binary'.format(self.cache_dirname))
         shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
+        shutil.copy("{}/backup_temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname), "{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname))
+        shutil.copy("{}/backup_temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname), "{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname))
 
     def test_process_data(self):
         src = self.src
@@ -275,12 +277,13 @@ class TestProcessData(unittest.TestCase):
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         sample_name = 'Control_2'
         sample = session.query(array_express.Sample).filter_by(name=sample_name).first()
-        core.get_processed_data_samples([sample], self.cache_dirname)
+        core.get_processed_data_samples([sample], self.cache_dirname, "{}/temporary_files".format(self.cache_dirname))
         self.assertTrue(os.path.isfile("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname)))
         data = pandas.read_pickle("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname))
         self.assertEqual(data.loc["CAO00538", "est_counts"], 2)
         self.assertEqual(data.loc["CAO00538", "tpm"], 361319)
-
+        self.assertFalse(os.path.isfile("{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname)))
+        self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
 
 
