@@ -286,6 +286,7 @@ class TestProcessData(unittest.TestCase):
         self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
 
+@unittest.skip('skip for other tests')
 class TestCommandLineProcessing(unittest.TestCase):
 
     def setUp(self):
@@ -310,9 +311,9 @@ class TestCommandLineProcessing(unittest.TestCase):
         python_file = "python kinetic_datanator/data_source/process_rna_seq/command_line_core.py"
         output_directory = self.cache_dirname
         temp_directory = "{}/temporary_files".format(self.cache_dirname)
-        
+
         os.system("{} download-cdna {} {} {}".format(python_file, sample.ensembl_info[0].organism_strain, sample.ensembl_info[0].url, temp_directory))
-        
+
         fastq_urls = ""
         for url in sample.fastq_urls:
             fastq_urls = fastq_urls + url.url + " "
