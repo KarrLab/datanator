@@ -685,11 +685,6 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 metadata = self.get_or_create_object(models.Metadata, name = compound.name)
                 tax = self.session.query(models.Taxon).filter_by(ncbi_id = 562).first()
                 metadata.taxon.append(tax) if tax else metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = 562))
-                # if tax:
-                #     metadata.taxon.append(tax)
-                # else:
-                #     metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id = 562))
-
                 metadata.resource = [self.get_or_create_object(models.Resource, namespace = docs.namespace, _id = docs.id) for docs in ref]
                 metadata.cell_compartment = [self.get_or_create_object(models.CellCompartment, name = areas.name) for areas in compart]
                 metadata.synonym = [self.get_or_create_object(models.Synonym, name = syns.name) for syns in syn]
@@ -711,7 +706,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                         media = rows.media, temperature = rows.temperature, growth_system = rows.growth_system))
                     new_metadata.resource = [self.get_or_create_object(models.Resource, namespace = docs.namespace, _id = docs.id) for docs in rows.references]
                     self.property.concentration = self.get_or_create_object(models.Concentration, type = 'Concentration', name = compound.name+ ' Concentration '+str(index),
-                        value = rows.value, error = rows.error, _metadata = new_metadata, compound = self.entity.compound)
+                        value = rows.value, error = rows.error, units='uM', _metadata = new_metadata, compound = self.entity.compound)
                     index += 1
                 entries += 1
 

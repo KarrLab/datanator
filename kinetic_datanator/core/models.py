@@ -8,6 +8,8 @@ import os
 
 app = Flask(__name__)
 app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.Config')
+#NOTE: Line below used to migrate the schema
+# app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.LocalMigrationConfig')
 app.config.from_object(app_settings)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -760,6 +762,7 @@ class Concentration(PhysicalProperty):
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
+    units = db.Column(db.String(255))
 
     def __repr__(self):
         return 'Concentration(%s)' % (self.concentration_id)
