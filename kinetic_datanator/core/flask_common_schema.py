@@ -753,7 +753,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             go_dsc =  parse_string(re.compile(".*?\((.*?)\)"), row.go_annot)
             go_id = parse_string(re.compile("GO:(.*?)\("), row.go_annot)
             subunits = re.findall(re.compile(".*?\|(.*?)\("), '|'+row.subunits)
-            self.entity.protein_complex = self.get_or_create_object(models.ProteinComplex, type = 'Protein Comlplex',
+            self.entity.protein_complex = self.get_or_create_object(models.ProteinComplex, name=row.name, type = 'Protein Comlplex',
             complex_name = row.name, su_cmt = row.subunits, go_dsc = go_dsc, go_id = go_id,
             complex_cmt = row.desc, _metadata = metadata)
             for sub in subunits:
@@ -788,7 +788,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             info = unidb_ses.query(uniprot.UniprotData).filter_by(uniprot_id = subunit.uniprot_id).first()
             subunit.uniprot_checked = True
             if info:
-                subunit.subunit_name = info.entry_name if not subunit.subunit_name else subunit.subunit_name
+                subunit.subunit_name = subunit.name = info.entry_name if not subunit.subunit_name else subunit.subunit_name
                 subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
                 subunit.gene_name = info.gene_name if not subunit.gene_name  else subunit.gene_name
                 subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else subunit.canonical_sequence
