@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-09-12
@@ -9,7 +7,7 @@
 
 from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 
-class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class ProteinAbundanceQueryGenerator(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for proteins """
 
     def __init__(self,
@@ -28,7 +26,8 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ProteinConcentrationsQueryGenerator, self).__init__(
+
+        super(ProteinAbundanceQueryGenerator, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,

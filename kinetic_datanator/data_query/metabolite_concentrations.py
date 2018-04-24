@@ -11,7 +11,7 @@ from kinetic_datanator.util import molecule_util
 
 
 
-class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for metabolites """
 
     def __init__(self,
@@ -30,7 +30,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(MetaboliteConcentrationsQueryGenerator, self).__init__(
+        super(MetaboliteConcentrationQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
@@ -39,7 +39,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
         # self.filters.append(data_query.SpecieStructuralSimilarityFilter())
         # self.filters.append(data_query.MolecularSimilarityFilter())
 
-    def get_observed_values(self, compound):
+    def get_observed_result(self, compound):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         Args:
@@ -48,14 +48,13 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
         """
-        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False).all()
-        observed_vals = []
+        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False)
+        observed_values = []
+
+        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
 
         for c in concentrations:
-
-        #TODO: Figure out the multi metadata issue.
-
-            observation = data_model.Observation(
+            metadata = data_model.ObservedResultMetadata(
                 genetics = data_model.Genetics(
                     taxon = c._metadata.taxon[0].name,
                     variation = c._metadata.cell_line[0].name
@@ -70,20 +69,20 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             )
 
             observable = data_model.Observable(
-                specie = data_model.Specie(name = compound.compound_name, structure=compound.structure._value_inchi),
+                specie = data_model.Specie(name = compound.compound_name,
+                cross_references = references , structure=compound.structure._value_inchi),
                 compartment = data_model.Compartment(name = c._metadata.cell_compartment[0].name)
             )
 
-            observed_vals.append(data_model.ObservedValue(
-                observation = observation,
+            observed_values.append(data_model.ObservedValue(
+                metadata = metadata,
                 observable = observable,
                 value = c.value,
                 error = c.error,
-                #TODO: Confirm the units are the same
-                units = 'uM'
+                units = c.units
             ))
 
-        return observed_vals
+        return observed_values
 
 
 
@@ -94,7 +93,7 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             specie (:obj:`data_model.Specie`): species to find data for
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching concentrations
+            :obj:`list` of :obj:`models.Concentration`: list of matching concentrations
 
         """
 
@@ -106,4 +105,4 @@ class MetaboliteConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGen
             condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
         else:
             condition = models.Structure._value_inchi == inchi
-        return q.filter(condition)
+        return q.filter(condition).all()

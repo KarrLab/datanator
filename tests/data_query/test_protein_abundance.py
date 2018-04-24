@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-""" Tests of common_schemy protein concentration queries
+""" Tests of common_schemy protein abundance queries
 
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-09-19
@@ -9,13 +7,13 @@
 """
 
 from kinetic_datanator.core import data_model
-from kinetic_datanator.data_query import protein_concentrations
+from kinetic_datanator.data_query import protein_abundance
 from kinetic_datanator.core import models, flask_common_schema
 import tempfile
 import shutil
 import unittest
 
-class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
+class TestProteinAbundanceQueryGenerator(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
@@ -24,7 +22,7 @@ class TestProteinConcentrationsQueryGenerator(unittest.TestCase):
 
         self.protein_P00323 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
         self.protein_Q42025 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q42025').first()
-        self.q = protein_concentrations.ProteinConcentrationsQueryGenerator(cache_dirname=self.cache_dirname)
+        self.q = protein_abundance.ProteinAbundanceQueryGenerator(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):

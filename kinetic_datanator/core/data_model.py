@@ -62,7 +62,7 @@ class Evidence(obj_model.core.Model):
     relevance = obj_model.core.FloatAttribute()
 
 
-class Observation(obj_model.core.Model):
+class ObservedResultMetadata(obj_model.core.Model):
     """ Represents an observation (one or more observed values) about a biological system
 
     Attributes:
@@ -74,24 +74,40 @@ class Observation(obj_model.core.Model):
     genetics = obj_model.core.ManyToOneAttribute('Genetics', related_name='observations')
     environment = obj_model.core.ManyToOneAttribute('Environment', related_name='observations')
     reference = obj_model.core.ManyToOneAttribute('Reference', related_name='observations')
+    method = obj_model.core.ManyToOneAttribute('Method', related_name='observations')
 
-
-class ObservedValue(obj_model.core.Model):
-    """ Represents an observed value of a biological system
+class ObservedResult(obj_model.core.Model):
+    """ Represents a base dataset for a queried response
 
     Attributes:
         observation (:obj:`Observaton`): the collection of covariate observed values
+        method (:obj:`str`): method that was used to make the observation
+    """
+
+    metadata = obj_model.core.ManyToOneAttribute('ObservedResultMetadata', related_name='observed_result')
+
+
+class ObservedInteraction(ObservedResult):
+    """ Represents an observed interaction of a biological system
+
+    Attributes:
+        interaction (:obj:`Interaction`): observed interaction
+    """
+    interaction = obj_model.core.ManyToOneAttribute('Interaction', related_name='observed_values')
+
+class ObservedValue(ObservedResult):
+    """ Represents an observed value of a biological system
+
+    Attributes:
+        observable (:obj:`Observaton`): the observed interaction or specie for which the value corresponds
         value (:obj:`float`): observed value
         error (:obj:`float`): uncertainty of the observed value
         units (:obj:`units`): SI units of the observed value
-        method (:obj:`str`): method that was used to make the observation
     """
-    observation = obj_model.core.ManyToOneAttribute('Observation', related_name='values')
     observable = obj_model.core.ManyToOneAttribute('Observable', related_name='observed_values')
     value = obj_model.core.FloatAttribute()
     error = obj_model.core.FloatAttribute()
     units = obj_model.core.StringAttribute()
-    method = obj_model.core.ManyToOneAttribute('Method', related_name='observations')
 
 
 class Observable(obj_model.core.Model):
@@ -268,7 +284,7 @@ class Interaction(EntityInteractionOrProperty):
     position = obj_model.core.IntegerAttribute()
     score = obj_model.core.FloatAttribute()
 
-class ProteinInteraction(Interaction):
+class SpecieInteraction(Interaction):
     """ Represents a protein interaction
 
     Attributes:
@@ -279,15 +295,14 @@ class ProteinInteraction(Interaction):
         stoichiometry_b (:obj:`int`):
         site_a (:obj:`str`):
         site_b (:obj:`str`):
-
     """
-    participant_a = obj_model.core.StringAttribute()
-    participant_b = obj_model.core.StringAttribute()
-    interaction_id = obj_model.core.StringAttribute()
+
+    specie_a = obj_model.core.OneToOneAttribute('Specie', related_name='specie_interaction')
+    specie_b = obj_model.core.OneToOneAttribute('Specie', related_name='specie_interaction')
     stoichiometry_a = obj_model.core.IntegerAttribute()
     stoichiometry_b = obj_model.core.IntegerAttribute()
-    site_a = obj_model.core.StringAttribute()
-    site_b = obj_model.core.StringAttribute()
+    loc_a = obj_model.core.StringAttribute()
+    loc_b = obj_model.core.StringAttribute()
 
 
 class Reaction(Interaction):
@@ -533,6 +548,8 @@ class Method(obj_model.core.Model):
     """
     name = obj_model.core.StringAttribute()
     description = obj_model.core.LongStringAttribute()
+    hardware = obj_model.core.StringAttribute()
+    software = obj_model.core.StringAttribute()
 
 
 class ExperimentalMethod(Method):
