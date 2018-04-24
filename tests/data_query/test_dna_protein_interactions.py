@@ -34,7 +34,7 @@ class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
     def test_filter_observed_values(self):
         q = dpi.ProteintoDNAInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
-        observable = q.get_observed_values(self.arnt)
+        observable = q.get_observed_result(self.arnt)
 
         self.assertEqual(observable[0].specie.sequence, 'CACGTG')
         self.assertEqual(observable[0].specie.cross_references[0].id, '7592839')
@@ -64,7 +64,7 @@ class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
     def test_filter_observed_values(self):
         q = dpi.DNAtoProteinInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
-        observe = q.get_observed_values(self.dna_segment2)
+        observe = q.get_observed_result(self.dna_segment2)
         self.assertEqual(set(c.specie.gene_name for c in observe), set(['NR4A2', 'TRP(MYB) class']))
 
 

@@ -39,7 +39,7 @@ class ProteintoDNAInteractionQueryGenerator(data_query.CachedDataSourceQueryGene
             ph=ph, ph_std=ph_std,
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
-    def get_observed_values(self, protein):
+    def get_observed_result(self, protein):
         """ Find the DNA binding motif for a given protein
 
         Args:
@@ -130,7 +130,7 @@ class DNAtoProteinInteractionQueryGenerator(data_query.CachedDataSourceQueryGene
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
 
-    def get_observed_values(self, DnaSpecie):
+    def get_observed_result(self, DnaSpecie):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         NOTE: Currently there are no Gene objects in common schema models. When added this

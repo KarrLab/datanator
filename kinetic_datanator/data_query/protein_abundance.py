@@ -7,7 +7,7 @@
 
 from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 
-class ProteinAbundanceQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for proteins """
 
     def __init__(self,
@@ -27,13 +27,13 @@ class ProteinAbundanceQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
 
-        super(ProteinAbundanceQueryGenerator, self).__init__(
+        super(ProteinAbundanceQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname = cache_dirname))
 
-    def get_observed_values(self, protein):
+    def get_observed_result(self, protein):
         """ Find the observed values for protein abundance
 
         Args:
@@ -43,12 +43,12 @@ class ProteinAbundanceQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
 
         """
-        abundances = self.get_abundance_by_uniprot(protein.uniprot_id).all()
+        abundances = self.get_abundance_by_uniprot(protein.uniprot_id)
         observed_vals = []
 
         for abundance in abundances:
 
-            observation = data_model.Observation(
+            metadata = data_model.ObservedResultMetadata(
                 genetics=data_model.Genetics(
                     taxon=abundance.dataset._metadata.taxon[0].name
                 )
@@ -69,7 +69,7 @@ class ProteinAbundanceQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ]
 
             observed_vals.append(data_model.ObservedValue(
-                observation=observation,
+                metadata=metadata,
                 observable=observable,
                 value=abundance.abundance,
                 error=0,

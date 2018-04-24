@@ -153,7 +153,7 @@ class TestReactionKineticsQueryGenerator(unittest.TestCase):
 
         self.assertEqual(len([l.kinetic_law_id for l in laws]), 58)
 
-    def test_get_observed_values(self):
+    def test_get_observed_result(self):
 
         vals = self.q.run(self.reaction).observed_values
 

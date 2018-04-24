@@ -48,7 +48,7 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
         """
-        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False)
+        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False).all()
         observed_values = []
 
         references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
@@ -93,7 +93,7 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
             specie (:obj:`data_model.Specie`): species to find data for
 
         Returns:
-            :obj:`list` of :obj:`models.Concentration`: list of matching concentrations
+            :obj:`sqlalchemy.orm.query.Query`: query for matching concentration rows
 
         """
 
@@ -105,4 +105,5 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
             condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
         else:
             condition = models.Structure._value_inchi == inchi
-        return q.filter(condition).all()
+            
+        return q.filter(condition)

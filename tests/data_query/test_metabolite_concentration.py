@@ -66,7 +66,7 @@ class TestMetaboliteConcentrationQuery(unittest.TestCase):
 
     def test_get_concentration_by_structure(self):
 
-        concentrations = self.q.get_concentration_by_structure(self.proline.structure._value_inchi, only_formula_and_connectivity=False)
+        concentrations = self.q.get_concentration_by_structure(self.proline.structure._value_inchi, only_formula_and_connectivity=False).all()
 
         self.assertEqual(set(c.value for c in concentrations), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
         self.assertEqual(set(c._metadata.taxon[0].name for c in concentrations), set(['Escherichia coli']))

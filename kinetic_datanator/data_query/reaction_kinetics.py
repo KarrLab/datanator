@@ -60,7 +60,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         self.filters.append(data_query.ReactionSimilarityFilter())
         self.filters.append(data_query.ReactionParticipantFilter())
 
-    def get_observed_values(self, reaction):
+    def get_observed_result(self, reaction):
         """ Find observed kinetics for the reaction or similar reactions
         TODO: Add compartment infomrmation
 
