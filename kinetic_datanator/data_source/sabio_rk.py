@@ -1152,7 +1152,7 @@ class SabioRk(data_source.HttpDataSource):
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['katal', 'katal_base']:
-                # cannot be converted without knowing the enzyme amount in the measurement 
+                # cannot be converted without knowing the enzyme amount in the measurement
                 return (None, None, None, None, None)
 
             if units in ['M^(-1)*s^(-1)']:
@@ -1191,7 +1191,7 @@ class SabioRk(data_source.HttpDataSource):
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['mol/s', 'katal', 'katal_base']:
-                # cannot be converted without knowing the enzyme amount in the measurement 
+                # cannot be converted without knowing the enzyme amount in the measurement
                 return (None, None, None, None, None)
 
             if units in ['M*s^(-1)*g^(-1)']:
@@ -1587,6 +1587,7 @@ class SabioRk(data_source.HttpDataSource):
             # cross references
             c.cross_references = []
             for node in table.find_all('a'):
+
                 url = node.get('href')
 
                 id = node.get_text()
@@ -1599,6 +1600,7 @@ class SabioRk(data_source.HttpDataSource):
                     namespace = 'chebi'
                     id = 'CHEBI:' + id
                 else:
+                    namespace='None'
                     ValueError('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, url))
 
                 q = self.session.query(Resource).filter_by(namespace=namespace, id=id)

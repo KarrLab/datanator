@@ -19,7 +19,7 @@ class SerializeClassMixin(object):
     """
     Mixin class provides data object special functions such as serialization
     """
-
+    ##TODO: Make more succinct and use a stack instead of recursion
     def serialize_relationships(self):
         result_json = {}
         for relation in self.__mapper__.relationships.keys():
