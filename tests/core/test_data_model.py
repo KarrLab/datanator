@@ -51,13 +51,14 @@ class TestEvidence(unittest.TestCase):
         self.assertEqual(evidence.relevance, 10.)
 
 
-class TestObservation(unittest.TestCase):
+class TestObservedResultMetadata(unittest.TestCase):
 
-    def test_Observation(self):
-        o = data_model.Observation()
+    def test_ObservedResultMetadata(self):
+        o = data_model.ObservedResultMetadata()
         o.genetics = data_model.Genetics(taxon='Mycoplasma pneumoniae', variation='ΔMPN001')
         o.environment = data_model.Environment(temperature=37, ph=7., media='Hayflick')
         o.reference = data_model.Reference(title='title', author='author', year=2017, volume=1, number=1, pages='1-10')
+        o.method = data_model.ExperimentalMethod(name='assay', description='description of assay')
 
         observable = data_model.Observable(
             interaction=data_model.Reaction(id='AtpSynthase'),
@@ -71,14 +72,14 @@ class TestObservation(unittest.TestCase):
             value=1.0,
             error=0.5,
             units='U/mg',
-            method=data_model.ExperimentalMethod(name='assay', description='description of assay'),
         )
-        o.values.append(ov)
+
+        o.observed_result.append(ov)
 
         o.validate()
 
-        self.assertEqual(o.values, [ov])
-        self.assertEqual(ov.observation, o)
+        self.assertEqual(o.observed_result, [ov])
+        self.assertEqual(ov.metadata, o)
         self.assertEqual(ov.observable.interaction.id, 'AtpSynthase')
         self.assertEqual(ov.observable.specie.id, 'ATP')
         self.assertEqual(ov.observable.compartment.id, 'c')
@@ -87,8 +88,7 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(ov.value, 1.0)
         self.assertEqual(ov.error, 0.5)
         self.assertEqual(ov.units, 'U/mg')
-        self.assertEqual(ov.method.name, 'assay')
-        self.assertEqual(ov.method.description, 'description of assay')
+
 
         self.assertEqual(o.genetics.taxon, 'Mycoplasma pneumoniae')
         self.assertEqual(o.genetics.variation, 'ΔMPN001')
@@ -104,6 +104,9 @@ class TestObservation(unittest.TestCase):
         self.assertEqual(o.reference.number, 1)
         self.assertEqual(o.reference.pages, '1-10')
 
+
+        self.assertEqual(o.method.name, 'assay')
+        self.assertEqual(o.method.description, 'description of assay')
 
 class TestSpecie(unittest.TestCase):
     adp = 'NC1=C2N=CN(C3OC(COP([O-])(=O)OP([O-])([O-])=O)C(O)C3O)C2=NC=N1'
