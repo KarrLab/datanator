@@ -1,4 +1,4 @@
-""" Test of observation filtering and ordering
+""" Test of metadata filtering and ordering
 
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Author: Yosef Roth <yosefdroth@gmail.com>
@@ -24,21 +24,21 @@ class TestDataQueryGenerator(unittest.TestCase):
 
     class ConcreteDataQueryGenerator(data_query.DataQueryGenerator):
 
-        def get_observed_values(self):
+        def get_observed_result(self):
             pass
 
-    def test_filter_observed_values(self):
+    def test_filter_observed_results(self):
         gen = self.ConcreteDataQueryGenerator()
         gen.filters = [
             data_query.TemperatureRangeFilter(min=36., max=38.),
         ]
-        observed_values = [
-            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=36.5))),
-            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=35.0))),
-            data_model.ObservedValue(observation=data_model.Observation(environment=data_model.Environment(temperature=37.0))),
+        observed_results = [
+            data_model.ObservedValue(metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=36.5))),
+            data_model.ObservedValue(metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=35.0))),
+            data_model.ObservedValue(metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=37.0))),
         ]
-        result = gen.filter_observed_values(None, observed_values)
-        self.assertEqual(set(result.observed_values), set([observed_values[0], observed_values[2]]))
+        result = gen.filter_observed_results(None, observed_results)
+        self.assertEqual(set(result.observed_results), set([observed_results[0], observed_results[2]]))
 
     @unittest.skip('implement me')
     def test_get_consensus(self):
@@ -54,16 +54,16 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.max, 8.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
         self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.scale, 8./5)
         self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Escherichia coli')))
         self.assertEqual(f.score(None, ov), math.exp(-5))
 
         # example 2
@@ -71,15 +71,15 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.max, 5.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae M129')))
         self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma pneumoniae')))
         self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Escherichia coli')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Escherichia coli')))
         self.assertEqual(f.score(None, ov), -1)
 
         # example 3
@@ -87,49 +87,49 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.max, 7.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium G37')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma genitalium G37')))
         self.assertEqual(f.score(None, ov), 1.)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma genitalium')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma genitalium')))
         self.assertEqual(f.score(None, ov), 1)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(taxon='Mycoplasma')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(taxon='Mycoplasma')))
         self.assertEqual(f.score(None, ov), math.exp(-1/f.scale))
 
     def test_OptionsFilter(self):
-        f = data_query.OptionsFilter(('observation', 'genetics', 'variation', ), [''])
+        f = data_query.OptionsFilter(('metadata', 'genetics', 'variation', ), [''])
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(None, ov), 1)
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='wildtype')))
         self.assertEqual(f.score(None, ov), -1)
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(None, ov), -1)
 
-        f = data_query.OptionsFilter(('observation', 'genetics', 'variation', ), ['wildtype'])
+        f = data_query.OptionsFilter(('metadata', 'genetics', 'variation', ), ['wildtype'])
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(None, ov), -1)
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='wildtype')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='wildtype')))
         self.assertEqual(f.score(None, ov), 1)
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(None, ov), -1)
 
     def test_WildtypeFilter(self):
         f = data_query.WildtypeFilter()
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='')))
         self.assertEqual(f.score(None, ov), 1)
 
         ov = data_model.ObservedValue(
-            observation=data_model.Observation(genetics=data_model.Genetics(variation='Delta gene-01')))
+            metadata=data_model.ObservedResultMetadata(genetics=data_model.Genetics(variation='Delta gene-01')))
         self.assertEqual(f.score(None, ov), -1)
 
     def test_SpecieStructuralSimilarityFilter(self):
@@ -356,9 +356,9 @@ class TestFilters(unittest.TestCase):
     def test_RangeFilter(self):
         def obs_val(temperature):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=temperature)))
 
-        f = data_query.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=30.)
+        f = data_query.RangeFilter(('metadata', 'environment', 'temperature', ), min=15., max=30.)
         self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
         self.assertEqual(f.score(None, obs_val(10)), -1)
         self.assertEqual(f.score(None, obs_val(15.0)), 1)
@@ -367,7 +367,7 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.score(None, obs_val(30.0)), 1)
         self.assertEqual(f.score(None, obs_val(31)), -1)
 
-        f = data_query.RangeFilter(('observation', 'environment', 'temperature', ), min=float('nan'), max=30.)
+        f = data_query.RangeFilter(('metadata', 'environment', 'temperature', ), min=float('nan'), max=30.)
         self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
         self.assertEqual(f.score(None, obs_val(10)), 1)
         self.assertEqual(f.score(None, obs_val(15.0)), 1)
@@ -376,7 +376,7 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.score(None, obs_val(30.0)), 1)
         self.assertEqual(f.score(None, obs_val(31)), -1)
 
-        f = data_query.RangeFilter(('observation', 'environment', 'temperature', ), min=15., max=float('nan'))
+        f = data_query.RangeFilter(('metadata', 'environment', 'temperature', ), min=15., max=float('nan'))
         self.assertEqual(f.score(None, obs_val(float('nan'))), -1)
         self.assertEqual(f.score(None, obs_val(10)), -1)
         self.assertEqual(f.score(None, obs_val(15.0)), 1)
@@ -385,7 +385,7 @@ class TestFilters(unittest.TestCase):
         self.assertEqual(f.score(None, obs_val(30.0)), 1)
         self.assertEqual(f.score(None, obs_val(31)), 1)
 
-        f = data_query.RangeFilter(('observation', 'environment', 'temperature', ))
+        f = data_query.RangeFilter(('metadata', 'environment', 'temperature', ))
         self.assertEqual(f.score(None, obs_val(float('nan'))), 1)
         self.assertEqual(f.score(None, obs_val(10)), 1)
         self.assertEqual(f.score(None, obs_val(15.0)), 1)
@@ -397,7 +397,7 @@ class TestFilters(unittest.TestCase):
     def test_TemperatureRangeFilter(self):
         def obs_val(temperature):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=temperature)))
 
         f = data_query.TemperatureRangeFilter(min=15., max=30.)
         self.assertEqual(f.score(None, obs_val(10)), -1)
@@ -410,7 +410,7 @@ class TestFilters(unittest.TestCase):
     def test_PhRangeFilter(self):
         def obs_val(ph):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(ph=ph)))
 
         f = data_query.PhRangeFilter(min=5., max=9.)
         self.assertEqual(f.score(None, obs_val(3)), -1)
@@ -423,9 +423,9 @@ class TestFilters(unittest.TestCase):
     def test_NormalFilter(self):
         def obs_val(temperature):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=temperature)))
 
-        f = data_query.NormalFilter(('observation', 'environment', 'temperature', ), mean=37, std=1)
+        f = data_query.NormalFilter(('metadata', 'environment', 'temperature', ), mean=37, std=1)
         self.assertEqual(f.score(None, obs_val(37)), 1)
         numpy.testing.assert_almost_equal(f.score(None, obs_val(36)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
         numpy.testing.assert_almost_equal(f.score(None, obs_val(38)), 2 * scipy.stats.norm.cdf(-1), decimal=5)
@@ -435,7 +435,7 @@ class TestFilters(unittest.TestCase):
     def test_TemperatureNormalFilter(self):
         def obs_val(temperature):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=temperature)))
 
         f = data_query.TemperatureNormalFilter(mean=37, std=1)
         self.assertEqual(f.score(None, obs_val(37)), 1)
@@ -447,7 +447,7 @@ class TestFilters(unittest.TestCase):
     def test_PhNormalFilter(self):
         def obs_val(ph):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(ph=ph)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(ph=ph)))
 
         f = data_query.PhNormalFilter(mean=7, std=1)
         self.assertEqual(f.score(None, obs_val(7)), 1)
@@ -459,9 +459,9 @@ class TestFilters(unittest.TestCase):
     def test_ExponentialFilter(self):
         def obs_val(temperature):
             return data_model.ObservedValue(
-                observation=data_model.Observation(environment=data_model.Environment(temperature=temperature)))
+                metadata=data_model.ObservedResultMetadata(environment=data_model.Environment(temperature=temperature)))
 
-        f = data_query.ExponentialFilter(('observation', 'environment', 'temperature', ), center=1., scale=1.)
+        f = data_query.ExponentialFilter(('metadata', 'environment', 'temperature', ), center=1., scale=1.)
         self.assertEqual(f.score(None, obs_val(1)), 1)
         numpy.testing.assert_almost_equal(f.score(None, obs_val(100)), 0, decimal=5)
         numpy.testing.assert_almost_equal(f.score(None, obs_val(2)), math.exp(-1), decimal=5)
@@ -482,10 +482,10 @@ class TestFilterResult(unittest.TestCase):
         s = [0.3, 0.5]
 
         filter_result = data_query.FilterResult(copy.copy(ov), copy.copy(s), [1, 2], ov, s)
-        self.assertEqual(filter_result.observed_values, ov)
+        self.assertEqual(filter_result.observed_results, ov)
         self.assertEqual(filter_result.scores, s)
         self.assertEqual(filter_result.observed_value_indices, [1, 2])
-        self.assertEqual(filter_result.all_observed_values, ov)
+        self.assertEqual(filter_result.all_observed_results, ov)
         self.assertEqual(filter_result.all_scores, s)
 
 
@@ -493,21 +493,21 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_score(self):
         ov = [
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
         ]
         f = [
@@ -528,21 +528,21 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_filter(self):
         ov = [
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
         ]
 
@@ -566,21 +566,21 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_order(self):
         ov = [
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
         ]
 
@@ -605,21 +605,21 @@ class TestFilterRunner(unittest.TestCase):
 
     def test_run(self):
         ov = [
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37, ph=6))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=7))),
-            data_model.ObservedValue(value=1, observation=data_model.Observation(
+            data_model.ObservedValue(value=1, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=36, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37.1, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37.1, ph=6))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37.01, ph=7))),
-            data_model.ObservedValue(value=2, observation=data_model.Observation(
+            data_model.ObservedValue(value=2, metadata=data_model.ObservedResultMetadata(
                 environment=data_model.Environment(temperature=37.01, ph=6))),
         ]
         f = [
@@ -630,26 +630,26 @@ class TestFilterRunner(unittest.TestCase):
 
         # return_info=True
         result = runner.run(None, ov, return_info=True)
-        self.assertEqual(result.all_observed_values, ov)
+        self.assertEqual(result.all_observed_results, ov)
         s1 = 2 * scipy.stats.norm.cdf(-1)
         s01 = 2 * scipy.stats.norm.cdf(-0.1)
         s001 = 2 * scipy.stats.norm.cdf(-0.01)
         numpy.testing.assert_almost_equal(result.all_scores, numpy.array([[1., 1., s1, s1, s01, s01, s001, s001],
                                                                           [1., -1., 1., -1., 1., -1., 1., -1.]], ndmin=2).transpose())
 
-        self.assertEqual(result.observed_values, [ov[0], ov[6], ov[4], ov[2]])
+        self.assertEqual(result.observed_results, [ov[0], ov[6], ov[4], ov[2]])
         numpy.testing.assert_almost_equal(result.scores, numpy.array([[1., s001, s01, s1], [1., 1., 1., 1.]], ndmin=2).transpose())
         self.assertEqual(result.observed_value_indices, [0, 6, 4, 2])
 
         # return_info=False
-        ordered_observed_values = runner.run(None, ov, return_info=False)
-        self.assertEqual(ordered_observed_values, [ov[0], ov[6], ov[4], ov[2]])
+        ordered_observed_results = runner.run(None, ov, return_info=False)
+        self.assertEqual(ordered_observed_results, [ov[0], ov[6], ov[4], ov[2]])
 
 
 class TestConsensusGenerator(unittest.TestCase):
 
-    def test_group_observed_values_by_properties(self):
-        observed_values = [
+    def test_group_observed_results_by_properties(self):
+        observed_results = [
             data_model.ObservedValue(
                 observable=data_model.Observable(property='Km'),
                 value=1.,
@@ -657,7 +657,7 @@ class TestConsensusGenerator(unittest.TestCase):
             )
         ]
         gen = data_query.ConsensusGenerator()
-        observed_values
+        observed_results
 
     def test_calc_average(self):
         gen = data_query.ConsensusGenerator()

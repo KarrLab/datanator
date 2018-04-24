@@ -886,7 +886,7 @@ class TaxonomicDistanceFilter(Filter):
             taxon_obj = taxonomy_util.Taxon(name=taxon)
             scale = (taxon_obj.get_max_distance_to_common_ancestor() - 2) / 5.
 
-        super(TaxonomicDistanceFilter, self).__init__(('observation', 'genetics', 'taxon', ))
+        super(TaxonomicDistanceFilter, self).__init__(('metadata', 'genetics', 'taxon', ))
 
         self.taxon = taxon
         self.max = max
@@ -939,7 +939,7 @@ class WildtypeFilter(OptionsFilter):
     #TODO: Need to figure out what the options are for these
 
     def __init__(self):
-        super(WildtypeFilter, self).__init__(('observation', 'genetics', 'variation', ), [''])
+        super(WildtypeFilter, self).__init__(('metadata', 'genetics', 'variation', ), [''])
 
 
 class TemperatureRangeFilter(RangeFilter):
@@ -951,7 +951,7 @@ class TemperatureRangeFilter(RangeFilter):
             min (:obj:`float`, optional): minimum value
             max (:obj:`float`, optional): maximum value
         """
-        super(TemperatureRangeFilter, self).__init__(('observation', 'environment', 'temperature', ), min=min, max=max)
+        super(TemperatureRangeFilter, self).__init__(('metadata', 'environment', 'temperature', ), min=min, max=max)
 
 
 class TemperatureNormalFilter(NormalFilter):
@@ -963,7 +963,7 @@ class TemperatureNormalFilter(NormalFilter):
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score falls to zero away from the mean.
         """
-        super(TemperatureNormalFilter, self).__init__(('observation', 'environment', 'temperature', ), mean, std)
+        super(TemperatureNormalFilter, self).__init__(('metadata', 'environment', 'temperature', ), mean, std)
 
 
 class PhRangeFilter(RangeFilter):
@@ -975,7 +975,7 @@ class PhRangeFilter(RangeFilter):
             min (:obj:`float`, optional): minimum value
             max (:obj:`float`, optional): maximum value
         """
-        super(PhRangeFilter, self).__init__(('observation', 'environment', 'ph', ), min=min, max=max)
+        super(PhRangeFilter, self).__init__(('metadata', 'environment', 'ph', ), min=min, max=max)
 
 
 class PhNormalFilter(NormalFilter):
@@ -988,7 +988,7 @@ class PhNormalFilter(NormalFilter):
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score
                 falls to zero away from the mean.
         """
-        super(PhNormalFilter, self).__init__(('observation', 'environment', 'ph', ), mean, std)
+        super(PhNormalFilter, self).__init__(('metadata', 'environment', 'ph', ), mean, std)
 
 
 class ConsensusGenerator(object):
