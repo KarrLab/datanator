@@ -1,4 +1,4 @@
-#TODO: INTACT NEEDS AN UPDATE 
+#TODO: INTACT NEEDS AN UPDATE
 """ Downloads and parses the Intact
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-08-16
@@ -125,9 +125,9 @@ class IntAct(data_source.HttpDataSource):
 
     def add_interactions(self):
 
-        columns = ['#ID(s) interactor A', 'ID(s) interactor B', 'Publication Identifier(s)', 'Interaction identifier(s)',
+        columns = ['#ID(s) interactor A', 'ID(s) interactor B', 'Publication Identifier(s)', "Alias(es) interactor A", "Alias(es) interactor B",'Interaction identifier(s)',
                     'Feature(s) interactor A', 'Feature(s) interactor B' , 'Stoichiometry(s) interactor A', 'Stoichiometry(s) interactor B',
-                    'Interaction type(s)']
+                    'Interaction type(s)', "Confidence value(s)"]
 
         path = urlretrieve(self.ENDPOINT_DOMAINS['intact-partial']) if test else urlretrieve(self.ENDPOINT_DOMAINS['intact'])
 
@@ -137,7 +137,7 @@ class IntAct(data_source.HttpDataSource):
         dt = pd.read_csv(self.cache_dirname + '/intact-micluster.txt', delimiter = '\t', encoding = 'utf-8') if test else pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
 
         pand = dt.loc[:, columns]
-        new_columns = ['interactor_a', 'interactor_b', 'publications', 'interaction', 'feature_a', 'feature_b', 'stoich_a', 'stoich_b', 'interaction_type']
+        new_columns = ['interactor_a', 'interactor_b', 'publications', 'alias_a', 'alias_b', 'interaction', 'feature_a', 'feature_b', 'stoich_a', 'stoich_b', 'interaction_type', 'confidence']
         pand.columns = new_columns
 
         if not self.max_entries == float('inf'):

@@ -31,14 +31,14 @@ class TestFromServerIntAct(unittest.TestCase):
 
     def test_add_interactions(self):
         q = self.intact.session.query(intact.ProteinInteractions).filter_by(interactor_a = 'uniprotkb:P27986').count()
-        self.assertEqual(q, 274)
+        self.assertEqual(q, 272)
 
         q = self.intact.session.query(intact.ProteinInteractions).filter_by(interactor_a = 'uniprotkb:Q61824').first()
         self.assertEqual(q.interactor_b, 'uniprotkb:Q60631')
         self.assertEqual(q.publications, 'pubmed:11127814|mint:MINT-5213342')
 
 
-class TetstLoadingIntAct(unittest.TestCase):
+class TestLoadingIntAct(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
