@@ -102,13 +102,13 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         return ans
 
 
-    def get_interaction_by_subunit(self, uniprot, select = models.ProteinInteractions):
+    def get_interaction_by_subunit(self, uniprot, select = models.ProteinInteraction):
         """ Get interactions that were observed for a given uniprot id
 
         Args:
             uniprot (:obj:`str`): uniprot id to search for
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinInteractions` or one of its columns
+                :obj:`models.ProteinInteraction` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
@@ -124,7 +124,7 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         Args:
             uniprot (:obj:`str`): uniprot id to search for
             select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinInteractions` or one of its columns
+                :obj:`models.ProteinInteraction` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id

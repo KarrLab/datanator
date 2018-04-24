@@ -33,7 +33,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
     """
     base_model = models.db
     app = models.app
-    text_indicies = [models.Compound, models.ProteinComplex, models.ProteinInteractions,\
+    text_indicies = [models.Compound, models.ProteinComplex, models.ProteinInteraction,\
     models.Taxon, models.Synonym, models.CellLine, models.CellCompartment, models.ProteinSubunit]
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
@@ -183,22 +183,52 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 (range(load_count, load_count+(self.max_entries*multiplier)))).all()
 
 
+        def row_parser(str):
+            return str.split('|')
+
+        def find_between( s, first, last):
+            try:
+                start = s.index( first ) + len( first )
+                end = s.index( last, start )
+                return s[start:end]
+            except ValueError:
+                return ""
+
+        def extract_info(interactor, alias, subunit_list):
+            main = ''
+            gene = ''
+            if 'gene name' in alias:
+                gene = find_between(alias, 'uniprotkb:', '(gene name)')
+
+            if 'uniprotkb:' in  interactor:
+                main = interactor.split(':')[1]
+                subunit_list.append(self.get_or_create_object(models.ProteinSubunit,\
+                name= gene, gene_name=gene, subunit_name=gene, type='protein subunit', uniprot_id = main))
+            else:
+                if 'display_short' in alias:
+                    main = find_between(alias, 'psi-mi:', '(display_short)')
+
+            return main, gene, subunit_list
 
         batch = []
+
         for i in interactiondb:
             subunit = []
             metadata = models.Metadata(name = 'protein_interaction_' + str(i.index))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace = 'pubmed', _id = re.split(':||', i.publications)[1]))
-            if 'uniprotkb:' in  i.interactor_a:
-                subunit.append(self.get_or_create_object(models.ProteinSubunit,\
-                uniprot_id = str(i.interactor_a.replace('uniprotkb:', ''))))
-            if 'uniprotkb:' in  i.interactor_b:
-                subunit.append(self.get_or_create_object(models.ProteinSubunit,\
-                uniprot_id = str(i.interactor_b.replace('uniprotkb:', ''))))
-            batch.append(models.ProteinInteractions(name = i.interactor_a + "+" + i.interactor_b, type = 'Protein Interaction',
-                participant_a = i.interactor_a, participant_b = i.interactor_b, interaction =i.interaction, site_a = i.feature_a, site_b = i.feature_b,
-                stoich_a = i.stoich_a, stoich_b = i.stoich_b, interaction_type= i.interaction_type, _metadata = metadata, protein_subunit = subunit))
+
+            for reference in row_parser(i.publications):
+                unique_ref = reference.split(':')
+                metadata.resource.append(self.get_or_create_object(models.Resource, namespace=unique_ref[0], _id=unique_ref[1]))
+
+
+            main_a, gene_a, subunit = extract_info(i.interactor_a, i.alias_a, subunit)
+            main_b, gene_b, subunit = extract_info(i.interactor_b, i.alias_b, subunit)
+
+            batch.append(models.ProteinInteraction(name = main_a + "+" + main_b, type = 'protein protein interaction',
+                protein_a = main_a, protein_b = main_b, gene_a= gene_a , gene_b= gene_b , loc_a = i.feature_a, loc_b = i.feature_b,
+                stoich_a = i.stoich_a, stoich_b = i.stoich_b, confidence= i.confidence, interaction_type= i.interaction_type, _metadata = metadata, protein_subunit = subunit))
             load_count += 1
+
 
         self.session.add_all(batch)
         intact_progress.amount_loaded = load_count

@@ -1,10 +1,10 @@
-#TODO: INTACT NEEDS AN UPDATE
 """ Downloads and parses the Intact
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-08-16
 :Copyright: 2017, Karr Lab
 :License: MIT
 """
+
 import pandas as pd
 from sqlalchemy import Column, Integer, String
 import sqlalchemy.ext.declarative
@@ -17,7 +17,6 @@ import os
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()
-test = True
 
 
 class ProteinInteractions(Base):
@@ -42,12 +41,15 @@ class ProteinInteractions(Base):
     interactor_a = Column(String(255))
     interactor_b = Column(String(255))
     publications = Column(String(255))
+    alias_a = Column(String(255))
+    alias_b = Column(String(255))
     interaction = Column(String(255))
     feature_a = Column(String(255))
     feature_b = Column(String(255))
     stoich_a = Column(String(255))
     stoich_b = Column(String(255))
     interaction_type = Column(String(255))
+    confidence = Column(String(255))
 
 class ProteinComplex(Base):
     """ Represents protein complexes from the IntAct Database
@@ -81,9 +83,9 @@ class IntAct(data_source.HttpDataSource):
                         'intact-partial': 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact-micluster.zip' ,
                         'complex' : 'ftp://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/'}
 
+    test = True
 
     def load_content(self):
-
         #Downloads Content from FTP Server
         self.add_complex()
         self.add_interactions()
@@ -129,12 +131,12 @@ class IntAct(data_source.HttpDataSource):
                     'Feature(s) interactor A', 'Feature(s) interactor B' , 'Stoichiometry(s) interactor A', 'Stoichiometry(s) interactor B',
                     'Interaction type(s)', "Confidence value(s)"]
 
-        path = urlretrieve(self.ENDPOINT_DOMAINS['intact-partial']) if test else urlretrieve(self.ENDPOINT_DOMAINS['intact'])
+        path = urlretrieve(self.ENDPOINT_DOMAINS['intact-partial']) if self.test else urlretrieve(self.ENDPOINT_DOMAINS['intact'])
 
         zipped = zipfile.ZipFile(file = path[0])
         zipped.extractall(self.cache_dirname)
 
-        dt = pd.read_csv(self.cache_dirname + '/intact-micluster.txt', delimiter = '\t', encoding = 'utf-8') if test else pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
+        dt = pd.read_csv(self.cache_dirname + '/intact-micluster.txt', delimiter = '\t', encoding = 'utf-8') if self.test else pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
 
         pand = dt.loc[:, columns]
         new_columns = ['interactor_a', 'interactor_b', 'publications', 'alias_a', 'alias_b', 'interaction', 'feature_a', 'feature_b', 'stoich_a', 'stoich_b', 'interaction_type', 'confidence']

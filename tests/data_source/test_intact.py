@@ -5,7 +5,7 @@ import shutil
 
 class TestFromServerIntAct(unittest.TestCase):
     """
-
+    Testing IntAct database from cached server
     """
 
     @classmethod
@@ -39,7 +39,10 @@ class TestFromServerIntAct(unittest.TestCase):
 
 
 class TestLoadingIntAct(unittest.TestCase):
-
+    """
+    Testing loading IntAct database
+    """
+    
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()

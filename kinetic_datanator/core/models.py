@@ -619,7 +619,7 @@ class ProteinSubunit(PhysicalEntity):
     uniprot_checked = db.Column(db.Boolean)
 
     interaction = db.relationship(
-        'ProteinInteractions', secondary=subunit_interaction, backref='protein_subunit')
+        'ProteinInteraction', secondary=subunit_interaction, backref='protein_subunit')
 
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
@@ -1043,7 +1043,7 @@ class DNABindingData(db.Model):
         return 'DNABindingData(%s)' % (self.position_id)
 
 
-class ProteinInteractions(PhysicalProperty):
+class ProteinInteraction(PhysicalProperty):
     """
     Represents a protein-protein interaction
 
@@ -1058,20 +1058,22 @@ class ProteinInteractions(PhysicalProperty):
 
     """
     __tablename__ = 'protein_interactions'
-    __searchable__ = ['participant_a', 'participant_b']
+    __searchable__ = ['protein_a', 'protein_b', 'gene_a', 'gene_b']
     __mapper_args__ = {
         'polymorphic_identity':'observation',
     }
 
     interaction_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    participant_a = db.Column(db.String(255))
-    participant_b = db.Column(db.String(255))
-    interaction = db.Column(db.String(255))
-    site_a = db.Column(db.String(255))
-    site_b = db.Column(db.String(255))
+    protein_a = db.Column(db.String(255))
+    protein_b = db.Column(db.String(255))
+    gene_a = db.Column(db.String(255))
+    gene_b = db.Column(db.String(255))
+    loc_a = db.Column(db.String(255))
+    loc_b = db.Column(db.String(255))
     stoich_a = db.Column(db.String(255))
     stoich_b = db.Column(db.String(255))
+    confidence = db.Column(db.String(255))
     interaction_type = db.Column(db.String(255))
 
     def __repr__(self):
