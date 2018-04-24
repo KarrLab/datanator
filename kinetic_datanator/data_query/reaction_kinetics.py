@@ -13,7 +13,7 @@ from wc_utils.util import string
 import sqlalchemy
 import sqlalchemy.orm
 
-class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant kinetics observations for reactions
 
     1. Find kinetics observed for the reaction or similar reactions
@@ -51,7 +51,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ReactionKineticsQueryGenerator, self).__init__(
+        super(ReactionKineticsQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
@@ -153,7 +153,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
 
                 reaction.participants.append(part)
 
-            observation = data_model.Observation(
+            metadata = data_model.ObservedResultMetadata(
                 genetics=data_model.Genetics(
                     taxon=law._metadata.taxon[0].name,
                     variation=law._metadata.cell_line[0].name,
@@ -182,7 +182,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                     #     )
 
                 observed_vals.append(data_model.ObservedValue(
-                    observation=observation,
+                    metadata=metadata,
                     observable=observable,
                     value=parameter.value,
                     error=parameter.error,
@@ -225,8 +225,6 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
         return self.data_source.session.query(select).filter_by(id=-1)
 
 
-
-
     def get_kinetic_laws_by_participants(self, participants, only_formula_and_connectivity=False, include_water_hydrogen=False,
                                          select=models.KineticLaw):
         """ Get kinetic laws with the participants :obj:`participants`
@@ -241,7 +239,7 @@ class ReactionKineticsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
                 :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
-            :obj:`list` of :obj:`common_schema.KineticLaw`: a list kinetic laws that contain all of the participants
+            :obj:`list` of :obj:`models.KineticLaw`: a list kinetic laws that contain all of the participants
         """
         q_laws = None
         for i_part, part in enumerate(participants):

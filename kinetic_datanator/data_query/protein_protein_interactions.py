@@ -26,7 +26,8 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
             ph=ph, ph_std=ph_std,
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
-    def get_observed_values(self):
+
+    def get_observed_result(self, component):
         pass
 
     def get_observable_interactions(self, protein_subunit):
@@ -36,20 +37,19 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
             protein_subunit (:obj:`models.ProteinSubunit`): subunit to find interactions for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ProteinInteraction`: list of Protein Interactions
+            :obj:`list` of :obj:`data_model.SpecieInteraction`: list of Protein Interactions
         """
 
         interact = self.get_interaction_by_subunit(protein_subunit.uniprot_id).all()
-
+        #FIXME: Need to fix the interactions problem in the intact database
         interaction = []
         index = 1
         for item in interact:
             resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
                 id = item._metadata.resource[0]._id)
-            interaction.append(data_model.ProteinInteraction(participant_a = item.participant_a,
-            participant_b = item.participant_b, interaction_id = item.interaction,
+            interaction.append(data_model.SpecieInteraction(
             stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
-            site_a=item.site_a, site_b=item.site_b, cross_references = [resource],
+            loc_a=item.site_a, loc_b=item.site_b, cross_references = [resource],
             name = 'Interaction '+ str(index)))
             index += 1
 
@@ -116,6 +116,21 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         q = self.data_source.session.query(select).filter(or_(select.participant_a == 'uniprotkb:'+uniprot,
             select.participant_b == 'uniprotkb:'+uniprot))
         return q
+
+
+    def get_subunit_by_uniprot(self, uniprot, select= models.ProteinSubunit):
+        """ Get interactions that were observed for a given uniprot id
+
+        Args:
+            uniprot (:obj:`str`): uniprot id to search for
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`models.ProteinInteractions` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
+        """
+
+        return self.data_source.session.query(select).filter_by(uniprot_id = uniprot).first()
 
 
     def get_known_complex_by_subunit(self, uniprot, select = models.ProteinComplex):

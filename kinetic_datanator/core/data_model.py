@@ -288,13 +288,12 @@ class SpecieInteraction(Interaction):
     """ Represents a protein interaction
 
     Attributes:
-        participant_a (:obj:`str`):
-        participant_b (:obj:`str`):
-        interaction_id (:obj:`str`):
+        specie_a (:obj:`str`):
+        specie_b (:obj:`str`):
         stoichiometry_a (:obj:`int`):
         stoichiometry_b (:obj:`int`):
-        site_a (:obj:`str`):
-        site_b (:obj:`str`):
+        loc_a (:obj:`str`):
+        loc_b (:obj:`str`):
     """
 
     specie_a = obj_model.core.OneToOneAttribute('Specie', related_name='specie_interaction')

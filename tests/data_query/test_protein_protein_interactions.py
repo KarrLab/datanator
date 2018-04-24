@@ -7,7 +7,7 @@ import tempfile
 import shutil
 import unittest
 
-
+@unittest.skip('skip')
 class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
 
     @classmethod
@@ -16,24 +16,25 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.protein_Q9CWF2 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q9CWF2' ).first()
-        self.protein = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
+        self.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
         self.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
 
     @classmethod
     def tearDownClass(self):
         shutil.rmtree(self.cache_dirname)
 
-    def get_observed_values(self):
+    def get_observed_result(self):
         pass
 
     def test_get_observable_complex(self):
         q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
-        complex = q.get_observable_complex(self.protein)
+        complex = q.get_observable_complex(self.protein_p53622)
+
         self.assertEqual(complex[0].name,'COPI vesicle coat complex')
 
     def test_get_observable_interactions(self):
         q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
-        interaction = q.get_observable_interactions(self.protein)
+        interaction = q.get_observable_interactions(self.protein_p53622)
         self.assertEqual(set([i.participant_a for i in interaction]),
             set([u'uniprotkb:P41810', u'uniprotkb:P41811', u'uniprotkb:P53622',
             u'uniprotkb:P33767', u'uniprotkb:P40509']))

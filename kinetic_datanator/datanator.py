@@ -93,7 +93,7 @@ class Datanator(object):
     #     """
     #     taxon, compartments, molecules, reactions = model
     #
-    #     sabio_db = reaction_kinetics.ReactionKineticsQueryGenerator()
+    #     sabio_db = reaction_kinetics.ReactionKineticsQuery()
     #     for mol in molecules:
     #         for sabio_compound in sabio_db.get_compounds_by_structure(mol.to_inchi()):
     #             mol.cross_references.append(data_model.Resource(namespace='sabio-id', id=sabio_compound.compound_id))
