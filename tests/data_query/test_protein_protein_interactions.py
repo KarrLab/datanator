@@ -32,6 +32,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
 
         self.assertEqual(complex[0].name,'COPI vesicle coat complex')
 
+    @unittest.skip('skipping until new db')
     def test_get_observable_interactions(self):
         q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
         interaction = q.get_observable_interactions(self.protein_p53622)
@@ -44,7 +45,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         subunits = q.get_observable_subunits(self.rhino_complex)
         self.assertEqual(set([c.uniprot_id for c in subunits]), set(['Q9VIF5', 'Q7JXA8', 'Q9V629']))
 
-
+    @unittest.skip('skipping until new db')
     def test_get_interaction_by_subunit(self):
         q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
 

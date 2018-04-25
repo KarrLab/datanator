@@ -281,8 +281,10 @@ class Interaction(EntityInteractionOrProperty):
             position (:obj:`int`): position at which interaction occurs
             score (:obj:`float`): ranking of the response of the interaction
     """
+    #TODO: Assess difference between score and confidence
     position = obj_model.core.IntegerAttribute()
     score = obj_model.core.FloatAttribute()
+    confidence = obj_model.core.StringAttribute()
 
 class SpecieInteraction(Interaction):
     """ Represents a protein interaction
@@ -302,6 +304,8 @@ class SpecieInteraction(Interaction):
     stoichiometry_b = obj_model.core.IntegerAttribute()
     loc_a = obj_model.core.StringAttribute()
     loc_b = obj_model.core.StringAttribute()
+    type = obj_model.core.StringAttribute()
+
 
 
 class Reaction(Interaction):
