@@ -34,13 +34,38 @@ class BaseController(controller.CementBaseController):
         description = 'Utilities for aggregating data for biochemical models'
 
 
+class BuildController(controller.CementBaseController):
+
+    #TODO: Create tests for this and make it module specific
+
+    class Meta:
+        label = 'build'
+        description = "Build aggregated database"
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = [
+            (['--cache_dirname'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
+            (['--build-on-existing'], dict(type=bool, help="load from existing database on karr lab server", default=False)),
+            (['--clear-existing-content'], dict(type=bool, help="clears existing content of the db if exists", default=False)),
+            (['--load-full-small-dbs'], dict(type=bool, help="loads entire small database modules", default=True))
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        pargs = self.app.pargs
+        print(pargs.max_entries)
+        flk = flask_common_schema.FlaskCommonSchema(cache_dirname= pargs.cache_dirname, load_content=True, download_backups=pargs.build_on_existing, max_entries=pargs.max_entries, clear_content=pargs.clear_existing_content, verbose=True)
+        print(flk.cache_dirname)
+
+
 class LoaderController(controller.CementBaseController):
 
     #TODO: Create tests for this and make it module specific
 
     class Meta:
-        label = 'load-modules'
-        description = "Load databases from karr lab server"
+        label = 'load'
+        description = "Load existing databases from Karr Lab Server"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -404,7 +429,7 @@ class App(foundation.CementApp):
             BaseController,
 
             LoaderController,
-
+            BuildController,
 
             GetDataController,
             GenerateTemplateController,
