@@ -29,9 +29,9 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
 
     def get_observed_result(self, component):
 
-        if component.__class__.__name__ = 'ProteinSubunit':
+        if component.__class__.__name__ == 'ProteinSubunit':
             return get_observable_interactions(component), get_observable_complex(component)
-        elif component.__class__.__name__ = 'ProteinComplex':
+        elif component.__class__.__name__ == 'ProteinComplex':
             return get_observable_subunits(component)
 
     def get_observable_interactions(self, protein_subunit):
