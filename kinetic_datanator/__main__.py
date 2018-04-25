@@ -2,6 +2,7 @@
 
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
+:Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-04-12
 :Copyright: 2017, Karr Lab
 :License: MIT
@@ -12,8 +13,8 @@ from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model
-from kinetic_datanator.data_source import ezyme
+from kinetic_datanator.core import data_model, flask_common_schema
+from kinetic_datanator.data_source import *
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
@@ -22,7 +23,9 @@ import pubchempy
 import re
 import shutil
 import sys
+import os
 
+CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
 
 class BaseController(controller.CementBaseController):
 
@@ -30,6 +33,32 @@ class BaseController(controller.CementBaseController):
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
 
+
+class LoaderController(controller.CementBaseController):
+
+    #TODO: Create tests for this and make it module specific
+
+    class Meta:
+        label = 'load-modules'
+        description = "Load databases from karr lab server"
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = [
+            (['--path'], dict(type=str, help="path to download the modules", default=CACHE_DIRNAME))
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        pargs = self.app.pargs
+        corum.Corum(cache_dirname=pargs.path)
+        array_express.ArrayExpress(cache_dirname=pargs.path)
+        ecmdb.Ecmdb(cache_dirname=pargs.path)
+        intact.IntAct(cache_dirname=pargs.path)
+        jaspar.Jaspar(cache_dirname=pargs.path)
+        pax.Pax(cache_dirname=pargs.path)
+        sabio_rk.SabioRk(cache_dirname=pargs.path)
+        uniprot.Uniprot(cache_dirname=pargs.path)
+        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path)
 
 class GetDataController(controller.CementBaseController):
 
@@ -373,6 +402,9 @@ class App(foundation.CementApp):
         base_controller = "base"
         handlers = [
             BaseController,
+
+            LoaderController,
+
 
             GetDataController,
             GenerateTemplateController,
