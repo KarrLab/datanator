@@ -174,21 +174,25 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
 
         for i in interactiondb:
             subunit = []
-
+            print(load_count)
             metadata = models.Metadata(name='protein_interaction_' + str(i.index))
             metadata.method.append(models.Method(name=i.method))
             metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
             metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
 
-            interaction = models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b,
+            for c in dir(i):
+                if getattr(i, c) == None and '__' not in c:
+                    setattr(i, c, '')
+
+            batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b,
                 type='protein protein interaction', protein_a=i.protein_a, protein_b=i.protein_b,
                 gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b,
                 stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,
-                interaction_type=i.interaction_type,role_a = i.role_a, role_b= i.role_b, _metadata=metadata)
-
-            self.session.add(interaction)
+                interaction_type=i.interaction_type,role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
             load_count += 1
 
+
+        self.session.add_all(batch)
         intact_progress.amount_loaded = load_count
 
 
