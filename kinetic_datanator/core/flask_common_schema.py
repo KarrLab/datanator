@@ -174,7 +174,6 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
 
         for i in interactiondb:
             subunit = []
-            print(load_count)
             metadata = models.Metadata(name='protein_interaction_' + str(i.index))
             metadata.method.append(models.Method(name=i.method))
             metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
