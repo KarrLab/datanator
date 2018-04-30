@@ -19,7 +19,7 @@ import os
 Base = sqlalchemy.ext.declarative.declarative_base()
 
 
-class ProteinInteractions(Base):
+class ProteinInteraction(Base):
     """ Represents protein interactions in from the IntAct Database
 
     Attributes:
@@ -35,20 +35,26 @@ class ProteinInteractions(Base):
 
     """
 
-    __tablename__ = 'Protein_Interactions'
+    __tablename__ = 'Protein_Interaction'
 
     index = Column(Integer, primary_key = True)
-    interactor_a = Column(String(255))
-    interactor_b = Column(String(255))
-    publications = Column(String(255))
-    alias_a = Column(String(255))
-    alias_b = Column(String(255))
-    interaction = Column(String(255))
+    protein_a = Column(String(255))
+    protein_b = Column(String(255))
+    gene_a = Column(String(255))
+    gene_b = Column(String(255))
+    type_a = Column(String(255))
+    type_b = Column(String(255))
+    role_a = Column(String(255))
+    role_b = Column(String(255))
     feature_a = Column(String(255))
     feature_b = Column(String(255))
     stoich_a = Column(String(255))
     stoich_b = Column(String(255))
+    method = Column(String(255))
+    interaction_id = Column(String(255))
     interaction_type = Column(String(255))
+    publication = Column(String(255))
+    publication_author = Column(String(255))
     confidence = Column(String(255))
 
 class ProteinComplex(Base):
@@ -80,7 +86,7 @@ class IntAct(data_source.HttpDataSource):
     base_model = Base
 
     ENDPOINT_DOMAINS = {'intact' : 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip',
-                        'intact-partial': 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact-micluster.zip' ,
+                        'intact-partial': 'ftp://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact_negative.txt' ,
                         'complex' : 'ftp://ftp.ebi.ac.uk/pub/databases/intact/complex/current/complextab/'}
 
     test = True
@@ -111,55 +117,92 @@ class IntAct(data_source.HttpDataSource):
         'Go Annotations', 'Description', 'Source']
 
         new_columns = ['identifier', 'name', 'ncbi', 'subunits', 'evidence', 'go_annot', 'desc', 'source']
-
         files = os.listdir(self.cache_dirname+'/intact_complex')
-        for tsv in files:
-            if 'README' in tsv:
-                continue
-            else:
-                dt = pd.read_csv(self.cache_dirname+'/intact_complex/'+tsv, delimiter = '\t', encoding='utf-8')
-                pand = dt.loc[:, columns]
-                pand.columns = new_columns
-                pand = pand.set_index('identifier')
-                pand.to_sql(name = 'Protein_Complex', con=self.engine, if_exists = 'append')
-                self.session.commit()
 
+        for tsv in files:
+            dt = pd.read_csv(self.cache_dirname+'/intact_complex/'+tsv, delimiter = '\t', encoding='utf-8')
+            pand = dt.loc[:, columns]
+            pand.columns = new_columns
+            pand = pand.set_index('identifier')
+            pand.to_sql(name = 'Protein_Complex', con=self.engine, if_exists = 'append')
+            self.session.commit()
+
+    def parse_protein(self, interactor, alias):
+        protein = gene = None
+        if 'uniprotkb' in interactor:
+            protein = self.split_colon(interactor)[1]
+        else:
+            if 'display_short' in alias:
+                protein = self.find_between(alias, 'psi-mi:', '(display_short)')
+            else:
+                protein = None
+
+        for item in self.split_line(alias):
+            if '(gene name)' in item:
+                gene = self.find_between(item, 'uniprotkb:', '(gene name)')
+
+        return protein, gene
+
+    def split_colon(self, str):
+        return str.split(':')
+
+    def split_line(self,str):
+        return str.split('|')
+
+    def find_between(self, s, first, last):
+        return s[s.index(first) + len(first):s.index(last, s.index(first) + len(first))]
+
+    def find_between_parentheses(self, string):
+        if 'psi-mi:' in string:
+            return self.find_between(string, '(', ')')
+        else:
+            return None
+
+    def parse_pubmed(self, string):
+        for item in self.split_line(string):
+            if 'pubmed:' in item:
+                return self.split_colon(item)[1]
+        return None
 
     def add_interactions(self):
 
-        columns = ['#ID(s) interactor A', 'ID(s) interactor B', 'Publication Identifier(s)', "Alias(es) interactor A", "Alias(es) interactor B",'Interaction identifier(s)',
-                    'Feature(s) interactor A', 'Feature(s) interactor B' , 'Stoichiometry(s) interactor A', 'Stoichiometry(s) interactor B',
-                    'Interaction type(s)', "Confidence value(s)"]
 
-        path = urlretrieve(self.ENDPOINT_DOMAINS['intact-partial']) if self.test else urlretrieve(self.ENDPOINT_DOMAINS['intact'])
+        if self.test:
+            dt = pd.read_csv(self.ENDPOINT_DOMAINS['intact-partial'], delimiter = '\t', encoding = 'utf-8')
+        else:
+            if os.path.exists(self.cache_dirname+'/intact.txt') and os.path.exists(self.cache_dirname+'/interact.pkl'):
+                pass
+            else:
+                path = urlretrieve(self.ENDPOINT_DOMAINS['intact'])
+                zipped = zipfile.ZipFile(file = path[0])
+                zipped.extractall(self.cache_dirname)
+                dt = pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
+                dt.to_pickle(self.cache_dirname+'/interact.pkl')
 
-        zipped = zipfile.ZipFile(file = path[0])
-        zipped.extractall(self.cache_dirname)
+            dt = pd.read_pickle(self.cache_dirname+'/interact.pkl')
 
-        dt = pd.read_csv(self.cache_dirname + '/intact-micluster.txt', delimiter = '\t', encoding = 'utf-8') if self.test else pd.read_csv(self.cache_dirname + '/intact.txt', delimiter = '\t', encoding = 'utf-8')
+        for index, row in dt.iterrows():
 
-        pand = dt.loc[:, columns]
-        new_columns = ['interactor_a', 'interactor_b', 'publications', 'alias_a', 'alias_b', 'interaction', 'feature_a', 'feature_b', 'stoich_a', 'stoich_b', 'interaction_type', 'confidence']
-        pand.columns = new_columns
+            if index == self.max_entries:
+                break
 
-        if not self.max_entries == float('inf'):
-            pand = pand[0:self.max_entries]
+            interaction = ProteinInteraction()
+            interaction.protein_a, interaction.gene_a = self.parse_protein(row['#ID(s) interactor A'], row['Alias(es) interactor A'])
+            interaction.protein_b, interaction.gene_b = self.parse_protein(row['ID(s) interactor B'], row['Alias(es) interactor B'])
+            interaction.interaction_type = self.find_between_parentheses(row['Interaction type(s)'])
+            interaction.method = self.find_between_parentheses(row['Interaction detection method(s)'])
+            interaction.type_a = self.find_between_parentheses(row['Type(s) interactor A'])
+            interaction.type_b = self.find_between_parentheses(row['Type(s) interactor B'])
+            interaction.role_a = self.find_between_parentheses(row['Biological role(s) interactor A'])
+            interaction.role_b = self.find_between_parentheses(row['Biological role(s) interactor B'])
+            interaction.feature_a = row['Feature(s) interactor A']
+            interaction.feature_b = row['Feature(s) interactor B']
+            interaction.stoich_a = row['Stoichiometry(s) interactor A']
+            interaction.stoich_b = row['Stoichiometry(s) interactor B']
+            interaction.interaction_id = row['Interaction identifier(s)']
+            interaction.publication = self.parse_pubmed(row['Publication Identifier(s)'])
+            interaction.publication_author = row['Publication 1st author(s)']
+            interaction.confidence = row['Confidence value(s)']
+            self.session.add(interaction)
 
-        pand.to_sql(name = 'Protein_Interactions', con=self.engine, if_exists = 'replace', chunksize = 1000)
         self.session.commit()
-
-    # column_list = ["#ID(s) interactor A") , "ID(s) interactor B"), "Alt. ID(s) interactor A"),\
-    #     "Alt. ID(s) interactor B"), "Alias(es) interactor A"), "Alias(es) interactor B"),\
-    #     "Interaction detection method(s)"), "Publication 1st author(s)"), "Publication Identifier(s)"),\
-    #     "Taxid interactor A"), "Taxid interactor B"), "Interaction type(s)"), "Source database(s)"),\
-    #     "Interaction identifier(s)"), "Confidence value(s)"), "Expansion method(s)"), \
-    #     "Biological role(s) interactor A"), "Biological role(s) interactor B"), \
-    #     "Experimental role(s) interactor A"), "Experimental role(s) interactor B"), \
-    #     "Type(s) interactor A"), "Type(s) interactor B"), "Xref(s) interactor A"),\
-    #     "Xref(s) interactor B"), "Interaction Xref(s)"), "Annotation(s) interactor A"),\
-    #     "Annotation(s) interactor B"), "Interaction annotation(s)"), "Host organism(s)"), \
-    #     "Interaction parameter(s)"), "Creation date"), "Update date"), \
-    #     "Checksum(s) interactor A"), "Checksum(s) interactor B"), "Interaction Checksum(s)"),\
-    #     "Negative"), "Feature(s) interactor A"), "Feature(s) interactor B"),\
-    #     "Stoichiometry(s) interactor A"), "Stoichiometry(s) interactor B"), "Identification method participant A"), \
-    #     "Identification method participant B")]
