@@ -170,15 +170,6 @@ _metadata_variable = db.Table(
     db.Column('variable_id', db.Integer, db.ForeignKey(
         'variable.id'), index=True),
 )
-# :obj:`db.Table`: Metadata:Conditions many-to-many association table
-
-subunit_interaction = db.Table(
-    'subunit_interaction', db.Model.metadata,
-    db.Column('protein_subunit_id', db.Integer, db.ForeignKey(
-        'protein_subunit.subunit_id'), index=True),
-    db.Column('interaction_id', db.Integer, db.ForeignKey(
-        'protein_interactions.interaction_id'), index=True)
-)
 
 rnaseqdataset_rnaseqexperiment = db.Table(
     'rnaseqdataset_rnaseqexperiment', db.Model.metadata,
@@ -618,9 +609,6 @@ class ProteinSubunit(PhysicalEntity):
     pax_load = db.Column(db.Integer)
     uniprot_checked = db.Column(db.Boolean)
 
-    interaction = db.relationship(
-        'ProteinInteraction', secondary=subunit_interaction, backref='protein_subunit')
-
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
     proteincomplex = db.relationship(
@@ -1057,7 +1045,7 @@ class ProteinInteraction(PhysicalProperty):
         stoich_b (:obj:`str`): Stoichiometry of Participant B
 
     """
-    __tablename__ = 'protein_interactions'
+    __tablename__ = 'protein_interactionz'
     __searchable__ = ['protein_a', 'protein_b', 'gene_a', 'gene_b']
     __mapper_args__ = {
         'polymorphic_identity':'observation',
@@ -1065,16 +1053,22 @@ class ProteinInteraction(PhysicalProperty):
 
     interaction_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
+
     protein_a = db.Column(db.String(255))
     protein_b = db.Column(db.String(255))
     gene_a = db.Column(db.String(255))
     gene_b = db.Column(db.String(255))
+    type_a = db.Column(db.String(255))
+    type_b = db.Column(db.String(255))
+    role_a = db.Column(db.String(255))
+    role_b = db.Column(db.String(255))
     loc_a = db.Column(db.String(255))
     loc_b = db.Column(db.String(255))
     stoich_a = db.Column(db.String(255))
     stoich_b = db.Column(db.String(255))
-    confidence = db.Column(db.String(255))
+    interaction_id = db.Column(db.String(255))
     interaction_type = db.Column(db.String(255))
+    confidence = db.Column(db.String(255))
 
     def __repr__(self):
         return 'ProteinInteratctions(%s)' % (self.interaction_id)

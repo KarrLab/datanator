@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This code is a common schema for all the kinetic_datanator modules
 
@@ -11,11 +9,6 @@ This code is a common schema for all the kinetic_datanator modules
 import os
 import time
 import re
-import numpy
-import six
-from six import BytesIO
-from ete3 import NCBITaxa
-import pandas as pd
 import flask_whooshalchemy
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
@@ -26,7 +19,17 @@ from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sab
 from ete3 import NCBITaxa
 
 
-class FlaskCommonSchema(data_source.HttpDataSource):
+class BuildUtilityMixin(object):
+    """
+    Mixin class providing build utilities for simplification of code
+    """
+
+    def vprint(self, str):
+        if self.verbose:
+            print(str)
+
+
+class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
@@ -34,7 +37,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
     base_model = models.db
     app = models.app
     text_indicies = [models.Compound, models.ProteinComplex, models.ProteinInteraction,
-                     models.Taxon, models.Synonym, models.CellLine, models.CellCompartment, models.ProteinSubunit]
+                models.Taxon, models.Synonym, models.CellLine, models.CellCompartment,
+                models.ProteinSubunit]
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs=False,
@@ -49,7 +53,7 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
                 process. This is particularly helpful for restarting this method when webservices go offline.
             download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
-            verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            verbose (:obj:`bool`, optional): if :obj:`True`, self.vprint status information to the standard output
             load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
             flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
             test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
@@ -64,113 +68,96 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         self.load_entire_small_DBs = load_entire_small_DBs
         self.test = test
 
-        for item in self.text_indicies:
-            flask_whooshalchemy.whoosh_index(self.app, item)
+        for index in self.text_indicies:
+            flask_whooshalchemy.whoosh_index(self.app, index)
 
         if download_backups and load_content:
             self.load_small_db_switch = False
             self.load_content()
+
         elif load_content:
-            for db in ['Pax', 'Sabio', 'IntAct', 'Array Express']:
-                if db == 'IntAct':
-                    self.get_or_create_object(
-                        models.Progress, database_name=db, amount_loaded=0)
-                else:
-                    self.get_or_create_object(
-                        models.Progress, database_name=db, amount_loaded=1)
+            self.get_or_create_object(models.Progress, database_name='Pax', amount_loaded=1)
+            self.get_or_create_object(models.Progress, database_name='Sabio', amount_loaded=1)
+            self.get_or_create_object(models.Progress, database_name='Array Express', amount_loaded=1)
+            self.get_or_create_object(models.Progress, database_name='IntAct', amount_loaded=0)
             self.session.commit()
             self.load_small_db_switch = True
             self.load_content()
 
-    def set_up_build(self):
-        # Initiate Observation and direct Subclasses
-        observation = models.Observation()
-        observation.physical_entity = models.PhysicalEntity()
-        self.entity = observation.physical_entity
-        observation.physical_property = models.PhysicalProperty()
-        self.property = observation.physical_property
 
     def load_content(self):
         """
         A wrapper for loading all the databases into common ORM database
 
         """
-        if self.verbose:
-            print(''' \n
-                ===================================
-                |                                 |
-                |                                 |
-                |    Starting Datanator Build     |
-                |                                 |
-                |                                 |
-                ===================================
+        self.vprint(''' \n
+            ===================================
+            |                                 |
+            |                                 |
+            |    Starting Datanator Build     |
+            |                                 |
+            |                                 |
+            ===================================
 
-                ''')
+            ''')
         t0 = time.time()
 
-        self.set_up_build()
+        observation = models.Observation()
+        observation.physical_entity = models.PhysicalEntity()
+        self.entity = observation.physical_entity
+        observation.physical_property = models.PhysicalProperty()
+        self.property = observation.physical_property
 
         # Chunk Larger DBs
         self.add_paxdb()
-        if self.verbose:
-            print('Pax Completed')
+        self.vprint('Pax Completed')
         self.add_intact_interactions()
-        if self.verbose:
-            print('IntAct Interactions Completed')
+        self.vprint('IntAct Interactions Completed')
         self.add_sabiodb()
-        if self.verbose:
-            print('Sabio Completed')
+        self.vprint('Sabio Completed')
         self.add_arrayexpress()
-        if self.verbose:
-            print('Array Express Completed')
+        self.vprint('Array Express Completed')
 
         # Add complete smaller DBs
         if self.load_small_db_switch:
             self.add_intact_complexes()
-            if self.verbose:
-                print('IntAct Complexes Completed')
+            self.vprint('IntAct Complexes Completed')
             self.add_corumdb()
-            if self.verbose:
-                print('Corum Completed')
+            self.vprint('Corum Completed')
             self.add_jaspardb()
-            if self.verbose:
-                print('Jaspar Completed')
+            self.vprint('Jaspar Completed')
             self.add_ecmdb()
-            if self.verbose:
-                print('ECMDB Completed')
+            self.vprint('ECMDB Completed')
 
         # Add missing subunit information
         self.add_uniprot()
-        if self.verbose:
-            print('Uniprot Completed')
+        self.vprint('Uniprot Completed')
 
         # Add missing Taxon information
         self.fill_missing_ncbi_names()
-        if self.verbose:
-            print('NCBI Completed')
+        self.vprint('NCBI Completed')
 
-        if self.verbose:
-            print(''' \n
-                =============================================
-                |                                           |
-                |             Finished Build                |
-                |   Total time taken for build: %s secs   |
-                |                                           |
-                =============================================
-                ''' % (str(round(time.time() - t0, 1))))
+
+        self.vprint(''' \n
+            =============================================
+            |                                           |
+            |             Finished Build                |
+            |   Total time taken for build: %s secs     |
+            |                                           |
+            =============================================
+            ''' % (str(round(time.time() - t0, 1))))
 
     def add_intact_interactions(self):
         """
         Collects IntAct.sqlite file and integrates interaction data into the common ORM
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing IntAct Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing IntAct Parsing ------------------------')
 
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
-        intact_ses = intactdb.session
         multiplier = 1 if self.test else 1000
         intact_progress = self.session.query(
             models.Progress).filter_by(database_name='IntAct').first()
@@ -178,62 +165,39 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
         if self.max_entries == float('inf'):
             interactiondb = intactdb.session.query(
-                intact.ProteinInteractions).all()
+                intact.ProteinInteraction).all()
         else:
-            interactiondb = intactdb.session.query(intact.ProteinInteractions).filter(intact.ProteinInteractions.index.in_
-                                                                                      (range(load_count, load_count + (self.max_entries * multiplier)))).all()
-
-        def find_between(s, first, last):
-            return s[s.index(first) + len(first):s.index(last, s.index(first) + len(first))]
-
-        def extract_info(interactor, alias, subunit_list):
-            main = gene = ''
-
-            if 'gene name' in alias:
-                gene = find_between(alias, 'uniprotkb:', '(gene name)')
-
-            if 'uniprotkb:' in interactor:
-                main = interactor.split(':')[1]
-                subunit_list.append(self.get_or_create_object(models.ProteinSubunit,
-                                                              name=gene, gene_name=gene, subunit_name=gene, type='protein subunit', uniprot_id=main))
-            else:
-                if 'display_short' in alias:
-                    main = find_between(alias, 'psi-mi:', '(display_short)')
-
-            return main, gene, subunit_list
+            interactiondb = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
+                (range(load_count, load_count + (self.max_entries * multiplier)))).all()
 
         batch = []
 
         for i in interactiondb:
             subunit = []
-            metadata = models.Metadata(
-                name='protein_interaction_' + str(i.index))
 
-            for reference in i.publications.split('|'):
-                unique_ref = reference.split(':')
-                metadata.resource.append(self.get_or_create_object(
-                    models.Resource, namespace=unique_ref[0], _id=unique_ref[1]))
+            metadata = models.Metadata(name='protein_interaction_' + str(i.index))
+            metadata.method.append(models.Method(name=i.method))
+            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
+            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
 
-            main_a, gene_a, subunit = extract_info(
-                i.interactor_a, i.alias_a, subunit)
-            main_b, gene_b, subunit = extract_info(
-                i.interactor_b, i.alias_b, subunit)
+            interaction = models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b,
+                type='protein protein interaction', protein_a=i.protein_a, protein_b=i.protein_b,
+                gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b,
+                stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,
+                interaction_type=i.interaction_type,role_a = i.role_a, role_b= i.role_b, _metadata=metadata)
 
-            batch.append(models.ProteinInteraction(name=main_a + "+" + main_b, type='protein protein interaction',
-                                                   protein_a=main_a, protein_b=main_b, gene_a=gene_a, gene_b=gene_b, loc_a=i.feature_a, loc_b=i.feature_b,
-                                                   stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence, interaction_type=i.interaction_type, _metadata=metadata, protein_subunit=subunit))
+            self.session.add(interaction)
             load_count += 1
 
-        self.session.add_all(batch)
         intact_progress.amount_loaded = load_count
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for IntAct Interactions: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for IntAct Interactions: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_paxdb(self):
         """
@@ -242,9 +206,9 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         Total datasets: 493
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing Pax Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing Pax Parsing ------------------------')
 
         t0 = time.time()
         paxdb = pax.Pax(cache_dirname=self.cache_dirname, verbose=self.verbose)
@@ -300,18 +264,18 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         pax_progress.amount_loaded = load_count + \
             (self.max_entries * multiplier)
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Pax: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Pax: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_arrayexpress(self):
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing Array Express Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing Array Express Parsing ------------------------')
 
         t0 = time.time()
         ae = array_express.ArrayExpress(cache_dirname=self.cache_dirname)
@@ -438,22 +402,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         array_progress.amount_loaded = load_count + \
             (self.max_entries * multiplier)
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Array Express: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Array Express: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_sabiodb(self):
         """
         Collects SabioRK.sqlite file and integrates its data into the common ORM
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing SabioRk Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing SabioRk Parsing ------------------------')
 
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(
@@ -569,22 +533,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         sabio_progress.amount_loaded = load_count + \
             (self.max_entries * multiplier)
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Sabio: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Sabio: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_corumdb(self):
         """
         Collects Corum.sqlite file and integrates its data into the common ORM
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing Corum Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing Corum Parsing ------------------------')
 
         t0 = time.time()
         corumdb = corum.Corum(
@@ -632,13 +596,13 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                                                                         gene_syn=subunit.gene_syn, proteincomplex=complx, _metadata=self.session.query(models.Metadata).get(entry._metadata_id))
                 entries += 1
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Corum: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Corum: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_jaspardb(self):
         """
@@ -647,9 +611,9 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         Total datasets: 2404
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing Jaspar Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing Jaspar Parsing ------------------------')
 
         t0 = time.time()
         jaspardb = jaspar.Jaspar(
@@ -724,22 +688,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                         frequency_g=freq.filter_by(row='G').first().val, jaspar_id=entry.ID, dataset=self.property.dna_binding_dataset)
             entries += 1
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Jaspar: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Jaspar: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_ecmdb(self):
         """
         Collects ECMDB.sqlite file and integrates its data into the common ORM
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing ECMDB Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing ECMDB Parsing ------------------------')
 
         t0 = time.time()
         ecmDB = ecmdb.Ecmdb(
@@ -797,22 +761,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     index += 1
                 entries += 1
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for ECMDB: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for ECMDB: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_intact_complexes(self):
         """
         Collects IntAct.sqlite file and integrates complex data into the common ORM
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing IntAct Complex Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing IntAct Complex Parsing ------------------------')
 
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
@@ -849,22 +813,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                     self.entity.protein_subunit = self.get_or_create_object(models.ProteinSubunit,
                                                                             type='Protein Subunit', uniprot_id=sub,
                                                                             proteincomplex=self.entity.protein_complex, _metadata=metadata)
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for IntAct Complex: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for IntAct Complex: ' +
+              str(time.time() - t0) + ' secs')
 
     def add_uniprot(self):
         """
         Collects Uniprot.sqlite file and integrates data into existing ProteinSubunit table
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing Uniprot Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing Uniprot Parsing ------------------------')
 
         t0 = time.time()
 
@@ -886,22 +850,22 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                 subunit.length = info.length if not subunit.length else subunit.length
                 subunit.mass = info.mass if not subunit.mass else subunit.mass
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for Uniprot: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for Uniprot: ' +
+              str(time.time() - t0) + ' secs')
 
     def fill_missing_ncbi_names(self):
         """
         Uses NCBI package to integrate data into existing Taxon table
 
         """
-        if self.verbose:
-            print(
-                '\n------------------------ Initializing NCBI Parsing ------------------------')
+
+        self.vprint(
+            '\n------------------------ Initializing NCBI Parsing ------------------------')
 
         t0 = time.time()
 
@@ -918,10 +882,10 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             if tax.ncbi_id in species_dict.keys():
                 tax.name = species_dict[tax.ncbi_id]
 
-        if self.verbose:
-            print('Comitting')
+
+        self.vprint('Comitting')
         self.session.commit()
 
-        if self.verbose:
-            print('Total time taken for NCBI: ' +
-                  str(time.time() - t0) + ' secs')
+
+        self.vprint('Total time taken for NCBI: ' +
+              str(time.time() - t0) + ' secs')

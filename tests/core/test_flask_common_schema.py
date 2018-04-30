@@ -210,10 +210,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         interact = session.query(models.ProteinInteraction).filter_by(protein_a = 'P49418').all()
         self.assertEqual(set([c.loc_b for c in interact]), set([ '-']))
 
-        for testcase in [interaction.protein_subunit for interaction in interact\
-            if interaction.protein_b != 'O43426']:
-            self.assertEqual(len(testcase), 1)
-            self.assertEqual(testcase[0].uniprot_id, 'P49418')
 
         for items in interact:
             self.assertTrue(items._metadata)
