@@ -170,6 +170,7 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
             interactiondb = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
                 (range(load_count, load_count + (self.max_entries * multiplier)))).all()
 
+
         batch = []
         for i in interactiondb:
 
@@ -182,7 +183,14 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
                 if getattr(i, c) == None and '__' not in c:
                     setattr(i, c, '')
 
-            batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a, protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b,stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
+            for type, protein, gene in [(i.type_a, i.protien_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
+                if type == 'protein':
+                    self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
+
+            batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
+                protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
+                stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
+                role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
 
             load_count += 1
 

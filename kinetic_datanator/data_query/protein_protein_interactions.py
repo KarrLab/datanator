@@ -30,9 +30,9 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
     def get_observed_result(self, component):
 
         if component.__class__.__name__ == 'ProteinSubunit':
-            return get_observable_interactions(component), get_observable_complex(component)
+            return self.get_observable_interactions(component), self.get_observable_complex(component)
         elif component.__class__.__name__ == 'ProteinComplex':
-            return get_observable_subunits(component)
+            return self.get_observable_subunits(component)
 
     def get_observable_interactions(self, protein_subunit):
         """ Get known protein interactions that were observed for a given subunit
@@ -43,23 +43,36 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         Returns:
             :obj:`list` of :obj:`data_model.SpecieInteraction`: list of Protein Interactions
         """
-
         interact = self.get_interaction_by_subunit(protein_subunit.uniprot_id).all()
-
-
         observed_interaction= []
 
         for item in interact:
 
+            participants = []
+            for participant, protein in [(item.type_a, item.protein_a), (item.type_b, item.protein_b)]:
+                if participant == None:
+                    specie = None
+
+                if participant == 'protein':
+                    prot = self.get_subunit_by_uniprot(protein)
+                    if prot:
+                        specie =  data_model.ProteinSpecie(uniprot_id =prot.uniprot_id,
+                            entrez_id=prot.entrez_id, gene_name=prot.gene_name, length=prot.length,
+                            mass=prot.mass, sequence=prot.canonical_sequence)
+                elif participant == 'peptide':
+                    specie = data_model.PolymerSpecie(sequence=protein)
+
+                participants.append(specie)
+
+            metadata = data_model.ObservedResultMetadata(method=data_model.Method(name=item._metadata.method[0].name))
             resource = [data_model.Resource(namespace=source.namespace, id=source._id) for source in item._metadata.resource]
-
-            interaction = data_model.SpecieInteraction(specie_a = item.specie_a, specie_b=item.specie_b, stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
+            interaction = data_model.SpecieInteraction(specie_a=participants[0], specie_b=participants[1], stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
             loc_a=item.loc_a, loc_b=item.loc_b, cross_references=resource, name=item.name, confidence=item.confidence, type=item.interaction_type)
-
             observed_interaction.append(data_model.ObservedInteraction(interaction=interaction, metadata=metadata))
 
 
         return observed_interaction
+
 
     def get_observable_complex(self, protein_subunit):
         """ Get known protein complex that were observed for a given subunit
@@ -119,14 +132,8 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
         """
-        q = self.data_source.session.query(select).filter(or_(select.protein_a == uniprot,
-            select.protein_b == uniprot))
-        return q
-        # q = self.data_source.session.query(select).filter(or_(select.participant_a == 'uniprotkb:'+uniprot,
-        #     select.participant_b == 'uniprotkb:'+uniprot))
-        # return q
-
-
+        return self.data_source.session.query(select).filter(or_(select.protein_a == uniprot,
+                select.protein_b == uniprot))
 
     def get_subunit_by_uniprot(self, uniprot, select= models.ProteinSubunit):
         """ Get interactions that were observed for a given uniprot id
