@@ -93,14 +93,16 @@ class ObservedInteraction(ObservedResult):
     Attributes:
         interaction (:obj:`Interaction`): observed interaction
     """
+
     interaction = obj_model.core.ManyToOneAttribute('Interaction', related_name='observed_interaction')
 
-class ObservedSpecies(ObservedResult):
-        """ Represents an observed interaction of a biological system
+class ObservedSpecie(ObservedResult):
+    """ Represents an observed interaction of a biological system
 
-        Attributes:
-            interaction (:obj:`Specie`): observed specie
-        """
+    Attributes:
+        interaction (:obj:`Specie`): observed specie
+    """
+
     specie = obj_model.core.ManyToOneAttribute('Specie', related_name='observed_specie')
 
 class ObservedValue(ObservedResult):

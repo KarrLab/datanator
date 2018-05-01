@@ -41,14 +41,14 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         self.assertEqual(set([o.interaction.specie_a.uniprot_id for o in observed_interaction if o.interaction.specie_a.__class__.__name__ == 'ProteinSpecie']), set(['P33767', 'P53622', 'P41811']))
 
         self.assertEqual(len(observed_complex), 1)
-        self.assertEqual(observed_complex[0].name,'COPI vesicle coat complex')
+        self.assertEqual(observed_complex[0].specie.name,'COPI vesicle coat complex')
 
 
 
     def test_get_observable_complex(self):
         complex = self.q.get_observable_complex(self.protein_p53622)
 
-        self.assertEqual(complex[0].name,'COPI vesicle coat complex')
+        self.assertEqual(complex[0].specie.name,'COPI vesicle coat complex')
 
     def test_get_observable_interactions(self):
         observed_interaction = self.q.get_observable_interactions(self.protein_p49418)
@@ -63,7 +63,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
 
     def test_get_observable_subunits(self):
         subunits = self.q.get_observable_subunits(self.rhino_complex)
-        self.assertEqual(set([c.uniprot_id for c in subunits]), set(['Q9VIF5', 'Q7JXA8', 'Q9V629']))
+        self.assertEqual(set([c.specie.uniprot_id for c in subunits]), set(['Q9VIF5', 'Q7JXA8', 'Q9V629']))
 
     def test_get_interaction_by_subunit(self):
         interactions = self.q.get_interaction_by_subunit(self.protein_p49418.uniprot_id).all()

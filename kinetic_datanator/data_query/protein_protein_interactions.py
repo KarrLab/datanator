@@ -83,20 +83,22 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         Returns:
             :obj:`list` of :obj:`data_model.KnownProteinComplex`: list of Protein Complexes
         """
-
+        observed_specie = []
         complex_ = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
-        plex = []
+
         for item in complex_:
             resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
                 id = item._metadata.resource[0]._id)
-            plex.append(data_model.KnownProteinComplex(name = item.complex_name,
+            complex = data_model.KnownProteinComplex(name = item.complex_name,
             go_id = item.go_id, go_dsc = item. go_dsc, funcat_id = item.funcat_id,
             funcat_dsc = item.funcat_dsc, su_cmt = item.su_cmt, complex_cmt = item.complex_cmt,
             disease_cmt = item.disease_cmt, class_name = item.class_name,
             family_name = item.family_name, molecular_weight= item.molecular_weight,
-            cross_references = [resource]))
+            cross_references = [resource])
 
-        return plex
+            observed_specie.append(data_model.ObservedSpecie(specie = complex))
+
+        return observed_specie
 
     def get_observable_subunits(self, protein_complex):
         """ Get known protein subunit that were observed for a given protein complex
@@ -109,16 +111,26 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         """
 
         subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
-        ans = []
+        observed_specie = []
         for item in subunits:
+
+
+            genetics = data_model.Genetics(taxon=item._metadata.taxon[0].name)
+
+            metadata = data_model.ObservedResultMetadata()
+
+
             resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
                 id = item._metadata.resource[0]._id)
-            ans.append(data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
+            specie = data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
                 sequence = item.canonical_sequence, entrez_id = item.entrez_id,
                 gene_name = item.gene_name, length = item.length, mass= item.mass,
-                cross_references = [resource]))
+                cross_references = [resource])
 
-        return ans
+            observed_specie.append(data_model.ObservedSpecie(specie = specie))
+
+
+        return observed_specie
 
 
     def get_interaction_by_subunit(self, uniprot, select = models.ProteinInteraction):
