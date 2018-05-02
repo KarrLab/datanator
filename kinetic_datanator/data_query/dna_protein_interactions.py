@@ -14,7 +14,7 @@ import shutil
 import csv
 
 
-class ProteintoDNAInteractionQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class ProteintoDNAInteractionQuery(data_query.CachedDataSourceQueryGenerator):
     """ Queries Proteins for their DNA """
 
     def __init__(self,
@@ -104,7 +104,7 @@ class ProteintoDNAInteractionQueryGenerator(data_query.CachedDataSourceQueryGene
 
         return q
 
-class DNAtoProteinInteractionQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class DNAtoProteinInteractionQuery(data_query.CachedDataSourceQueryGenerator):
     """ Queries DNA reigons for relevant proteins """
 
     def __init__(self,

@@ -279,7 +279,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
 
-
         reaction_list = []
         for rxn in rxn_cluster:
             references = []
