@@ -81,22 +81,23 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
             protein_subunit (:obj:`models.ProteinSubunit`): subunit to find complex for
 
         Returns:
-            :obj:`list` of :obj:`data_model.KnownProteinComplex`: list of Protein Complexes
+            :obj:`list` of :obj:`data_model.ProteinComplexSpecie`: list of Protein Complexes
         """
         observed_specie = []
         complex_ = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
 
         for item in complex_:
+            metadata= self.metadata_dump(item)
             resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
                 id = item._metadata.resource[0]._id)
-            complex = data_model.KnownProteinComplex(name = item.complex_name,
+            complex = data_model.ProteinComplexSpecie(name = item.complex_name,
             go_id = item.go_id, go_dsc = item. go_dsc, funcat_id = item.funcat_id,
             funcat_dsc = item.funcat_dsc, su_cmt = item.su_cmt, complex_cmt = item.complex_cmt,
             disease_cmt = item.disease_cmt, class_name = item.class_name,
             family_name = item.family_name, molecular_weight= item.molecular_weight,
             cross_references = [resource])
 
-            observed_specie.append(data_model.ObservedSpecie(specie = complex))
+            observed_specie.append(data_model.ObservedSpecie(specie = complex, metadata=metadata))
 
         return observed_specie
 
@@ -113,13 +114,7 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
         subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
         observed_specie = []
         for item in subunits:
-
-
-            genetics = data_model.Genetics(taxon=item._metadata.taxon[0].name)
-
-            metadata = data_model.ObservedResultMetadata()
-
-
+            metadata = self.metadata_dump(item)
             resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
                 id = item._metadata.resource[0]._id)
             specie = data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
@@ -127,8 +122,7 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
                 gene_name = item.gene_name, length = item.length, mass= item.mass,
                 cross_references = [resource])
 
-            observed_specie.append(data_model.ObservedSpecie(specie = specie))
-
+            observed_specie.append(data_model.ObservedSpecie(specie = specie, metadata=metadata))
 
         return observed_specie
 
