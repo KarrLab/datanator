@@ -20,7 +20,7 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ProteinInteractionandComplexQueryGenerator, self).__init__(
+        super(ProteinInteractionandComplexQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,

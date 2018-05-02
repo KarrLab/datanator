@@ -48,7 +48,8 @@ class TestTextSearchSession(unittest.TestCase):
         """
         Tests ability to collect objects from full text search of database
         """
-        rank, dict_search = self.sesh.return_search('2-Oxopentanoate')
+        list_db_models, dict_search = self.sesh.return_search('2-Oxopentanoate')
+        print(list_db_models)
         self.assertGreater(len(dict_search['Compound']), 0)
         self.assertEqual(len(dict_search['ProteinComplex']), 0)
         self.assertEqual(len(dict_search['ProteinSubunit']), 0)

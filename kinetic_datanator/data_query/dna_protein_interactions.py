@@ -33,7 +33,7 @@ class ProteintoDNAInteractionQuery(data_query.CachedDataSourceQueryGenerator):
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ProteintoDNAInteractionQueryGenerator, self).__init__(
+        super(ProteintoDNAInteractionQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
@@ -52,8 +52,9 @@ class ProteintoDNAInteractionQuery(data_query.CachedDataSourceQueryGenerator):
         versions = self.get_DNA_by_protein(protein)
 
         index = 0
-        observable = []
+        observed_result = []
         for motif in versions:
+            print(motif.all())
             binding_matrix = []
             for position in motif.all():
                 binding_matrix.append([position.frequency_a, position.frequency_c, position.frequency_g, position.frequency_t])
@@ -67,18 +68,17 @@ class ProteintoDNAInteractionQuery(data_query.CachedDataSourceQueryGenerator):
             m = motifs.read(open(self.cache_dirname+'/data.pfm'), 'pfm')
 
             dna_specie = data_model.DnaSpecie(binding_matrix = m.counts, sequence = str(m.counts.consensus))
-            interaction = data_model.Interaction(name = 'Transcription Factor DNA Binding Site')
-            observable.append(data_model.Observable(specie = dna_specie, interaction = interaction))
+            observed_result.append(data_model.ObservedSpecie(specie = dna_specie, metadata=None))
 
             for position in motif.all():
-                observable[index].specie.cross_references = data_model.Resource(namespace ='pubmed',\
+                observed_result[index].specie.cross_references = data_model.Resource(namespace ='pubmed',\
                 id = position.dataset._metadata.resource[0]._id),
                 break
 
             shutil.rmtree(self.cache_dirname)
             index += 1
 
-        return observable
+        return observed_result
 
 
     def get_DNA_by_protein(self, protein, select = models.DNABindingData):
@@ -123,7 +123,7 @@ class DNAtoProteinInteractionQuery(data_query.CachedDataSourceQueryGenerator):
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(DNAtoProteinInteractionQueryGenerator, self).__init__(
+        super(DNAtoProteinInteractionQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,

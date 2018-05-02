@@ -7,7 +7,7 @@ import tempfile
 import shutil
 import unittest
 
-class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
+class ProteinInteractionandComplexQuery(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
@@ -19,7 +19,7 @@ class ProteinInteractionandComplexQueryGenerator(unittest.TestCase):
         self.protein_p49418 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
         self.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
 
-        self.q= ppi.ProteinInteractionandComplexQueryGenerator(cache_dirname=self.cache_dirname)
+        self.q= ppi.ProteinInteractionandComplexQuery(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):

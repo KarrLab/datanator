@@ -101,7 +101,7 @@ class ObservedSpecie(ObservedResult):
     """ Represents an observed interaction of a biological system
 
     Attributes:
-        interaction (:obj:`Specie`): observed specie
+        specie (:obj:`Specie`): observed specie
     """
 
     specie = obj_model.core.ManyToOneAttribute('Specie', related_name='observed_specie')
