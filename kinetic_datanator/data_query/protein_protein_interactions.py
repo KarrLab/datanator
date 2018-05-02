@@ -64,7 +64,7 @@ class ProteinInteractionandComplexQueryGenerator(data_query.CachedDataSourceQuer
 
                 participants.append(specie)
 
-            metadata = data_model.ObservedResultMetadata(method=data_model.Method(name=item._metadata.method[0].name))
+            metadata = self.metadata_dump(item)
             resource = [data_model.Resource(namespace=source.namespace, id=source._id) for source in item._metadata.resource]
             interaction = data_model.SpecieInteraction(specie_a=participants[0], specie_b=participants[1], stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
             loc_a=item.loc_a, loc_b=item.loc_b, cross_references=resource, name=item.name, confidence=item.confidence, type=item.interaction_type)

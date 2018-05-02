@@ -48,11 +48,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
 
         for abundance in abundances:
 
-            metadata = data_model.ObservedResultMetadata(
-                genetics=data_model.Genetics(
-                    taxon=abundance.dataset._metadata.taxon[0].name
-                )
-            ) if abundance.dataset._metadata.taxon else None
+            metadata = self.metadata_dump(abundance.dataset)
 
             observable = data_model.Observable(
                 specie=data_model.ProteinSpecie(name=protein.subunit_name,

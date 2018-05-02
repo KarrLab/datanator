@@ -73,8 +73,9 @@ class ObservedResultMetadata(obj_model.core.Model):
     """
     genetics = obj_model.core.ManyToOneAttribute('Genetics', related_name='observations')
     environment = obj_model.core.ManyToOneAttribute('Environment', related_name='observations')
-    reference = obj_model.core.ManyToOneAttribute('Reference', related_name='observations')
+    cross_references = obj_model.core.ManyToManyAttribute('Resource', related_name='observations')
     method = obj_model.core.ManyToOneAttribute('Method', related_name='observations')
+    synonym = obj_model.core.ManyToManyAttribute('Synonym', related_name='observations')
 
 class ObservedResult(obj_model.core.Model):
     """ Represents a base dataset for a queried response
@@ -561,8 +562,19 @@ class Method(obj_model.core.Model):
     """
     name = obj_model.core.StringAttribute()
     description = obj_model.core.LongStringAttribute()
+    performer = obj_model.core.StringAttribute()
     hardware = obj_model.core.StringAttribute()
     software = obj_model.core.StringAttribute()
+
+class Synonym(obj_model.core.Model):
+    """
+    Represents a synonym of a given physical entity or property
+
+    Attributes:
+        name (:obj:`str`): Name of the Synonym
+
+    """
+    name = obj_model.core.StringAttribute()
 
 
 class ExperimentalMethod(Method):

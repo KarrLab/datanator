@@ -54,19 +54,7 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
         references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
 
         for c in concentrations:
-            metadata = data_model.ObservedResultMetadata(
-                genetics = data_model.Genetics(
-                    taxon = c._metadata.taxon[0].name,
-                    variation = c._metadata.cell_line[0].name
-                ),
-                environment = data_model.Environment(
-                    temperature = c._metadata.conditions[0].temperature,
-                    ph = c._metadata.conditions[0].ph,
-                    media = c._metadata.conditions[0].media,
-                    growth_status = c._metadata.conditions[0].growth_status,
-                    growth_system = c._metadata.conditions[0].growth_system,
-                )
-            )
+            metadata = self.metadata_dump(c)
 
             observable = data_model.Observable(
                 specie = data_model.Specie(name = compound.compound_name,
@@ -105,5 +93,5 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
             condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
         else:
             condition = models.Structure._value_inchi == inchi
-            
+
         return q.filter(condition)

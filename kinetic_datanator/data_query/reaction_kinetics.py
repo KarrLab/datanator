@@ -153,17 +153,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
                 reaction.participants.append(part)
 
-            metadata = data_model.ObservedResultMetadata(
-                genetics=data_model.Genetics(
-                    taxon=law._metadata.taxon[0].name,
-                    variation=law._metadata.cell_line[0].name,
-                ),
-                environment=data_model.Environment(
-                    temperature=law._metadata.conditions[0].temperature,
-                    ph=law._metadata.conditions[0].ph,
-                    media=law._metadata.conditions[0].media,
-                ),
-            )
+            metadata = self.metadata_dump(law)
 
             for parameter in law.parameter:
                 if parameter.value is None:
