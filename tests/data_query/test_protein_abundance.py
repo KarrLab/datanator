@@ -44,6 +44,9 @@ class TestProteinAbundanceQuery(unittest.TestCase):
             self.assertEqual(items.observable.specie.sequence, self.protein_P00323.canonical_sequence)
             if items.observable.specie.cross_references[0].id == '882/882-Desulfo_Form_Exp_SC_zhang_2006.txt':
                 self.assertEqual(items.value, 1003.0)
+            self.assertIn(items.metadata.genetics.taxon, ['Desulfovibrio vulgaris str. Hildenborough','Synechocystis sp. PCC 6803'])
+            self.assertEqual(set([ref.namespace for ref in items.metadata.cross_references]), set(['url']))
+
 
         vals = self.q.get_observed_result(self.protein_Q42025)
         self.assertEqual(set(items.value for items in vals), set([240.0, 140.0, 358.0]))

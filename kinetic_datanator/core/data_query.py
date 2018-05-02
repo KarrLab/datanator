@@ -139,7 +139,7 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """ Calculate a consensus statistical representation of the one or more observed values
 
         Args:
-            component (:obj:`models.PhysicalEntity` or :obj:`models.PhysicalProperty`): model component dump data for
+            component (:obj:`models.Observation`): model component dump data for
 
         Returns:
             :obj:`list` of :obj:`data_model.ObservedResultMetadata`: data model metadata object
