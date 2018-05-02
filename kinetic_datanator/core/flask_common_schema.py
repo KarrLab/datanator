@@ -183,7 +183,7 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
                 if getattr(i, c) == None and '__' not in c:
                     setattr(i, c, '')
 
-            for type, protein, gene in [(i.type_a, i.protien_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
+            for type, protein, gene in [(i.type_a, i.protein_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
                 if type == 'protein':
                     self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
 
