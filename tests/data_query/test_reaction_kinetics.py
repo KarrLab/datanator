@@ -97,6 +97,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
 
         ans = self.q.get_reaction_by_kinetic_law_id(41438)
 
+        self.assertEqual(ans.name, 'Squalene --> Diploptene')
         self.assertEqual(ans.kinetic_law_id, 41438)
         self.assertEqual(set([parts.specie.name for parts in ans.participants]), set(['Squalene', 'Diploptene']))
         self.assertEqual(set([parts.coefficient for parts in ans.participants]), set([-1, 1]))

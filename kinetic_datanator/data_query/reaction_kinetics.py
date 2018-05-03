@@ -205,7 +205,11 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
                 for item in rxn_part.kinetic_law._metadata.resource:
                     references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
 
-        return data_model.Reaction(participants = participants, cross_references=references, kinetic_law_id=reaction_list[0].kinetic_law_id)
+        rxn = data_model.Reaction(participants = participants, cross_references=references, kinetic_law_id=reaction_list[0].kinetic_law_id)
+        rxn.name = rxn.stringify()
+
+        return rxn
+
 
     def get_reaction_by_kinetic_law_id(self, id):
         rxn_list = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=id).all()
