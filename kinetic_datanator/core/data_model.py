@@ -407,13 +407,13 @@ class Reaction(Interaction):
         result = ''
         for item in participants:
             if item.coefficient == -1 and len(result) < 1:
-                result += str(item.specie.id)
+                result += str(item.specie.name)
             elif item.coefficient == -1 and len(result) > 1:
-                result += ' + ' + str(item.specie.id)
+                result += ' + ' + str(item.specie.name)
             elif item.coefficient == 1 and '-->' not in result:
-                result += ' --> ' + str(item.specie.id)
+                result += ' --> ' + str(item.specie.name)
             elif item.coefficient == 1:
-                result += ' + ' + str(item.specie.id)
+                result += ' + ' + str(item.specie.name)
             else:
                 continue
 
