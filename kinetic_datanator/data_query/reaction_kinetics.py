@@ -181,6 +181,60 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         return observed_vals
 
+
+    def convert_rxn_to_data_model(self, reaction_list):
+        references = []
+        participants = []
+        for rxn_part in reaction_list:
+
+            if rxn_part._is_reactant:
+                coef = -1
+            elif rxn_part._is_product:
+                coef = 1
+            elif rxn_part._is_modifier:
+                coef = 0
+
+            part = data_model.ReactionParticipant(
+                specie = data_model.Specie(
+                    name = rxn_part.compound.compound_name,
+                    structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
+                coefficient = coef)
+            participants.append(part)
+
+            if len(references)<1:
+                for item in rxn_part.kinetic_law._metadata.resource:
+                    references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
+
+        return data_model.Reaction(participants = participants, cross_references=references, kinetic_law_id=reaction_list[0].kinetic_law_id)
+
+    def get_reaction_by_kinetic_law_id(self, id):
+        rxn_list = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=id).all()
+        return self.convert_rxn_to_data_model(rxn_list)
+
+
+    def get_reaction_by_compound(self, compound, select=models.Reaction):
+        """ Get reaction that contains the compound role :obj:`models.Compound`
+
+        Args:
+            structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`models.Reaction` or one of its columns
+
+        Returns:
+            reaction_list (:obj:`data_model.Reaction`): reaction to find data for
+        """
+
+        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
+
+        reaction_list = []
+        for rxn in rxn_cluster:
+            reaction= self.convert_rxn_to_data_model(rxn)
+            reaction_list.append(reaction)
+
+
+        return reaction_list
+
+
     def get_kinetic_laws_by_reaction(self, reaction, select=models.KineticLaw):
         """ Get kinetic laws that were observed for similar reactions (same participants or same EC class)
 
@@ -265,53 +319,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         return q_laws
 
-    def get_reaction_by_compound(self, compound, select=models.Reaction):
-        """ Get reaction that contains the compound role :obj:`models.Compound`
-
-        Args:
-            structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.Reaction` or one of its columns
-
-        Returns:
-            reaction_list (:obj:`data_model.Reaction`): reaction to find data for
-        """
-
-        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
-
-        reaction_list = []
-        for rxn in rxn_cluster:
-            references = []
-            participants = []
-            for rxn_part in rxn:
-
-                if rxn_part._is_reactant:
-                    coef = -1
-                elif rxn_part._is_product:
-                    coef = 1
-                elif rxn_part._is_modifier:
-                    coef = 0
-
-                part = data_model.ReactionParticipant(
-                    specie = data_model.Specie(
-                        id = rxn_part.compound.compound_name,
-                        structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
-                    coefficient = coef)
-                participants.append(part)
-
-
-                if len(references)<1:
-                    for item in rxn_part.kinetic_law._metadata.resource:
-                        references.append(data_model.Resource(namespace=item.namespace, id=item._id, assignment_method=data_model.ResourceAssignmentMethod.manual))
-
-                reaction = self.reaction = data_model.Reaction(participants = participants, cross_references=references)
-
-            reaction_list.append(reaction)
-
-
-        return reaction_list
-
-
     def get_kinetic_laws_by_structure(self, structure, only_formula_and_connectivity=False, role='reactant', select=models.KineticLaw):
         """ Get kinetic laws that contain a structure in role :obj:`role`
 
@@ -381,30 +388,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         return law
 
-    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
-        """ Get compounds with the same structure. Optionally, get compounds which only have
-        the same core empirical formula and core atom connecticity (i.e. same InChI formula
-        and connectivity layers).
-
-        Args:
-            inchi (:obj:`str`): molecule structure in InChI format
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
-                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
-                identical structure.
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.Compound` or one of its columns
-
-        Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
-        """
-        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
-        if only_formula_and_connectivity:
-            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
-            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
-        else:
-            condition = models.Structure._value_inchi == inchi
-        return q.filter(condition)
-
     def get_kinetic_laws_by_ec_numbers(self, ec_numbers, match_levels=4, select=models.KineticLaw):
         """ Get kinetic laws which have one of a list of EC numbers or, optionally,
         belong to one of a list of EC classes.
@@ -433,3 +416,27 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             result = q.filter(sqlalchemy.or_(*conditions))
 
         return result
+
+    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
+        """ Get compounds with the same structure. Optionally, get compounds which only have
+        the same core empirical formula and core atom connecticity (i.e. same InChI formula
+        and connectivity layers).
+
+        Args:
+            inchi (:obj:`str`): molecule structure in InChI format
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
+                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
+                identical structure.
+            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
+                :obj:`models.Compound` or one of its columns
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
+        """
+        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
+        if only_formula_and_connectivity:
+            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
+        else:
+            condition = models.Structure._value_inchi == inchi
+        return q.filter(condition)

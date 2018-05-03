@@ -329,6 +329,7 @@ class Reaction(Interaction):
         participants (:obj:`list` of :obj:`ReactionParticipant`): list of participants
         reversible (:obj:`bool`): :obj:`True` if the reaction is reversible
     """
+    kinetic_law_id = obj_model.core.IntegerAttribute()
     participants = obj_model.core.ManyToManyAttribute('ReactionParticipant', related_name='reactions')
     reversible = obj_model.core.BooleanAttribute()
 
