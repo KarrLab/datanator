@@ -56,11 +56,11 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
                 if participant == 'protein':
                     prot = self.get_subunit_by_uniprot(protein)
                     if prot:
-                        specie =  data_model.ProteinSpecie(uniprot_id =prot.uniprot_id,
+                        specie =  data_model.ProteinSpecie(name=prot.uniprot_id, uniprot_id =prot.uniprot_id,
                             entrez_id=prot.entrez_id, gene_name=prot.gene_name, length=prot.length,
                             mass=prot.mass, sequence=prot.canonical_sequence)
                 elif participant == 'peptide':
-                    specie = data_model.PolymerSpecie(sequence=protein)
+                    specie = data_model.PolymerSpecie(name=protein, sequence=protein)
 
                 participants.append(specie)
 
