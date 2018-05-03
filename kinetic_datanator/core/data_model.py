@@ -316,7 +316,9 @@ class SpecieInteraction(Interaction):
     stoichiometry_b = obj_model.core.IntegerAttribute()
     loc_a = obj_model.core.StringAttribute()
     loc_b = obj_model.core.StringAttribute()
-    type = obj_model.core.StringAttribute()
+    type_a = obj_model.core.StringAttribute()
+    type_b = obj_model.core.StringAttribute()
+    interaction_type = obj_model.core.StringAttribute()
 
 
 

@@ -67,7 +67,7 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
             metadata = self.metadata_dump(item)
             resource = [data_model.Resource(namespace=source.namespace, id=source._id) for source in item._metadata.resource]
             interaction = data_model.SpecieInteraction(specie_a=participants[0], specie_b=participants[1], stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
-            loc_a=item.loc_a, loc_b=item.loc_b, cross_references=resource, name=item.name, confidence=item.confidence, type=item.interaction_type)
+            loc_a=item.loc_a, loc_b=item.loc_b, cross_references=resource, name=item.name, confidence=item.confidence, type_a = item.type_a, type_b=item.type_b, interaction_type=item.interaction_type)
             observed_interaction.append(data_model.ObservedInteraction(interaction=interaction, metadata=metadata))
 
 
