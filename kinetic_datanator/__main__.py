@@ -36,54 +36,134 @@ class BaseController(controller.CementBaseController):
 
 class BuildController(controller.CementBaseController):
 
-    #TODO: Create tests for this and make it module specific
-
     class Meta:
         label = 'build'
         description = "Build aggregated database"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
-            (['--cache_dirname'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
             (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
-            (['--build-on-existing'], dict(type=bool, help="load from existing database on karr lab server", default=False)),
+            (['--path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
             (['--clear-existing-content'], dict(type=bool, help="clears existing content of the db if exists", default=False)),
+            (['--verbose'], dict(type=str, help="verbosity", default=CACHE_DIRNAME))
+        ]
+
+    @controller.expose(help='Builds Corum Complex DB from source')
+    def corum(self):
+        pargs = self.app.pargs
+        corum.Corum(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds IntAct Interactions and Complex DB from source')
+    def intact(self):
+        pargs = self.app.pargs
+        intact.IntAct(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds Sabio Reaction Kinetics DB from source')
+    def sabio(self):
+        pargs = self.app.pargs
+        sabiork.SabioRk(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds Pax Protein Abundance DB from source')
+    def pax(self):
+        pargs = self.app.pargs
+        pax.Pax(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds Array Express RNA Seq DB from source')
+    def array_express(self):
+        pargs = self.app.pargs
+        array_express.ArrayExpress(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds Jaspar DNA protein interaction DB from source')
+    def jaspar(self):
+        pargs = self.app.pargs
+        jaspar.Jaspar(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds Uniprot Protein DB from source')
+    def uniprot(self):
+        pargs = self.app.pargs
+        uniprot.Uniprot(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(help='Builds ECMDB metabolite DB from source')
+    def ecmdb(self):
+        pargs = self.app.pargs
+        ecmdb.Ecmdb(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+
+class AggregateBuildController(controller.CementBaseController):
+
+    class Meta:
+        label = 'aggregate'
+        description = "Builds Aggregated Database"
+        stacked_on = 'build'
+        stacked_type = 'nested'
+        arguments = [
+            (['--build-on-existing'], dict(type=bool, help="load from existing database on karr lab server", default=False)),
             (['--load-full-small-dbs'], dict(type=bool, help="loads entire small database modules", default=True))
         ]
 
-    @controller.expose(hide=True)
+    @controller.expose(help='Controller that controls aggregated')
     def default(self):
-        pargs = self.app.pargs
-        print(pargs.max_entries)
-        flk = flask_common_schema.FlaskCommonSchema(cache_dirname= pargs.cache_dirname, load_content=True, download_backups=pargs.build_on_existing, max_entries=pargs.max_entries, clear_content=pargs.clear_existing_content, verbose=True)
-        print(flk.cache_dirname)
+        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
-class LoaderController(controller.CementBaseController):
 
-    #TODO: Create tests for this and make it module specific
+class DownloadController(controller.CementBaseController):
 
     class Meta:
-        label = 'load'
-        description = "Load existing databases from Karr Lab Server"
+        label = 'download'
+        description = "Download existing databases from Karr Lab Server"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
             (['--path'], dict(type=str, help="path to download the modules", default=CACHE_DIRNAME))
         ]
 
-    @controller.expose(hide=True)
-    def default(self):
+    @controller.expose(help='Loads Corum Complex DB from Karr Lab Server')
+    def corum(self):
         pargs = self.app.pargs
-        corum.Corum(cache_dirname=pargs.path)
-        array_express.ArrayExpress(cache_dirname=pargs.path)
-        ecmdb.Ecmdb(cache_dirname=pargs.path)
-        intact.IntAct(cache_dirname=pargs.path)
-        jaspar.Jaspar(cache_dirname=pargs.path)
-        pax.Pax(cache_dirname=pargs.path)
-        sabio_rk.SabioRk(cache_dirname=pargs.path)
-        uniprot.Uniprot(cache_dirname=pargs.path)
-        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path)
+        corum.Corum(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads IntAct Interactions and Complex DB from Karr Lab Server')
+    def intact(self):
+        pargs = self.app.pargs
+        intact.IntAct(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Sabio Reaction Kinetics DB from Karr Lab Server')
+    def sabio(self):
+        pargs = self.app.pargs
+        sabiork.SabioRk(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Pax Protein Abundance DB from Karr Lab Server')
+    def pax(self):
+        pargs = self.app.pargs
+        pax.Pax(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Array Express RNA Seq DB from Karr Lab Server')
+    def array_express(self):
+        pargs = self.app.pargs
+        array_express.ArrayExpress(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Jaspar DNA protein interaction DB from Karr Lab Server')
+    def jaspar(self):
+        pargs = self.app.pargs
+        jaspar.Jaspar(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Uniprot Protein DB from Karr Lab Server')
+    def uniprot(self):
+        pargs = self.app.pargs
+        uniprot.Uniprot(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads ECMDB metabolite DB from Karr Lab Server')
+    def ecmdb(self):
+        pargs = self.app.pargs
+        ecmdb.Ecmdb(cache_dirname=pargs.path, download_backups=True)
+
+    @controller.expose(help='Loads Aggregated DB from Karr Lab Server')
+    def aggregate(self):
+        pargs = self.app.pargs
+        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, download_backups=True)
+
+
 
 class GetDataController(controller.CementBaseController):
 
@@ -428,8 +508,9 @@ class App(foundation.CementApp):
         handlers = [
             BaseController,
 
-            LoaderController,
+            DownloadController,
             BuildController,
+            AggregateBuildController,
 
             GetDataController,
             GenerateTemplateController,
