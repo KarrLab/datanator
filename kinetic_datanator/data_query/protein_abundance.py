@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-09-12
@@ -9,7 +7,7 @@
 
 from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 
-class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenerator):
+class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
     """ Finds relevant concentration observations for proteins """
 
     def __init__(self,
@@ -28,13 +26,14 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observations from other pHs
         """
-        super(ProteinConcentrationsQueryGenerator, self).__init__(
+
+        super(ProteinAbundanceQuery, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
             data_source=flask_common_schema.FlaskCommonSchema(cache_dirname = cache_dirname))
 
-    def get_observed_values(self, protein):
+    def get_observed_result(self, protein):
         """ Find the observed values for protein abundance
 
         Args:
@@ -44,16 +43,12 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
 
         """
-        abundances = self.get_abundance_by_uniprot(protein.uniprot_id).all()
+        abundances = self.get_abundance_by_uniprot(protein.uniprot_id)
         observed_vals = []
 
         for abundance in abundances:
 
-            observation = data_model.Observation(
-                genetics=data_model.Genetics(
-                    taxon=abundance.dataset._metadata.taxon[0].name
-                )
-            ) if abundance.dataset._metadata.taxon else None
+            metadata = self.metadata_dump(abundance.dataset)
 
             observable = data_model.Observable(
                 specie=data_model.ProteinSpecie(name=protein.subunit_name,
@@ -70,7 +65,7 @@ class ProteinConcentrationsQueryGenerator(data_query.CachedDataSourceQueryGenera
             ]
 
             observed_vals.append(data_model.ObservedValue(
-                observation=observation,
+                metadata=metadata,
                 observable=observable,
                 value=abundance.abundance,
                 error=0,

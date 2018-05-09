@@ -19,6 +19,19 @@ import unittest
 warning_util.disable_warnings()
 
 
+class TestDataBuildsAndLoadingControllers(unittest.TestCase):
+
+    def setUp(self):
+        self.dirname = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dirname)
+
+    def test_build_aggregate(self):
+        pass
+
+
+
 class TestWithTempFile(unittest.TestCase):
 
     def setUp(self):

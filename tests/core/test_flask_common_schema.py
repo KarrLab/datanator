@@ -18,6 +18,7 @@ import random
 import os
 from six.moves import reload_module
 
+
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
@@ -46,14 +47,6 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         test_json = models.Compound.query.filter_by(compound_name='Adenine').first().serialize(metadata=True, relationships=True)
         self.assertEqual(test_json['compound_name'], 'Adenine')
         self.assertEqual(test_json['relationships']['structure']['_value_inchi'], 'InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)')
-
-    def test_magic_methods(self):
-
-        for tablename in self.flk.base_model.metadata.tables.keys():
-            for c in models.db.Model._decl_class_registry.values():
-                if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
-                    self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
-
 
     def test_data_loaded(self):
         session = self.flk.session
@@ -99,7 +92,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         shutil.rmtree(self.cache_dirname)
 
 
-
     def test_ncbi(self):
         session = self.cs.session
         tax = session.query(models.Taxon).filter_by(name = 'Homo sapiens').all()
@@ -109,6 +101,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 
         taxon = session.query(models.Taxon).filter_by(ncbi_id = 882).first()
         self.assertEqual(taxon.name, 'Desulfovibrio vulgaris str. Hildenborough')
+
 
     def test_pax(self):
         session = self.cs.session
@@ -126,6 +119,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         taxon = session.query(models._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
         self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
 
+
     def test_jaspar(self):
         session = self.cs.session
         subunit = session.query(models.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
@@ -138,6 +132,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 
         metadata = session.query(models.Metadata).filter_by(name = 'RUNX1 Binding Motif').first()
         self.assertEqual(metadata.resource[0]._id, '8413232')
+
 
     def test_ecmdb(self):
         session = self.cs.session
@@ -166,6 +161,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(experiment.exp_name, "Gene expression profiling across ontogenetic stages in wood white (Leptidea sinapis) reveals pathways linked to butterfly diapause regulation")
         self.assertEqual(experiment._experimentmetadata.description[:12], "In temperate")
         #self.assertEqual(experiment.has_fastq_files
+
 
     def test_sabio(self):
         session = self.cs.session
@@ -211,28 +207,27 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     def test_intact_interactions(self):
         session = self.cs.session
 
-        interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'uniprotkb:P49418').all()
-        self.assertEqual(set([c.site_b for c in interact]), set(['binding-associated region:1063-1070(MINT-376288)', '-']))
+        interact = session.query(models.ProteinInteraction).filter_by(protein_a = 'P49418').all()
+        self.assertEqual(set([c.loc_b for c in interact]), set([ '-']))
 
-        for testcase in [interaction.protein_subunit for interaction in interact\
-            if interaction.participant_b != 'uniprotkb:O43426']:
-            self.assertEqual(len(testcase), 1)
-            self.assertEqual(testcase[0].uniprot_id, 'P49418')
 
         for items in interact:
             self.assertTrue(items._metadata)
 
-        interact = session.query(models.ProteinInteractions).filter_by(participant_a = 'intact:EBI-7121765').first()
-        self.assertEqual(interact._metadata.resource[0]._id, '10542231|mint')
+        interact = session.query(models.ProteinInteraction).filter_by(protein_a = 'vrptraada').first()
+        self.assertEqual(interact._metadata.resource[0].namespace, 'pubmed')
+        self.assertEqual(interact._metadata.resource[0]._id, '10542231')
+
 
     def test_intact_complex_added(self):
         session = self.cs.session
 
-        plex = session.query(models.ProteinComplex).filter_by(complex_name = 'CPAP-STIL complex').all()
+        plex = session.query(models.ProteinComplex).filter_by(complex_name = 'LSM1-7-PAT1 complex, variant LSM1A-LSM3B-LSM6B-PAT1').all()
         self.assertEqual(len(plex), 1)
-        self.assertEqual(plex[0].go_id, '1905832|0110028|0046601|0005737|0008017|1900087|0120099')
-        self.assertEqual(plex[0].su_cmt, 'Q7ZVT3(0)|Q8JGS1(0)|E7FCY1(0)')
-        self.assertEqual(len(plex[0].protein_subunit), 3)
+        self.assertEqual(plex[0].go_id, '1990726|0000932|0003729|0000290')
+        self.assertEqual(plex[0].su_cmt, 'Q0WPK4(1)|O22823(1)|Q9C6K5(1)|F4K4E3(1)|Q9SI54(1)|Q9FKB0(1)|Q1H595(1)|Q945P8(1)')
+        self.assertEqual(len(plex[0].protein_subunit), 8)
+
 
     def test_uniprot_added(self):
         session = self.cs.session
@@ -241,6 +236,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(uni.subunit_name, 'PYRH_DESVH')
         self.assertEqual(uni.entrez_id, 2795170)
         self.assertEqual(uni.length, 238)
+
 
     def test_whoosh(self):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),

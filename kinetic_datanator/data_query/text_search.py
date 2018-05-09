@@ -11,7 +11,7 @@
 import abc
 import six
 import os
-from kinetic_datanator.data_query import dna_protein_interactions, metabolite_concentrations, protein_concentrations, protein_protein_interactions, reaction_kinetics
+from kinetic_datanator.data_query import dna_protein_interactions, metabolite_concentrations, protein_abundance, protein_protein_interactions, reaction_kinetics
 from kinetic_datanator.core import flask_common_schema, models
 import flask_whooshalchemy
 
@@ -27,7 +27,7 @@ class TextSearchSession(object):
     def __init__(self, db_cache_dirname = os.getcwd()):
 
         flaskdb = flask_common_schema.FlaskCommonSchema(cache_dirname = db_cache_dirname)
-        self.q = reaction_kinetics.ReactionKineticsQueryGenerator(cache_dirname=db_cache_dirname, include_variants=True)
+        self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=db_cache_dirname, include_variants=True)
 
 
         for item in flaskdb.text_indicies:

@@ -88,59 +88,38 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
             :obj:`list` of :obj:`data_model.Consensus`: statistical consensus of the relevant observed values of
                 :obj:`component` and the observed values it was based on
         """
-        obs = self.get_observed_values(component)
-        filter_result = self.filter_observed_values(component, obs)
+        observed_result = self.get_observed_result(component)
+        filter_result = self.filter_observed_results(component, observed_result)
         return filter_result
         # return self.get_consensus(component, filter_result)
 
-
-    # def serialize_observation(self, result):
-    #
-    #     ans = {}
-    #
-    #     def recurse(graph, dict_new, obj):
-    #         if not isinstance(graph, (str, int, float)) and graph is not None:
-    #             for item in graph.Meta.attribute_order:
-    #                 if item not in dict_new.keys():
-    #                     dict_new[item] = {}
-    #                 recurse(getattr(graph, item),dict_new[item], obj)
-    #         else:
-    #             if graph not in dict_new.keys():
-    #                 dict_new[graph] = []
-    #             dict_new[graph].append(obj)
-    #
-    #     for val,score in zip(result.observed_values, result.scores) :
-    #         recurse(val.observation, ans, (val, score))
-    #
-    #     return ans
-
-
     @abc.abstractmethod
-    def get_observed_values(self, component):
-        """ Find the observed values relevant to :obj:`component`
+    def get_observed_result(self, component):
+        """ Find the observed result relevant to :obj:`component`
 
         Args:
-            observable (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
+            component (:obj:`model.PhysicalEntity`) or (:obj:`model.PhysicalProperty`): model component to find data for
 
         Returns:
+            :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observed values
         """
         pass
 
-    def filter_observed_values(self, component, observed_values):
+    def filter_observed_results(self, component, observed_results):
         """ Filter out observed values from dissimilar genetic and environmental conditions and
         order the remaining observed values by their similarity to specified genetic and
         environmental conditions.
 
         Args:
             component (:obj:`data_model.EntityInteractionOrProperty`): model component to find data for
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
 
         Returns:
             :obj:`FilterResult`: filter result
         """
         return FilterRunner(self.filters) \
-            .run(component, observed_values, return_info=True)
+            .run(component, observed_results, return_info=True)
 
     def get_consensus(self, component, filter_result):
         """ Calculate a consensus statistical representation of the one or more observed values
@@ -155,6 +134,59 @@ class DataQueryGenerator(six.with_metaclass(abc.ABCMeta, object)):
         """
         # group observed values by their subcomponents, attributes
         return consensus
+
+    def metadata_dump(self, component):
+        """ Calculate a consensus statistical representation of the one or more observed values
+
+        Args:
+            component (:obj:`models.Observation`): model component dump data for
+
+        Returns:
+            :obj:`list` of :obj:`data_model.ObservedResultMetadata`: data model metadata object
+        """
+        genetics = None
+        environment=None
+        cross_references= []
+        method=None
+        synonym= []
+        meta = component._metadata
+
+
+        taxon = meta.taxon[0].name if meta.taxon else None
+        variation = meta.cell_line[0].name if meta.cell_line else None
+        genetics = data_model.Genetics(taxon=taxon, variation=variation)
+
+        temperature = meta.conditions[0].temperature if meta.conditions else None
+        ph = meta.conditions[0].ph if meta.conditions else None
+        media = meta.conditions[0].media if meta.conditions else None
+        growth_status = meta.conditions[0].growth_status if meta.conditions else None
+        growth_system = meta.conditions[0].growth_system if meta.conditions else None
+        environment = data_model.Environment(temperature=temperature, ph=ph, media=media, growth_status=growth_status, growth_system=growth_system)
+
+        name = meta.method[0].name if meta.method else None
+        description =  meta.method[0].comments if meta.method else None
+        performer = meta.method[0].performer if meta.method else None
+        hardware =  meta.method[0].hardware if meta.method else None
+        software =  meta.method[0].software if meta.method else None
+        method = data_model.Method(name=name, description=description, performer=performer, hardware=hardware, software=software)
+
+
+        if meta.resource:
+            for item in meta.resource:
+                cross_references.append(data_model.Resource(namespace=item.namespace, id=item._id))
+        else:
+            cross_references.append(data_model.Resource(namespace=None, id=None))
+
+
+        if meta.synonym:
+            for item in meta.synonym:
+                synonym.append(data_model.Synonym(name=item.name))
+        else:
+            synonym.append(data_model.Synonym(name=None))
+
+        metadata_result = data_model.ObservedResultMetadata(genetics = genetics, environment=environment, cross_references=cross_references, method=method, synonym=synonym)
+
+        return metadata_result
 
 
 class CachedDataSourceQueryGenerator(DataQueryGenerator):
@@ -206,7 +238,7 @@ class FilterRunner(object):
             filters = [filters]
         self.filters = filters
 
-    def run(self, target_component, observed_values, return_info=False):
+    def run(self, target_component, observed_results, return_info=False):
         """ Filter and order a list of observed values according to a list of filters. Optionally, return additional
         information about the filtering including the scores of the observed values and the indices of the prioritized
         observed values in the input list of observed values.
@@ -221,7 +253,7 @@ class FilterRunner(object):
 
         Args:
             target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
             return_info (:obj:`bool`, optional): if `True`, also return the scores and indices of the ordered observed values in the input list
 
         Returns:
@@ -232,10 +264,10 @@ class FilterRunner(object):
         """
 
         # score observed values against the filters
-        all_scores = self.score(target_component, observed_values)
+        all_scores = self.score(target_component, observed_results)
 
         # filter out observed values that must be discarded (observed values with score = -1)
-        obs_vals, scores, i_obs_values = self.filter(observed_values, all_scores)
+        obs_vals, scores, i_obs_values = self.filter(observed_results, all_scores)
 
         # order remaining observed values by their mean score
         obs_vals, scores, i_obs_values = self.order(obs_vals, scores, i_obs_values)
@@ -243,35 +275,35 @@ class FilterRunner(object):
         # return
         if return_info:
             # return ordered list of observed values and additional information
-            return FilterResult(obs_vals, scores, i_obs_values, observed_values, all_scores)
+            return FilterResult(obs_vals, scores, i_obs_values, observed_results, all_scores)
         else:
             # return ordered list of observed values
             return obs_vals
 
-    def score(self, target_component, observed_values):
+    def score(self, target_component, observed_results):
         """ Score observed values against the filters
 
         Args:
             target_component (:obj:`data_model.EntityInteractionOrProperty`): interaction, species, or property to find data about
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
 
         Returns:
             :obj:`list` of :obj:`float`: list of scores
         """
-        n_obs = len(observed_values)
+        n_obs = len(observed_results)
         n_filt = len(self.filters)
         scores = numpy.full((n_obs, n_filt, ), numpy.nan)
         for i_filter, filter in enumerate(self.filters):
-            for i_obs, obs in enumerate(observed_values):
+            for i_obs, obs in enumerate(observed_results):
                 scores[i_obs, i_filter] = filter.score(target_component, obs)
 
         return scores
 
-    def filter(self, observed_values, scores):
+    def filter(self, observed_results, scores):
         """ Filter out observed values that must be discarded (observed values with score = -1)
 
         Args:
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of experimental and/or computational observed values
             scores (:obj:`list` of :obj:`float`): list of scores
 
         Returns:
@@ -282,16 +314,16 @@ class FilterRunner(object):
                 * :obj:`list` of :obj:`int`: list of indices of the ordered observed values within the original list of observed values
 
         """
-        ok_observed_values = numpy.extract(numpy.all(scores >= 0, 1).transpose(), observed_values).tolist()
-        i_ok_observed_values = numpy.flatnonzero(numpy.all(scores >= 0, 1)).tolist()
-        ok_scores = scores[i_ok_observed_values, :]
-        return (ok_observed_values, ok_scores, i_ok_observed_values, )
+        ok_observed_results = numpy.extract(numpy.all(scores >= 0, 1).transpose(), observed_results).tolist()
+        i_ok_observed_results = numpy.flatnonzero(numpy.all(scores >= 0, 1)).tolist()
+        ok_scores = scores[i_ok_observed_results, :]
+        return (ok_observed_results, ok_scores, i_ok_observed_results, )
 
-    def order(self, observed_values, scores, i_observations=None):
+    def order(self, observed_results, scores, i_observations=None):
         """ Order observed values by their mean score
 
         Args:
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of observed values
             scores (:obj:`list` of :obj:`float`): list of scores
             i_observations (:obj:`list` of :obj:`int`, optional): list of indices within the original list of observed values
 
@@ -304,41 +336,41 @@ class FilterRunner(object):
         """
 
         if not i_observations:
-            i_observations = range(len(observed_values))
+            i_observations = range(len(observed_results))
 
         order = numpy.argsort(numpy.mean(scores, 1))[::-1]
 
-        ordered_observed_values = [observed_values[i] for i in order]
+        ordered_observed_results = [observed_results[i] for i in order]
         ordered_scores = scores[order, :]
-        i_ordered_observed_values = [i_observations[i] for i in order]
+        i_ordered_observed_results = [i_observations[i] for i in order]
 
-        return (ordered_observed_values, ordered_scores, i_ordered_observed_values, )
+        return (ordered_observed_results, ordered_scores, i_ordered_observed_results, )
 
 
 class FilterResult(object):
     """ Represents the results of applying a list of filters to a dataset
 
     Attributes:
-        observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
-        scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
+        observed_results (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+        scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_results`; columns: filters, in same orders as in `filters`)
         observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
-        all_observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
-        all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
+        all_observed_results (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+        all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_results`; columns: filters, in same orders as in `filters`)
     """
 
-    def __init__(self, observed_values, scores, observed_value_indices, all_observed_values, all_scores):
+    def __init__(self, observed_results, scores, observed_value_indices, all_observed_results, all_scores):
         """
         Args:
-            observed_values (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
-            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_values`; columns: filters, in same orders as in `filters`)
+            observed_results (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+            scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_results`; columns: filters, in same orders as in `filters`)
             observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
-            all_observed_values (:obj:`list` of `data_model.ObservedValue`): input list of observed values
-            all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_values`; columns: filters, in same orders as in `filters`)
+            all_observed_results (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+            all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_results`; columns: filters, in same orders as in `filters`)
         """
-        self.observed_values = observed_values
+        self.observed_results = observed_results
         self.scores = scores
         self.observed_value_indices = observed_value_indices
-        self.all_observed_values = all_observed_values
+        self.all_observed_results = all_observed_results
         self.all_scores = all_scores
 
 
@@ -907,7 +939,7 @@ class TaxonomicDistanceFilter(Filter):
             taxon_obj = taxonomy_util.Taxon(name=taxon)
             scale = (taxon_obj.get_max_distance_to_common_ancestor() - 2) / 5.
 
-        super(TaxonomicDistanceFilter, self).__init__(('observation', 'genetics', 'taxon', ))
+        super(TaxonomicDistanceFilter, self).__init__(('metadata', 'genetics', 'taxon', ))
 
         self.taxon = taxon
         self.max = max
@@ -960,7 +992,7 @@ class WildtypeFilter(OptionsFilter):
     #TODO: Need to figure out what the options are for these
 
     def __init__(self):
-        super(WildtypeFilter, self).__init__(('observation', 'genetics', 'variation', ), [''])
+        super(WildtypeFilter, self).__init__(('metadata', 'genetics', 'variation', ), [''])
 
 
 class TemperatureRangeFilter(RangeFilter):
@@ -972,7 +1004,7 @@ class TemperatureRangeFilter(RangeFilter):
             min (:obj:`float`, optional): minimum value
             max (:obj:`float`, optional): maximum value
         """
-        super(TemperatureRangeFilter, self).__init__(('observation', 'environment', 'temperature', ), min=min, max=max)
+        super(TemperatureRangeFilter, self).__init__(('metadata', 'environment', 'temperature', ), min=min, max=max)
 
 
 class TemperatureNormalFilter(NormalFilter):
@@ -984,7 +1016,7 @@ class TemperatureNormalFilter(NormalFilter):
             mean (:obj:`float`): The mean of the distribution. This indicates the value at which the score will be 1.
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score falls to zero away from the mean.
         """
-        super(TemperatureNormalFilter, self).__init__(('observation', 'environment', 'temperature', ), mean, std)
+        super(TemperatureNormalFilter, self).__init__(('metadata', 'environment', 'temperature', ), mean, std)
 
 
 class PhRangeFilter(RangeFilter):
@@ -996,7 +1028,7 @@ class PhRangeFilter(RangeFilter):
             min (:obj:`float`, optional): minimum value
             max (:obj:`float`, optional): maximum value
         """
-        super(PhRangeFilter, self).__init__(('observation', 'environment', 'ph', ), min=min, max=max)
+        super(PhRangeFilter, self).__init__(('metadata', 'environment', 'ph', ), min=min, max=max)
 
 
 class PhNormalFilter(NormalFilter):
@@ -1009,17 +1041,17 @@ class PhNormalFilter(NormalFilter):
             std (:obj:`float`): The standard deviation of the distribution. This determines how quickly the score
                 falls to zero away from the mean.
         """
-        super(PhNormalFilter, self).__init__(('observation', 'environment', 'ph', ), mean, std)
+        super(PhNormalFilter, self).__init__(('metadata', 'environment', 'ph', ), mean, std)
 
 
 class ConsensusGenerator(object):
     """ """
 
-    def run(self, observed_values, method, weighted=True):
+    def run(self, observed_results, method, weighted=True):
         """
 
         Args:
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of
                 observed values
             method (:obj:`str`): `mean`, `median`, or `mode`; desired average
                 statistic
@@ -1035,8 +1067,8 @@ class ConsensusGenerator(object):
                 or `mode`
         """
         consensuses = []
-        for observable, evidence in self.group_observed_values_by_properties(observed_values):
-            norm_values, norm_errors, weights, units = self.normalize_observed_values(evidence)
+        for observable, evidence in self.group_observed_results_by_properties(observed_results):
+            norm_values, norm_errors, weights, units = self.normalize_observed_results(evidence)
             value, error, method = self.calc_average(norm_values, weights=weights if weighted else None, method=method)
             consensus.append(data_model.Consensus(
                 observable=observable,
@@ -1051,11 +1083,11 @@ class ConsensusGenerator(object):
 
         return consensuses
 
-    def group_observed_values_by_properties(self, observed_values):
+    def group_observed_results_by_properties(self, observed_results):
         """ Group observed values by their observed properties
 
         Args:
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of
                 observed values
 
         Returns:
@@ -1063,7 +1095,7 @@ class ConsensusGenerator(object):
                 list of observed values, grouped by the observed property
         """
         grouped_obs = {}
-        for obs, score in zip(filter_result.observed_values, filter_result.scores):
+        for obs, score in zip(filter_result.observed_results, filter_result.scores):
             if obs.attribute not in grouped_obs:
                 grouped_obs[obs.attribute] = {}
             if obs.subcomponent:
@@ -1075,11 +1107,11 @@ class ConsensusGenerator(object):
                     grouped_obs[obs.attribute]['__default__'] = []
                 grouped_obs[obs.attribute]['__default__'].append((obs, score))
 
-    def normalize_observed_values(self, observed_values):
+    def normalize_observed_results(self, observed_results):
         """ Normalize one or more observed values to SI units
 
         Args:
-            observed_values (:obj:`list` of :obj:`data_model.ObservedValue`): list of
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): list of
                 observed values
 
         Returns:
@@ -1093,7 +1125,7 @@ class ConsensusGenerator(object):
         norm_errors = []
         weights = []
         units = ''
-        for ov in observed_values:
+        for ov in observed_results:
             value = ob.value * unit_registry(ob.units)
             error = ob.error * unit_registry(ob.units)
             values.append(value.to_base_units().magnitude)

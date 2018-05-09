@@ -8,6 +8,8 @@ import os
 
 app = Flask(__name__)
 app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.Config')
+#NOTE: Line below used to migrate the schema
+# app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.LocalMigrationConfig')
 app.config.from_object(app_settings)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -17,7 +19,7 @@ class SerializeClassMixin(object):
     """
     Mixin class provides data object special functions such as serialization
     """
-
+    ##TODO: Make more succinct and use a stack instead of recursion
     def serialize_relationships(self):
         result_json = {}
         for relation in self.__mapper__.relationships.keys():
@@ -167,15 +169,6 @@ _metadata_variable = db.Table(
               db.ForeignKey('_metadata.id'), index=True),
     db.Column('variable_id', db.Integer, db.ForeignKey(
         'variable.id'), index=True),
-)
-# :obj:`db.Table`: Metadata:Conditions many-to-many association table
-
-subunit_interaction = db.Table(
-    'subunit_interaction', db.Model.metadata,
-    db.Column('protein_subunit_id', db.Integer, db.ForeignKey(
-        'protein_subunit.subunit_id'), index=True),
-    db.Column('interaction_id', db.Integer, db.ForeignKey(
-        'protein_interactions.interaction_id'), index=True)
 )
 
 rnaseqdataset_rnaseqexperiment = db.Table(
@@ -616,9 +609,6 @@ class ProteinSubunit(PhysicalEntity):
     pax_load = db.Column(db.Integer)
     uniprot_checked = db.Column(db.Boolean)
 
-    interaction = db.relationship(
-        'ProteinInteractions', secondary=subunit_interaction, backref='protein_subunit')
-
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
     proteincomplex = db.relationship(
@@ -760,9 +750,49 @@ class Concentration(PhysicalProperty):
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
+    units = db.Column(db.String(255))
 
     def __repr__(self):
         return 'Concentration(%s)' % (self.concentration_id)
+
+class ProteinInteraction(PhysicalProperty):
+    """
+    Represents a protein-protein interaction
+
+    Attributes:
+        participant_a (:obj:`str`): Participant A in the interaction
+        participant_b (:obj:`str`): Participant B in the interaction
+        interaction (:obj:`str`): Interaction ID
+        site_a (:obj:`str`): Binding Site of Participant A
+        site_b (:obj:`str`): Binding Site of Participant B
+        stoich_a (:obj:`str`): Stoichiometry of Participant A
+        stoich_b (:obj:`str`): Stoichiometry of Participant B
+
+    """
+
+    __tablename__ = 'protein_interactions'
+    __searchable__ = ['protein_a', 'protein_b', 'gene_a', 'gene_b']
+
+    interaction_id = db.Column(db.Integer, db.ForeignKey(
+        'physical_property.observation_id'), primary_key=True)
+
+    protein_a = db.Column(db.String(255))
+    protein_b = db.Column(db.String(255))
+    gene_a = db.Column(db.String(255))
+    gene_b = db.Column(db.String(255))
+    type_a = db.Column(db.String(255))
+    type_b = db.Column(db.String(255))
+    role_a = db.Column(db.String(255))
+    role_b = db.Column(db.String(255))
+    loc_a = db.Column(db.String(255))
+    loc_b = db.Column(db.String(255))
+    stoich_a = db.Column(db.String(255))
+    stoich_b = db.Column(db.String(255))
+    interaction_type = db.Column(db.String(255))
+    confidence = db.Column(db.String(255))
+
+    def __repr__(self):
+        return 'ProteinInteratction(%s)' % (self.interaction_id)
 
 
 
@@ -1039,40 +1069,6 @@ class DNABindingData(db.Model):
     def __repr__(self):
         return 'DNABindingData(%s)' % (self.position_id)
 
-
-class ProteinInteractions(PhysicalProperty):
-    """
-    Represents a protein-protein interaction
-
-    Attributes:
-        participant_a (:obj:`str`): Participant A in the interaction
-        participant_b (:obj:`str`): Participant B in the interaction
-        interaction (:obj:`str`): Interaction ID
-        site_a (:obj:`str`): Binding Site of Participant A
-        site_b (:obj:`str`): Binding Site of Participant B
-        stoich_a (:obj:`str`): Stoichiometry of Participant A
-        stoich_b (:obj:`str`): Stoichiometry of Participant B
-
-    """
-    __tablename__ = 'protein_interactions'
-    __searchable__ = ['participant_a', 'participant_b']
-    __mapper_args__ = {
-        'polymorphic_identity':'observation',
-    }
-
-    interaction_id = db.Column(db.Integer, db.ForeignKey(
-        'physical_property.observation_id'), primary_key=True)
-    participant_a = db.Column(db.String(255))
-    participant_b = db.Column(db.String(255))
-    interaction = db.Column(db.String(255))
-    site_a = db.Column(db.String(255))
-    site_b = db.Column(db.String(255))
-    stoich_a = db.Column(db.String(255))
-    stoich_b = db.Column(db.String(255))
-    interaction_type = db.Column(db.String(255))
-
-    def __repr__(self):
-        return 'ProteinInteratctions(%s)' % (self.interaction_id)
 
 
 class Progress(db.Model):

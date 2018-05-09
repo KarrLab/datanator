@@ -16,7 +16,7 @@ import shutil
 import csv
 
 
-class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
+class TestProteintoDNAInteractionQuery(unittest.TestCase):
     """
     Tests for Protein to DNA interactions
 
@@ -30,25 +30,28 @@ class TestProteintoDNAInteractionQueryGenerator(unittest.TestCase):
         flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
+        self.q = dpi.ProteintoDNAInteractionQuery(cache_dirname=self.cache_dirname)
 
-    def test_filter_observed_values(self):
-        q = dpi.ProteintoDNAInteractionQueryGenerator(cache_dirname=self.cache_dirname)
+    def test_get_observed_result(self):
 
-        observable = q.get_observed_values(self.arnt)
+        result = self.q.get_observed_result(self.arnt)
 
-        self.assertEqual(observable[0].specie.sequence, 'CACGTG')
-        self.assertEqual(observable[0].specie.cross_references[0].id, '7592839')
+        for version in result:
+            self.assertEqual(version.specie.sequence, 'CACGTG')
+            self.assertEqual(version.specie.cross_references[0].id, '7592839')
+            self.assertEqual(version.metadata.genetics.taxon, 'Mus musculus')
+            self.assertEqual(version.metadata.method.name,'SELEX')
+            break
 
 
     def test_get_DNA_by_protein(self):
-        q = dpi.ProteintoDNAInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
-        position = q.get_DNA_by_protein(self.arnt)
+        position = self.q.get_DNA_by_protein(self.arnt)
+        for version in position:
+            self.assertEqual(set(c.frequency_a for c in version), set([0,19,4]))
+            self.assertEqual(set(c.position for c in version), set([1, 2, 3, 4, 5, 6]))
 
-        self.assertEqual(set(c.frequency_a for c in position[0]), set([0,19,4]))
-        self.assertEqual(set(c.position for c in position[0]), set([1, 2, 3, 4, 5, 6]))
-
-class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
+class TestDNAtoProteinInteractionQuery(unittest.TestCase):
     """
     Tests for DNA to Protein interactions
 
@@ -61,17 +64,17 @@ class TestDNAtoProteinInteractionQueryGenerator(unittest.TestCase):
         self.dna_segment1 = data_model.DnaSpecie(sequence = 'CCTTTGTT')
         self.dna_segment2 = data_model.DnaSpecie(sequence = 'AAGGTCAA')
 
-    def test_filter_observed_values(self):
-        q = dpi.DNAtoProteinInteractionQueryGenerator(cache_dirname=self.cache_dirname)
+        self.q = dpi.DNAtoProteinInteractionQuery(cache_dirname=self.cache_dirname)
 
-        observe = q.get_observed_values(self.dna_segment2)
+    def test_get_observed_result(self):
+        
+        observe = self.q.get_observed_result(self.dna_segment2)
         self.assertEqual(set(c.specie.gene_name for c in observe), set(['NR4A2', 'TRP(MYB) class']))
 
 
     def test_get_protein_by_binding_matrix(self):
-        q = dpi.DNAtoProteinInteractionQueryGenerator(cache_dirname=self.cache_dirname)
 
-        query = q.get_protein_by_DNA_sequence(self.dna_segment1.sequence)
+        query = self.q.get_protein_by_DNA_sequence(self.dna_segment1.sequence)
 
         self.assertEqual(set(c[0].subunit_name for c in query), set(['pan', 'Sox2', 'DOF5.6']))
         self.assertEqual(set(c[1] for c in query), set([0,0,-8,-8]))

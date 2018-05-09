@@ -189,6 +189,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(c.get_smiles_structures(), ['[H]O[H]'])
         xrs = [dict(namespace=xr.namespace, id=xr.id) for xr in c.cross_references]
         self.assertEqual(sorted(xrs, key=lambda xr: xr['namespace']), [
+            dict(namespace='None', id='View all entries for compound H2O'),
             dict(namespace='chebi', id='CHEBI:15377'),
             dict(namespace='kegg.compound', id='C00001'),
             dict(namespace='pubchem.substance', id='3303'),
@@ -216,6 +217,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(c.name, 'H2O')
         xrs = [dict(namespace=xr.namespace, id=xr.id) for xr in c.cross_references]
         self.assertEqual(sorted(xrs, key=lambda xr: xr['namespace']), [
+            dict(namespace='None', id='View all entries for compound H2O'),
             dict(namespace='chebi', id='CHEBI:15377'),
             dict(namespace='kegg.compound', id='C00001'),
             dict(namespace='pubchem.substance', id='3303'),
@@ -231,6 +233,7 @@ class TestDownloader(unittest.TestCase):
         self.assertTrue('Peptide' in c.name)
         xrs = [dict(namespace=xr.namespace, id=xr.id) for xr in c.cross_references]
         self.assertEqual(sorted(xrs, key=lambda xr: xr['namespace']), [
+            dict(namespace='None', id='View all entries for compound Peptide'),
             dict(namespace='chebi', id='CHEBI:16670'),
             dict(namespace='kegg.compound', id='C00012'),
             dict(namespace='pubchem.substance', id='3314'),
@@ -238,7 +241,7 @@ class TestDownloader(unittest.TestCase):
 
         c = session.query(Compound).filter_by(id=20035).first()
         self.assertEqual(c.name, 'N-(Carbobenzoxy)-Leu-Leu-Phe-trifluoromethylketone')
-        self.assertEqual(c.cross_references, [])
+        self.assertEqual(c.cross_references[0].namespace, 'None')
 
         """ enzymes """
         e = session.query(Enzyme).filter_by(id=147631).first()
@@ -363,6 +366,7 @@ class TestDownloader(unittest.TestCase):
         self.assertEqual(c.get_smiles_structures(), ['[H]O[H]'])
         xrs = [dict(namespace=xr.namespace, id=xr.id) for xr in c.cross_references]
         self.assertEqual(sorted(xrs, key=lambda xr: xr['namespace']), [
+            dict(namespace='None', id='View all entries for compound H2O'),
             dict(namespace='chebi', id='CHEBI:15377'),
             dict(namespace='kegg.compound', id='C00001'),
             dict(namespace='pubchem.substance', id='3303'),
