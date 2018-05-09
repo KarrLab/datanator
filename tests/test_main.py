@@ -8,6 +8,7 @@
 """
 
 from capturer import CaptureOutput
+from cement.utils import test
 from kinetic_datanator.__main__ import App
 from kinetic_datanator.util import warning_util
 import os
@@ -19,16 +20,116 @@ import unittest
 warning_util.disable_warnings()
 
 
-class TestDataBuildsAndLoadingControllers(unittest.TestCase):
+class TestBuildController(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         self.dirname = tempfile.mkdtemp()
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         shutil.rmtree(self.dirname)
 
-    def test_build_aggregate(self):
-        pass
+    def test_build_corum(self):
+        with App(argv=['build', 'corum', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Corum.sqlite'))
+
+    def test_build_intact(self):
+        with App(argv=['build', 'intact', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/IntAct.sqlite'))
+
+    def test_build_sabio(self):
+        with App(argv=['build', 'sabio', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/SabioRk.sqlite'))
+
+    def test_build_jaspar(self):
+        with App(argv=['build', 'jaspar', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Jaspar.sqlite'))
+
+    def test_build_ecmdb(self):
+        with App(argv=['build', 'ecmdb', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Ecmdb.sqlite'))
+
+    def test_build_pax(self):
+        with App(argv=['build', 'pax', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Pax.sqlite'))
+
+
+class TestDownloadController(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.dirname = tempfile.mkdtemp()
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.dirname)
+
+    def test_download_corum(self):
+        with App(argv=['download', 'corum', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Corum.sqlite'))
+
+    def test_download_intact(self):
+        with App(argv=['download', 'intact', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/IntAct.sqlite'))
+
+    def test_download_sabio(self):
+        with App(argv=['download', 'sabio', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/SabioRk.sqlite'))
+
+    def test_download_jaspar(self):
+        with App(argv=['download', 'jaspar', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Jaspar.sqlite'))
+
+    def test_download_ecmdb(self):
+        with App(argv=['download', 'ecmdb', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Ecmdb.sqlite'))
+
+    def test_download_pax(self):
+        with App(argv=['download', 'pax', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Pax.sqlite'))
+
+    def test_download_aggregate(self):
+        with App(argv=['download', 'aggregate', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/FlaskCommonSchema.sqlite'))
+
+    def test_download_array_express(self):
+        with App(argv=['download', 'array-express', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/ArrayExpress.sqlite'))
+
+    def test_download_uniprot(self):
+        with App(argv=['download', 'uniprot', '--path='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Uniprot.sqlite'))
 
 
 
@@ -63,7 +164,6 @@ class TestWithTempFile(unittest.TestCase):
         with App(argv=['generate-template', filename]) as app:
             app.run()
         self.assertTrue(os.path.isfile(filename))
-
 
 class TestWithoutTempFile(unittest.TestCase):
 

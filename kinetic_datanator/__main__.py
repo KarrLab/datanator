@@ -45,7 +45,7 @@ class BuildController(controller.CementBaseController):
             (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
             (['--path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
             (['--clear-existing-content'], dict(type=bool, help="clears existing content of the db if exists", default=False)),
-            (['--verbose'], dict(type=str, help="verbosity", default=CACHE_DIRNAME))
+            (['--verbose'], dict(type=bool, help="verbosity", default=CACHE_DIRNAME))
         ]
 
     @controller.expose(help='Builds Corum Complex DB from source')
@@ -61,7 +61,7 @@ class BuildController(controller.CementBaseController):
     @controller.expose(help='Builds Sabio Reaction Kinetics DB from source')
     def sabio(self):
         pargs = self.app.pargs
-        sabiork.SabioRk(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        sabio_rk.SabioRk(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds Pax Protein Abundance DB from source')
     def pax(self):
@@ -97,12 +97,16 @@ class AggregateBuildController(controller.CementBaseController):
         stacked_on = 'build'
         stacked_type = 'nested'
         arguments = [
+            (['--path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['--verbose'], dict(type=bool, help="verbosity", default=CACHE_DIRNAME)),
+            (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
             (['--build-on-existing'], dict(type=bool, help="load from existing database on karr lab server", default=False)),
             (['--load-full-small-dbs'], dict(type=bool, help="loads entire small database modules", default=True))
         ]
 
     @controller.expose(help='Controller that controls aggregated')
     def default(self):
+        pargs = self.app.pargs
         flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
@@ -131,7 +135,7 @@ class DownloadController(controller.CementBaseController):
     @controller.expose(help='Loads Sabio Reaction Kinetics DB from Karr Lab Server')
     def sabio(self):
         pargs = self.app.pargs
-        sabiork.SabioRk(cache_dirname=pargs.path, download_backups=True)
+        sabio_rk.SabioRk(cache_dirname=pargs.path, download_backups=True)
 
     @controller.expose(help='Loads Pax Protein Abundance DB from Karr Lab Server')
     def pax(self):
