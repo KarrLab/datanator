@@ -285,7 +285,7 @@ class TestProcessData(unittest.TestCase):
         self.assertFalse(os.path.isfile("{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname)))
         self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
-
+@unittest.skip('skip for other tests')
 class TestCommandLineProcessing(unittest.TestCase):
 
     def setUp(self):
@@ -299,7 +299,7 @@ class TestCommandLineProcessing(unittest.TestCase):
         shutil.copy("{}/backup_temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname), "{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname))
         shutil.copy("{}/backup_temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname), "{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname))
 
-    #@unittest.skip("this test is slow")
+    @unittest.skip("this test is slow")
     def test_process_data_single(self):
         src = self.src
         session = src.session
