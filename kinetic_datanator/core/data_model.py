@@ -419,10 +419,6 @@ class Reaction(Interaction):
 
         return result
 
-
-    def __name__(self):
-        return 'Reaction'
-
     def get_reactant_product_pairs(self):
         """ Get list of pairs of similar reactants and products
 
