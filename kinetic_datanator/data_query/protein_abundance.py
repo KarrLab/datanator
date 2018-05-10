@@ -75,15 +75,14 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         return observed_vals
 
     def get_abundance_by_uniprot(self, uniprot, select=models.AbundanceData):
-        """ Find the abundance from uniprot
+        """ Find the abundance from a uniprot id
 
         Args:
             uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
+
         """
         q = self.data_source.session.query(select).join(
             models.ProteinSubunit, models.AbundanceData.subunit)
@@ -94,9 +93,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         """ Find the abundance from gene_name
 
         Args:
-            uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
+            gene_name (:obj:`str`): gene name for a given protein
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
@@ -112,9 +109,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         """ Find the abundance from uniprot
 
         Args:
-            uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
+            sequence (:obj:`str`): amino acid sequence for a given protein
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
@@ -128,9 +123,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         """ Find the abundance from uniprot
 
         Args:
-            uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
+            entrez_id (:obj:`str`): NCBI entrez id for a given protein
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
@@ -144,9 +137,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         """ Find the abundance from uniprot
 
         Args:
-            uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
+            mass (:obj:`int`): mass of a protein
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
@@ -160,9 +151,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
         """ Find the abundance from uniprot
 
         Args:
-            uniprot (:obj:`str`): protein id from Uniprot Database
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.CommonSchema` or one of its columns
+            length (:obj:`str`): number of amino acids in a protein
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows

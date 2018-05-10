@@ -1,3 +1,10 @@
+"""
+:Author: Saahith Pochiraju <saahith116@gmail.com>
+:Date: 2018-05-10
+:Copyright: 2017, Karr Lab
+:License: MIT
+"""
+
 from kinetic_datanator.core import data_model, data_query, flask_common_schema, models
 from sqlalchemy import or_
 
@@ -28,6 +35,15 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
 
 
     def get_observed_result(self, component):
+        """ Get known observed interactions, complexes, or subunits for a given component
+
+        Args:
+            component (:obj:`models.ProteinSubunit`) or (:obj:`models.ProteinComplex`): subunit or complex to find interactions for
+
+        Returns:
+            :obj:`list` of :obj:`data_model.SpecieInteraction`: list of Protein Interactions
+        """
+
         if component.__class__.__name__ == 'ProteinSubunit':
             return self.get_observable_interactions(component), self.get_observable_complex(component)
         elif component.__class__.__name__ == 'ProteinComplex':
@@ -40,7 +56,8 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
             protein_subunit (:obj:`models.ProteinSubunit`): subunit to find interactions for
 
         Returns:
-            :obj:`list` of :obj:`data_model.SpecieInteraction`: list of Protein Interactions
+            :obj:`list` of :obj:`data_model.ObservedInteraction`: list of Observed Protein Interactions
+
         """
         interact = self.get_interaction_by_subunit(protein_subunit.uniprot_id).all()
         observed_interaction= []
@@ -53,7 +70,7 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
                     specie = None
 
                 if participant == 'protein':
-                    prot = self.get_subunit_by_uniprot(protein)
+                    prot = self.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = protein).first()
                     if prot:
                         specie =  data_model.ProteinSpecie(name=prot.uniprot_id, uniprot_id =prot.uniprot_id,
                             entrez_id=prot.entrez_id, gene_name=prot.gene_name, length=prot.length,
@@ -80,7 +97,7 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
             protein_subunit (:obj:`models.ProteinSubunit`): subunit to find complex for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ProteinComplexSpecie`: list of Protein Complexes
+            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Complexes
         """
         observed_specie = []
         complex_ = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
@@ -107,7 +124,7 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
             protein_subunit (:obj:`models.ProteinComplex`): complex to find subunits for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ProteinSpecie`: list of Protein Subunits
+            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Subunits
         """
 
         subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
@@ -131,8 +148,6 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
 
         Args:
             uniprot (:obj:`str`): uniprot id to search for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinInteraction` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
@@ -140,28 +155,11 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
         return self.data_source.session.query(select).filter(or_(select.protein_a == uniprot,
                 select.protein_b == uniprot))
 
-    def get_subunit_by_uniprot(self, uniprot, select= models.ProteinSubunit):
-        """ Get interactions that were observed for a given uniprot id
-
-        Args:
-            uniprot (:obj:`str`): uniprot id to search for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinInteraction` or one of its columns
-
-        Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
-        """
-
-        return self.data_source.session.query(select).filter_by(uniprot_id = uniprot).first()
-
-
     def get_known_complex_by_subunit(self, uniprot, select = models.ProteinComplex):
         """ Get known complexes that were observed for a given uniprot id subunit
 
         Args:
             uniprot (:obj:`str`): uniprot id to search for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinComplex` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein complexes that contain the uniprot_id
@@ -176,8 +174,6 @@ class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerato
 
         Args:
             complex_name (:obj:`str`): complex to find subunits for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.ProteinSubunit` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for protein subunits that are within the given protein complex

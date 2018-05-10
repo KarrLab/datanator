@@ -183,10 +183,21 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
 
     def convert_rxn_to_data_model(self, reaction_list):
+        """
+        Converts SQL model reaction into a Obj Model based data_model reaction
+
+        Args:
+            reaction_list :obj:`list` of :obj:`models.Reaction`:): list of reaction participants
+
+        Returns:
+            :obj:`data_model.Reaction`: a cohesive reaction data object
+
+
+        """
+
         references = []
         participants = []
         for rxn_part in reaction_list:
-
             if rxn_part._is_reactant:
                 coef = -1
             elif rxn_part._is_product:
@@ -221,11 +232,9 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         Args:
             structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.Reaction` or one of its columns
 
         Returns:
-            reaction_list (:obj:`data_model.Reaction`): reaction to find data for
+            :obj:`data_model.Reaction`: reaction to find data for
         """
 
         rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
@@ -244,8 +253,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         Args:
             reaction (:obj:`data_model.Reaction`): reaction to find data for
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.KineticLaw` or one of its columns
 
         Returns:
             :obj:`list` of :obj:`models.KineticLaw`: a list kinetic laws that contain all of the participants
@@ -283,11 +290,10 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
                 InChI formula and connectivity layers
             include_water_hydrogen (:obj:`bool`, optional): if :obj:`True`, restrict kinetic laws based on their water, hydroxide, and
                 hydrogen participants
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`common_schema.KineticLaw` or one of its columns
 
         Returns:
             :obj:`list` of :obj:`models.KineticLaw`: a list kinetic laws that contain all of the participants
+
         """
         q_laws = None
         for i_part, part in enumerate(participants):
@@ -331,8 +337,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find kinetic laws which contain species with the same
                 InChI formula and connectivity layers
             role (:obj:`str`, optional): role (reactant, or product) to search for species
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
@@ -366,8 +370,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, find kinetic laws which contain species with the same
                 InChI formula and connectivity layers
             role (:obj:`str`, optional): role (reactant, or product) to search for species
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for kinetic laws that contain the structure in role :obj:`role`
@@ -399,8 +401,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         Args:
             ec_numbers (:obj:`list` of :obj:`str`): EC numbers to search for
             match_levels (:obj:`int`): number of EC levels that the EC number must match
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.KineticLaw` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching kinetic laws
@@ -431,8 +431,6 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
                 the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
                 identical structure.
-            select (:obj:`sqlalchemy.ext.declarative.api.DeclarativeMeta` or :obj:`sqlalchemy.orm.attributes.InstrumentedAttribute`, optional):
-                :obj:`models.Compound` or one of its columns
 
         Returns:
             :obj:`sqlalchemy.orm.query.Query`: query for matching compounds

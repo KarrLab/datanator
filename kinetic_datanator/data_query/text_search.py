@@ -61,26 +61,3 @@ class TextSearchSession(object):
         list_db_models = [item for sublist in [compound, complex, subunit, reactions] for item in sublist]
 
         return list_db_models, dict_db_models
-
-
-    # def rank(self, lists):
-    #     """
-    #     Ranks based on number of results in the list
-    #     """
-    #     ans = []
-    #     len_lists = [len(l) for l in lists]
-    #     sorted_index = sorted(range(len(len_lists)), key=lambda k: len_lists[k], reverse=True)
-    #
-    #     ## Put top results
-    #     for i in sorted_index:
-    #         if lists[i]:
-    #             ans += lists[i][:3]
-    #         else: continue
-    #
-    #     ## Fill in bottom results
-    #     for i in sorted_index:
-    #         if lists[i]:
-    #             ans += lists[i][3:]
-    #         else: continue
-    #
-    #     return ans
