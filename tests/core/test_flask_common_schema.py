@@ -35,6 +35,15 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
+    def test_repr_methods(self):
+
+         for tablename in self.flk.base_model.metadata.tables.keys():
+             for c in models.db.Model._decl_class_registry.values():
+                 if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+                     self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
+
+
+
     def test_serialization(self):
         test_json = models.Compound.query.filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
         self.assertEqual(test_json['compound_name'], '2-Hydroxyisocaproate')
