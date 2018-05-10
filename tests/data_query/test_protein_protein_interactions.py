@@ -18,6 +18,8 @@ class ProteinInteractionandComplexQuery(unittest.TestCase):
         self.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
         self.protein_p49418 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
         self.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
+        self.collagen = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Collagen type III trimer').first()
+
 
         self.q= ppi.ProteinInteractionandComplexQuery(cache_dirname=self.cache_dirname)
 
@@ -25,7 +27,7 @@ class ProteinInteractionandComplexQuery(unittest.TestCase):
     def tearDownClass(self):
         shutil.rmtree(self.cache_dirname)
 
-    def test_get_observed_result(self):
+    def test_get_observed_result_subunit(self):
         observed_interaction, observed_complex = self.q.get_observed_result(self.protein_p49418)
 
         self.assertEqual(set([o.interaction.specie_a.uniprot_id for o in observed_interaction if o.interaction.specie_a.__class__.__name__ == 'ProteinSpecie']),
@@ -43,6 +45,15 @@ class ProteinInteractionandComplexQuery(unittest.TestCase):
         self.assertEqual(len(observed_complex), 1)
         self.assertEqual(observed_complex[0].specie.name,'COPI vesicle coat complex')
 
+
+    def test_get_observed_result_complex(self):
+        observed_subunits = self.q.get_observed_result(self.rhino_complex)
+
+        self.assertEqual(set([c.specie.uniprot_id for c in observed_subunits]), set(['Q9VIF5', 'Q7JXA8', 'Q9V629']))
+
+        observed_subunits = self.q.get_observed_result(self.collagen)
+
+        self.assertEqual(set([c.specie.uniprot_id for c in observed_subunits]), set(['P08121', 'P02461', 'P04258']))
 
 
     def test_get_observable_complex(self):
