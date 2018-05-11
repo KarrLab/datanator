@@ -17,6 +17,13 @@ from Bio import SeqIO
 import Bio
 import json
 import math
+import tempfile
+import requests
+import os
+import gzip
+import shutil
+from six.moves.urllib.request import urlretrieve
+import json
 Base = sqlalchemy.ext.declarative.declarative_base()
 
 def create_orm(class_1, class_2):
@@ -73,7 +80,7 @@ class Gene(Base):
     id = sqlalchemy.Column(sqlalchemy.String())
     name = sqlalchemy.Column(sqlalchemy.String())
     locus_tag = sqlalchemy.Column(sqlalchemy.String())
-    gene_synonyms = create_orm("Gene", "GeneSynonym")#sqlalchemy.orm.relationship('GeneSynonym', secondary=gene_gene_synonym, backref=sqlalchemy.orm.backref('genes'))
+    gene_synonyms = create_orm("Gene", "GeneSynonym")
     location = create_orm("Gene", "Location")
     qualifiers = create_orm('Gene','Qualifier')
     ec_numbers = create_orm('Gene','EcNumber')
@@ -117,29 +124,20 @@ class Refseq(data_source.HttpDataSource):
 
     def load_content(self, list_bio_seqio_objects):
         session = self.session
-
-
         for bio_seqio_object in list_bio_seqio_objects:
-
             for seq_record in bio_seqio_object:
-
-                #accession = seq_record.annotations['accessions'][0]
                 ref_genome = self.get_or_create_object(ReferenceGenome,
                     version = seq_record.id
                     )
-
                 if 'accessions' in seq_record.annotations:
                     for accession in seq_record.annotations['accessions']:
                         print(accession)
                         acc = self.get_or_create_object(ReferenceGenomeAccession,
                             id=accession)
                         ref_genome.accessions.append(acc)
-
-
                 ref_genome.version = seq_record.id
                 if 'organism' in seq_record.annotations:
                     ref_genome.organism = seq_record.annotations['organism']
-
                 #session.add(ref_genome)
                 for seq_feature in seq_record.features:
                     if seq_feature.type == 'CDS':
@@ -213,6 +211,65 @@ class Refseq(data_source.HttpDataSource):
         self.session.commit()
 
 
+
+    def upload_data_from_kegg_org_symbol(self, kegg_org_symbol):
+        url = self.get_ref_seq_url(kegg_org_symbol)
+        #directory = "{}/RefSeq_Files".format((os.path.dirname(os.path.realpath(__file__))))
+        directory = tempfile.mkdtemp()
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        filename = "{}/{}.gbff.gz".format(directory, kegg_org_symbol)
+        print filename
+        attempts = 0
+        while attempts < 10:
+            try:
+                urlretrieve(url, "{}".format(filename))
+                break
+            except:
+                attempts += 1
+                if attempts==10:
+                    raise
+        
+        
+        with gzip.open('{}'.format(filename, 'rb')) as f_in:
+            with open('{}'.format(filename[:-3]), 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        bio_seqio_object = SeqIO.parse(filename[:-3], "genbank")
+        list_of_bio_seqio_objects = [bio_seqio_object]
+        self.load_content(list_of_bio_seqio_objects)
+        shutil.rmtree(directory)
+
+    def upload_ref_seq_for_all_prokaryotic_kegg_org(self):
+        data = json.load(open('{}/kegg_taxon_prokaryotes.txt'.format(os.path.dirname(__file__)))) 
+        for thing in self.get_json_ends(data):
+            kegg_org_symbol = thing.split('  ')[0]
+            self.upload_data_from_kegg_org_symbol(kegg_org_symbol)
+
+
+    def get_json_ends(self, tree):
+        ends = []
+        nodes = [tree]
+        while nodes:
+            new_nodes = []
+            for node in nodes:
+                if 'children' in node:
+                    new_nodes = new_nodes + node['children']
+                else:
+                    ends.append(node['name'])
+            nodes = new_nodes
+        return(ends)
+
+    def get_ref_seq_url(self, org_symbol):
+        text = requests.get("http://www.kegg.jp/kegg-bin/show_organism?org={}".format(org_symbol)).text
+        text = text[text.find("ftp://ftp.ncbi.nlm.nih.gov/genomes/all"):]
+        text = text[:text.find("""">""")]
+        end = text[self.find_nth(text, "/", 9)+1:]
+        print(end)
+        text = "{}/{}_genomic.gbff.gz".format(text, end)
+        print text
+        return text
+
+
     def get_or_create_object(self, cls, **kwargs):
         """ Get the first instance of :obj:`cls` that has the property-values pairs described by kwargs, or create an instance of :obj:`cls`
         if there is no instance with the property-values pairs described by kwargs
@@ -229,6 +286,14 @@ class Refseq(data_source.HttpDataSource):
         obj = cls(**kwargs)
         self.session.add(obj)
         return obj
+
+
+    def find_nth(self, haystack, needle, n):
+        start = haystack.find(needle)
+        while start >= 0 and n > 1:
+            start = haystack.find(needle, start+len(needle))
+            n -= 1
+        return start
 
 if __name__ == '__main__':
 

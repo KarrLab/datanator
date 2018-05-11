@@ -45,3 +45,17 @@ class QuickTest(unittest.TestCase):
         self.assertEqual(the_identifier.name, '877380')
         self.assertEqual(gene.locus_tag, "MPN480")
         #self.assertEqual(gene.essentiality, "E")
+
+    def test_upload_data_from_kegg_org_symbol(self):
+        src = self.src
+        src.upload_data_from_kegg_org_symbol("ell")
+        session = src.session
+        ref_genome = session.query(refseq.ReferenceGenome).filter_by(version="CP002967.1").first()
+        self.assertEqual(ref_genome.accessions[0].id, "CP002967")
+        self.assertEqual(ref_genome.organism, "Escherichia coli W")
+
+    @unittest.skip('too slow')
+    def test_new_method(self):
+        src = self.src
+        src.upload_ref_seq_for_all_prokaryotic_kegg_org()
+
