@@ -42,6 +42,7 @@ class TestBuildController(unittest.TestCase):
                 app.run()
                 self.assertTrue(os.path.exists(self.dirname+'/IntAct.sqlite'))
 
+    @unittest.skip('skip')
     def test_build_sabio(self):
         with App(argv=['build', 'sabio', '--path='+self.dirname, '--max-entries=1', '--verbose=True']) as app:
             with CaptureOutput(termination_delay=0.1) as capturer:
