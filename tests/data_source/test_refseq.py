@@ -3,6 +3,7 @@ from kinetic_datanator.data_source import refseq
 import tempfile
 import shutil
 from Bio import SeqIO
+from os import path
 
 class QuickTest(unittest.TestCase):
 
@@ -13,7 +14,7 @@ class QuickTest(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    @unittest.skip('skip until I figure out file path')
+    #@unittest.skip('skip until I figure out file path')
     def test_load_data(self):
 
 
@@ -21,7 +22,7 @@ class QuickTest(unittest.TestCase):
 
 
         src = self.src
-        file = "/kinetic_datanator/tests/data_source/test_mpn_sequence.gb"
+        file = "{}/test_mpn_sequence.gb".format(path.dirname(__file__))
         bio_seqio_object = SeqIO.parse(file, "genbank")
         list_of_bio_seqio_objects = [bio_seqio_object]
         src.load_content(list_of_bio_seqio_objects)
