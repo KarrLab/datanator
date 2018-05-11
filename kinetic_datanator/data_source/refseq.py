@@ -219,7 +219,6 @@ class Refseq(data_source.HttpDataSource):
         if not os.path.isdir(directory):
             os.makedirs(directory)
         filename = "{}/{}.gbff.gz".format(directory, kegg_org_symbol)
-        print filename
         attempts = 0
         while attempts < 10:
             try:
@@ -264,9 +263,7 @@ class Refseq(data_source.HttpDataSource):
         text = text[text.find("ftp://ftp.ncbi.nlm.nih.gov/genomes/all"):]
         text = text[:text.find("""">""")]
         end = text[self.find_nth(text, "/", 9)+1:]
-        print(end)
         text = "{}/{}_genomic.gbff.gz".format(text, end)
-        print text
         return text
 
 
