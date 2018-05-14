@@ -78,6 +78,7 @@ class Identifier(Base):
 class Gene(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     id = sqlalchemy.Column(sqlalchemy.String())
+    ref_genome_version = sqlalchemy.Column(sqlalchemy.String())
     name = sqlalchemy.Column(sqlalchemy.String())
     locus_tag = sqlalchemy.Column(sqlalchemy.String())
     gene_synonyms = create_orm("Gene", "GeneSynonym")
@@ -139,10 +140,21 @@ class Refseq(data_source.HttpDataSource):
                 if 'organism' in seq_record.annotations:
                     ref_genome.organism = seq_record.annotations['organism']
                 #session.add(ref_genome)
+                i = 0
                 for seq_feature in seq_record.features:
                     if seq_feature.type == 'CDS':
+                        i = i +1
+                        #print(i)
 
-                        gene = Gene()
+
+                        #gene = self.get_or_create_object(Gene,)
+                        locus_tag = seq_feature.qualifiers['locus_tag'][0]
+                        if len(seq_feature.qualifiers['locus_tag']) != 1:
+                            raise ValueError("There must be one, and only one, locus tag")
+                        gene = self.get_or_create_object(Gene,
+                            ref_genome_version = ref_genome.version,
+                            locus_tag = locus_tag)
+                        #gene = Gene()
                         gene.id = seq_feature.id
                         
                         parts = []
@@ -191,10 +203,11 @@ class Refseq(data_source.HttpDataSource):
                                         namespace = identifier.split(":")[0],
                                         name = identifier.split(":")[1])
                                     gene.identifiers.append(identifier)
-                        if 'locus_tag' in qual:
-                            gene.locus_tag = qual['locus_tag'][0]
-                            if len(qual['locus_tag'])>1:
-                                raise ValueError("More than one value")
+
+                        #if 'locus_tag' in qual:
+                         #   gene.locus_tag = qual['locus_tag'][0]
+                         #   if len(qual['locus_tag'])>1:
+                         #       raise ValueError("More than one value")
                         if 'essentiality2016_assigned' in qual:
                             gene.essentiality = qual['essentiality2016_assigned'][0]
 
@@ -278,6 +291,10 @@ class Refseq(data_source.HttpDataSource):
         """
         q = self.session.query(cls).filter_by(**kwargs)
         if self.session.query(q.exists()).scalar():
+            print(type(q.first()))
+            if type(q.first()) == Gene:
+                print(q.first().locus_tag)
+            #print(q.first().id)
             return q.first()
 
         obj = cls(**kwargs)

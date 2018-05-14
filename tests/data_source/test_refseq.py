@@ -31,9 +31,9 @@ class QuickTest(unittest.TestCase):
         ref_genome = session.query(refseq.ReferenceGenome).filter_by(version="NC_000912.1").first()
         self.assertEqual(ref_genome.accessions[0].id, "NC_000912")
         self.assertEqual(ref_genome.organism, "Mycoplasma pneumoniae M129")
-        self.assertEqual(len(ref_genome.genes), 691)
+        self.assertEqual(len(ref_genome.genes), 690)
 
-        self.assertEqual(len(session.query(refseq.Gene).all()), 691)
+        self.assertEqual(len(session.query(refseq.Gene).all()), 690)
         gene = session.query(refseq.Gene).filter_by(name="lip2").first()
         self.assertEqual(gene.gene_synonyms[0].name, "P01_orf268")
         gene = session.query(refseq.Gene).filter_by(name="valS").first()
@@ -54,7 +54,7 @@ class QuickTest(unittest.TestCase):
         self.assertEqual(ref_genome.accessions[0].id, "CP002967")
         self.assertEqual(ref_genome.organism, "Escherichia coli W")
 
-    @unittest.skip('too slow')
+    @unittest.skip('too long')
     def test_new_method(self):
         src = self.src
         src.upload_ref_seq_for_all_prokaryotic_kegg_org()
