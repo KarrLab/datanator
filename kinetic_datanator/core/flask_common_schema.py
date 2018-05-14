@@ -19,26 +19,14 @@ from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sab
 from ete3 import NCBITaxa
 
 
-class BuildUtilityMixin(object):
-    """
-    Mixin class providing build utilities for simplification of code
-    """
-
-    def vprint(self, str):
-        if self.verbose:
-            print(str)
-
-
-class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
+class FlaskCommonSchema(data_source.HttpDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
 
     """
     base_model = models.db
     app = models.app
-    text_indicies = [models.Compound, models.ProteinComplex, models.ProteinInteraction,
-                models.Taxon, models.Synonym, models.CellLine, models.CellCompartment,
-                models.ProteinSubunit]
+    text_indicies = [cls for name, cls in models.__dict__.items() if hasattr(cls,'__searchable__')]
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs=False,
@@ -84,6 +72,10 @@ class FlaskCommonSchema(data_source.HttpDataSource, BuildUtilityMixin):
             self.load_small_db_switch = True
             self.load_content()
 
+
+    def vprint(self, str):
+        if self.verbose:
+            print(str)
 
     def load_content(self):
         """

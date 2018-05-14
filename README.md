@@ -1,4 +1,4 @@
-[//]: # ( [![PyPI package](https://img.shields.io/pypi/v/Kinetic-Datanator.svg)](https://pypi.python.org/pypi/Kinetic-Datanator) )
+[![PyPI package](https://img.shields.io/pypi/v/Kinetic-Datanator.svg)](https://pypi.python.org/pypi/Kinetic-Datanator) 
 [![Documentation](https://img.shields.io/badge/docs-latest-green.svg)](http://docs.karrlab.org/kinetic_datanator)
 [![Test results](https://circleci.com/gh/KarrLab/kinetic_datanator.svg?style=shield)](https://circleci.com/gh/KarrLab/kinetic_datanator)
 [![Test coverage](https://coveralls.io/repos/github/KarrLab/kinetic_datanator/badge.svg)](https://coveralls.io/github/KarrLab/kinetic_datanator)
