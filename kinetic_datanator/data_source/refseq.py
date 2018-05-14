@@ -291,10 +291,6 @@ class Refseq(data_source.HttpDataSource):
         """
         q = self.session.query(cls).filter_by(**kwargs)
         if self.session.query(q.exists()).scalar():
-            print(type(q.first()))
-            if type(q.first()) == Gene:
-                print(q.first().locus_tag)
-            #print(q.first().id)
             return q.first()
 
         obj = cls(**kwargs)
