@@ -16,9 +16,27 @@ import re
 import shutil
 import tempfile
 import unittest
+from os import path
 
 warning_util.disable_warnings()
 
+
+
+class TestUploadData(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(self):
+        self.dirname = tempfile.mkdtemp()
+
+    @classmethod
+    def tearDownClass(self):
+        shutil.rmtree(self.dirname)
+
+    def test_upload_ref_seq(self):
+        with App(argv=['upload', 'reference-genome', "{}/data_source/test_mpn_sequence.gb".format(path.dirname(__file__)), '--path_to_database='+self.dirname]) as app:
+            with CaptureOutput(termination_delay=0.1) as capturer:
+                app.run()
+                self.assertTrue(os.path.exists(self.dirname+'/Refseq.sqlite'))
 
 class TestBuildController(unittest.TestCase):
 

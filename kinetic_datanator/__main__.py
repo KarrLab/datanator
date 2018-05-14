@@ -15,6 +15,7 @@ from cement.core import foundation
 from kinetic_datanator import io
 from kinetic_datanator.core import data_model, flask_common_schema
 from kinetic_datanator.data_source import *
+from kinetic_datanator.data_source import refseq
 from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
@@ -24,6 +25,7 @@ import re
 import shutil
 import sys
 import os
+from Bio import SeqIO
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
 
@@ -33,6 +35,40 @@ class BaseController(controller.CementBaseController):
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
 
+
+
+class UploadDataController(controller.CementBaseController):
+
+    class Meta:
+        label = 'upload'
+        description = "Upload reference genome into Datanator. The reference genome must be in Genbank or Ensembl format"
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = []
+
+
+
+class UploadReferenceGenome(controller.CementBaseController):
+
+    class Meta:
+        label = 'reference-genome'
+        description = 'Upload a reference genome'
+        stacked_on = 'upload'
+        stacked_type = 'nested'
+        arguments = [
+            (['path_to_annotation_file'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
+            (['--path_to_database'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        pargs = self.app.pargs
+        print(pargs.__dict__)
+        bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        list_of_bio_seqio_objects = [bio_seqio_object]
+        refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+
+        
 
 class BuildController(controller.CementBaseController):
 
@@ -235,6 +271,7 @@ class TaxonomyController(controller.CementBaseController):
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
+
 
 
 class TaxonomyGetRankController(controller.CementBaseController):
@@ -512,12 +549,18 @@ class App(foundation.CementApp):
         handlers = [
             BaseController,
 
+            UploadDataController,
+            UploadReferenceGenome,
+
             DownloadController,
             BuildController,
             AggregateBuildController,
 
             GetDataController,
             GenerateTemplateController,
+
+            #TaxonomyController2,
+            #TaxonomyGetRankController2,
 
             TaxonomyController,
             TaxonomyGetRankController,
