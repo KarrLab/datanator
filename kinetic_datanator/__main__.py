@@ -13,7 +13,7 @@ from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model, flask_common_schema
+from kinetic_datanator.core import data_model, flask_common_schema, upload_data
 from kinetic_datanator.data_source import *
 from kinetic_datanator.data_source import refseq
 from kinetic_datanator.util import molecule_util
@@ -26,6 +26,7 @@ import shutil
 import sys
 import os
 from Bio import SeqIO
+
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
 
@@ -52,7 +53,7 @@ class UploadReferenceGenome(controller.CementBaseController):
 
     class Meta:
         label = 'reference-genome'
-        description = 'Upload a reference genome'
+        description = 'Upload a ref-seq genome'
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
@@ -64,9 +65,10 @@ class UploadReferenceGenome(controller.CementBaseController):
     def default(self):
         pargs = self.app.pargs
         print(pargs.__dict__)
-        bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
-        list_of_bio_seqio_objects = [bio_seqio_object]
-        refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+        #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        #list_of_bio_seqio_objects = [bio_seqio_object]
+        upload_data.UploadData(cache_dirname=pargs.path_to_database).upload_reference_genome(pargs.path_to_annotation_file)
+        #refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
 
 
 class UploadRNASeqExperiment(controller.CementBaseController):
