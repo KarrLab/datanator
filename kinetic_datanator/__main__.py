@@ -20,6 +20,7 @@ from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
 import bioservices
+import kinetic_datanator
 import pubchempy
 import re
 import shutil
@@ -35,7 +36,9 @@ class BaseController(controller.CementBaseController):
     class Meta:
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
-
+        arguments = [
+            (['-v', '--version'], dict(action='version', version=kinetic_datanator.__version__)),
+        ]
 
 
 class UploadDataController(controller.CementBaseController):
@@ -46,7 +49,6 @@ class UploadDataController(controller.CementBaseController):
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
-
 
 
 class UploadReferenceGenome(controller.CementBaseController):

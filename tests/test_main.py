@@ -11,6 +11,7 @@ from capturer import CaptureOutput
 from cement.utils import test
 from kinetic_datanator.__main__ import App
 from kinetic_datanator.util import warning_util
+import kinetic_datanator
 import os
 import re
 import shutil
@@ -20,6 +21,20 @@ from os import path
 
 warning_util.disable_warnings()
 
+
+class BaseControllerTestCase(unittest.TestCase):
+    def test_get_version(self):
+        with CaptureOutput() as capture_output:
+            with App(argv=['-v']) as app:
+                with self.assertRaises(SystemExit):
+                    app.run()
+                self.assertEqual(capture_output.get_text(), kinetic_datanator.__version__)
+
+        with CaptureOutput() as capture_output:
+            with App(argv=['--version']) as app:
+                with self.assertRaises(SystemExit):
+                    app.run()
+                self.assertEqual(capture_output.get_text(), kinetic_datanator.__version__)
 
 
 class TestUploadData(unittest.TestCase):
@@ -33,10 +48,13 @@ class TestUploadData(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_upload_ref_seq(self):
-        with App(argv=['upload', 'reference-genome', "{}/data_source/test_mpn_sequence.gb".format(path.dirname(__file__)), '--path_to_database='+self.dirname]) as app:
+        with App(argv=['upload',
+                       'reference-genome', "{}/data_source/test_mpn_sequence.gb".format(path.dirname(__file__)),
+                       '--path_to_database='+self.dirname]) as app:
             with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertTrue(os.path.exists(self.dirname+'/Refseq.sqlite'))
+
 
 class TestBuildController(unittest.TestCase):
 
@@ -151,7 +169,6 @@ class TestDownloadController(unittest.TestCase):
                 self.assertTrue(os.path.exists(self.dirname+'/Uniprot.sqlite'))
 
 
-
 class TestWithTempFile(unittest.TestCase):
 
     def setUp(self):
@@ -183,6 +200,7 @@ class TestWithTempFile(unittest.TestCase):
         with App(argv=['generate-template', filename]) as app:
             app.run()
         self.assertTrue(os.path.isfile(filename))
+
 
 class TestWithoutTempFile(unittest.TestCase):
 
