@@ -68,7 +68,29 @@ class UploadReferenceGenome(controller.CementBaseController):
         list_of_bio_seqio_objects = [bio_seqio_object]
         refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
 
+
+class UploadRNASeqExperiment(controller.CementBaseController):
+
+    class Meta:
+        label = 'rna-seq-experiment'
+        description = 'Upload an RNA-seq experiment'
+        stacked_on = 'upload'
+        stacked_type = 'nested'
+        arguments = [
+            (['path_to_annotation_file'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
+            (['--path_to_database'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        pargs = self.app.pargs
+        print(pargs.__dict__)
+        bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        list_of_bio_seqio_objects = [bio_seqio_object]
+        refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
         
+
+
 
 class BuildController(controller.CementBaseController):
 
@@ -262,6 +284,23 @@ class GenerateTemplateController(controller.CementBaseController):
         template_filename = resource_filename('kinetic_datanator', 'data/InputTemplate.xlsx')
         shutil.copyfile(template_filename, self.app.pargs.filename)
 
+
+class GenerateRNASeqTemplate(controller.CementBaseController):
+
+    class Meta:
+        label = 'generate-rna-seq-template'
+        description = "Generate a folder with excel tables to upload rna-seq experiments"
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = [
+            (['directory_name'], dict(type=str, help="path to save the directory")),
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        # todo: generate template
+        template_directory = resource_filename('kinetic_datanator', 'data/RNA-Seq_Experiment_Template')
+        shutil.copytree(template_directory, "{}/RNA-Seq_Experiment_Template".format(self.app.pargs.directory_name))
 
 class TaxonomyController(controller.CementBaseController):
 
@@ -551,6 +590,7 @@ class App(foundation.CementApp):
 
             UploadDataController,
             UploadReferenceGenome,
+            UploadRNASeqExperiment,
 
             DownloadController,
             BuildController,
@@ -558,6 +598,7 @@ class App(foundation.CementApp):
 
             GetDataController,
             GenerateTemplateController,
+            GenerateRNASeqTemplate,
 
             #TaxonomyController2,
             #TaxonomyGetRankController2,
