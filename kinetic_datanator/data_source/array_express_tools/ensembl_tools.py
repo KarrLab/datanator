@@ -175,15 +175,28 @@ def get_strain_info(sample):
         if strain:
             organism = "{} {}".format(organism.lower(), strain.lower())
         data = json.load(open('{}/kegg_taxon_prokaryotes.txt'.format(os.path.dirname(__file__))))
-        for thing in get_json_ends(data):
-            org_name = format_org_name(thing.split('  ')[1])
-            if org_name == format_org_name(organism):
+        org_tree = organism.split(" ")
 
-                kegg_org_symbol = thing.split('  ')[0]
-                url = get_ref_seq_url(kegg_org_symbol)
-                spec_name = org_name.replace("-","_").replace(" ", "_")
-                full_strain_specificity ==True
-                return StrainInfo(spec_name, url, full_strain_specificity, "Bacteria")
+        for num in range(len(org_tree), 0, -1):
+            #print(org_tree)
+            if num >= 2:
+                if num < len(org_tree):
+                    full_strain_specificity = False  # this means it didnt find the specificity on the first try
+                file = open("{}/find_cdna_url.txt".format(os.path.dirname(os.path.abspath(__file__))))
+                try_org = ""
+                for word in org_tree[:num]:
+                    try_org = try_org + word + " "
+                try_org = try_org[:-1]
+                print(try_org)
+
+                for thing in get_json_ends(data):
+                    org_name = format_org_name(thing.split('  ')[1])
+                    if org_name.startswith(format_org_name(try_org)):
+                        kegg_org_symbol = thing.split('  ')[0]
+                        url = get_ref_seq_url(kegg_org_symbol)
+                        spec_name = org_name.replace("-","_").replace(" ", "_")
+                        full_strain_specificity ==True
+                        return StrainInfo(spec_name, url, full_strain_specificity, "Bacteria")
         raise LookupError("organism not recognized")
 
 

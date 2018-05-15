@@ -216,6 +216,16 @@ class TestEnsemblTools(unittest.TestCase):
         self.assertTrue(sample.full_strain_specificity)
         self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.gbff.gz")
 
+    def test_prokaryote_2(self):
+        src = self.src
+        session = src.session
+        src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-GEOD-68277")
+        exp = session.query(array_express.Experiment).filter_by(id="E-GEOD-68277").first()
+        sample = exp.samples[0]
+        self.assertEqual(sample.ensembl_info[0].organism_strain, "streptococcus_pyogenes_m1_gas_(serotype_m1)")
+        self.assertFalse(sample.full_strain_specificity)
+        self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/006/785/GCF_000006785.2_ASM678v2/GCF_000006785.2_ASM678v2_genomic.gbff.gz")
+
     def test_eukaryote(self):
         src = self.src
         session = src.session
