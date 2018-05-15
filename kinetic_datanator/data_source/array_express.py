@@ -610,17 +610,24 @@ class ArrayExpress(data_source.HttpDataSource):
                 sample.full_strain_specificity = strain_info.full_strain_specificity
                 sample.ensembl_organism_strain = strain_info.organism_strain
             else:
-                try:
-                    ftp_url = ensembl_tools.get_ftp_url(strain_info.download_url)
-                except LookupError:
-                    ftp_url = None
-                if ftp_url != None:
+                if strain_info.domain == "Eukaryota":
+                    try:
+                        ftp_url = ensembl_tools.get_ftp_url(strain_info.download_url)
+                    except LookupError:
+                        ftp_url = None
+                    if ftp_url != None:
+                        sample.ensembl_info.append(
+                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url))
+                        sample.full_strain_specificity = strain_info.full_strain_specificity
+                        sample.ensembl_organism_strain = strain_info.organism_strain
+                    else:
+                        pass
+            
+                else:
                     sample.ensembl_info.append(
-                        EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url))
+                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=strain_info.download_url))
                     sample.full_strain_specificity = strain_info.full_strain_specificity
                     sample.ensembl_organism_strain = strain_info.organism_strain
-        else:
-            pass
             
         return sample
 

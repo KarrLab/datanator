@@ -2,6 +2,8 @@ from ete3 import NCBITaxa
 import ftplib
 import os
 import socket
+import json
+import requests
 
 STRAIN_SYNONYMS_1 = [
         'strain',
@@ -89,7 +91,8 @@ class StrainInfo(object):
             provided in the arra express sample
     """
 
-    def __init__(self, organism_strain, download_url, full_strain_specificity):
+    def __init__(self, organism_strain, download_url, full_strain_specificity, domain):
+        self.domain = domain
         self.organism_strain = organism_strain
         self.download_url = download_url
         self.full_strain_specificity = full_strain_specificity
@@ -169,25 +172,25 @@ def get_strain_info(sample):
 
     domain = get_taxonomic_lineage(organism)[-3:-2][0]
     if domain == "Bacteria":
-        end_url = ""
         if strain:
             organism = "{} {}".format(organism.lower(), strain.lower())
-        org_tree = organism.split(" ")
-        for num in range(len(org_tree), 0, -1):
-            if not(end_url) and num >= 2:
-                if num < len(org_tree):
-                    full_strain_specificity = False  # this means it didnt find the specificity on the first try
-                file = open("{}/find_cdna_url.txt".format(os.path.dirname(os.path.abspath(__file__))))
-                try_org = ""
-                for word in org_tree[:num]:
-                    try_org = try_org + word + " "
-                try_org = try_org[:-1]
-                for line in file.readlines():
-                    sep = line.split("\t")
-                    if format_org_name(sep[0].lower()) == format_org_name(try_org):
-                        spec_name = format_org_name(sep[1])
-                        end_url = (sep[12][:sep[12].find("collection")+10] + "/" + sep[1])
-        url = "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/{}/cdna/".format(end_url)
+        data = json.load(open('{}/kegg_taxon_prokaryotes.txt'.format(os.path.dirname(__file__))))
+        for thing in get_json_ends(data):
+            org_name = format_org_name(thing.split('  ')[1])
+            if org_name == format_org_name(organism):
+
+                kegg_org_symbol = thing.split('  ')[0]
+                url = get_ref_seq_url(kegg_org_symbol)
+                spec_name = org_name.replace("-","_").replace(" ", "_")
+                full_strain_specificity ==True
+                return StrainInfo(spec_name, url, full_strain_specificity, "Bacteria")
+        raise LookupError("organism not recognized")
+
+
+
+
+
+
 
     elif domain == 'Eukaryota':
         for name in organism.split(" "):
@@ -202,8 +205,30 @@ def get_strain_info(sample):
             url = "ftp://ftp.ensemblgenomes.org/pub/current/plants/fasta/{}/cdna/".format(spec_name)
     else:
         raise LookupError("organism not recognized")
-    return StrainInfo(spec_name, url, full_strain_specificity)
+    return StrainInfo(spec_name, url, full_strain_specificity, "Eukaryota")
 
+
+
+def get_ref_seq_url(org_symbol):
+    text = requests.get("http://www.kegg.jp/kegg-bin/show_organism?org={}".format(org_symbol)).text
+    text = text[text.find("ftp://ftp.ncbi.nlm.nih.gov/genomes/all"):]
+    text = text[:text.find("""">""")]
+    end = text[find_nth(text, "/", 9)+1:]
+    text = "{}/{}_genomic.gbff.gz".format(text, end)
+    return text
+
+def get_json_ends(tree):
+    ends = []
+    nodes = [tree]
+    while nodes:
+        new_nodes = []
+        for node in nodes:
+            if 'children' in node:
+                new_nodes = new_nodes + node['children']
+            else:
+                ends.append(node['name'])
+        nodes = new_nodes
+    return(ends)
 
 def get_ftp_url(url):
     ftp_url = None
@@ -227,3 +252,12 @@ def get_ftp_url(url):
             if attempts==10:
                 raise LookupError("FTP not responding")
     return ftp_url
+
+
+def find_nth(haystack, needle, n):
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start+len(needle))
+        n -= 1
+    return start
+

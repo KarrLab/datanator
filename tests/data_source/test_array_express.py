@@ -214,7 +214,7 @@ class TestEnsemblTools(unittest.TestCase):
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info[0].organism_strain, "escherichia_coli_k_12_mg1655")
         self.assertTrue(sample.full_strain_specificity)
-        self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ensemblgenomes.org/pub/bacteria/current/fasta/bacteria_0_collection/escherichia_coli_str_k_12_substr_mg1655/cdna/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.cdna.all.fa.gz")
+        self.assertEqual(sample.ensembl_info[0].url, "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.gbff.gz")
 
     def test_eukaryote(self):
         src = self.src
