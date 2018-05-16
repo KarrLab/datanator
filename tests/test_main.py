@@ -310,3 +310,21 @@ class TestWithoutTempFile(unittest.TestCase):
             with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertTrue(capturer.get_text().startswith('Unable to interpret participants:\n'))
+
+
+class HelpTestCase(unittest.TestCase):
+    def test(self):
+        with App(argv=[]) as app:
+            app.run()
+        with App(argv=['upload']) as app:
+            app.run()
+        with App(argv=['build']) as app:
+            app.run()
+        with App(argv=['download']) as app:
+            app.run()
+        with App(argv=['taxonomy']) as app:
+            app.run()
+        with App(argv=['molecule']) as app:
+            app.run()
+        with App(argv=['reaction']) as app:
+            app.run()
