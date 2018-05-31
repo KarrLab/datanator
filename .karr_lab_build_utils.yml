@@ -1,6 +1,7 @@
 downstream_dependencies:
-  - h1_hesc
   - datanator_website
+  - h1_hesc  
+  - wc
 email_notifications:
   - jonrkarr@gmail.com
   - yosefdroth@gmail.com

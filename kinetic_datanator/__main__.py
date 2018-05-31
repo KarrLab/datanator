@@ -8,7 +8,7 @@
 :License: MIT
 """
 
-#from kinetic_datanator import datanator #todo
+# from kinetic_datanator import datanator #todo
 from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
@@ -21,6 +21,7 @@ from kinetic_datanator.util import molecule_util
 from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
 import bioservices
+import kinetic_datanator
 import pubchempy
 import re
 import shutil
@@ -33,12 +34,19 @@ from kinetic_datanator.data_query import reaction_kinetics
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
 
+
 class BaseController(controller.CementBaseController):
 
     class Meta:
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
+        arguments = [
+            (['-v', '--version'], dict(action='version', version=kinetic_datanator.__version__)),
+        ]
 
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class UploadDataController(controller.CementBaseController):
@@ -50,6 +58,9 @@ class UploadDataController(controller.CementBaseController):
         stacked_type = 'nested'
         arguments = []
 
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class UploadReferenceGenome(controller.CementBaseController):
@@ -71,7 +82,7 @@ class UploadReferenceGenome(controller.CementBaseController):
         #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
         #list_of_bio_seqio_objects = [bio_seqio_object]
         upload_data.UploadData(cache_dirname=pargs.path_to_database).upload_reference_genome(pargs.path_to_annotation_file)
-        #refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+        # refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
 
 
 class UploadRNASeqExperiment(controller.CementBaseController):
@@ -93,8 +104,6 @@ class UploadRNASeqExperiment(controller.CementBaseController):
         bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
         list_of_bio_seqio_objects = [bio_seqio_object]
         refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
-        
-
 
 class UploadData(controller.CementBaseController):
 
@@ -148,17 +157,20 @@ class BuildController(controller.CementBaseController):
     @controller.expose(help='Builds Corum Complex DB from source')
     def corum(self):
         pargs = self.app.pargs
-        corum.Corum(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        corum.Corum(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                    max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds IntAct Interactions and Complex DB from source')
     def intact(self):
         pargs = self.app.pargs
-        intact.IntAct(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        intact.IntAct(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                      max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds Sabio Reaction Kinetics DB from source')
     def sabio(self):
         pargs = self.app.pargs
-        sabio_rk.SabioRk(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        sabio_rk.SabioRk(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                         max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds Pax Protein Abundance DB from source')
     def pax(self):
@@ -168,22 +180,30 @@ class BuildController(controller.CementBaseController):
     @controller.expose(help='Builds Array Express RNA Seq DB from source')
     def array_express(self):
         pargs = self.app.pargs
-        array_express.ArrayExpress(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        array_express.ArrayExpress(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                                   max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds Jaspar DNA protein interaction DB from source')
     def jaspar(self):
         pargs = self.app.pargs
-        jaspar.Jaspar(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        jaspar.Jaspar(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                      max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds Uniprot Protein DB from source')
     def uniprot(self):
         pargs = self.app.pargs
-        uniprot.Uniprot(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        uniprot.Uniprot(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                        max_entries=pargs.max_entries, verbose=pargs.verbose)
 
     @controller.expose(help='Builds ECMDB metabolite DB from source')
     def ecmdb(self):
         pargs = self.app.pargs
-        ecmdb.Ecmdb(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        ecmdb.Ecmdb(cache_dirname=pargs.path, load_content=True, download_backups=False,
+                    max_entries=pargs.max_entries, verbose=pargs.verbose)
+
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class AggregateBuildController(controller.CementBaseController):
@@ -204,8 +224,8 @@ class AggregateBuildController(controller.CementBaseController):
     @controller.expose(help='Controller that controls aggregated')
     def default(self):
         pargs = self.app.pargs
-        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True, download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
-
+        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True,
+                                              download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
 class DownloadController(controller.CementBaseController):
@@ -264,6 +284,9 @@ class DownloadController(controller.CementBaseController):
         pargs = self.app.pargs
         flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, download_backups=True)
 
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class GetDataController(controller.CementBaseController):
@@ -372,6 +395,7 @@ class GenerateRNASeqTemplate(controller.CementBaseController):
         template_directory = resource_filename('kinetic_datanator', 'data/RNA-Seq_Experiment_Template')
         shutil.copytree(template_directory, "{}/RNA-Seq_Experiment_Template".format(self.app.pargs.directory_name))
 
+
 class TaxonomyController(controller.CementBaseController):
 
     class Meta:
@@ -381,6 +405,9 @@ class TaxonomyController(controller.CementBaseController):
         stacked_type = 'nested'
         arguments = []
 
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class TaxonomyGetRankController(controller.CementBaseController):
@@ -511,6 +538,10 @@ class MoleculeController(controller.CementBaseController):
         stacked_type = 'nested'
         arguments = []
 
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
+
 
 class MoleculeGetStructureController(controller.CementBaseController):
 
@@ -585,6 +616,10 @@ class ReactionController(controller.CementBaseController):
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
+
+    @controller.expose(hide=True)
+    def default(self):
+        self.app.args.print_help()
 
 
 class ReactionGetEcNumberController(controller.CementBaseController):
@@ -671,8 +706,8 @@ class App(foundation.CementApp):
             GenerateTemplateController,
             GenerateRNASeqTemplate,
 
-            #TaxonomyController2,
-            #TaxonomyGetRankController2,
+            # TaxonomyController2,
+            # TaxonomyGetRankController2,
 
             TaxonomyController,
             TaxonomyGetRankController,
@@ -712,6 +747,7 @@ def create_taxon(id_or_name):
 def main():
     with App() as app:
         app.run()
+
 
 if __name__ == "__main__":
     main()

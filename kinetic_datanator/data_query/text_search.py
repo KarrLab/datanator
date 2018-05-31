@@ -57,7 +57,7 @@ class TextSearchSession(object):
                 rxns.append(rxn_list)
         reactions = [y for x in rxns for y in x]
 
-        dict_db_models = {'Compound':compound, 'ProteinComplex':complex, 'ProteinSubunit':subunit, 'Reaction':reactions}
-        list_db_models = [item for sublist in [compound, complex, subunit, reactions] for item in sublist]
+        dict_db_models = {'Compound':compound, 'Reaction':reactions, 'ProteinSubunit':subunit, 'ProteinComplex':complex}
+        list_db_models = [item for sublist in [compound, reactions, subunit, complex] for item in sublist]
 
         return list_db_models, dict_db_models

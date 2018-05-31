@@ -71,10 +71,10 @@ class TestLoadingIntAct(unittest.TestCase):
 
         q = self.intact.session.query(intact.ProteinInteraction).get(99)
 
-        self.assertEqual(q.protein_a, 'Q9Y6M1')
-        self.assertEqual(q.protein_b, 'Q14103-2')
-        self.assertEqual(q.gene_a, 'IGF2BP2')
-        self.assertEqual(q.gene_b, 'HNRNPD')
+        self.assertEqual(q.protein_a, 'Q14103-2')
+        self.assertEqual(q.protein_b, 'Q9Y6M1')
+        self.assertEqual(q.gene_b, 'IGF2BP2')
+        self.assertEqual(q.gene_a, 'HNRNPD')
         self.assertEqual(q.type_a, q.type_b)
         self.assertEqual(q.role_a, q.role_b)
         self.assertEqual(q.method, 'two hybrid')
