@@ -13,7 +13,8 @@ from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model, flask_common_schema, upload_data
+from kinetic_datanator.core import data_model, flask_common_schema, upload_data, data_query, json_schema
+from kinetic_datanator.core.render_form import render_html_from_schema
 from kinetic_datanator.data_source import *
 from kinetic_datanator.data_source import refseq
 from kinetic_datanator.util import molecule_util
@@ -26,6 +27,8 @@ import shutil
 import sys
 import os
 from Bio import SeqIO
+from kinetic_datanator.data_query import reaction_kinetics
+#from kinetic_datanator.core import data_query
 
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
@@ -79,7 +82,7 @@ class UploadRNASeqExperiment(controller.CementBaseController):
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
-            (['path_to_annotation_file'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
+            (['path_to_folder with excel files'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
             (['--path_to_database'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
         ]
 
@@ -93,6 +96,40 @@ class UploadRNASeqExperiment(controller.CementBaseController):
         
 
 
+class UploadData(controller.CementBaseController):
+
+    class Meta:
+        label = 'general-data'
+        description = 'Upload data from overall schema'
+        stacked_on = 'upload'
+        stacked_type = 'nested'
+        arguments = [
+            (['data_type'], dict(type=str, help="type of data to be uploaded")),
+        ]
+
+    @controller.expose(hide=True)
+    def default(self):
+        pargs = self.app.pargs
+        data_type = pargs.data_type
+        print(data_type)
+        a_json_schema = json_schema.get_json_schema(data_type)
+        #print(a_json_schema)
+        schema = {
+"title": "Person",
+"type": "object",
+"properties": {
+"name": {
+  "type": "string",
+  "description": "First and Last name",
+  "minLength": 4,
+  "default": "Jeremy Dorn"
+}}}
+
+        render_html_from_schema.render(a_json_schema)
+        #print(pargs.__dict__)
+        #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        #list_of_bio_seqio_objects = [bio_seqio_object]
+        #refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
 
 class BuildController(controller.CementBaseController):
 
@@ -257,6 +294,37 @@ class GetDataController(controller.CementBaseController):
     def default(self):
         pargs = self.app.pargs
         genetics, compartments, species, reactions = io.InputReader().run(pargs.input_file)
+        #print(reactions)
+        #for thing in reactions[0].get_reactants():
+        #    print(thing.specie.to_inchi())
+        #    print(thing.specie.to_smiles())
+        cache_dirname = '{}/data_source/cache'.format(os.path.dirname(__file__))
+        #print(cache_dirname)
+        observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
+
+        class ConcreteDataQueryGenerator(data_query.DataQueryGenerator):
+
+            def get_observed_result(self):
+                pass
+        print("the length is initially {}".format(len(observed_values)))
+        gen = ConcreteDataQueryGenerator()
+        gen.filters = [
+            data_query.TemperatureRangeFilter(min=36., max=38.),
+            data_query.TaxonomicDistanceFilter(taxon='Mycoplasma genitalium')#, max=7)
+        ]
+        filtered = gen.filter_observed_results(None, observed_values)
+        print(filtered.observed_value_indices)
+        print(data_query.ConsensusGenerator().calc_average(filtered.observed_value_indices, method='median'))
+            #print(thing.)
+        
+        #con_gen =  data_query.ConsensusGenerator().run(filtered, "median")
+        #print(con_gen)
+        
+        #print(gen.get_consensus(None, filtered))
+        #print("the length after filtering is {}".format(len(filtered.observed_results)))
+        #consensus = data_query.ConsensusGenerator().run(filtered, 'median')
+        #print(consensus)
+
 
         # todo: implement
         return
@@ -593,6 +661,7 @@ class App(foundation.CementApp):
             UploadDataController,
             UploadReferenceGenome,
             UploadRNASeqExperiment,
+            UploadData,
 
             DownloadController,
             BuildController,

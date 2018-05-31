@@ -1,0 +1,5 @@
+<html>
+<body>
+    <p>Here is my variable: {{ variable }}</p>
+</body>
+</html>
