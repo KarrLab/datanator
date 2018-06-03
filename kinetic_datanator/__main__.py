@@ -13,7 +13,7 @@ from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model, flask_common_schema, upload_data, data_query, json_schema
+from kinetic_datanator.core import data_model, flask_common_schema, upload_data, data_query#, json_schema
 from kinetic_datanator.core.render_form import render_html_from_schema
 from kinetic_datanator.data_source import *
 from kinetic_datanator.data_source import refseq
