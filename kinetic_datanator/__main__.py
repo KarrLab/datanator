@@ -120,25 +120,17 @@ class UploadData(controller.CementBaseController):
     def default(self):
         pargs = self.app.pargs
         data_type = pargs.data_type
+        
+        
         print(data_type)
         a_json_schema = json_schema.get_json_schema(data_type)
-        #print(a_json_schema)
-        schema = {
-"title": "Person",
-"type": "object",
-"properties": {
-"name": {
-  "type": "string",
-  "description": "First and Last name",
-  "minLength": 4,
-  "default": "Jeremy Dorn"
-}}}
 
-        render_html_from_schema.render(a_json_schema)
-        #print(pargs.__dict__)
-        #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
-        #list_of_bio_seqio_objects = [bio_seqio_object]
-        #refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+        the_json = render_html_from_schema.RenderForms().render(a_json_schema)
+        
+
+        #the_json = """{"_experimentmetadata":[],"accession_number":"Test-Accesion","exp_name":"test_experiment","has_fastq_files":false,"samples":[{"_metadata":[],"assay":"blue","ensembl_organism_strain":"green","experiment_accession_number":"test","full_strain_specificity":false,"reference_genome":[]}]}"""
+        print(the_json)
+
 
 class BuildController(controller.CementBaseController):
 
