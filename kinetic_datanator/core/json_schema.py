@@ -5,7 +5,6 @@ from alchemyjsonschema import StructuralWalker
 
 from alchemyjsonschema import ForeignKeyWalker
 from alchemyjsonschema import NoForeignKeyWalker
-import sqlalchemy_utils
 import sqlalchemy
 
 import json

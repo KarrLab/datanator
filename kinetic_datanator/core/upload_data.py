@@ -5,7 +5,7 @@ from Bio import SeqIO
 import openpyxl
 from kinetic_datanator.core import flask_common_schema, models
 import json
-import sqlalchemy_utils
+#import sqlalchemy_utils
 import sqlalchemy
 
 
