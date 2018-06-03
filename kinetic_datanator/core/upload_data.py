@@ -5,7 +5,7 @@ from Bio import SeqIO
 import openpyxl
 from kinetic_datanator.core import flask_common_schema, models
 import json
-#import sqlalchemy_utils
+import sqlalchemy_utils
 import sqlalchemy
 
 
@@ -35,11 +35,12 @@ class UploadData():
         for i in range(2, ws.max_row+1):
             experiment_name = wb.get_sheet_by_name('Experiments').cell(row=i,column=1).value
             experiment_description = wb.get_sheet_by_name('Experiments').cell(row=i,column=2).value
-            self.flask.get_or_create_object(models.RNASeqExperiment,
+            new_experiment = self.flask.get_or_create_object(models.RNASeqExperiment,
                 exp_name=experiment_name,
                 accession_number=experiment_name)
             print(experiment_name)
             print(experiment_description)
+            self.flask.session.add(new_experiment)
         self.flask.session.commit()
 
     def get_or_create_object_upload(self, session, cls, kwargs):
@@ -59,11 +60,22 @@ class UploadData():
         session.add(obj)
         return obj
 
-    def get_primitive_fields(sefl, object):
+    def get_primitive_fields(self, object, object_type):
+        print(object_type)
         list_of_primitives = {}
+        #new_to upload = []
         for field in object:
-            if type(object[field]) is not list:
+            if (type(object[field]) is not list) and (type(object[field]) is not dict):
                 list_of_primitives[field] = object[field]
+            if type(object[field]) is dict:
+                #print(object[field])
+                #new_type = getattr(object_type, field)
+                new_type = sqlalchemy_utils.get_type(object_type.__dict__[field])
+                #print(new_type)
+                #print("above")
+                new_object = self.upload_from_json(object[field], new_type)
+                list_of_primitives[field] = new_object
+
         return list_of_primitives
 
     def get_dict_of_new_objects(self, object):
@@ -82,34 +94,47 @@ class UploadData():
 
 
 
-    def upload_from_json(self, a_json, first_data_type):
+    def upload_from_json(self, objects, first_data_type):
         session = self.flask.session
-        objects = json.loads(a_json)
+        #objects = json.loads(a_json)
         #print(objects)
-        models_object = models.__dict__[first_data_type]
-        print(models_object)
-        print(models.RNASeqExperiment)
+        #print(type(first_data_type))
+        if type(first_data_type) is str:
+            print("blueberry muffins")
+            models_object = models.__dict__[first_data_type]
+        else:
+            models_object = first_data_type
 
-        data_type = first_data_type
+
+        #print(models_object)
+        #print(models.RNASeqExperiment)
+
+        data_type = models_object
 
         #while True:
         #kwargs = {"accession_number":"blue"}
         to_upload = []
-        list_of_fields = {}
+        #list_of_fields = {}
         dict_of_new_objects = {}
+        print(data_type)
+        list_of_fields = self.get_primitive_fields(objects, data_type)
+        print(list_of_fields)
+        dict_of_new_objects = self.get_dict_of_new_objects(objects)
+        """
         for field in objects:
             if type(objects[field]) is not list:
                 list_of_fields[field] = objects[field]
             if type(objects[field]) is list:
                 dict_of_new_objects[field] = objects[field]
+        """
 
         
-        new_experiment = self.get_or_create_object_upload(session, models_object, list_of_fields)
-        print(new_experiment)
+        first_parent = self.get_or_create_object_upload(session, models_object, list_of_fields)
+        #print(first_parent)
         #new_experiment = self.flask.get_or_create_object(models.RNASeqExperiment, accession_number="E-MTAB-3")
         #new_experiment.samples.append(self.flask.get_or_create_object(models.RNASeqDataSet, name="blue"))
         #new_experiment.__dict__["samples"].append(self.flask.get_or_create_object(models.RNASeqDataSet, name="blue"))
-        new_sample = self.flask.get_or_create_object(models.RNASeqDataSet, name="blue")
+        #new_sample = self.flask.get_or_create_object(models.RNASeqDataSet, name="blue")
         #getattr(new_experiment, "samples").append(new_sample)
         #print(new_experiment.samples[0].name)
 
@@ -125,7 +150,7 @@ class UploadData():
 
 
         
-        first_upload = Uploader(parent_node=new_experiment, dict_of_new_objects=dict_of_new_objects)
+        first_upload = Uploader(parent_node=first_parent, dict_of_new_objects=dict_of_new_objects)
         to_upload.append(first_upload)
         #print(to_upload[0].parent_node.__dict__)
         #session.commit()
@@ -138,21 +163,21 @@ class UploadData():
                 for key in uploader.dict_of_new_objects:
                     #print(uploader.parent_node)
                     #print(uploader.parent_node.__dict__)
-                    print(type(uploader.parent_node).__dict__)
+                    #print(type(uploader.parent_node).__dict__)
                     new_obj_type = sqlalchemy_utils.get_type(type(uploader.parent_node).__dict__[key])
                     list_of_new_objects = uploader.dict_of_new_objects[key]
                     for new_object in list_of_new_objects:
-                        the_new_object =self.get_or_create_object_upload(session, new_obj_type, self.get_primitive_fields(new_object))
+                        the_new_object =self.get_or_create_object_upload(session, new_obj_type, self.get_primitive_fields(new_object, new_obj_type))
                         #print(uploader.parent_node.__dict__)
                         #print(uploader.parent_node._experimentmetadata)
                         #the_new_object = self.fill_out_total_fields(the_new_object, new_object)
                         #uploader.parent_node.__dict__[key].append(the_new_object)
-                        metadata = self.flask.get_or_create_object(models.ExperimentMetadata, description="green")
+                        #metadata = self.flask.get_or_create_object(models.ExperimentMetadata, description="green")
                         #print(type(uploader.parent_node._experimentmetadata) is sqlalchemy.orm.collections.InstrumentedList)
-                        print(type(getattr(uploader.parent_node, "samples")) is sqlalchemy.orm.collections.InstrumentedList)
-                        setattr(uploader.parent_node, "_experimentmetadata", metadata)
+                        #print(type(getattr(uploader.parent_node, "samples")) is sqlalchemy.orm.collections.InstrumentedList)
+                        #setattr(uploader.parent_node, "_experimentmetadata", metadata)
                         #print(uploader.parent_node)
-                        print(key)
+                        #print(key)
                         getattr(uploader.parent_node, key).append(the_new_object)
                         dict_of_new_objects = self.get_dict_of_new_objects(new_object)
                         if dict_of_new_objects:
@@ -160,7 +185,7 @@ class UploadData():
                             new_to_upload.append(new_uploader)
             to_upload = new_to_upload
         session.commit()
-        return session
+        return first_parent
 
         
         
