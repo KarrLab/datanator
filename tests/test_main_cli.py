@@ -173,11 +173,11 @@ class TestWithTempFile(unittest.TestCase):
 
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
-        self.dirname = '/home/yosef/Desktop/new_directory'
+
 
     def tearDown(self):
-        pass
-        #shutil.rmtree(self.dirname)
+        
+        shutil.rmtree(self.dirname)
 
     def test_GetDataController(self):
         input_filename = os.path.join(os.path.dirname(__file__), 'fixtures', 'five_reactions.xlsx')
