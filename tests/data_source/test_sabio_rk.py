@@ -27,7 +27,7 @@ import wc_utils.backup
 
 warning_util.disable_warnings()
 
-@unittest.skip('sabio is down')
+
 class TestDownloader(unittest.TestCase):
 
     def setUp(self):
@@ -813,7 +813,7 @@ class TestDownloader(unittest.TestCase):
                                webservice_batch_size=1, excel_batch_size=3, verbose=True)
         self.assertEqual(src.session.query(KineticLaw).count(), src.max_entries)
 
-@unittest.skip('sabio is down')
+
 class TestBackupAndInstall(unittest.TestCase):
 
     def setUp(self):
@@ -868,7 +868,7 @@ class TestBackupAndInstall(unittest.TestCase):
                                 max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
         self.assertEqual(src5.session.query(KineticLaw).count(), 0)
 
-@unittest.skip('sabio is down')
+
 class TestStats(unittest.TestCase):
 
     def setUp(self):
@@ -884,7 +884,7 @@ class TestStats(unittest.TestCase):
         src.export_stats(stats, filename=filename)
         self.assertTrue(os.path.isfile(filename))
 
-@unittest.skip('sabio is down')
+
 class TestAll(unittest.TestCase):
 
     def setUp(self):
