@@ -103,23 +103,23 @@ class FlaskCommonSchema(data_source.HttpDataSource):
         # Chunk Larger DBs
         self.add_paxdb()
         self.vprint('Pax Completed')
-        self.add_intact_interactions()
-        self.vprint('IntAct Interactions Completed')
-        self.add_sabiodb()
-        self.vprint('Sabio Completed')
-        self.add_arrayexpress()
-        self.vprint('Array Express Completed')
-
-        # Add complete smaller DBs
-        if self.load_small_db_switch:
-            self.add_intact_complexes()
-            self.vprint('IntAct Complexes Completed')
-            self.add_corumdb()
-            self.vprint('Corum Completed')
-            self.add_jaspardb()
-            self.vprint('Jaspar Completed')
-            self.add_ecmdb()
-            self.vprint('ECMDB Completed')
+        # self.add_intact_interactions()
+        # self.vprint('IntAct Interactions Completed')
+        # self.add_sabiodb()
+        # self.vprint('Sabio Completed')
+        # self.add_arrayexpress()
+        # self.vprint('Array Express Completed')
+        #
+        # # Add complete smaller DBs
+        # if self.load_small_db_switch:
+        #     self.add_intact_complexes()
+        #     self.vprint('IntAct Complexes Completed')
+        #     self.add_corumdb()
+        #     self.vprint('Corum Completed')
+        #     self.add_jaspardb()
+        #     self.vprint('Jaspar Completed')
+        #     self.add_ecmdb()
+        #     self.vprint('ECMDB Completed')
 
         # Add missing subunit information
         self.add_uniprot()
@@ -243,11 +243,11 @@ class FlaskCommonSchema(data_source.HttpDataSource):
                                                   for data in abundance
                                               ])
 
-            self.session.bulk_insert_mappings(models.ProteinSubunit,
-                                              [
-                                                  dict(uniprot_id=data.protein.uniprot_id, type='Protein Subunit',
-                                                       pax_load=data.dataset_id) for data in abundance
-                                              ])
+            # self.session.bulk_insert_mappings(models.ProteinSubunit,
+            #                                   [
+            #                                       dict(uniprot_id=data.protein.uniprot_id, type='Protein Subunit',
+            #                                            pax_load=data.dataset_id) for data in abundance
+            #                                   ])
 
             self.session.commit()
 

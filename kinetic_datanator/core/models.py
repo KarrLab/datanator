@@ -73,7 +73,7 @@ class Observation(SerializeClassMixin, db.Model):
 
     __tablename__ = 'observation'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     _metadata_id = db.Column(db.Integer, db.ForeignKey('_metadata.id'))
     _metadata = db.relationship('Metadata')
@@ -1032,7 +1032,7 @@ class AbundanceData(db.Model):
     subunit = db.relationship('ProteinSubunit')
 
     pax_load = db.Column(db.Integer)
-    uniprot_id = db.Column(db.Integer)
+    uniprot_id = db.Column(db.String(255))
 
     def __repr__(self):
         return 'AbundanceData(%s)' % (self.abundance_id)

@@ -18,6 +18,7 @@ openbabel
 openpyxl
 pandas
 pint
+psycopg2
 pronto
 pubchempy
 python_dateutil

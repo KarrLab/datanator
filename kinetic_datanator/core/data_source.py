@@ -120,7 +120,7 @@ class CachedDataSource(DataSource):
             os.makedirs(os.path.dirname(self.filename))
 
         if self.flask:
-            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
+            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://localhost/' + self.name
             self.app.config['WHOOSH_BASE'] = self.cache_dirname + '/whoosh_cache/'
             engine = self.base_model.engine
             if not os.path.isfile(self.filename):
