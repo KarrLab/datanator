@@ -18,7 +18,7 @@ import random
 import os
 from six.moves import reload_module
 
-@unittest.skip('skip')
+
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
@@ -96,11 +96,11 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
     def tearDownClass(self):
-        # models.db.session.remove()
-        # models.db.drop_all()
+        models.db.session.remove()
+        models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
 
-    @unittest.skip('skip')
+
     def test_ncbi(self):
         session = self.cs.session
         tax = session.query(models.Taxon).filter_by(name = 'Homo sapiens').all()
@@ -130,7 +130,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         taxon = session.query(models._metadata_taxon).filter_by(_metadata_id = metadata.id).first()
         self.assertEqual(taxon.taxon_id, comparison.taxon_ncbi_id)
 
-    @unittest.skip('skip')
+
     def test_jaspar(self):
         session = self.cs.session
         subunit = session.query(models.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
@@ -144,7 +144,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         metadata = session.query(models.Metadata).filter_by(name = 'RUNX1 Binding Motif').first()
         self.assertEqual(metadata.resource[0]._id, '8413232')
 
-    @unittest.skip('skip')
+
     def test_ecmdb(self):
         session = self.cs.session
         compound = session.query(models.Compound).filter_by(name = 'Deoxyuridine').first()
@@ -152,7 +152,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         structure = session.query(models.Structure).get(compound.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
-    @unittest.skip('skip')
+
     def test_arrayexpress(self):
         session = self.cs.session
         sample = session.query(models.RNASeqDataSet).filter_by(experiment_accession_number = 'E-MTAB-6272', sample_name='Sample 13').first()
@@ -174,7 +174,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(experiment._experimentmetadata.description[:12], "In temperate")
         #self.assertEqual(experiment.has_fastq_files
 
-    @unittest.skip('skip')
+
     def test_sabio(self):
         session = self.cs.session
         compound = session.query(models.Compound).filter_by(compound_name = 'Peptide').first()
@@ -201,7 +201,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         resource = session.query(models.Resource).filter_by(namespace = 'ec-code').filter_by(_id = '3.4.21.62').all()
         self.assertEqual(len(resource), 1)
 
-    @unittest.skip('skip')
+
     def test_corum(self):
         session = self.cs.session
         subunit = session.query(models.ProteinSubunit).filter_by(subunit_name = 'Histone deacetylase 5').first()
@@ -215,7 +215,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         pubmed = session.query(models.Resource).get(resource.resource_id)
         self.assertEqual(pubmed._id, '11929873')
 
-    @unittest.skip('skip')
+
     def test_intact_interactions(self):
         session = self.cs.session
 
@@ -230,7 +230,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(interact._metadata.resource[0].namespace, 'pubmed')
         self.assertEqual(interact._metadata.resource[0]._id, '10542231')
 
-    @unittest.skip('skip')
+
     def test_intact_complex_added(self):
         session = self.cs.session
 
@@ -240,7 +240,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(plex[0].su_cmt, 'Q0WPK4(1)|O22823(1)|Q9C6K5(1)|F4K4E3(1)|Q9SI54(1)|Q9FKB0(1)|Q1H595(1)|Q945P8(1)')
         self.assertEqual(len(plex[0].protein_subunit), 8)
 
-    @unittest.skip('skip')
+
     def test_uniprot_added(self):
         session = self.cs.session
 
@@ -249,7 +249,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(uni.entrez_id, 2795170)
         self.assertEqual(uni.length, 238)
 
-    @unittest.skip('skip')
+
     def test_whoosh(self):
         self.assertEqual(set([c.name for c in models.Compound.query.whoosh_search('adenine').all()]),
             set(['Adenosine', 'Adenosine monophosphate', 'Cyclic AMP', "Adenosine 3',5'-diphosphate", 'Adenine']))
