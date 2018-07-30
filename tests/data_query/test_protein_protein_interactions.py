@@ -2,7 +2,7 @@
 import unittest
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_query import protein_protein_interactions as ppi
-from kinetic_datanator.core import models, flask_common_schema
+from kinetic_datanator.core import models, common_schema
 import tempfile
 import shutil
 import unittest
@@ -12,7 +12,7 @@ class ProteinInteractionandComplexQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.protein_Q9CWF2 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q9CWF2').first()
         self.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()

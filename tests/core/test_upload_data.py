@@ -8,7 +8,7 @@ import re
 import shutil
 import tempfile
 import unittest
-from kinetic_datanator.core import flask_common_schema, models
+from kinetic_datanator.core import common_schema, models
 import json
 
 
@@ -22,7 +22,7 @@ class TestUploadData(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
@@ -43,7 +43,7 @@ class TestUploadDataFromJson(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         #self.cache_dirname = "/home/yosef/Desktop/angular"
-        self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
 
     @classmethod

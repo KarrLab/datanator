@@ -13,7 +13,7 @@ from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_query import reaction_kinetics
 from kinetic_datanator.util import taxonomy_util, molecule_util
-from kinetic_datanator.core import models, flask_common_schema
+from kinetic_datanator.core import models, common_schema
 import unittest
 import random
 import tempfile
@@ -29,7 +29,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=self.cache_dirname, include_variants=True)
 

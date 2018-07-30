@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query, models, flask_common_schema
+from kinetic_datanator.core import data_model, data_query, models, common_schema
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
@@ -55,7 +55,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
+            data_source=common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
         self.filters.append(data_query.ReactionSimilarityFilter())
         self.filters.append(data_query.ReactionParticipantFilter())
@@ -301,7 +301,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
                 try:
                     structure = part.specie.to_inchi(only_formula_and_connectivity=only_formula_and_connectivity)
                 except ValueError:
-                    return self.data_source.session.query(select).filter(flask_common_schema.KineticLaw.kinetic_law_id == -1)
+                    return self.data_source.session.query(select).filter(common_schema.KineticLaw.kinetic_law_id == -1)
             else:
                 structure = part.specie.structure
 

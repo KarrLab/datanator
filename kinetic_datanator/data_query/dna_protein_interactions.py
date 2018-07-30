@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query,  models, flask_common_schema
+from kinetic_datanator.core import data_model, data_query,  models, common_schema
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC
@@ -37,7 +37,7 @@ class ProteintoDNAInteractionQuery(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
+            data_source=common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
     def get_observed_result(self, protein):
         """ Find the DNA binding motif for a given protein
@@ -128,7 +128,7 @@ class DNAtoProteinInteractionQuery(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
+            data_source=common_schema.FlaskCommonSchema(cache_dirname=cache_dirname))
 
 
     def get_observed_result(self, DnaSpecie):

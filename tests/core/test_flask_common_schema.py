@@ -8,7 +8,7 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.core import flask_common_schema, models
+from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.data_source import pax
 import flask_whooshalchemy
 import flask
@@ -24,7 +24,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         for item in self.flk.text_indicies:
             flask_whooshalchemy.whoosh_index(self.flk.app, item)
@@ -86,7 +86,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = flask_common_schema.FlaskCommonSchema(
+        self.cs = common_schema.FlaskCommonSchema(
                                 clear_content = True, download_backups= False,
                                 load_content = True, max_entries = 10,
                                 verbose = True, test=True)
@@ -261,7 +261,7 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
 #     def setUpClass(self):
 #         self.cache_dirname = tempfile.mkdtemp()
 #
-#         self.cs = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
+#         self.cs = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname,
 #                                 download_backups= True, load_content = True, max_entries = 10,
 #                                 verbose = True, test=True)
 #

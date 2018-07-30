@@ -8,7 +8,7 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_query import protein_abundance
-from kinetic_datanator.core import models, flask_common_schema
+from kinetic_datanator.core import models, common_schema
 import tempfile
 import shutil
 import unittest
@@ -18,7 +18,7 @@ class TestProteinAbundanceQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.protein_P00323 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
         self.protein_Q42025 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q42025').first()

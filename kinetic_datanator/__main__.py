@@ -13,7 +13,7 @@ from __future__ import print_function
 from cement.core import controller
 from cement.core import foundation
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model, flask_common_schema, upload_data, data_query#, json_schema
+from kinetic_datanator.core import data_model, common_schema, upload_data, data_query#, json_schema
 from kinetic_datanator.core.render_form import render_html_from_schema
 from kinetic_datanator.data_source import *
 from kinetic_datanator.data_source import refseq
@@ -216,7 +216,7 @@ class AggregateBuildController(controller.CementBaseController):
     @controller.expose(help='Controller that controls aggregated')
     def default(self):
         pargs = self.app.pargs
-        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True,
+        common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True,
                                               download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
@@ -274,7 +274,7 @@ class DownloadController(controller.CementBaseController):
     @controller.expose(help='Loads Aggregated DB from Karr Lab Server')
     def aggregate(self):
         pargs = self.app.pargs
-        flask_common_schema.FlaskCommonSchema(cache_dirname=pargs.path, download_backups=True)
+        common_schema.FlaskCommonSchema(cache_dirname=pargs.path, download_backups=True)
 
     @controller.expose(hide=True)
     def default(self):

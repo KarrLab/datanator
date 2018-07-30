@@ -8,7 +8,7 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_query import dna_protein_interactions as dpi
-from kinetic_datanator.core import models, flask_common_schema
+from kinetic_datanator.core import models, common_schema
 import unittest
 from Bio import motifs
 import tempfile
@@ -27,7 +27,7 @@ class TestProteintoDNAInteractionQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        flk = flask_common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
 
         self.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
         self.q = dpi.ProteintoDNAInteractionQuery(cache_dirname=self.cache_dirname)
