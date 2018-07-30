@@ -6,6 +6,7 @@ from flask_bcrypt import Bcrypt
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
 import re
 
 
@@ -13,8 +14,8 @@ import re
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 toolbar = DebugToolbarExtension()
-db = SQLAlchemy()
 migrate = Migrate()
+db = SQLAlchemy()
 
 
 def create_app():

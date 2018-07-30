@@ -13,9 +13,11 @@ import flask_whooshalchemy
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
+from kinetic_datanator.util.build_util import timeit
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
-from kinetic_datanator import create_app, db
+from kinetic_datanator.app import create_app, db
+from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 from ete3 import NCBITaxa
 
@@ -25,6 +27,7 @@ class CommonSchema(data_source.PostgresDataSource):
     A Local SQLlite copy of the aggregation of data_source modules
 
     """
+    app = create_app()
     base_model = db
     text_indicies = [cls for name, cls in models.__dict__.items() if hasattr(cls,'__searchable__')]
 
@@ -54,11 +57,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.load_entire_small_DBs = load_entire_small_DBs
         self.test = test
 
-        if download_backups and load_content:
-            self.load_small_db_switch = False
-            self.load_content()
-
-        elif load_content:
+        if load_content:
             self.get_or_create_object(models.Progress, database_name='Pax', amount_loaded=1)
             self.get_or_create_object(models.Progress, database_name='Sabio', amount_loaded=1)
             self.get_or_create_object(models.Progress, database_name='Array Express', amount_loaded=1)
@@ -66,11 +65,6 @@ class CommonSchema(data_source.PostgresDataSource):
             self.session.commit()
             self.load_small_db_switch = True
             self.load_content()
-
-
-    def vprint(self, str):
-        if self.verbose:
-            print(str)
 
     def load_content(self):
         """
@@ -96,33 +90,23 @@ class CommonSchema(data_source.PostgresDataSource):
         self.property = observation.physical_property
 
         # Chunk Larger DBs
-        self.add_paxdb()
-        self.vprint('Pax Completed')
-        self.add_intact_interactions()
-        self.vprint('IntAct Interactions Completed')
-        self.add_sabiodb()
-        self.vprint('Sabio Completed')
-        self.add_arrayexpress()
-        self.vprint('Array Express Completed')
+        self.build_pax()
+        self.build_intact_interactions()
+        self.build_sabio()
+        self.build_array_express()
 
         # Add complete smaller DBs
         if self.load_small_db_switch:
-            self.add_intact_complexes()
-            self.vprint('IntAct Complexes Completed')
-            self.add_corumdb()
-            self.vprint('Corum Completed')
-            self.add_jaspardb()
-            self.vprint('Jaspar Completed')
-            self.add_ecmdb()
-            self.vprint('ECMDB Completed')
+            self.build_intact_complexes()
+            self.build_corum()
+            self.build_jaspar()
+            self.build_ecmdb()
 
         # Add missing subunit information
-        self.add_uniprot()
-        self.vprint('Uniprot Completed')
+        self.build_uniprot()
 
         # Add missing Taxon information
-        self.fill_missing_ncbi_names()
-        self.vprint('NCBI Completed')
+        self.build_ncbi()
 
 
         self.vprint(''' \n
@@ -134,18 +118,16 @@ class CommonSchema(data_source.PostgresDataSource):
             =============================================
             ''' % (str(round(time.time() - t0, 1))))
 
-    def add_intact_interactions(self):
+    @timeit
+    def build_intact_interactions(self):
         """
         Collects IntAct.sqlite file and integrates interaction data into the common ORM
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing IntAct Parsing ------------------------')
-
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
-        multiplier = 1 if self.test else 1000
+        multiplier = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
         intact_progress = self.session.query(
             models.Progress).filter_by(database_name='IntAct').first()
         load_count = intact_progress.amount_loaded
@@ -155,10 +137,10 @@ class CommonSchema(data_source.PostgresDataSource):
                 intact.ProteinInteraction).all()
         else:
             interactiondb = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
-                (range(load_count, load_count + (self.max_entries * multiplier)))).all()
+                (range(load_count, load_count + batch))).all()
 
 
-        batch = []
+        batch_list = []
         for i in interactiondb:
 
             metadata = self.get_or_create_object(models.Metadata, name='protein_interaction_' + str(i.index))
@@ -174,25 +156,21 @@ class CommonSchema(data_source.PostgresDataSource):
                 if type == 'protein':
                     self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
 
-            batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
+            batch_list.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
                 protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
                 stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
                 role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
 
-            load_count += 1
+        self.session.add_all(batch_list)
 
-        self.session.add_all(batch)
-
-        intact_progress.amount_loaded = load_count
+        intact_progress.amount_loaded = load_count + batch
 
         self.vprint('Comitting')
         self.session.commit()
 
 
-        self.vprint('Total time taken for IntAct Interactions: ' +
-              str(time.time() - t0) + ' secs')
-
-    def add_paxdb(self):
+    @timeit
+    def build_pax(self):
         """
         Collects Pax.sqlite file and integrates its data into the common ORM
 
@@ -200,22 +178,19 @@ class CommonSchema(data_source.PostgresDataSource):
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing Pax Parsing ------------------------')
-
-        t0 = time.time()
         paxdb = pax.Pax(cache_dirname=self.cache_dirname, verbose=self.verbose)
         pax_ses = paxdb.session
-        multiplier = .1 if self.test else .5
-        pax_progress = self.session.query(
-            models.Progress).filter_by(database_name='Pax').first()
+        batch = PAX_TEST_BATCH if self.test else PAX_BUILD_BATCH
+
+        pax_progress = self.session.query(models.Progress).filter_by(database_name='Pax').first()
+
         load_count = pax_progress.amount_loaded
 
         if self.max_entries == float('inf'):
             pax_dataset = pax_ses.query(pax.Dataset).all()
         else:
             pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_
-                                                            (range(load_count, load_count + int(self.max_entries * multiplier)))).all()
+                                                            (range(load_count, load_count + batch))).all()
 
         for dataset in pax_dataset:
             metadata = self.get_or_create_object(
@@ -254,25 +229,16 @@ class CommonSchema(data_source.PostgresDataSource):
                     pax_load=dataset.id).filter_by(uniprot_id=rows.uniprot_id).first()
                 rows.dataset = self.property.abundance_dataset
 
-        pax_progress.amount_loaded = load_count + \
-            (self.max_entries * multiplier)
-
+        pax_progress.amount_loaded = load_count + batch
 
         self.vprint('Comitting')
         self.session.commit()
 
+    @timeit
+    def build_array_express(self):
 
-        self.vprint('Total time taken for Pax: ' +
-              str(time.time() - t0) + ' secs')
-
-    def add_arrayexpress(self):
-
-        self.vprint(
-            '\n------------------------ Initializing Array Express Parsing ------------------------')
-
-        t0 = time.time()
         ae = array_express.ArrayExpress(cache_dirname=self.cache_dirname)
-        multiplier = 1 if self.test else 2
+        batch = ARRAY_EXPRESS_TEST_BATCH if self.test else ARRAY_EXPRESS_BUILD_BATCH
         array_progress = self.session.query(models.Progress).filter_by(
             database_name='Array Express').first()
         load_count = array_progress.amount_loaded
@@ -281,7 +247,7 @@ class CommonSchema(data_source.PostgresDataSource):
             experiments = ae.session.query(array_express.Experiment).all()
         else:
             experiments = ae.session.query(array_express.Experiment).filter(array_express.Experiment._id.in_
-                                                                            (range(load_count, load_count + (int(self.max_entries * multiplier)))))
+                                                                            (range(load_count, load_count + batch)))
 
         for exp in experiments:
 
@@ -392,31 +358,24 @@ class CommonSchema(data_source.PostgresDataSource):
 
                 flask_experiment.samples.append(flask_sample)
 
-        array_progress.amount_loaded = load_count + \
-            (self.max_entries * multiplier)
+        array_progress.amount_loaded = load_count + batch
 
 
         self.vprint('Comitting')
         self.session.commit()
 
-
-        self.vprint('Total time taken for Array Express: ' +
-              str(time.time() - t0) + ' secs')
-
-    def add_sabiodb(self):
+    @timeit
+    def build_sabio(self):
         """
         Collects SabioRK.sqlite file and integrates its data into the common ORM
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing SabioRk Parsing ------------------------')
-
         t0 = time.time()
         sabiodb = sabio_rk.SabioRk(
             cache_dirname=self.cache_dirname, verbose=self.verbose)
         sabio_ses = sabiodb.session
-        multiplier = 10 if self.test else 1000
+        multiplier = SABIO_TEST_BATCH if self.test else SABIO_BUILD_BATCH
         sabio_progress = self.session.query(
             models.Progress).filter_by(database_name='Sabio').first()
         load_count = sabio_progress.amount_loaded
@@ -425,9 +384,8 @@ class CommonSchema(data_source.PostgresDataSource):
             sabio_entry = sabio_ses.query(sabio_rk.Entry)
         else:
             sabio_entry = sabio_ses.query(sabio_rk.Entry).filter(sabio_rk.Entry._id.in_
-                                                                 (range(load_count, load_count + int(self.max_entries * multiplier))))
+                                                                 (range(load_count, load_count + batch)))
 
-        counter = 1
         for item in sabio_entry:
             metadata = self.get_or_create_object(models.Metadata, name='Kinetic Law ' + str(
                 item.id)) if item._type == 'kinetic_law' else self.get_or_create_object(models.Metadata, name=item.name)
@@ -523,18 +481,13 @@ class CommonSchema(data_source.PostgresDataSource):
                         param.compound) if param.compound else None
                 continue
 
-        sabio_progress.amount_loaded = load_count + \
-            (self.max_entries * multiplier)
-
+        sabio_progress.amount_loaded = load_count + batch
 
         self.vprint('Comitting')
         self.session.commit()
 
 
-        self.vprint('Total time taken for Sabio: ' +
-              str(time.time() - t0) + ' secs')
-
-    def add_corumdb(self):
+    def build_corum(self):
         """
         Collects Corum.sqlite file and integrates its data into the common ORM
 
@@ -597,7 +550,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for Corum: ' +
               str(time.time() - t0) + ' secs')
 
-    def add_jaspardb(self):
+    def build_jaspar(self):
         """
         Collects Jaspar.sqlite file and integrates its data into the common ORM
 
@@ -689,7 +642,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for Jaspar: ' +
               str(time.time() - t0) + ' secs')
 
-    def add_ecmdb(self):
+    def build_ecmdb(self):
         """
         Collects ECMDB.sqlite file and integrates its data into the common ORM
 
@@ -762,7 +715,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for ECMDB: ' +
               str(time.time() - t0) + ' secs')
 
-    def add_intact_complexes(self):
+    def build_intact_complexes(self):
         """
         Collects IntAct.sqlite file and integrates complex data into the common ORM
 
@@ -814,7 +767,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for IntAct Complex: ' +
               str(time.time() - t0) + ' secs')
 
-    def add_uniprot(self):
+    def build_uniprot(self):
         """
         Collects Uniprot.sqlite file and integrates data into existing ProteinSubunit table
 
@@ -851,7 +804,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for Uniprot: ' +
               str(time.time() - t0) + ' secs')
 
-    def fill_missing_ncbi_names(self):
+    def build_ncbi(self):
         """
         Uses NCBI package to integrate data into existing Taxon table
 

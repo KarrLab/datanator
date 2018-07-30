@@ -4,7 +4,8 @@ from sqlalchemy_searchable import SearchQueryMixin
 from sqlalchemy_utils.types import TSVectorType
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
-from kinetic_datanator import create_app
+from kinetic_datanator.app import create_app, db
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 
@@ -510,7 +511,7 @@ class PhysicalEntity(Observation):
     __tablename__ = 'physical_entity'
 
     observation_id = db.Column(db.Integer, db.ForeignKey(
-        'observation.id'), primary_key=True)
+        'observation.id'), primary_key=True, autoincrement=True)
     type = db.Column(db.String(255))
     name = db.Column(db.String(255))
 
@@ -541,7 +542,7 @@ class ProteinSubunit(PhysicalEntity):
     __searchable__ = ['subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence']
 
     subunit_id = db.Column(db.Integer, db.ForeignKey(
-        'physical_entity.observation_id'), primary_key=True)
+        'physical_entity.observation_id'), primary_key=True, autoincrement=True)
     subunit_name = db.Column(db.String(255))
     uniprot_id = db.Column(db.String(255))
     entrez_id = db.Column(db.Integer)

@@ -43,6 +43,7 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
         if self.verbose:
             print(str)
 
+
 class PostgresDataSource(DataSource):
     """ Represents a Postgres database
 
@@ -53,9 +54,14 @@ class PostgresDataSource(DataSource):
     def __init__(self, cache_dirname=None,name=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, restore_backup=True, verbose=False):
 
-        super(PostgresDataSource, self).__init__(name=name)
+        super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
-        self.app = create_app()
+        self.app.app_context().push()
+
+        # name
+        if not cache_dirname:
+            cache_dirname = CACHE_DIRNAME
+        self.cache_dirname = cache_dirname
         # max entries
         self.max_entries = max_entries
         # committing
@@ -75,6 +81,7 @@ class PostgresDataSource(DataSource):
             :obj:`sqlalchemy.engine.Engine`: database engine
         """
 
+
         engine = self.base_model.engine
         if not database_exists(engine.url):
             create_database(engine.url)
@@ -84,6 +91,7 @@ class PostgresDataSource(DataSource):
 
     def clear_content(self):
         """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
+
         self.base_model.drop_all()
         self.base_model.create_all()
 
@@ -93,7 +101,6 @@ class PostgresDataSource(DataSource):
         Returns:
             :obj:`sqlalchemy.orm.session.Session`: database session
         """
-
         return self.base_model.session
 
 
@@ -114,8 +121,8 @@ class PostgresDataSource(DataSource):
         Returns:
             :obj:`base_model`: SQLAlchemy object of type :obj:`cls`
         """
+
         q = self.session.query(cls).filter_by(**kwargs)
-        print(q)
         self.session.flush()
         if q.count():
             return q.first()
@@ -143,7 +150,7 @@ class CachedDataSource(DataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backups=True, verbose=False):
+                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=True):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -170,6 +177,8 @@ class CachedDataSource(DataSource):
 
         # committing
         self.commit_intermediate_results = commit_intermediate_results
+
+        self.flask = flask
 
         """ Create SQLAlchemy session and load content if necessary """
         if os.path.isfile(self.filename):

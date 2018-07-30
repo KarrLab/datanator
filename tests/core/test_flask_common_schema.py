@@ -92,8 +92,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
                                 load_content = True, max_entries = 10,
                                 verbose = True, test=True)
 
-        for item in self.cs.text_indicies:
-            flask_whooshalchemy.whoosh_index(self.cs.app, item)
 
     @classmethod
     def tearDownClass(self):
