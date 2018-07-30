@@ -19,7 +19,7 @@ class TestMetaboliteConcentrationQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
         self.proline = flk.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
         self.uridine_tp = flk.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
 

@@ -27,7 +27,7 @@ class TestProteintoDNAInteractionQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
 
         self.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
         self.q = dpi.ProteintoDNAInteractionQuery(cache_dirname=self.cache_dirname)

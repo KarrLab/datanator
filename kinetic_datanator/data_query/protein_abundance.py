@@ -31,7 +31,7 @@ class ProteinAbundanceQuery(data_query.CachedDataSourceQueryGenerator):
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,
             temperature=temperature, temperature_std=temperature_std,
             ph=ph, ph_std=ph_std,
-            data_source=common_schema.FlaskCommonSchema(cache_dirname = cache_dirname))
+            data_source=common_schema.CommonSchema(cache_dirname = cache_dirname))
 
     def get_observed_result(self, protein):
         """ Find the observed values for protein abundance

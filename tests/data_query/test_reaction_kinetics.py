@@ -29,7 +29,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
 
         self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=self.cache_dirname, include_variants=True)
 

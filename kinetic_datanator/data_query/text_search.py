@@ -26,7 +26,7 @@ class TextSearchSession(object):
 
     def __init__(self, db_cache_dirname = os.getcwd()):
 
-        flaskdb = common_schema.FlaskCommonSchema(cache_dirname = db_cache_dirname)
+        flaskdb = common_schema.CommonSchema(cache_dirname = db_cache_dirname)
         self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=db_cache_dirname, include_variants=True)
 
 

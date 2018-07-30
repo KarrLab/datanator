@@ -216,7 +216,7 @@ class AggregateBuildController(controller.CementBaseController):
     @controller.expose(help='Controller that controls aggregated')
     def default(self):
         pargs = self.app.pargs
-        common_schema.FlaskCommonSchema(cache_dirname=pargs.path, load_content=True,
+        common_schema.CommonSchema(cache_dirname=pargs.path, load_content=True,
                                               download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
@@ -274,7 +274,7 @@ class DownloadController(controller.CementBaseController):
     @controller.expose(help='Loads Aggregated DB from Karr Lab Server')
     def aggregate(self):
         pargs = self.app.pargs
-        common_schema.FlaskCommonSchema(cache_dirname=pargs.path, download_backups=True)
+        common_schema.CommonSchema(cache_dirname=pargs.path, download_backups=True)
 
     @controller.expose(hide=True)
     def default(self):

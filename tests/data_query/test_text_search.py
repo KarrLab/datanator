@@ -21,7 +21,7 @@ class TestTextSearchSession(unittest.TestCase):
         self.cache_dirname = tempfile.mkdtemp()
         self.sesh = text_search.TextSearchSession(db_cache_dirname=self.cache_dirname)
 
-        flaskdb = common_schema.FlaskCommonSchema(cache_dirname = self.cache_dirname)
+        flaskdb = common_schema.CommonSchema(cache_dirname = self.cache_dirname)
 
         for item in flaskdb.text_indicies:
             flask_whooshalchemy.whoosh_index(models.app, item)

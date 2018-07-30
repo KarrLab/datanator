@@ -13,8 +13,10 @@ import requests_cache
 import six
 import sqlalchemy
 import sqlalchemy.orm
+from sqlalchemy_utils.functions import database_exists, create_database
 import sys
 import tarfile
+import psycopg2
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 # :obj:`str`: default path for the sqlite database
@@ -27,7 +29,7 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
         name (:obj:`str`): name
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, verbose=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -35,6 +37,93 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
         if not name:
             name = self.__class__.__name__
         self.name = name
+        self.verbose = verbose
+
+    def vprint(self, str):
+        if self.verbose:
+            print(str)
+
+class PostgresDataSource(DataSource):
+    """ Represents a Postgres database
+
+    Need to have the data source be able to dump and restore from a dump
+
+    """
+
+    def __init__(self, cache_dirname=None,name=None, clear_content=False, load_content=False, max_entries=float('inf'),
+                 commit_intermediate_results=False, restore_backup=True, verbose=False):
+
+        super(PostgresDataSource, self).__init__(name=name)
+
+        self.app = create_app()
+        # max entries
+        self.max_entries = max_entries
+        # committing
+        self.commit_intermediate_results = commit_intermediate_results
+
+        self.engine = self.get_engine()
+        if clear_content:
+            self.clear_content()
+        self.session = self.get_session()
+        if load_content:
+            self.load_content()
+
+    def get_engine(self):
+        """ Get an engine for the postgres database. If the database doesn't exist, initialize its structure.
+
+        Returns:
+            :obj:`sqlalchemy.engine.Engine`: database engine
+        """
+
+        engine = self.base_model.engine
+        if not database_exists(engine.url):
+            create_database(engine.url)
+            self.base_model.metadata.create_all(engine)
+
+        return engine
+
+    def clear_content(self):
+        """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
+        self.base_model.drop_all()
+        self.base_model.create_all()
+
+    def get_session(self):
+        """ Get a session for the sqlite database
+
+        Returns:
+            :obj:`sqlalchemy.orm.session.Session`: database session
+        """
+
+        return self.base_model.session
+
+
+    @abc.abstractmethod
+    def load_content(self):
+        """ Load the content of the local copy of the data source """
+        pass
+
+    def get_or_create_object(self, cls, **kwargs):
+        """ Get the SQLAlchemy object of type :obj:`cls` with attribute/value pairs specified by `**kwargs`. If
+        an object with these attribute/value pairs does not exist, create an object with these attribute/value pairs
+        and add it to the SQLAlchemy session.
+
+        Args:
+            cls (:obj:`class`): child class of :obj:`base_model`
+            **kwargs (:obj:`dict`, optional): attribute-value pairs of desired SQLAlchemy object of type :obj:`cls`
+
+        Returns:
+            :obj:`base_model`: SQLAlchemy object of type :obj:`cls`
+        """
+        q = self.session.query(cls).filter_by(**kwargs)
+        print(q)
+        self.session.flush()
+        if q.count():
+            return q.first()
+        else:
+            obj = cls(**kwargs)
+            self.session.add(obj)
+            return obj
+
 
 
 class CachedDataSource(DataSource):
@@ -54,7 +143,7 @@ class CachedDataSource(DataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=False):
+                 commit_intermediate_results=False, download_backups=True, verbose=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -81,12 +170,6 @@ class CachedDataSource(DataSource):
 
         # committing
         self.commit_intermediate_results = commit_intermediate_results
-
-        # verbosity
-        self.verbose = verbose
-
-        # flaskosity
-        self.flask = flask
 
         """ Create SQLAlchemy session and load content if necessary """
         if os.path.isfile(self.filename):

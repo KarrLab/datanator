@@ -22,7 +22,7 @@ class TestUploadData(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
@@ -43,7 +43,7 @@ class TestUploadDataFromJson(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         #self.cache_dirname = "/home/yosef/Desktop/angular"
-        self.flk = common_schema.FlaskCommonSchema(cache_dirname=self.cache_dirname)
+        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
 
 
     @classmethod

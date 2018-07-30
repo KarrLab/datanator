@@ -19,7 +19,7 @@ class Uploader():
 class UploadData():
     def __init__(self, cache_dirname=CACHE_DIRNAME):
         self.cache_dirname = cache_dirname
-        self.flask = common_schema.FlaskCommonSchema(cache_dirname=cache_dirname)
+        self.flask = common_schema.CommonSchema(cache_dirname=cache_dirname)
 
 
     def upload_reference_genome(self, path_to_annotation_file):

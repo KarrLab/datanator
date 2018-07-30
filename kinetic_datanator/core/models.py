@@ -4,7 +4,7 @@ from sqlalchemy_searchable import SearchQueryMixin
 from sqlalchemy_utils.types import TSVectorType
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
-from kinetic_datanator import create_app, db
+from kinetic_datanator import create_app
 import os
 
 
