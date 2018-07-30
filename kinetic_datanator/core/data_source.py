@@ -14,13 +14,12 @@ import six
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy_utils.functions import database_exists, create_database
+from kinetic_datanator.util.constants import DATA_CACHE_DIR, BASEDIR
 import sys
 import tarfile
 import psycopg2
-
-CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
-# :obj:`str`: default path for the sqlite database
-
+import gzip
+from sh import pg_dump, psql
 
 class DataSource(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents an external data source
@@ -60,7 +59,7 @@ class PostgresDataSource(DataSource):
 
         # name
         if not cache_dirname:
-            cache_dirname = CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
         # max entries
         self.max_entries = max_entries
@@ -102,6 +101,16 @@ class PostgresDataSource(DataSource):
             :obj:`sqlalchemy.orm.session.Session`: database session
         """
         return self.base_model.session
+
+
+    def dump(self):
+        with open(os.path.join(DATA_CACHE_DIR,'CommonSchemaBackup.dump'), 'wb') as f:
+          pg_dump('-h', 'localhost', 'CommonSchema', _out=f)
+
+    def restore_dump(self):
+        path = os.path.relpath(os.path.join(DATA_CACHE_DIR,'CommonSchemaBackup.dump'), BASEDIR)
+        print(path)
+        psql('CommonSchema' ' <', path)
 
 
     @abc.abstractmethod
@@ -169,7 +178,7 @@ class CachedDataSource(DataSource):
         """ Set settings """
         # name
         if not cache_dirname:
-            cache_dirname = CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
         # loading
@@ -359,7 +368,7 @@ class HttpDataSource(CachedDataSource):
         if not name:
             name = self.__class__.__name__
         if not cache_dirname:
-            cache_dirname = CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
 
         """ Request settings """
         # todo (enhancement): avoid python version-specific requests cache; this currently is necessary because request_cache uses

@@ -93,11 +93,11 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
                                 verbose = True, test=True)
 
 
-    @classmethod
-    def tearDownClass(self):
-        models.db.session.remove()
-        models.db.drop_all()
-        shutil.rmtree(self.cache_dirname)
+    # @classmethod
+    # def tearDownClass(self):
+    #     models.db.session.remove()
+    #     models.db.drop_all()
+    #     shutil.rmtree(self.cache_dirname)
 
 
     def test_ncbi(self):
@@ -118,8 +118,6 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         pax_session = pax_compare.session
 
         dataset = session.query(models.AbundanceDataSet).first()
-        print(session.query(models.AbundanceDataSet).all())
-        print(str(session.query(models.AbundanceData)))
         comparison = pax_session.query(pax.Dataset).filter_by(file_name = dataset.file_name).first()
         self.assertEqual(dataset.score, comparison.score)
         self.assertEqual(dataset.weight, comparison.weight)

@@ -1,8 +1,8 @@
 import os
 
 ## Paths
-BASEDIR = os.path.abspath(os.path.dirname(__file__))
-DATA_CACHE_DIR = os.path.join(BASEDIR, '..', 'data', 'cache')
+BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+DATA_CACHE_DIR = os.path.join(BASEDIR, 'kinetic_datanator', 'data', 'cache')
 
 ## Batching Test Constants
 PAX_TEST_BATCH = 2
