@@ -20,6 +20,7 @@ from kinetic_datanator.app import create_app, db
 from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 from ete3 import NCBITaxa
+from sqlalchemy.sql import func
 
 
 class CommonSchema(data_source.PostgresDataSource):
@@ -127,7 +128,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
-        multiplier = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
+        batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
         intact_progress = self.session.query(
             models.Progress).filter_by(database_name='IntAct').first()
         load_count = intact_progress.amount_loaded
@@ -269,7 +270,7 @@ class CommonSchema(data_source.PostgresDataSource):
                 models.Resource,
                 namespace="ArrayExpress",
                 _id=exp.id,
-                release_date=exp.release_date
+                release_date=str(exp.release_date)
             ))
 
             exp_metadata.method = [
@@ -375,7 +376,7 @@ class CommonSchema(data_source.PostgresDataSource):
         sabiodb = sabio_rk.SabioRk(
             cache_dirname=self.cache_dirname, verbose=self.verbose)
         sabio_ses = sabiodb.session
-        multiplier = SABIO_TEST_BATCH if self.test else SABIO_BUILD_BATCH
+        batch = SABIO_TEST_BATCH if self.test else SABIO_BUILD_BATCH
         sabio_progress = self.session.query(
             models.Progress).filter_by(database_name='Sabio').first()
         load_count = sabio_progress.amount_loaded
@@ -715,16 +716,12 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Total time taken for ECMDB: ' +
               str(time.time() - t0) + ' secs')
 
+    @timeit
     def build_intact_complexes(self):
         """
         Collects IntAct.sqlite file and integrates complex data into the common ORM
 
         """
-
-        self.vprint(
-            '\n------------------------ Initializing IntAct Complex Parsing ------------------------')
-
-        t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
         intact_ses = intactdb.session
 
@@ -739,6 +736,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         complexdb = intactdb.session.query(intact.ProteinComplex).all() if max_entries == float('inf') \
             else intactdb.session.query(intact.ProteinComplex).limit(self.max_entries).all()
+
         for row in complexdb:
             metadata = self.get_or_create_object(
                 models.Metadata, name=row.name)
@@ -764,8 +762,6 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-        self.vprint('Total time taken for IntAct Complex: ' +
-              str(time.time() - t0) + ' secs')
 
     def build_uniprot(self):
         """

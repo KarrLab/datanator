@@ -246,32 +246,4 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         uni = session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q72DQ8').first()
         self.assertEqual(uni.subunit_name, 'PYRH_DESVH')
         self.assertEqual(uni.entrez_id, 2795170)
-        self.assertEqual(uni.length, 238)
-
-
-# class DownloadLoadingTestFlaskCommonSchema(unittest.TestCase):
-#
-#     @classmethod
-#     def setUpClass(self):
-#         self.cache_dirname = tempfile.mkdtemp()
-#
-#         self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
-#                                 download_backups= True, load_content = True, max_entries = 10,
-#                                 verbose = True, test=True)
-#
-#         for item in self.cs.text_indicies:
-#             flask_whooshalchemy.whoosh_index(self.cs.app, item)
-#
-#         self.session = self.cs.session
-#
-#
-#     @classmethod
-#     def tearDownClass(self):
-#         models.db.session.remove()
-#         models.db.drop_all()
-#
-#         shutil.rmtree(self.cache_dirname)
-#
-#     def test_progress_check(self):
-#         for prog in self.session.query(models.Progress).all():
-#             self.assertGreaterEqual(prog.amount_loaded, self.prev_load[prog.database_name])
+        self.assertEqual(uni.length, '238')
