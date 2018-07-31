@@ -488,16 +488,13 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
+    @timeit
     def build_corum(self):
         """
         Collects Corum.sqlite file and integrates its data into the common ORM
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing Corum Parsing ------------------------')
-
-        t0 = time.time()
         corumdb = corum.Corum(
             cache_dirname=self.cache_dirname, verbose=self.verbose)
         corum_ses = corumdb.session
@@ -547,10 +544,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-
-        self.vprint('Total time taken for Corum: ' +
-              str(time.time() - t0) + ' secs')
-
+    @timeit
     def build_jaspar(self):
         """
         Collects Jaspar.sqlite file and integrates its data into the common ORM
@@ -559,10 +553,6 @@ class CommonSchema(data_source.PostgresDataSource):
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing Jaspar Parsing ------------------------')
-
-        t0 = time.time()
         jaspardb = jaspar.Jaspar(
             cache_dirname=self.cache_dirname, verbose=self.verbose)
 
@@ -639,20 +629,13 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-
-        self.vprint('Total time taken for Jaspar: ' +
-              str(time.time() - t0) + ' secs')
-
+    @timeit
     def build_ecmdb(self):
         """
         Collects ECMDB.sqlite file and integrates its data into the common ORM
 
         """
 
-        self.vprint(
-            '\n------------------------ Initializing ECMDB Parsing ------------------------')
-
-        t0 = time.time()
         ecmDB = ecmdb.Ecmdb(
             cache_dirname=self.cache_dirname, verbose=self.verbose)
         ecm_ses = ecmDB.session
@@ -713,9 +696,6 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-        self.vprint('Total time taken for ECMDB: ' +
-              str(time.time() - t0) + ' secs')
-
     @timeit
     def build_intact_complexes(self):
         """
@@ -762,17 +742,12 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-
+    @timeit
     def build_uniprot(self):
         """
         Collects Uniprot.sqlite file and integrates data into existing ProteinSubunit table
 
         """
-
-        self.vprint(
-            '\n------------------------ Initializing Uniprot Parsing ------------------------')
-
-        t0 = time.time()
 
         unidb = uniprot.Uniprot(cache_dirname=self.cache_dirname)
         unidb_ses = unidb.session
@@ -796,20 +771,11 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-
-        self.vprint('Total time taken for Uniprot: ' +
-              str(time.time() - t0) + ' secs')
-
     def build_ncbi(self):
         """
         Uses NCBI package to integrate data into existing Taxon table
 
         """
-
-        self.vprint(
-            '\n------------------------ Initializing NCBI Parsing ------------------------')
-
-        t0 = time.time()
 
         ncbi = NCBITaxa()
 
@@ -827,7 +793,3 @@ class CommonSchema(data_source.PostgresDataSource):
 
         self.vprint('Comitting')
         self.session.commit()
-
-
-        self.vprint('Total time taken for NCBI: ' +
-              str(time.time() - t0) + ' secs')
