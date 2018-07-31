@@ -14,12 +14,12 @@ import six
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy_utils.functions import database_exists, create_database
-from kinetic_datanator.util.constants import DATA_CACHE_DIR, BASEDIR
+from kinetic_datanator.util.constants import DATA_CACHE_DIR, DATA_DUMP_PATH
 import sys
 import tarfile
 import psycopg2
-import gzip
-from sh import pg_dump, psql
+from subprocess import PIPE,Popen
+
 
 class DataSource(six.with_metaclass(abc.ABCMeta, object)):
     """ Represents an external data source
@@ -102,16 +102,23 @@ class PostgresDataSource(DataSource):
         """
         return self.base_model.session
 
+    def dump_table(self):
 
-    def dump(self):
-        with open(os.path.join(DATA_CACHE_DIR,'CommonSchemaBackup.dump'), 'wb') as f:
-          pg_dump('-h', 'localhost', 'CommonSchema', _out=f)
+        command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
+        .format('localhost','CommonSchema', DATA_DUMP_PATH)
 
-    def restore_dump(self):
-        path = os.path.relpath(os.path.join(DATA_CACHE_DIR,'CommonSchemaBackup.dump'), BASEDIR)
-        print(path)
-        psql('CommonSchema' ' <', path)
+        p = Popen(command,shell=True,stdin=PIPE)
 
+        return p.communicate()
+
+    def restore_table(self):
+
+        command = 'pg_restore -h {0} -d {1} < {2}'\
+        .format('localhost','CommonSchema', DATA_DUMP_PATH)
+
+        p = Popen(command,shell=True,stdin=PIPE)
+
+        return p.communicate()
 
     @abc.abstractmethod
     def load_content(self):
