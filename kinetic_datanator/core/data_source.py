@@ -56,15 +56,12 @@ class PostgresDataSource(DataSource):
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
         self.app.app_context().push()
-
         # name
         if not cache_dirname:
             cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
         # max entries
         self.max_entries = max_entries
-        # committing
-        self.commit_intermediate_results = commit_intermediate_results
 
         self.engine = self.get_engine()
         if clear_content:
@@ -102,7 +99,52 @@ class PostgresDataSource(DataSource):
         """
         return self.base_model.session
 
-    def dump_table(self):
+    # def upload_backups(self):
+    #     """ Backup the local sqlite database to the Karr Lab server """
+    #     for a_backup in self.get_backups(set_metadata=True):
+    #         backup.BackupManager() \
+    #             .create(a_backup) \
+    #             .upload(a_backup) \
+    #             .cleanup(a_backup)
+    #
+    # def download_backups(self):
+    #     """ Download the local sqlite database from the Karr Lab server """
+    #     for a_backup in self.get_backups(download=True):
+    #         backup_manager = backup.BackupManager()
+    #         backup_manager \
+    #             .download(a_backup) \
+    #             .extract(a_backup) \
+    #             .cleanup(a_backup)
+    #
+    # def get_backups(self, download=False, set_metadata=False):
+    #     """ Get a list of the files to backup/unpack
+    #
+    #     Args:
+    #         download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+    #         set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
+    #
+    #     Returns:
+    #         :obj:`list` of :obj:`backup.Backup`: backups
+    #     """
+    #     list_backups = []
+    #     a_backup = backup.Backup()
+    #     path = backup.BackupPath(self.filename, self.name + '.dump')
+    #     a_backup.paths.append(path)
+    #     a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
+    #     a_backup.remote_filename = path.arc_path + '.tar.gz'
+    #
+    #     if set_metadata:
+    #         a_backup.set_username_ip_date()
+    #         a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+    #
+    #     list_backups.append(a_backup)
+    #
+    #     return list_backups
+
+    def dump_database(self):
+        """ Create a dump file of the postgres database
+
+        """
 
         command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
         .format('localhost','CommonSchema', DATA_DUMP_PATH)
@@ -111,7 +153,10 @@ class PostgresDataSource(DataSource):
 
         return p.communicate()
 
-    def restore_table(self):
+    def restore_database(self):
+        """ Restore a dump file of the postgres database
+
+        """
 
         command = 'pg_restore -h {0} -d {1} < {2}'\
         .format('localhost','CommonSchema', DATA_DUMP_PATH)

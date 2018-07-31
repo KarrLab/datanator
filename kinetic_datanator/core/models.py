@@ -8,8 +8,11 @@ from kinetic_datanator.app import create_app, db
 from flask_sqlalchemy import SQLAlchemy
 import os
 
-
+make_searchable()
 #TODO: Need to add search vectors for full text searching
+
+class FullTextQuery(BaseQuery, SearchQueryMixin):
+    pass
 
 class Observation(db.Model):
     """
@@ -30,7 +33,7 @@ class Observation(db.Model):
 
 
     def __repr__(self):
-        return 'Observation(%s)' % (self.id)
+        return 'Observation({0})'.format(self.id)
 
 
 """
@@ -261,7 +264,7 @@ class Method(db.Model):
 
     """
     __tablename__ = 'method'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -269,6 +272,7 @@ class Method(db.Model):
     performer = db.Column(db.String)
     hardware = db.Column(db.String)
     software = db.Column(db.String)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Method(%s||%s)' % (self.name, self.id)
@@ -285,11 +289,12 @@ class Characteristic(db.Model):
 
     """
     __tablename__ = 'characteristic'
-    #__searchable__ = ['name']
+    #query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.String)
     value = db.Column(db.String)
+    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Charactaristic(%s)' % (self.id)
@@ -305,12 +310,13 @@ class Variable(db.Model):
 
     """
     __tablename__ = 'variable'
-    #__searchable__ = ['name']
+    #query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.String)
     value = db.Column(db.String)
     units = db.Column(db.String)
+    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Variable(%s)' % (self.id)
@@ -378,10 +384,12 @@ class Taxon(db.Model):
 
     """
     __tablename__ = 'taxon'
-    __searchable__ = ['ncbi_id', 'name']
+    query_class = FullTextQuery
 
     ncbi_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    search_vector = db.Column(TSVectorType('ncbi_id', 'name'))
+
 
     def __repr__(self):
         return 'Taxon(%s||%s)' % (self.name, self.ncbi_id)
@@ -398,10 +406,11 @@ class Synonym(db.Model):
 
     """
 
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    search_vector = db.Column(TSVectorType('name'))
 
     __tablename__ = 'synonym'
 
@@ -438,10 +447,11 @@ class CellLine(db.Model):
 
     """
     __tablename__ = 'cell_line'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'CellLine(%s||%s)' % (self.name, self.id)
@@ -486,10 +496,11 @@ class CellCompartment(db.Model):
 
     """
     __tablename__ = 'cell_compartment'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, index=True)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'CellCompartment(%s||%s)' % (self.name, self.id)
@@ -536,7 +547,7 @@ class ProteinSubunit(PhysicalEntity):
     """
 
     __tablename__ = 'protein_subunit'
-    __searchable__ = ['subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence']
+    query_class = FullTextQuery
 
     subunit_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True, autoincrement=True)
@@ -555,6 +566,7 @@ class ProteinSubunit(PhysicalEntity):
     molecular_weight = db.Column(db.Float)
     pax_load = db.Column(db.Integer)
     uniprot_checked = db.Column(db.Boolean)
+    search_vector = db.Column(TSVectorType('subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence'))
 
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
@@ -586,7 +598,7 @@ class ProteinComplex(PhysicalEntity):
         molecular_weight (:obj:`float`): Molecular weight of subunit
     """
     __tablename__ = 'protein_complex'
-    __searchable__ = ['complex_name', 'go_id', 'funcat_id', 'su_cmt']
+    query_class = FullTextQuery
 
     complex_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
@@ -601,6 +613,7 @@ class ProteinComplex(PhysicalEntity):
     class_name = db.Column(db.String)
     family_name = db.Column(db.String)
     molecular_weight = db.Column(db.Float)
+    search_vector = db.Column(TSVectorType('complex_name', 'go_id', 'funcat_id', 'su_cmt'))
 
     def __repr__(self):
         return self.__class__.__name__+'||%s' % (self.id)
@@ -620,7 +633,7 @@ class Compound(PhysicalEntity):
 
     """
     __tablename__ = 'compound'
-    __searchable__ = ['compound_name', 'description']
+    query_class = FullTextQuery
 
     compound_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
@@ -628,6 +641,7 @@ class Compound(PhysicalEntity):
     description = db.Column(db.String)
     comment = db.Column(db.String)
     _is_name_ambiguous = db.Column(db.Boolean)
+    search_vector = db.Column(TSVectorType('compound_name', 'description'))
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
     structure = db.relationship('Structure', backref='compound')
@@ -718,7 +732,7 @@ class ProteinInteraction(PhysicalProperty):
     """
 
     __tablename__ = 'protein_interactions'
-    __searchable__ = ['protein_a', 'protein_b', 'gene_a', 'gene_b']
+    query_class = FullTextQuery
 
     interaction_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
@@ -737,6 +751,7 @@ class ProteinInteraction(PhysicalProperty):
     stoich_b = db.Column(db.String)
     interaction_type = db.Column(db.String)
     confidence = db.Column(db.String)
+    search_vector = db.Column(TSVectorType('protein_a', 'protein_b', 'gene_a', 'gene_b'))
 
     def __repr__(self):
         return 'ProteinInteratction(%s)' % (self.interaction_id)
