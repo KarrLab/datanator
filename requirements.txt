@@ -8,7 +8,10 @@ ete3
 flask
 flask_migrate
 flask_sqlalchemy
-git+https://github.com/Karrlab/Flask-WhooshAlchemy.git#egg=flask_whooshalchemy-0.80 >= 0.80
+flask_login
+flask_bcrypt
+flask_script
+sqlalchemy_searchable
 jxmlease
 mock
 natsort

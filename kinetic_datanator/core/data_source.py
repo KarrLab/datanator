@@ -56,6 +56,7 @@ class PostgresDataSource(DataSource):
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
         self.app.app_context().push()
+        self.base_model.configure_mappers() #very important!
         # name
         if not cache_dirname:
             cache_dirname = DATA_CACHE_DIR
@@ -272,27 +273,17 @@ class CachedDataSource(DataSource):
         if not os.path.isdir(os.path.dirname(self.filename)):
             os.makedirs(os.path.dirname(self.filename))
 
-        if self.flask:
-            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
-            self.app.config['WHOOSH_BASE'] = self.cache_dirname + '/whoosh_cache/'
-            engine = self.base_model.engine
-            if not os.path.isfile(self.filename):
-                self.base_model.metadata.create_all(engine)
-        else:
-            engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
-            if not os.path.isfile(self.filename):
-                self.base_model.metadata.create_all(engine)
+        engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
+
+        if not os.path.isfile(self.filename):
+            self.base_model.metadata.create_all(engine)
 
         return engine
 
     def clear_content(self):
         """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
-        if self.flask:
-            self.base_model.drop_all()
-            self.base_model.create_all()
-        else:
-            self.base_model.metadata.drop_all(self.engine)
-            self.base_model.metadata.create_all(self.engine)
+        self.base_model.metadata.drop_all(self.engine)
+        self.base_model.metadata.create_all(self.engine)
 
     def get_session(self):
         """ Get a session for the sqlite database
@@ -342,17 +333,6 @@ class CachedDataSource(DataSource):
         if set_metadata:
             a_backup.set_username_ip_date()
             a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-        if self.flask:
-            whoosh_backup = backup.Backup()
-            path = backup.BackupPath(self.cache_dirname + '/whoosh_cache/', 'whoosh_cache')
-            whoosh_backup.paths.append(path)
-            whoosh_backup.local_filename = path.arc_path
-            whoosh_backup.remote_filename = path.arc_path + '.tar.gz'
-            if set_metadata:
-                whoosh_backup.set_username_ip_date()
-                whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-            list_backups.append(whoosh_backup)
 
         list_backups.append(a_backup)
 

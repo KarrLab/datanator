@@ -9,7 +9,6 @@ This code is a common schema for all the kinetic_datanator modules
 import os
 import time
 import re
-import flask_whooshalchemy
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
@@ -30,7 +29,6 @@ class CommonSchema(data_source.PostgresDataSource):
     """
     app = create_app()
     base_model = db
-    text_indicies = [cls for name, cls in models.__dict__.items() if hasattr(cls,'__searchable__')]
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, restore_backup=True, verbose=False, load_entire_small_DBs=False, test=True):

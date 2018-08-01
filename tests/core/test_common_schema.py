@@ -10,7 +10,6 @@
 import unittest
 from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.data_source import pax
-import flask_whooshalchemy
 import flask
 import tempfile
 import shutil
@@ -26,9 +25,6 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
-
-        for item in self.flk.text_indicies:
-            flask_whooshalchemy.whoosh_index(self.flk.app, item)
 
     @classmethod
     def tearDownClass(self):
@@ -245,3 +241,9 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         self.assertEqual(uni.subunit_name, 'PYRH_DESVH')
         self.assertEqual(uni.entrez_id, 2795170)
         self.assertEqual(uni.length, '238')
+
+    def test_text_search(self):
+        search_name = 'Riboflavin-5-phosphate'
+        search = models.Compound.query.search(search_name).all()
+        self.assertEqual(len(search), 1)
+        self.assertEqual(search[0].compound_name, search_name)
