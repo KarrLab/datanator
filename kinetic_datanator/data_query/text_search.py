@@ -13,7 +13,6 @@ import six
 import os
 from kinetic_datanator.data_query import dna_protein_interactions, metabolite_concentrations, protein_abundance, protein_protein_interactions, reaction_kinetics
 from kinetic_datanator.core import common_schema, models
-import flask_whooshalchemy
 
 
 class TextSearchSession(object):
@@ -30,9 +29,6 @@ class TextSearchSession(object):
         self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=db_cache_dirname, include_variants=True)
 
 
-        for item in flaskdb.text_indicies:
-            flask_whooshalchemy.whoosh_index(models.app, item)
-
     def return_search(self, string):
         """
         Collects and creates dictionary of all Database objects coming up in a full
@@ -46,9 +42,9 @@ class TextSearchSession(object):
             dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
-        compound = models.Compound.query.whoosh_search(string).all()
-        complex = models.ProteinComplex.query.whoosh_search(string).all()
-        subunit = models.ProteinSubunit.query.whoosh_search(string).all()
+        compound = models.Compound.query.search(string).all()
+        complex = models.ProteinComplex.query.search(string).all()
+        subunit = models.ProteinSubunit.query.search(string).all()
 
         rxns = []
         for item in compound:

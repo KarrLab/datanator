@@ -18,82 +18,21 @@ import os
 from six.moves import reload_module
 
 
-@unittest.skip('skip')
-class DownloadTestFlaskCommonSchema(unittest.TestCase):
-
+class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+        self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
+                                clear_content = True, restore_backup= False,
+                                load_content = True, max_entries = 10,
+                                verbose = True, test=True)
+
 
     @classmethod
     def tearDownClass(self):
         models.db.session.remove()
         models.db.drop_all()
         shutil.rmtree(self.cache_dirname)
-
-    def test_repr_methods(self):
-
-         for tablename in self.flk.base_model.metadata.tables.keys():
-             for c in models.db.Model._decl_class_registry.values():
-                 if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
-                     self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
-
-
-
-    def test_serialization(self):
-        test_json = models.Compound.query.filter_by(compound_name='2-Hydroxyisocaproate').first().serialize()
-        self.assertEqual(test_json['compound_name'], '2-Hydroxyisocaproate')
-        self.assertEqual(test_json['_is_name_ambiguous'], False)
-
-        test_json = models.AbundanceDataSet.query.filter_by(file_name='882/882-Desulfo_Form_Exp_SC_zhang_2006.txt').first().serialize()
-        self.assertEqual(test_json['score'], 2.47)
-        self.assertEqual(test_json['weight'], 100)
-
-        test_json = models.Compound.query.filter_by(compound_name='Adenine').first().serialize(metadata=True, relationships=True)
-        self.assertEqual(test_json['compound_name'], 'Adenine')
-        self.assertEqual(test_json['relationships']['structure']['_value_inchi'], 'InChI=1S/C5H5N5/c6-4-3-5(9-1-7-3)10-2-8-4/h1-2H,(H3,6,7,8,9,10)')
-
-    def test_data_loaded(self):
-        session = self.flk.session
-        taxon = session.query(models.Taxon).filter_by(ncbi_id = 882).first()
-        self.assertEqual(taxon.name, 'Desulfovibrio vulgaris str. Hildenborough')
-
-        subunit = session.query(models.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
-        self.assertEqual(subunit.uniprot_id, 'P05549')
-        self.assertEqual(subunit.class_name, 'Basic helix-span-helix factors (bHSH)')
-        binding = session.query(models.DNABindingDataset).filter_by(subunit_id = subunit.subunit_id).first()
-        data = session.query(models.DNABindingData).filter_by(dataset_id = binding.dataset_id).first()
-        self.assertEqual(data.position, 1)
-        self.assertEqual(data.frequency_g, 185)
-
-    def test_whoosh_indexing(self):
-        for c in models.Compound.query.whoosh_search('2-Oxooctanoate').all():
-            self.assertEqual(c.name, '2-Oxooctanoate')
-            break
-
-    def test_size(self):
-        session = self.flk.session
-
-        subunits = session.query(models.ProteinSubunit).all()
-        self.assertGreater(len(subunits), 20000)
-
-
-class LoadingTestFlaskCommonSchema(unittest.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(
-                                clear_content = True, restore_backup= False,
-                                load_content = True, max_entries = 10,
-                                verbose = True, test=True)
-
-
-    # @classmethod
-    # def tearDownClass(self):
-    #     models.db.session.remove()
-    #     models.db.drop_all()
-    #     shutil.rmtree(self.cache_dirname)
 
 
     def test_ncbi(self):
@@ -247,3 +186,22 @@ class LoadingTestFlaskCommonSchema(unittest.TestCase):
         search = models.Compound.query.search(search_name).all()
         self.assertEqual(len(search), 1)
         self.assertEqual(search[0].compound_name, search_name)
+
+
+# class DownloadTestCommonSchema(unittest.TestCase):
+#     @classmethod
+#     def setUpClass(self):
+#         self.cache_dirname = tempfile.mkdtemp()
+#         self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
+#                                 clear_content = True, restore_backup= True,
+#                                 load_content = False, verbose = True, test=True)
+#
+#
+#     @classmethod
+#     def tearDownClass(self):
+#         models.db.session.remove()
+#         models.db.drop_all()
+#         shutil.rmtree(self.cache_dirname)
+#
+#
+#

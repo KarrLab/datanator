@@ -57,20 +57,15 @@ class CommonSchema(data_source.PostgresDataSource):
         self.test = test
 
         if load_content:
-            self.initialize_log()
+            
+            self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
+            self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
+            self.get_or_create_object(models.Progress, database_name=ARRAY_EXPRESS_NAME, amount_loaded=ARRAY_EXPRESS_INITIAL_AMOUNT)
+            self.get_or_create_object(models.Progress, database_name=INTACT_NAME, amount_loaded=INTACT_INITIAL_AMOUNT)
+            self.session.commit()
+
             self.load_small_db_switch = True
             self.load_content()
-
-    def initialize_log(self):
-
-        progress_initial_list = [(PAX_NAME, PAX_INITIAL_AMOUNT), (SABIO_NAME, SABIO_INITIAL_AMOUNT),
-            (ARRAY_EXPRESS_NAME, ARRAY_EXPRESS_INITIAL_AMOUNT), (INTACT_NAME, INTACT_INITIAL_AMOUNT)]
-
-        for database in progress_initial_list:
-            self.get_or_create_object(models.Progress, database_name= database[0], amount_loaded=database[1])
-
-        self.session.commit()
-
 
     @timeloadcontent
     def load_content(self):

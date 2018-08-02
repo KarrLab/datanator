@@ -11,7 +11,6 @@ from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.data_query import text_search
 import tempfile
 import shutil
-import flask_whooshalchemy
 import unittest
 
 class TestTextSearchSession(unittest.TestCase):
@@ -23,14 +22,9 @@ class TestTextSearchSession(unittest.TestCase):
 
         flaskdb = common_schema.CommonSchema(cache_dirname = self.cache_dirname)
 
-        for item in flaskdb.text_indicies:
-            flask_whooshalchemy.whoosh_index(models.app, item)
-
     @classmethod
     def tearDownClass(self):
         shutil.rmtree(self.cache_dirname)
-
-
 
     def test_list_return_objects(self):
         """
