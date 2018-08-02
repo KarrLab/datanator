@@ -16,25 +16,22 @@ class BaseConfig(object):
 class LocalDevelopmentConfig(BaseConfig):
     """Development configuration."""
     DEBUG = True
+    TESTING = False
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = 'postgres://localhost/CommonSchema'
     # SQLALCHEMY_BINDS = {'data': 'postgres://localhost/User'}
     DEBUG_TB_ENABLED = True
-    TESTING = False
 
 
-class LocalTestingConfig(BaseConfig):
+
+class CircleTestingConfig(BaseConfig):
     """Testing configuration."""
     DEBUG = True
     TESTING = True
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(
-        os.path.join(basedir,'cache', 'CommonSchema.sqlite'))
-    SQLALCHEMY_BINDS = {
-                        'data': 'sqlite:///{0}'.format(os.path.join(basedir,'cache', 'data.db'))
-                        }
+    SQLALCHEMY_DATABASE_URI = 'postgresql://ubuntu@localhost/CommonSchema?sslmode=disable'
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 

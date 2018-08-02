@@ -4,6 +4,11 @@ jobs:
     working_directory: /root/project
     docker:
       - image: karrlab/build:0.0.24
+      - image: circleci/postgres:9.6.5-alpine-ram
+        environment:
+          POSTGRES_USER: ubuntu
+          POSTGRES_DB: CommonSchema
+
     steps:
       # Clone repository
       - checkout

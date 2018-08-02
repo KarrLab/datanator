@@ -26,7 +26,7 @@ def create_app():
 
     # set config
     app_settings = os.getenv(
-        'APP_SETTINGS', 'kinetic_datanator.config.config.LocalDevelopmentConfig')
+        'APP_SETTINGS', 'kinetic_datanator.config.config.CircleTestingConfig')
     app.config.from_object(app_settings)
 
     # set up extensions
