@@ -12,7 +12,7 @@ import re
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.util.build_util import timeit
+from kinetic_datanator.util.build_util import timemethod, timeloadcontent
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
 from kinetic_datanator.app import create_app, db
@@ -65,23 +65,12 @@ class CommonSchema(data_source.PostgresDataSource):
             self.load_small_db_switch = True
             self.load_content()
 
+    @timeloadcontent
     def load_content(self):
         """
         A wrapper for loading all the databases into common ORM database
 
         """
-        self.vprint(''' \n
-            ===================================
-            |                                 |
-            |                                 |
-            |    Starting Datanator Build     |
-            |                                 |
-            |                                 |
-            ===================================
-
-            ''')
-        t0 = time.time()
-
         observation = models.Observation()
         observation.physical_entity = models.PhysicalEntity()
         self.entity = observation.physical_entity
@@ -108,16 +97,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.build_ncbi()
 
 
-        self.vprint(''' \n
-            =============================================
-            |                                           |
-            |             Finished Build                |
-            |   Total time taken for build: %s secs     |
-            |                                           |
-            =============================================
-            ''' % (str(round(time.time() - t0, 1))))
-
-    @timeit
+    @timemethod
     def build_intact_interactions(self):
         """
         Collects IntAct.sqlite file and integrates interaction data into the common ORM
@@ -168,7 +148,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-    @timeit
+    @timemethod
     def build_pax(self):
         """
         Collects Pax.sqlite file and integrates its data into the common ORM
@@ -233,7 +213,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-    @timeit
+    @timemethod
     def build_array_express(self):
 
         ae = array_express.ArrayExpress(cache_dirname=self.cache_dirname)
@@ -363,7 +343,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-    @timeit
+    @timemethod
     def build_sabio(self):
         """
         Collects SabioRK.sqlite file and integrates its data into the common ORM
@@ -486,7 +466,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-    @timeit
+    @timemethod
     def build_corum(self):
         """
         Collects Corum.sqlite file and integrates its data into the common ORM
@@ -542,7 +522,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-    @timeit
+    @timemethod
     def build_jaspar(self):
         """
         Collects Jaspar.sqlite file and integrates its data into the common ORM
@@ -627,7 +607,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-    @timeit
+    @timemethod
     def build_ecmdb(self):
         """
         Collects ECMDB.sqlite file and integrates its data into the common ORM
@@ -694,7 +674,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-    @timeit
+    @timemethod
     def build_intact_complexes(self):
         """
         Collects IntAct.sqlite file and integrates complex data into the common ORM
@@ -740,7 +720,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
-    @timeit
+    @timemethod
     def build_uniprot(self):
         """
         Collects Uniprot.sqlite file and integrates data into existing ProteinSubunit table
