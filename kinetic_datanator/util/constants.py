@@ -6,7 +6,14 @@ DATA_CACHE_DIR = os.path.join(BASEDIR, 'kinetic_datanator', 'data', 'cache')
 
 # Common Schema Constants
 DATA_DUMP_PATH = os.path.join(DATA_CACHE_DIR , 'CommonSchema.dump')
-
+PAX_NAME = 'Pax'
+PAX_INITIAL_AMOUNT = 1
+SABIO_NAME = 'Sabio'
+SABIO_INITIAL_AMOUNT = 1
+ARRAY_EXPRESS_NAME = 'Array Express'
+ARRAY_EXPRESS_INITIAL_AMOUNT = 1
+INTACT_NAME = 'IntAct'
+INTACT_INITIAL_AMOUNT = 0
 
 ## Batching Test Constants
 PAX_TEST_BATCH = 2

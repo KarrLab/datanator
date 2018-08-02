@@ -57,13 +57,20 @@ class CommonSchema(data_source.PostgresDataSource):
         self.test = test
 
         if load_content:
-            self.get_or_create_object(models.Progress, database_name='Pax', amount_loaded=1)
-            self.get_or_create_object(models.Progress, database_name='Sabio', amount_loaded=1)
-            self.get_or_create_object(models.Progress, database_name='Array Express', amount_loaded=1)
-            self.get_or_create_object(models.Progress, database_name='IntAct', amount_loaded=0)
-            self.session.commit()
+            self.initialize_log()
             self.load_small_db_switch = True
             self.load_content()
+
+    def initialize_log(self):
+
+        progress_initial_list = [(PAX_NAME, PAX_INITIAL_AMOUNT), (SABIO_NAME, SABIO_INITIAL_AMOUNT),
+            (ARRAY_EXPRESS_NAME, ARRAY_EXPRESS_INITIAL_AMOUNT), (INTACT_NAME, INTACT_INITIAL_AMOUNT)]
+
+        for database in progress_initial_list:
+            self.get_or_create_object(models.Progress, database_name= database[0], amount_loaded=database[1])
+
+        self.session.commit()
+
 
     @timeloadcontent
     def load_content(self):
@@ -71,6 +78,7 @@ class CommonSchema(data_source.PostgresDataSource):
         A wrapper for loading all the databases into common ORM database
 
         """
+
         observation = models.Observation()
         observation.physical_entity = models.PhysicalEntity()
         self.entity = observation.physical_entity
@@ -108,7 +116,7 @@ class CommonSchema(data_source.PostgresDataSource):
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
         batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
         intact_progress = self.session.query(
-            models.Progress).filter_by(database_name='IntAct').first()
+            models.Progress).filter_by(database_name=INTACT_NAME).first()
         load_count = intact_progress.amount_loaded
 
         if self.max_entries == float('inf'):
@@ -161,7 +169,7 @@ class CommonSchema(data_source.PostgresDataSource):
         pax_ses = paxdb.session
         batch = PAX_TEST_BATCH if self.test else PAX_BUILD_BATCH
 
-        pax_progress = self.session.query(models.Progress).filter_by(database_name='Pax').first()
+        pax_progress = self.session.query(models.Progress).filter_by(database_name=PAX_NAME).first()
 
         load_count = pax_progress.amount_loaded
 
@@ -219,7 +227,7 @@ class CommonSchema(data_source.PostgresDataSource):
         ae = array_express.ArrayExpress(cache_dirname=self.cache_dirname)
         batch = ARRAY_EXPRESS_TEST_BATCH if self.test else ARRAY_EXPRESS_BUILD_BATCH
         array_progress = self.session.query(models.Progress).filter_by(
-            database_name='Array Express').first()
+            database_name=ARRAY_EXPRESS_NAME).first()
         load_count = array_progress.amount_loaded
 
         if self.max_entries == float('inf'):
@@ -356,7 +364,7 @@ class CommonSchema(data_source.PostgresDataSource):
         sabio_ses = sabiodb.session
         batch = SABIO_TEST_BATCH if self.test else SABIO_BUILD_BATCH
         sabio_progress = self.session.query(
-            models.Progress).filter_by(database_name='Sabio').first()
+            models.Progress).filter_by(database_name=SABIO_NAME).first()
         load_count = sabio_progress.amount_loaded
 
         if self.max_entries == float('inf'):
