@@ -31,7 +31,7 @@ class CircleTestingConfig(BaseConfig):
     TESTING = True
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgresql://ubuntu@localhost/CommonSchema?sslmode=disable'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://ubuntu@localhost/CommonSchema'
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
