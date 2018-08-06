@@ -31,7 +31,7 @@ class CommonSchema(data_source.PostgresDataSource):
     base_model = db
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=True, verbose=False, load_entire_small_DBs=False, test=True):
+                 commit_intermediate_results=False, restore_backup=False, verbose=False, load_entire_small_DBs=False, test=True):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -57,7 +57,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.test = test
 
         if load_content:
-            
+
             self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
             self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
             self.get_or_create_object(models.Progress, database_name=ARRAY_EXPRESS_NAME, amount_loaded=ARRAY_EXPRESS_INITIAL_AMOUNT)

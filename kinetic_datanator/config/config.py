@@ -44,7 +44,7 @@ class BuildConfig(BaseConfig):
     WTF_CSRF_ENABLED = False
     #TODO: Need to determine the URI
     SQLALCHEMY_DATABASE_URI = 'postgres:///localhost/CommonSchema'
-    SQLALCHEMY_BINDS = {'data': 'postgres:///localhost/User'}
+    # SQLALCHEMY_BINDS = {'data': 'postgres:///localhost/User'}
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
@@ -53,9 +53,9 @@ class ProductionConfig(BaseConfig):
     SECRET_KEY = 'my_precious'
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/example'
-    SQLALCHEMY_BINDS = {
-                        'data': 'sqlite:///{0}'.format(os.path.join(basedir,'cache', 'data.db'))
-                        }
+    # SQLALCHEMY_BINDS = {
+    #                     'data': 'sqlite:///{0}'.format(os.path.join(basedir,'cache', 'data.db'))
+    #                     }
     DEBUG_TB_ENABLED = False
     WTF_CSRF_ENABLED = True
     TESTING = False

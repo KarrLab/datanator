@@ -50,13 +50,13 @@ class PostgresDataSource(DataSource):
 
     """
 
-    def __init__(self, cache_dirname=None,name=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=True, verbose=False):
+    def __init__(self, cache_dirname=None, name=None, clear_content=False, load_content=False, max_entries=float('inf'),
+                 commit_intermediate_results=False, restore_backup=False, verbose=False):
 
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
         self.app.app_context().push()
-        self.base_model.configure_mappers() #very important!
+        self.base_model.configure_mappers()
         # name
         if not cache_dirname:
             cache_dirname = DATA_CACHE_DIR
@@ -64,12 +64,19 @@ class PostgresDataSource(DataSource):
         # max entries
         self.max_entries = max_entries
 
-        self.engine = self.get_engine()
-        if clear_content:
-            self.clear_content()
-        self.session = self.get_session()
-        if load_content:
-            self.load_content()
+        if restore_backup:
+            self.restore_backup()
+            self.engine = self.get_engine()
+            self.session = self.get_session()
+            if load_content:
+                self.load_content()
+        else:
+            self.engine = self.get_engine()
+            if clear_content:
+                self.clear_content()
+            self.session = self.get_session()
+            if load_content:
+                self.load_content()
 
     def get_engine(self):
         """ Get an engine for the postgres database. If the database doesn't exist, initialize its structure.
@@ -100,47 +107,50 @@ class PostgresDataSource(DataSource):
         """
         return self.base_model.session
 
-    # def upload_backups(self):
-    #     """ Backup the local sqlite database to the Karr Lab server """
-    #     for a_backup in self.get_backups(set_metadata=True):
-    #         backup.BackupManager() \
-    #             .create(a_backup) \
-    #             .upload(a_backup) \
-    #             .cleanup(a_backup)
-    #
-    # def download_backups(self):
-    #     """ Download the local sqlite database from the Karr Lab server """
-    #     for a_backup in self.get_backups(download=True):
-    #         backup_manager = backup.BackupManager()
-    #         backup_manager \
-    #             .download(a_backup) \
-    #             .extract(a_backup) \
-    #             .cleanup(a_backup)
-    #
-    # def get_backups(self, download=False, set_metadata=False):
-    #     """ Get a list of the files to backup/unpack
-    #
-    #     Args:
-    #         download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-    #         set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
-    #
-    #     Returns:
-    #         :obj:`list` of :obj:`backup.Backup`: backups
-    #     """
-    #     list_backups = []
-    #     a_backup = backup.Backup()
-    #     path = backup.BackupPath(self.filename, self.name + '.dump')
-    #     a_backup.paths.append(path)
-    #     a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
-    #     a_backup.remote_filename = path.arc_path + '.tar.gz'
-    #
-    #     if set_metadata:
-    #         a_backup.set_username_ip_date()
-    #         a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-    #
-    #     list_backups.append(a_backup)
-    #
-    #     return list_backups
+    def upload_backup(self):
+        """ Backup the local sqlite database to the Karr Lab server """
+        print('here')
+        for a_backup in self.get_backups(set_metadata=True):
+            backup.BackupManager() \
+                .create(a_backup) \
+                .upload(a_backup) \
+                .cleanup(a_backup)
+
+    def restore_backup(self):
+        """ Download the local sqlite database from the Karr Lab server """
+        for a_backup in self.get_backups(download=True):
+            backup_manager = backup.BackupManager()
+            backup_manager \
+                .download(a_backup) \
+                .extract(a_backup) \
+                .cleanup(a_backup)
+
+        self.restore_database()
+
+    def get_backups(self, download=False, set_metadata=False):
+        """ Get a list of the files to backup/unpack
+
+        Args:
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
+
+        Returns:
+            :obj:`list` of :obj:`backup.Backup`: backups
+        """
+        list_backups = []
+        a_backup = backup.Backup()
+        path = backup.BackupPath(DATA_DUMP_PATH, self.name + '.dump')
+        a_backup.paths.append(path)
+        a_backup.local_filename = DATA_DUMP_PATH + '.tar.gz'
+        a_backup.remote_filename = path.arc_path + '.tar.gz'
+
+        if set_metadata:
+            a_backup.set_username_ip_date()
+            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+        list_backups.append(a_backup)
+
+        return list_backups
 
     def dump_database(self):
         """ Create a dump file of the postgres database
