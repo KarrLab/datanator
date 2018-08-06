@@ -22,11 +22,15 @@ def create_app():
 
     #TODO: Include API Templates
 
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+        template_folder='client/templates',
+        static_folder='client/static'
+    )
 
     # set config
     app_settings = os.getenv(
-        'APP_SETTINGS', 'kinetic_datanator.config.config.CircleTestingConfig')
+        'APP_SETTINGS', 'kinetic_datanator.config.config.LocalDevelopmentConfig')
     app.config.from_object(app_settings)
 
     # set up extensions
@@ -50,9 +54,9 @@ def create_app():
     # def load_user(user_id):
     #     return User.query.filter(User.id == int(user_id)).first()
 
-    # @app.errorhandler(401)
-    # def unauthorized_page(error):
-    #     return render_template('errors/401.html'), 401
+    @app.errorhandler(401)
+    def unauthorized_page(error):
+        return render_template('errors/401.html'), 401
     #
     # @app.errorhandler(403)
     # def forbidden_page(error):

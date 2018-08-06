@@ -10,6 +10,7 @@ flask_migrate
 flask_sqlalchemy
 flask_login
 flask_bcrypt
+flask_restplus
 flask_script
 sqlalchemy_searchable
 jxmlease

@@ -5,32 +5,32 @@
 :License: MIT
 """
 
-from flask_restful import Api, Resource, reqparse
-from flask import  Blueprint, jsonify, Response
+from flask_restplus import Api, Resource, reqparse
+from flask import  Blueprint, jsonify, Response, render_template, make_response
 from kinetic_datanator.core import common_schema, models
 import json
 import os
 
 cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
+
+def output_html(data, code, headers=None):
+    resp = make_response(render_template('api/api.html', content = data), code)
+    resp.headers.extend(headers or {})
+    return resp
+
+api_blueprint = Blueprint('api', __name__, url_prefix='/api')
+api = Api(api_blueprint, version='0.0', title='Datanator API',
+    description='Providing Data for Modelers', doc='/docs/')
+api.representations['text/html'] = output_html
+
+
 # flk = common_schema.CommonSchema(cache_dirname = cachedir)
 
-class Documentation(Resource):
-    """
-    Represents the documentation page of the API
+class TextSearch(Resource):
 
-    """
-    def get(self):
-        return {
-            'observation_info':  '/api/v1.0/Observation',
-            'physical_entity_info': '/api/v1.0/PhysicalEntity',
-            'physical_property_info': '/api/v1.0/PhysicalProperty',
-            'compound_table_info': '/api/v1.0/Compound',
-            'compound_structure_info': '/api/v1.0/Structure',
-            'protein_subunit_info': '/api/v1.0/ProteinSubunit',
-            'protein_complex_info': '/api/v1.0/ProteinComplex',
-            'concentration_info':  '/api/v1.0/Concentration',
-            'protein_interaction_info':  '/api/v1.0/ProteinInteraction'
-        }
+    @api.doc(params={'value': 'Value to search for over the database'})
+    def get(self, value):
+        return {'test' : value}
 
 # class DataDump(Resource):
 #     """
