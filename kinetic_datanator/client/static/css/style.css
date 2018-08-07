@@ -17,12 +17,29 @@ body {
   position: fixed;
   min-height: 100vh;
   min-width: 100vw;
-  background-color: #4f5b66;
+  background-color: #f1f9fc;
+}
+
+.error_wrapper{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width:100%;
+    /* bring your own prefixes */
+    transform: translate(-50%, -50%);
+}
+.error{
+    text-align: center;
+}
+
+.error_img{
+    width:100px;
+    margin:auto;
 }
 
 .brand{
   height:auto;
-  width:250px;
+  width:150px;
 }
 
 .content{
