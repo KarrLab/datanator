@@ -6,27 +6,30 @@
 [![License](https://img.shields.io/github/license/KarrLab/kinetic_datanator.svg)](LICENSE)
 ![Analytics](https://ga-beacon.appspot.com/UA-86759801-1/kinetic_datanator/README.md?pixel)
 
-# `kinetic_datanator`: tools for aggregating data for biochemical models
+# Kinetic Datanator: tools for aggregating data for cell modeling
 
 ## Contents
 * [Overview](#overview)
-* [Installation](#installation)
-* [Usage](#usage)
-* [Documentation](#documentation)
-* [Tests](#tests)
+* [Installation instructions and documentation](#installation-instructions-and-documentation)
+* [Testing Kinetic Datanator](#testing-kinetic_datanator)
 * [License](#license)
 * [Development team](#development-team)
 * [Questions and comments](#questions-and-comments)
-* [References](#references)
 
 ## Overview
-`kinetic_datanator` is a software tool for finding experimental data for building and calibrating dynamical models of cellular biochemistry such as metabolite, RNA, and protein abundances; protein complex compositions; transcription factor binding motifs; and kinetic parameters. ``kinetic_datanator`` is particularly useful for building large models, such as whole-cell models, that require large amounts of data to constrain large numbers of parameters. ``kinetic_datanator`` was motivated by the need for large amounts of data to constrain whole-cell models and the fact that this data is hard to utilize because it is scattered across numerous siloed repositories.
+Extensive data is needed to build comprehensive predictive models of cells. Although the literature and public repositories contain extensive data about cells, this data is hard to utilize for modeling because it is scattered across a large number of sources; because it is described with inconsistent identifiers, units, and data models; and because there are few tools for finding relevant data for modeling specific species and environmental conditions. 
 
-## Installation instructions, user instructions, and code documentation
-Please see the [documentation](http://docs.karrlab.org/kinetic_datanator) at the Read the Docs for installation instructions, user instructions, and code documentation. Kinetic Datanator only supports Python 3. 
+Kinetic Datanator is a software tool for discovering, aggregating, and integrating the data needed for modeling cells. This includes metabolite, RNA, and protein abundances; protein complex compositions; transcription factor binding motifs; and kinetic parameters. Kinetic Datanator is particularly useful for building large models, such as whole-cell models, that require large amounts of data to constrain large numbers of parameters.
 
-## Testing `kinetic_datanator`
-To ensure `kinetic_datanator` works properly, we have developed extensive units tests of every aspect of `kinetic_datanator`. We recommend using `pytest` to run these tests as follows:
+This package contains the source code for Kinetic Datanator. The data aggregated with Kinetic Datanator is available at [https://quiltdata.com/package/karrlab/kinetic_datanator](https://quiltdata.com/package/karrlab/kinetic_datanator).
+
+## Installation instructions and documentation
+Please see the [documentation](http://docs.karrlab.org/kinetic_datanator) for installation instructions, user instructions, and code documentation. 
+
+Note, Kinetic Datanator only supports Python 3. 
+
+## Testing Kinetic Datanator
+To ensure Kinetic Datanator works properly, we have developed extensive units tests of every aspect of `kinetic_datanator`. We recommend using `pytest` to run these tests as follows:
 
 ```
 python3 -m pytest tests
@@ -36,12 +39,12 @@ python3 -m pytest tests
 This software is released open-source under the [MIT license](LICENSE).
 
 ## Development team
-The model was developed by the following individuals in the [Karr Lab](http://www.karrlab.org) at the Icahn School of Medicine at Mount Sinai in New York, USA.
+The model was developed by the [Karr Lab](https://www.karrlab.org) at the Icahn School of Medicine at Mount Sinai in New York, US.
 
+* Saahith Pochiraju
 * Yosef Roth
 * Balazs Szigeti
-* Saahith Pochiraju
 * Jonathan Karr
 
 ## Questions and comments
-Please contact the [Karr Lab](http://www.karrlab.org) with any questions or comments.
+Please contact the [Karr Lab](https://www.karrlab.org) with any questions or comments.
