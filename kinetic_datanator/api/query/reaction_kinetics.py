@@ -8,7 +8,7 @@
 """
 
 from kinetic_datanator.core import data_model, data_query, models, common_schema
-# from kinetic_datanator.util import molecule_util
+from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
 import sqlalchemy.orm
@@ -436,9 +436,9 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
         """
         q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
-        # if only_formula_and_connectivity:
-        #     formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
-        #     condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
-        # else:
-        condition = models.Structure._value_inchi == inchi
+        if only_formula_and_connectivity:
+            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
+        else:
+            condition = models.Structure._value_inchi == inchi
         return q.filter(condition)
