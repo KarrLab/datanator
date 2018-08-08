@@ -8,6 +8,8 @@
 from flask_restplus import Api, Resource, reqparse
 from flask import  Blueprint, jsonify, Response, render_template, make_response
 from kinetic_datanator.core import common_schema, models
+from kinetic_datanator.api.lib.search.manager import search_manager
+from kinetic_datanator.api.serializer import *
 import json
 import os
 
@@ -30,8 +32,14 @@ class Search(Resource):
 
     @api.doc(params={'value': 'Value to search for over the database'})
     def get(self, value):
+        search_dict, search_list = search_manager.search(value)
 
-        return {'test' : value}
+        resp = []
+        resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
+        resp.append(ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data)
+        resp.append(ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data)
+
+        return jsonify(resp)
 
 # class DataDump(Resource):
 #     """

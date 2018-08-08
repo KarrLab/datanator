@@ -7,7 +7,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
-
+from flask_cors import CORS
 import re
 
 
@@ -18,7 +18,7 @@ toolbar = DebugToolbarExtension()
 migrate = Migrate()
 db = SQLAlchemy()
 ma = Marshmallow()
-
+cors = CORS()
 
 def create_app():
 
@@ -41,7 +41,9 @@ def create_app():
     toolbar.init_app(app)
     db.init_app(app)
     ma.init_app(app)
+    cors.init_app(app)
     migrate.init_app(app, db)
+
 
     # register blueprints
     from kinetic_datanator.api.urls import api_blueprint

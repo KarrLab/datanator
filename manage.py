@@ -1,4 +1,4 @@
-from flask_script import Manager
+from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
 
 from kinetic_datanator.app import create_app, db
@@ -10,6 +10,7 @@ manager = Manager(app)
 
 # migrations
 manager.add_command('migrate', MigrateCommand)
+manager.add_command("runserver", Server(host='localhost'))
 
 @manager.command
 def create_db():

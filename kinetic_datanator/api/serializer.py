@@ -1,6 +1,26 @@
 from kinetic_datanator.app import ma
+from kinetic_datanator.core import models
 
 
+class CompoundSerializer(ma.ModelSchema):
+    class Meta:
+        exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "_metadata", "concentration"]
+        model = models.Compound
+
+class ProteinComplexSerializer(ma.ModelSchema):
+    class Meta:
+        exclude = ["search_vector"]
+        model = models.ProteinComplex
+
+class ProteinSubunitSerializer(ma.ModelSchema):
+    class Meta:
+        exclude = ["search_vector"]
+        model = models.ProteinSubunit
+
+
+
+
+### ----------------------------------------------------- ######
 
 
 

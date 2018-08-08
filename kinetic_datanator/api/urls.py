@@ -7,13 +7,13 @@ V0_ENDPOINT = '/v0'
 api.add_resource(Search, V0_ENDPOINT+'/search/<value>')\
 
 
-
-"""
-Compound, /compound
-Protein Subunit, /subunit
-Protein Complex, /complex
-Reaction, /reaction
-ProteinInteractions, /interactions
-Abundance, /abundance
-
-"""
+# 
+# """
+# Compound, /compound
+# Protein Subunit, /subunit
+# Protein Complex, /complex
+# Reaction, /reaction
+# ProteinInteractions, /interactions
+# Abundance, /abundance
+#
+# """
