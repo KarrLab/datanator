@@ -6,6 +6,7 @@ from flask_bcrypt import Bcrypt
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_marshmallow import Marshmallow
 
 import re
 
@@ -16,6 +17,7 @@ bcrypt = Bcrypt()
 toolbar = DebugToolbarExtension()
 migrate = Migrate()
 db = SQLAlchemy()
+ma = Marshmallow()
 
 
 def create_app():
@@ -24,8 +26,8 @@ def create_app():
 
     app = Flask(
         __name__,
-        template_folder='client/templates',
-        static_folder='client/static'
+        template_folder='api/client/templates',
+        static_folder='api/client/static'
     )
 
     # set config
@@ -38,6 +40,7 @@ def create_app():
     bcrypt.init_app(app)
     toolbar.init_app(app)
     db.init_app(app)
+    ma.init_app(app)
     migrate.init_app(app, db)
 
     # register blueprints

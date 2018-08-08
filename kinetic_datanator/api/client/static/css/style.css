@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900');
+
 
 body, html {
   margin: 0;
@@ -67,4 +69,19 @@ body {
   text-decoration: none;
   border-top: 4px solid #FFCE54;
   padding: 6px 0;
+}
+
+.roboto{
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+}
+
+.roboto-white{
+    color:white;
+    font-weight: 300;
+    font-family: 'Roboto', sans-serif;
+}
+
+.pads{
+    padding:30px;
 }

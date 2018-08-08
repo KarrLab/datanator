@@ -13,23 +13,24 @@ import os
 
 cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
 
-def output_html(data, code, headers=None):
-    resp = make_response(render_template('api/api.html', content = data), code)
-    resp.headers.extend(headers or {})
-    return resp
+# def output_html(data, code, headers=None):
+#     resp = make_response(render_template('api/api.html', content = data), code)
+#     resp.headers.extend(headers or {})
+#     return resp
 
 api_blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(api_blueprint, version='0.0', title='Datanator API',
     description='Providing Data for Modelers', doc='/docs/')
-api.representations['text/html'] = output_html
+# api.representations['text/html'] = output_html
 
 
 # flk = common_schema.CommonSchema(cache_dirname = cachedir)
 
-class TextSearch(Resource):
+class Search(Resource):
 
     @api.doc(params={'value': 'Value to search for over the database'})
     def get(self, value):
+
         return {'test' : value}
 
 # class DataDump(Resource):

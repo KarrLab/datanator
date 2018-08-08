@@ -28,7 +28,7 @@ import shutil
 import sys
 import os
 from Bio import SeqIO
-from kinetic_datanator.data_query import reaction_kinetics
+from kinetic_datanator.api.query import reaction_kinetics
 #from kinetic_datanator.core import data_query
 
 

@@ -7,7 +7,7 @@
 """
 
 from kinetic_datanator.core import data_model, data_query, common_schema, models
-from kinetic_datanator.util import molecule_util
+# from kinetic_datanator.util import molecule_util
 
 
 

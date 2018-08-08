@@ -8,7 +8,7 @@
 """
 
 from kinetic_datanator.core import data_model, data_query, models, common_schema
-from kinetic_datanator.util import molecule_util
+# from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
 import sqlalchemy.orm
@@ -97,9 +97,9 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             compartments = {}
 
             cs_rxn = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id = law.kinetic_law_id)
-            reactants = cs_rxn.filter_by(_is_reactant = 1).all()
-            products = cs_rxn.filter_by(_is_product = 1).all()
-            modifiers = cs_rxn.filter_by(_is_modifier = 1).all()
+            reactants = cs_rxn.filter_by(_is_reactant = True).all()
+            products = cs_rxn.filter_by(_is_product = True).all()
+            modifiers = cs_rxn.filter_by(_is_modifier = True).all()
 
 
             for reactant in reactants:
@@ -348,11 +348,11 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             condition = models.Structure._value_inchi == structure
 
         if role == 'reactant':
-            participant_condition = models.Reaction._is_reactant == 1
+            participant_condition = models.Reaction._is_reactant == True
         elif role == 'product':
-            participant_condition = models.Reaction._is_product == 1
+            participant_condition = models.Reaction._is_product == True
         else:
-            participant_condition = models.Reaction._is_modifier == 1
+            participant_condition = models.Reaction._is_modifier == True
 
         session = self.data_source.session
 
@@ -379,11 +379,11 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         condition = models.Compound.compound_id == compound.compound_id
 
         if role == 'reactant':
-            participant_condition = models.Reaction._is_reactant == 1
+            participant_condition = models.Reaction._is_reactant == True
         elif role == 'product':
-            participant_condition = models.Reaction._is_product == 1
+            participant_condition = models.Reaction._is_product == True
         elif role == 'modifier':
-            participant_condition = models.Reaction._is_modifier == 1
+            participant_condition = models.Reaction._is_modifier == True
         else:
             raise ValueError('role does not exist')
 
@@ -436,9 +436,9 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
         """
         q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
-        if only_formula_and_connectivity:
-            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
-            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
-        else:
-            condition = models.Structure._value_inchi == inchi
+        # if only_formula_and_connectivity:
+        #     formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+        #     condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
+        # else:
+        condition = models.Structure._value_inchi == inchi
         return q.filter(condition)

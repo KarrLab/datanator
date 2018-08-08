@@ -11,7 +11,7 @@
 
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.data_query import reaction_kinetics
+from kinetic_datanator.api.query import reaction_kinetics
 from kinetic_datanator.util import taxonomy_util, molecule_util
 from kinetic_datanator.core import models, common_schema
 import unittest

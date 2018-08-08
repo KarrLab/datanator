@@ -7,7 +7,7 @@
 """
 
 from kinetic_datanator.core import data_model
-from kinetic_datanator.data_query import metabolite_concentrations
+from kinetic_datanator.api.query import metabolite_concentrations
 from kinetic_datanator.core import models, common_schema
 import tempfile
 import shutil
