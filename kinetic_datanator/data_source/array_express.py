@@ -333,7 +333,8 @@ class ArrayExpress(data_source.HttpDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False,
-                 clear_requests_cache=False, download_request_backup=False):
+                 clear_requests_cache=False, download_request_backup=False, 
+                 quilt_owner=None, quilt_package=None):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -347,6 +348,8 @@ class ArrayExpress(data_source.HttpDataSource):
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
         #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
         #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
@@ -354,7 +357,8 @@ class ArrayExpress(data_source.HttpDataSource):
                                            load_content=load_content, max_entries=max_entries,
                                            commit_intermediate_results=commit_intermediate_results,
                                            download_backups=download_backups, verbose=verbose,
-                                           clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
+                                           clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
+                                           quilt_owner=quilt_owner, quilt_package=quilt_package)
         
         #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
         #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]

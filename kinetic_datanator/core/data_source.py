@@ -5,16 +5,19 @@
 :License: MIT
 """
 
-from wc_utils import backup
 import abc
+import kinetic_datanator.config
 import os
 import requests
 import requests_cache
+import shutil
 import six
 import sqlalchemy
 import sqlalchemy.orm
 import sys
 import tarfile
+import tempfile
+import wc_utils.quilt
 
 CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 # :obj:`str`: default path for the sqlite database
@@ -49,12 +52,15 @@ class CachedDataSource(DataSource):
         commit_intermediate_results (:obj:`bool`): if :obj:`True`, commit the changes throughout the loading
             process. This is particularly helpful for restarting this method when webservices go offline.
         verbose (:obj:`bool`): if :obj:`True`, print status information to the standard output
+        quilt_owner (:obj:`str`): owner of Quilt package to save data
+        quilt_package (:obj:`str`): identifier of Quilt package to save data
 
         base_model (:obj:`Base`): base ORM model for the sqlite databse
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=False):
+                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=False,
+                 quilt_owner=None, quilt_package=None):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -66,6 +72,8 @@ class CachedDataSource(DataSource):
                 process. This is particularly helpful for restarting this method when webservices go offline.
             download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
 
         super(CachedDataSource, self).__init__(name=name)
@@ -87,6 +95,11 @@ class CachedDataSource(DataSource):
 
         # flaskosity
         self.flask = flask
+
+        # set Quilt configuration
+        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        self.quilt_owner = quilt_owner or quilt_config['owner']
+        self.quilt_package = quilt_package or quilt_config['package']
 
         """ Create SQLAlchemy session and load content if necessary """
         if os.path.isfile(self.filename):
@@ -153,57 +166,61 @@ class CachedDataSource(DataSource):
             return sqlalchemy.orm.sessionmaker(bind=self.engine)()
 
     def upload_backups(self):
-        """ Backup the local sqlite database to the Karr Lab server """
-        for a_backup in self.get_backups(set_metadata=True):
-            backup.BackupManager() \
-                .create(a_backup) \
-                .upload(a_backup) \
-                .cleanup(a_backup)
+        """ Backup the local sqlite database to Quilt """
+
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy new files to package
+        paths = self.get_paths_to_backup()
+        for path in paths:
+            if os.path.isfile(os.path.join(self.cache_dirname, path)):
+                shutil.copyfile(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+            else:
+                shutil.copytree(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+
+        # build and push package
+        manager.upload()
+
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
 
     def download_backups(self):
-        """ Download the local sqlite database from the Karr Lab server """
-        for a_backup in self.get_backups(download=True):
-            backup_manager = backup.BackupManager()
-            backup_manager \
-                .download(a_backup) \
-                .extract(a_backup) \
-                .cleanup(a_backup)
+        """ Download the local sqlite database from Quilt """
 
-    def get_backups(self, download=False, set_metadata=False):
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy requested files from package
+        paths = self.get_paths_to_backup()
+        for path in paths:
+            if os.path.isfile(os.path.join(tmp_dirname, path)):
+                shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+            else:
+                shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
+
+    def get_paths_to_backup(self):
         """ Get a list of the files to backup/unpack
 
-        Args:
-            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
-
         Returns:
-            :obj:`list` of :obj:`backup.Backup`: backups
+            :obj:`list` of :obj:`str`: list of paths to backup
         """
-        list_backups = []
-        a_backup = backup.Backup()
-        path = backup.BackupPath(self.filename, self.name + '.sqlite')
-        a_backup.paths.append(path)
-        a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
-        a_backup.remote_filename = path.arc_path + '.tar.gz'
-
-        if set_metadata:
-            a_backup.set_username_ip_date()
-            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-
+        paths = []
+        paths.append(self.name + '.sqlite')
         if self.flask:
-            whoosh_backup = backup.Backup()
-            path = backup.BackupPath(self.cache_dirname + '/whoosh_cache/', 'whoosh_cache')
-            whoosh_backup.paths.append(path)
-            whoosh_backup.local_filename = path.arc_path
-            whoosh_backup.remote_filename = path.arc_path + '.tar.gz'
-            if set_metadata:
-                whoosh_backup.set_username_ip_date()
-                whoosh_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-            list_backups.append(whoosh_backup)
-
-        list_backups.append(a_backup)
-
-        return list_backups
+            paths.append('whoosh_cache/')
+        return paths
 
     @abc.abstractmethod
     def load_content(self):
@@ -247,7 +264,9 @@ class HttpDataSource(CachedDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False,
-                 clear_requests_cache=False, download_request_backup=False, flask=False):
+                 clear_requests_cache=False, download_request_backup=False,
+                 quilt_owner=None, quilt_package=None,
+                 flask=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -261,6 +280,9 @@ class HttpDataSource(CachedDataSource):
             verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
             clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
+            flask (:obj:`bool`, optional)
         """
 
         """ CachedDataSource settings """
@@ -284,7 +306,9 @@ class HttpDataSource(CachedDataSource):
         super(HttpDataSource, self).__init__(name=name, cache_dirname=cache_dirname,
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
                                              commit_intermediate_results=commit_intermediate_results,
-                                             download_backups=download_backups, verbose=verbose, flask=flask)
+                                             download_backups=download_backups, verbose=verbose,
+                                             quilt_owner=quilt_owner, quilt_package=quilt_package,
+                                             flask=flask)
 
     def get_requests_session(self):
         """ Setup an cache-enabled HTTP request session
@@ -309,33 +333,15 @@ class HttpDataSource(CachedDataSource):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
 
-    def get_backups(self, download=False, set_metadata=False):
+    def get_paths_to_backup(self):
         """ Get a list of the files to backup/unpack
 
-        Args:
-            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
-
         Returns:
-            :obj:`list` of :obj:`backup.Backup`: backups
+            :obj:`list` of :obj:`str`: paths to backup
         """
-        backups = super(HttpDataSource, self).get_backups(download=download, set_metadata=set_metadata)
-        if download and not self.download_request_backup:
-            return backups
-
-        requests_cache_basename = self.name + '.requests.py{}.sqlite'.format(sys.version_info[0])
-        requests_cache_filename = os.path.join(os.path.dirname(self.requests_cache_filename), requests_cache_basename)
-        a_backup = backup.Backup()
-        path = backup.BackupPath(requests_cache_filename, requests_cache_basename)
-        a_backup.paths.append(path)
-        a_backup.local_filename = os.path.join(os.path.dirname(self.filename), path.arc_path + '.tar.gz')
-        a_backup.remote_filename = path.arc_path + '.tar.gz'
-        if set_metadata:
-            a_backup.set_username_ip_date()
-            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-        backups.append(a_backup)
-        return backups
+        paths = super(HttpDataSource, self).get_paths_to_backup()
+        paths.append(self.name + '.requests.py{}.sqlite'.format(sys.version_info[0]))
+        return paths
 
 
 class WebserviceDataSource(DataSource):

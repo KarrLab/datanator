@@ -30,7 +30,8 @@ class FlaskCommonSchema(data_source.HttpDataSource):
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False, load_entire_small_DBs=False,
-                 clear_requests_cache=False, download_request_backup=False, flask=True, test=False):
+                 clear_requests_cache=False, download_request_backup=False, flask=True, test=False,
+                 quilt_owner=None, quilt_package=None):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -45,13 +46,16 @@ class FlaskCommonSchema(data_source.HttpDataSource):
             load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
             flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
             test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
 
         super(FlaskCommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                                 load_content=False, max_entries=max_entries,
                                                 commit_intermediate_results=commit_intermediate_results,
                                                 download_backups=download_backups, verbose=verbose, flask=flask,
-                                                clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup)
+                                                clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
+                                                quilt_owner=quilt_owner, quilt_package=quilt_package)
 
         self.load_entire_small_DBs = load_entire_small_DBs
         self.test = test
