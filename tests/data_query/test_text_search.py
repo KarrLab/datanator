@@ -14,6 +14,7 @@ import shutil
 import flask_whooshalchemy
 import unittest
 
+@unittest.skip('Major refactoring in `backend` branch')
 class TestTextSearchSession(unittest.TestCase):
 
     @classmethod

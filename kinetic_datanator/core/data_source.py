@@ -134,7 +134,6 @@ class CachedDataSource(DataSource):
 
         if self.flask:
             self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
-            self.app.config['WHOOSH_BASE'] = self.cache_dirname + '/whoosh_cache/'
             engine = self.base_model.engine
             if not os.path.isfile(self.filename):
                 self.base_model.metadata.create_all(engine)
@@ -200,7 +199,7 @@ class CachedDataSource(DataSource):
         manager.download()
 
         # copy requested files from package
-        paths = self.get_paths_to_backup()
+        paths = self.get_paths_to_backup(download=True)
         for path in paths:
             if os.path.isfile(os.path.join(tmp_dirname, path)):
                 shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
@@ -210,16 +209,17 @@ class CachedDataSource(DataSource):
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
 
-    def get_paths_to_backup(self):
+    def get_paths_to_backup(self, download=False):
         """ Get a list of the files to backup/unpack
+
+        Args:
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
 
         Returns:
             :obj:`list` of :obj:`str`: list of paths to backup
         """
         paths = []
         paths.append(self.name + '.sqlite')
-        if self.flask:
-            paths.append('whoosh_cache/')
         return paths
 
     @abc.abstractmethod
@@ -333,14 +333,18 @@ class HttpDataSource(CachedDataSource):
         """ Clear the cache-enabled HTTP request session """
         self.requests_session.cache.clear()
 
-    def get_paths_to_backup(self):
+    def get_paths_to_backup(self, download=False):
         """ Get a list of the files to backup/unpack
+
+        Args:
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
 
         Returns:
             :obj:`list` of :obj:`str`: paths to backup
         """
-        paths = super(HttpDataSource, self).get_paths_to_backup()
-        paths.append(self.name + '.requests.py{}.sqlite'.format(sys.version_info[0]))
+        paths = super(HttpDataSource, self).get_paths_to_backup(download=download)
+        if not download or self.download_request_backup:
+            paths.append(self.name + '.requests.py{}.sqlite'.format(sys.version_info[0]))
         return paths
 
 
