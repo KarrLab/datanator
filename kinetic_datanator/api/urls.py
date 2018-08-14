@@ -3,7 +3,7 @@ from kinetic_datanator.api.views import *
 V0_ENDPOINT = '/v0'
 # Text Search
 api.add_resource(Search, V0_ENDPOINT+'/search/<value>')
-
+api.add_resource(Concentration, V0_ENDPOINT+'/concentrations/<id>')
 
 #
 # """

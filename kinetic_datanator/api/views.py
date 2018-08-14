@@ -32,7 +32,7 @@ class Search(Resource):
 
     @api.doc(params={'value': 'Value to search for over the database'})
     def get(self, value):
-        search_dict, search_list = search_manager.search(value)
+        search_dict = search_manager.search(value)
 
         resp = []
         resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
@@ -42,10 +42,12 @@ class Search(Resource):
 
 class Concentration(Resource):
 
-    @api.doc(params={'name': 'name of the metabolite to be searched for'})
-    def get(self, name):
-        pass
+    @api.doc(params={'id': 'ID number of the given compound'})
+    def get(self, id):
+        compound = metabolite_manager.get_compound_by_id(id)
+        observed_concentrations = metabolite_manager.get_observed_concentrations(compound)
 
+        return jsonify(ObservedValueSerializer().dump(observed_concentrations, many=True).data)
 
 # class DataDump(Resource):
 #     """

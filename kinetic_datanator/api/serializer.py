@@ -1,18 +1,50 @@
-from kinetic_datanator.app import ma
+from kinetic_datanator import ma
 from kinetic_datanator.core import models
 
 
-class CompoundSerializer(ma.ModelSchema):
+class CellCompartmentSerializer(ma.ModelSchema):
+
     class Meta:
-        exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "_metadata", "concentration"]
+        exclude = ["search_vector", '_metadata' , 'reaction']
+        model = models.CellCompartment
+
+class TaxonSerializer(ma.ModelSchema):
+
+    class Meta:
+        exclude = ["search_vector", '_metadata', '_experimentmetadata']
+        model = models.Taxon
+
+class MetadataSerializer(ma.ModelSchema):
+    cell_compartment = ma.Nested(CellCompartmentSerializer, many=True)
+    taxon = ma.Nested(TaxonSerializer, many=True)
+
+    class Meta:
+        fields = ['cell_compartment', "taxon"]
+        model = models.Metadata
+
+class StructureSerializer(ma.ModelSchema):
+
+    class Meta:
+        exclude = ['compound', 'name', 'type']
+        model = models.Structure
+
+class CompoundSerializer(ma.ModelSchema):
+
+    _metadata = ma.Nested(MetadataSerializer)
+    structure = ma.Nested(StructureSerializer)
+    
+    class Meta:
+        exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "concentration"]
         model = models.Compound
 
 class ProteinComplexSerializer(ma.ModelSchema):
+    _metadata = ma.Nested(MetadataSerializer)
     class Meta:
         exclude = ["search_vector"]
         model = models.ProteinComplex
 
 class ProteinSubunitSerializer(ma.ModelSchema):
+    _metadata = ma.Nested(MetadataSerializer)
     class Meta:
         exclude = ["search_vector"]
         model = models.ProteinSubunit
