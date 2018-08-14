@@ -25,9 +25,7 @@ from sqlalchemy.sql import func
 class CommonSchema(data_source.PostgresDataSource):
     """
     A Local SQLlite copy of the aggregation of data_source modules
-
     """
-    app = create_app()
     base_model = db
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
@@ -47,6 +45,7 @@ class CommonSchema(data_source.PostgresDataSource):
             flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
             test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
         """
+        self.app = create_app()
 
         super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                                 load_content=False, max_entries=max_entries,
