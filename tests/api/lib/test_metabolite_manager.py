@@ -26,8 +26,7 @@ class TestMetabolitehManager(unittest.TestCase):
 
     def test_get_compound_by_id(self):
         result = metabolite_manager.get_compound_by_id(61696)
-        print(result)
-
+        self.assertEqual(result.compound_name, 'Guanine')
 
     def test_get_observed_concentrations(self):
 

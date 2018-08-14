@@ -10,6 +10,8 @@ flask_migrate
 flask_sqlalchemy
 flask_login
 flask_bcrypt
+flask_marshmallow
+flask_cors
 flask_restplus
 flask_script
 sqlalchemy_searchable
