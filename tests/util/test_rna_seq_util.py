@@ -31,11 +31,11 @@ class TestKallisto(unittest.TestCase):
         ]
 
         # download files
-        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/blob/master/test/transcripts.fasta.gz',
+        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/raw/master/test/transcripts.fasta.gz',
                                    fasta_filename)
-        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/blob/master/test/reads_1.fastq.gz',
+        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/raw/master/test/reads_1.fastq.gz',
                                    fastq_filenames[0])
-        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/blob/master/test/reads_2.fastq.gz',
+        urllib.request.urlretrieve('https://github.com/pachterlab/kallisto/raw/master/test/reads_2.fastq.gz',
                                    fastq_filenames[1])
 
         # run kallisto on test files
