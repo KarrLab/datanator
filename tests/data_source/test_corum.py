@@ -117,4 +117,5 @@ class TestCorumDBCreation(unittest.TestCase):
             'Chromodomain-helicase-DNA-binding protein 8 ;'
             'Testis-expressed sequence 10 protein;'
             'Set1/Ash2 histone methyltransferase complex subunit ASH2;'
-            'RuvB-like 1;Ribosomal biogenesis protein LAS1L'))), 26)
+            'RuvB-like 1;'
+            'Ribosomal biogenesis protein LAS1L'))), 27)
