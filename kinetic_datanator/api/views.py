@@ -14,8 +14,6 @@ from kinetic_datanator.api.serializer import *
 import json
 import os
 
-cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
-
 # def output_html(data, code, headers=None):
 #     resp = make_response(render_template('api/api.html', content = data), code)
 #     resp.headers.extend(headers or {})
@@ -25,6 +23,10 @@ api_blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(api_blueprint, version='0.0', title='Datanator API',
     description='Providing Data for Modelers', doc='/docs/')
 # api.representations['text/html'] = output_html
+
+
+cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
+
 
 class Search(Resource):
 

@@ -55,7 +55,6 @@ class PostgresDataSource(DataSource):
 
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
-        self.app.app_context().push()
         self.base_model.configure_mappers()
         # name
         if not cache_dirname:

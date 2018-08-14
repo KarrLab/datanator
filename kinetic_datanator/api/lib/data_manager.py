@@ -1,16 +1,10 @@
 from kinetic_datanator.core import data_model, common_schema
-from kinetic_datanator.app import create_app
-
-
 
 
 class BaseManager(object):
 
     def __init__(self, cache_dirname=None):
-        self.data_source = common_schema.CommonSchema(cache_dirname= cache_dirname)
-        # app = create_app()
-        # app.app_context().push()
-
+        self.data_source = common_schema.CommonSchema(cache_dirname=cache_dirname)
 
     def metadata_dump(self, component):
         """ Calculate a consensus statistical representation of the one or more observed values

@@ -9,16 +9,18 @@
 from kinetic_datanator.core import data_model, common_schema, models
 from kinetic_datanator.api.lib.data_manager import BaseManager
 from kinetic_datanator.util import molecule_util
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 
 class MetaboliteManager(BaseManager):
 
     """ Manages metabolite information for API """
 
-    def __init__(self, cache_dirname = None):
-        super(MetaboliteManager, self).__init__(cache_dirname=cache_dirname)
+    def __init__(self, cache_dirname = DATA_CACHE_DIR):
+        self.data_source = common_schema.CommonSchema(cache_dirname=cache_dirname)
+        # super(MetaboliteManager, self).__init__(cache_dirname=cache_dirname)
 
     def get_compound_by_id(self, id):
-        return self.data_source.query(models.Compound).get(id)
+        return self.data_source.session.query(models.Compound).get(id)
 
     def get_observed_concentrations(self, compound):
         """ Find observed concentrations for the metabolite or similar metabolites

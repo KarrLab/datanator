@@ -1,10 +1,9 @@
 from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
 
-from kinetic_datanator.app import create_app, db
+from kinetic_datanator import app, db
 # from app.server.model import User
 
-app = create_app()
 migrate = Migrate(app, db)
 manager = Manager(app)
 

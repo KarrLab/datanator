@@ -15,7 +15,7 @@ from sqlalchemy.orm import relationship, backref, sessionmaker
 from kinetic_datanator.util.build_util import timemethod, timeloadcontent
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
-from kinetic_datanator.app import create_app, db
+from kinetic_datanator import db
 from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 from ete3 import NCBITaxa
@@ -45,7 +45,7 @@ class CommonSchema(data_source.PostgresDataSource):
             flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
             test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
         """
-        self.app = create_app()
+
 
         super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                                 load_content=False, max_entries=max_entries,

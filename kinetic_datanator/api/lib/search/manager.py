@@ -9,7 +9,7 @@
 import abc
 import six
 import os
-from kinetic_datanator.api.query import reaction_kinetics
+# from kinetic_datanator.api.query import reaction_kinetics
 from kinetic_datanator.core import models, common_schema
 from kinetic_datanator.util.constants import DATA_CACHE_DIR
 from kinetic_datanator.api.lib.data_manager import BaseManager
