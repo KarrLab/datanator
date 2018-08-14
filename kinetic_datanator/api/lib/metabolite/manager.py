@@ -7,19 +7,20 @@
 """
 
 from kinetic_datanator.core import data_model, common_schema, models
+from kinetic_datanator.api.lib.data_manager import BaseManager
 from kinetic_datanator.util import molecule_util
 
-
-
-class MetaboliteManager(object):
+class MetaboliteManager(BaseManager):
 
     """ Manages metabolite information for API """
 
     def __init__(self, cache_dirname = None):
+        super(MetaboliteManager, self).__init__(cache_dirname=cache_dirname)
 
-        self.data_source = common_schema.CommonSchema(cache_dirname= cache_dirname)
+    def get_compound_by_id(self, id):
+        return self.data_source.query(models.Compound).get(id)
 
-    def get_observed_result(self, compound):
+    def get_observed_concentrations(self, compound):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         Args:
@@ -32,14 +33,11 @@ class MetaboliteManager(object):
         concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False)
         observed_values = []
 
-        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
-
         for c in concentrations:
             metadata = self.metadata_dump(c)
 
             observable = data_model.Observable(
-                specie = data_model.Specie(name = compound.compound_name,
-                cross_references = references , structure=compound.structure._value_inchi),
+                specie = self._port(compound),
                 compartment = data_model.Compartment(name = c._metadata.cell_compartment[0].name)
             )
 
@@ -85,8 +83,10 @@ class MetaboliteManager(object):
         return models.Compound.query.search(value).all()
 
 
-    def _port_to(self, compound):
-        pass
+    def _port(self, compound):
+        structure = compound.structure._value_inchi if compound.structure else None
+        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
+        return data_model.Specie(id=compound.compound_id, name=compound.compound_name, structure = structure, cross_references = references)
 
 
 metabolite_manager = MetaboliteManager()

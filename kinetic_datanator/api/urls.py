@@ -4,10 +4,10 @@ V0_ENDPOINT = '/v0'
 
 
 # Text Search
-api.add_resource(Search, V0_ENDPOINT+'/search/<value>')\
+api.add_resource(Search, V0_ENDPOINT+'/search/<value>')
 
 
-# 
+#
 # """
 # Compound, /compound
 # Protein Subunit, /subunit

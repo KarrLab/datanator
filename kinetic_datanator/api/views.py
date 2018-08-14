@@ -1,6 +1,6 @@
 """
 :Author: Saahith Pochiraju <saahith116@gmail.com>
-:Date: 2017-02-28
+:Date: 2018-08-13
 :Copyright: 2018, Karr Lab
 :License: MIT
 """
@@ -9,6 +9,7 @@ from flask_restplus import Api, Resource, reqparse
 from flask import  Blueprint, jsonify, Response, render_template, make_response
 from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.api.lib.search.manager import search_manager
+from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
 from kinetic_datanator.api.serializer import *
 import json
 import os
@@ -25,9 +26,6 @@ api = Api(api_blueprint, version='0.0', title='Datanator API',
     description='Providing Data for Modelers', doc='/docs/')
 # api.representations['text/html'] = output_html
 
-
-# flk = common_schema.CommonSchema(cache_dirname = cachedir)
-
 class Search(Resource):
 
     @api.doc(params={'value': 'Value to search for over the database'})
@@ -38,8 +36,14 @@ class Search(Resource):
         resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
         resp.append(ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data)
         resp.append(ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data)
-
         return jsonify(resp)
+
+class Concentration(Resource):
+
+    @api.doc(params={'name': 'name of the metabolite to be searched for'})
+    def get(self, name):
+        pass
+
 
 # class DataDump(Resource):
 #     """
