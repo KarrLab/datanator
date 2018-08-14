@@ -249,6 +249,15 @@ class CachedDataSource(DataSource):
             return obj
 
 
+class FtpDataSource(CachedDataSource):
+    """ An external data source which can be obtained via a FTP interface
+
+    Attributes:
+        ENDPOINT_DOMAINS (:obj:`dict` of :obj:`str`, :obj:`str`): dictionary of domains to retry
+    """
+    ENDPOINT_DOMAINS = {}
+
+
 class HttpDataSource(CachedDataSource):
     """ An external data source which can be obtained via a HTTP interface
 
