@@ -41,7 +41,8 @@ jobs:
             - /usr/local/lib/python3.6/site-packages
 
       # Restore Database
-      - run: Restore Database
+      - run:
+          name: Restore Database
           command: |
             python3 manage.py restore_db
 
