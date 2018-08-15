@@ -47,7 +47,7 @@ jobs:
             echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
             wget --no-check-certificate -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O- | sudo -u root apt-key add -
             sudo apt-get update
-            Y | sudo apt-get install postgresql-9.6 postgresql-client-9.6
+            yes Y | sudo apt-get install postgresql-9.6 postgresql-client-9.6
             mkdir kinetic_datanator/data/cache
             python3 manage.py restore_db
 
