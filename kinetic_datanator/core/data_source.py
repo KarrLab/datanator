@@ -84,6 +84,7 @@ class CachedDataSource(DataSource):
             cache_dirname = CACHE_DIRNAME
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
+        
         # loading
         self.max_entries = max_entries
 
