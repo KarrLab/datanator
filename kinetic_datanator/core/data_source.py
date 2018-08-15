@@ -180,7 +180,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname)
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
 
         p = Popen(command,shell=True,stdin=PIPE)
 
@@ -192,7 +192,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_restore -h {0} -d {1} < {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname)
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
 
         p = Popen(command,shell=True,stdin=PIPE)
 
