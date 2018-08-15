@@ -10,7 +10,6 @@
 from ftplib import FTP
 from kinetic_datanator.core import data_source
 from six import BytesIO
-from six.moves.urllib.request import urlretrieve
 from sqlalchemy import Column, Integer, String
 import glob
 import pandas

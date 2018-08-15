@@ -2,9 +2,6 @@ from kinetic_datanator.core import data_source
 import sqlalchemy.ext.declarative
 import pandas as pd
 from sqlalchemy import Column, Integer, String, Float
-# from six.moves.urllib.request import urlretrieve
-# import gzip
-# from six import BytesIO
 
 
 Base = sqlalchemy.ext.declarative.declarative_base()

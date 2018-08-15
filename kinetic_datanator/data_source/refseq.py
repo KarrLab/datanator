@@ -18,7 +18,6 @@ import Bio
 import json
 import math
 import tempfile
-import requests
 import os
 import gzip
 import shutil
@@ -124,6 +123,18 @@ class Refseq(data_source.HttpDataSource):
                                            clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
                                            quilt_owner=quilt_owner, quilt_package=quilt_package)
 
+    def get_paths_to_backup(self, download=False):
+        """ Get a list of the files to backup/unpack
+
+        Args:
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of paths to backup
+        """
+        paths = []
+        paths.append('refseq/')
+        return paths
 
     def load_content(self, list_bio_seqio_objects):
         session = self.session
@@ -225,40 +236,46 @@ class Refseq(data_source.HttpDataSource):
 
         self.session.commit()
 
-
-
     def upload_data_from_kegg_org_symbol(self, kegg_org_symbol):
+        # get FTP URL for sequence
         url = self.get_ref_seq_url(kegg_org_symbol)
-        #directory = "{}/RefSeq_Files".format((os.path.dirname(os.path.realpath(__file__))))
-        directory = tempfile.mkdtemp()
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-        filename = "{}/{}.gbff.gz".format(directory, kegg_org_symbol)
+
+        # create directory to store sequence files
+        dirname = os.path.join(self.cache_dirname, 'refseq')
+        if not os.path.isdir(dirname):
+            os.mkdir(dirname)
+
+        # download sequence
+        filename = os.path.join(dirname, "{}.gbff.gz".format(kegg_org_symbol))
         attempts = 0
         while attempts < 10:
             try:
-                urlretrieve(url, "{}".format(filename))
+                urlretrieve(url, filename)
                 break
-            except:
+            except Exception as err:
                 attempts += 1
-                if attempts==10:
-                    raise
+                if attempts == 10:
+                    raise err
         
-        
+        # unzip sequence file
         with gzip.open('{}'.format(filename, 'rb')) as f_in:
             with open('{}'.format(filename[:-3]), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
+
+        # parse sequence file
         bio_seqio_object = SeqIO.parse(filename[:-3], "genbank")
         list_of_bio_seqio_objects = [bio_seqio_object]
         self.load_content(list_of_bio_seqio_objects)
-        shutil.rmtree(directory)
+
+        # delete temporary unzipped file
+        os.remove(filename[:-3])
 
     def upload_ref_seq_for_all_prokaryotic_kegg_org(self):
-        data = json.load(open('{}/kegg_taxon_prokaryotes.txt'.format(os.path.dirname(__file__)))) 
+        with open(os.path.join(os.path.dirname(__file__), 'kegg_taxon_prokaryotes.txt')) as file:
+            data = json.load(file)
         for thing in self.get_json_ends(data):
             kegg_org_symbol = thing.split('  ')[0]
             self.upload_data_from_kegg_org_symbol(kegg_org_symbol)
-
 
     def get_json_ends(self, tree):
         ends = []
@@ -274,7 +291,7 @@ class Refseq(data_source.HttpDataSource):
         return(ends)
 
     def get_ref_seq_url(self, org_symbol):
-        text = requests.get("http://www.kegg.jp/kegg-bin/show_organism?org={}".format(org_symbol)).text
+        text = self.requests_session.get("http://www.kegg.jp/kegg-bin/show_organism?org={}".format(org_symbol)).text
         text = text[text.find("ftp://ftp.ncbi.nlm.nih.gov/genomes/all"):]
         text = text[:text.find("""">""")]
         end = text[self.find_nth(text, "/", 9)+1:]
