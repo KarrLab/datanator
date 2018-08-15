@@ -184,9 +184,10 @@ class Ecmdb(data_source.HttpDataSource):
     base_model = Base
     ENDPOINT_DOMAINS = {
         'ecmdb': 'http://ecmdb.ca',
-        }
+    }
     DOWNLOAD_INDEX_URL = ENDPOINT_DOMAINS['ecmdb'] + '/download/ecmdb.json.zip'
-    DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAINS['ecmdb'] +'/compounds/{}.xml'
+    DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAINS['ecmdb'] + '/compounds/{}.xml'
+    DOWNLOAD_COMPOUND_STRUCTURE_URL = ENDPOINT_DOMAINS['ecmdb'] + '/structures/compounds/{}.inchi'
 
     def load_content(self):
         """ Download the content of ECMDB and store it to a local sqlite database. """
@@ -227,7 +228,7 @@ class Ecmdb(data_source.HttpDataSource):
 
         xml_parser = jxmlease.Parser()
         for i_entry, entry in enumerate(entries):
-            if self.verbose and (i_entry % 100 == 0):
+            if self.verbose and (i_entry % 10 == 0):
                 print('  Downloading compound {} of {}'.format(i_entry + 1, len(entries)))
 
             # get details
@@ -249,6 +250,10 @@ class Ecmdb(data_source.HttpDataSource):
                 compound.description = self.get_node_text(entry_details['description'])
 
             compound.structure = self.get_node_text(entry_details['inchi'])
+            if not compound.structure:
+                response2 = req_session.get(self.DOWNLOAD_COMPOUND_STRUCTURE_URL.format(entry['m2m_id']))
+                response2.raise_for_status()
+                compound.structure = response2.text
 
             compound.comment = entry['comment']
 
@@ -256,8 +261,12 @@ class Ecmdb(data_source.HttpDataSource):
             compound.updated = dateutil.parser.parse(self.get_node_text(entry_details['update_date'])).replace(tzinfo=None)
 
             # calculate core InChI layers to facilitate searching
-            compound._structure_formula_connectivity = molecule_util.InchiMolecule(compound.structure) \
-                .get_formula_and_connectivity()
+            try:
+                compound._structure_formula_connectivity = molecule_util.InchiMolecule(compound.structure) \
+                    .get_formula_and_connectivity()
+            except ValueError:
+                warnings.warn('Unable to encode structure for {} in InChI'.format(entry['m2m_id']), data_source.DataSourceWarning)
+                compound._structure_formula_connectivity = None
 
             # synonyms
             compound.synonyms = []
