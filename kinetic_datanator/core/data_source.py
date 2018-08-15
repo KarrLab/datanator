@@ -150,15 +150,16 @@ class PostgresDataSource(DataSource):
 
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
+        print(paths)
         for path in paths:
             if os.path.isfile(os.path.join(tmp_dirname, path)):
                 shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
             else:
                 shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
 
-        self.restore_database()
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
+        self.restore_database()
 
     def get_paths_to_backup(self, download=False):
         """ Get a list of the files to backup/unpack
@@ -179,7 +180,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
-        .format('localhost','CommonSchema', DATA_DUMP_PATH)
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname)
 
         p = Popen(command,shell=True,stdin=PIPE)
 
@@ -191,7 +192,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_restore -h {0} -d {1} < {2}'\
-        .format('localhost','CommonSchema', DATA_DUMP_PATH)
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname)
 
         p = Popen(command,shell=True,stdin=PIPE)
 

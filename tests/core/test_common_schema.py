@@ -58,7 +58,6 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         self.assertGreater(len(subunits), 20000)
 
 
-@unittest.skip('skip')
 class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
