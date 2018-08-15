@@ -12,7 +12,7 @@ import unittest
 import tempfile
 import shutil
 
-class TestMetabolitehManager(unittest.TestCase):
+class TestMetaboliteManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
