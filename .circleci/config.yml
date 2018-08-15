@@ -34,20 +34,18 @@ jobs:
           name: Upgrade requirements (Python 3)
           command: karr_lab_build_utils3 upgrade-requirements
 
+      - run: sudo apt install -y postgresql-client || true
+
       # Save packages to cache
       - save_cache:
           key: cache-v12-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
             - /usr/local/lib/python3.6/site-packages
-
+            
       # Restore Database
       - run:
           name: Restore Database
           command: |
-            echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
-            wget --no-check-certificate -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O- | sudo -u root apt-key add -
-            sudo apt-get update
-            yes Y | sudo apt-get install postgresql-9.6 postgresql-client-9.6
             mkdir kinetic_datanator/data/cache
             python3 manage.py restore_db
 
