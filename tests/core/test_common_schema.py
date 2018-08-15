@@ -17,12 +17,53 @@ import random
 import os
 from six.moves import reload_module
 
+class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(self):
+        self.cache_dirname = tempfile.mkdtemp()
+        self.flk = common_schema.CommonSchema(restore_backup=True, clear_content=True)
+
+    @classmethod
+    def tearDownClass(self):
+        models.db.session.remove()
+        models.db.drop_all()
+        shutil.rmtree(self.cache_dirname)
+
+    def test_repr_methods(self):
+
+         for tablename in self.flk.base_model.metadata.tables.keys():
+             for c in models.db.Model._decl_class_registry.values():
+                 if hasattr(c, '__tablename__') and c.__tablename__ == tablename:
+                     self.assertEqual(str(self.flk.session.query(c).first().__repr__()), str(self.flk.session.query(c).first()))
+
+
+    def test_data_loaded(self):
+        session = self.flk.session
+        taxon = session.query(models.Taxon).filter_by(ncbi_id = 882).first()
+        self.assertEqual(taxon.name, 'Desulfovibrio vulgaris str. Hildenborough')
+
+        subunit = session.query(models.ProteinSubunit).filter_by(gene_name = 'TFAP2A').first()
+        self.assertEqual(subunit.uniprot_id, 'P05549')
+        self.assertEqual(subunit.class_name, 'Basic helix-span-helix factors (bHSH)')
+        binding = session.query(models.DNABindingDataset).filter_by(subunit_id = subunit.subunit_id).first()
+        data = session.query(models.DNABindingData).filter_by(dataset_id = binding.dataset_id).first()
+        self.assertEqual(data.position, 1)
+        self.assertEqual(data.frequency_g, 185)
+
+    def test_size(self):
+        session = self.flk.session
+
+        subunits = session.query(models.ProteinSubunit).all()
+        self.assertGreater(len(subunits), 20000)
+
+
+@unittest.skip('skip')
 class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(
+        self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
                                 clear_content = True, restore_backup= False,
                                 load_content = True, max_entries = 10,
                                 verbose = True, test=True)
@@ -186,22 +227,3 @@ class LoadingTestCommonSchema(unittest.TestCase):
         search = models.Compound.query.search(search_name).all()
         self.assertEqual(len(search), 1)
         self.assertEqual(search[0].compound_name, search_name)
-
-
-# class DownloadTestCommonSchema(unittest.TestCase):
-#     @classmethod
-#     def setUpClass(self):
-#         self.cache_dirname = tempfile.mkdtemp()
-#         self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
-#                                 clear_content = True, restore_backup= True,
-#                                 load_content = False, verbose = True, test=True)
-#
-#
-#     @classmethod
-#     def tearDownClass(self):
-#         models.db.session.remove()
-#         models.db.drop_all()
-#         shutil.rmtree(self.cache_dirname)
-#
-#
-#

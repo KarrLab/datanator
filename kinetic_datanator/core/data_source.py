@@ -54,7 +54,7 @@ class PostgresDataSource(DataSource):
     """
 
     def __init__(self, cache_dirname=None, name=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=False, verbose=False):
+                 commit_intermediate_results=False, restore_backup=False, verbose=False, quilt_owner=None, quilt_package=None):
 
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
@@ -65,6 +65,11 @@ class PostgresDataSource(DataSource):
         self.cache_dirname = cache_dirname
         # max entries
         self.max_entries = max_entries
+
+        # set Quilt configuration
+        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        self.quilt_owner = quilt_owner or quilt_config['owner']
+        self.quilt_package = quilt_package or quilt_config['package']
 
         if restore_backup:
             self.restore_backup()
@@ -110,49 +115,63 @@ class PostgresDataSource(DataSource):
         return self.base_model.session
 
     def upload_backup(self):
-        """ Backup the local sqlite database to the Karr Lab server """
-        print('here')
-        for a_backup in self.get_backups(set_metadata=True):
-            backup.BackupManager() \
-                .create(a_backup) \
-                .upload(a_backup) \
-                .cleanup(a_backup)
+        """ Backup the local sqlite database to Quilt """
+
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy new files to package
+        paths = self.get_paths_to_backup()
+        for path in paths:
+            if os.path.isfile(os.path.join(self.cache_dirname, path)):
+                shutil.copyfile(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+            else:
+                shutil.copytree(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+
+        # build and push package
+        manager.upload()
+
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
 
     def restore_backup(self):
-        """ Download the local sqlite database from the Karr Lab server """
-        for a_backup in self.get_backups(download=True):
-            backup_manager = backup.BackupManager()
-            backup_manager \
-                .download(a_backup) \
-                .extract(a_backup) \
-                .cleanup(a_backup)
+        """ Download the local sqlite database from Quilt """
+
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy requested files from package
+        paths = self.get_paths_to_backup(download=True)
+        for path in paths:
+            if os.path.isfile(os.path.join(tmp_dirname, path)):
+                shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+            else:
+                shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
 
         self.restore_database()
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
 
-    def get_backups(self, download=False, set_metadata=False):
+    def get_paths_to_backup(self, download=False):
         """ Get a list of the files to backup/unpack
 
         Args:
             download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
-            set_metadata (:obj:`bool`, optional): if :obj:`True`, set the metadata of the backup files
 
         Returns:
-            :obj:`list` of :obj:`backup.Backup`: backups
+            :obj:`list` of :obj:`str`: list of paths to backup
         """
-        list_backups = []
-        a_backup = backup.Backup()
-        path = backup.BackupPath(DATA_DUMP_PATH, self.name + '.dump')
-        a_backup.paths.append(path)
-        a_backup.local_filename = DATA_DUMP_PATH + '.tar.gz'
-        a_backup.remote_filename = path.arc_path + '.tar.gz'
-
-        if set_metadata:
-            a_backup.set_username_ip_date()
-            a_backup.set_package(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-        list_backups.append(a_backup)
-
-        return list_backups
+        paths = []
+        paths.append(self.name + '.dump')
+        return paths
 
     def dump_database(self):
         """ Create a dump file of the postgres database

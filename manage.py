@@ -1,6 +1,6 @@
 from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
-
+from kinetic_datanator.core import common_schema
 from kinetic_datanator import app, db
 # from app.server.model import User
 
@@ -20,6 +20,11 @@ def create_db():
 def drop_db():
     """Drops the db tables."""
     db.drop_all()
+
+
+@manager.command
+def restore_db():
+    cs = common_schema.CommonSchema(restore_backup=True, clear_content=True, load_content=False, verbose=True)
 
 # @manager.command
 # def create_admin():

@@ -40,6 +40,11 @@ jobs:
           paths:
             - /usr/local/lib/python3.6/site-packages
 
+      # Restore Database
+      - run: Restore Database
+          command: |
+            python3 manage.py restore_db
+
       # Test code
       - run:
           name: Test code
