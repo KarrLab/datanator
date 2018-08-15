@@ -12,18 +12,23 @@ from kinetic_datanator.data_source import sabio_rk
 from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme,
                                                     ReactionParticipant, KineticLaw, Parameter, Resource)
 from kinetic_datanator.util import warning_util
+import capturer
 import datetime
 import ftputil
+import kinetic_datanator.config
 import math
+import mock
 import numpy
 import os
+import quilt
 import scipy.constants
 import shutil
 import sqlalchemy
 import sys
 import tempfile
 import unittest
-import wc_utils.backup
+import wc_utils.config
+import wc_utils.quilt
 
 warning_util.disable_warnings()
 
@@ -823,6 +828,16 @@ class TestBackupAndInstall(unittest.TestCase):
         self.cache_dirname_4 = tempfile.mkdtemp()
         self.cache_dirname_5 = tempfile.mkdtemp()
 
+        self.owner = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']['owner']
+        self.package = 'kinetic_datanator_test__'
+        self.owner_package = '{}/{}'.format(self.owner, self.package)
+        self.token = wc_utils.config.get_config()['wc_utils']['quilt']['token']
+
+        self.tmp_dirname = tempfile.mkdtemp()
+
+        self.delete_test_package_locally()
+        self.delete_test_package_remotely()
+
     def tearDown(self):
         shutil.rmtree(self.cache_dirname_1)
         shutil.rmtree(self.cache_dirname_2)
@@ -830,43 +845,77 @@ class TestBackupAndInstall(unittest.TestCase):
         shutil.rmtree(self.cache_dirname_4)
         shutil.rmtree(self.cache_dirname_5)
 
-        mgr = wc_utils.backup.BackupManager()
-        with ftputil.FTPHost(mgr.hostname, mgr.username, mgr.password) as ftp:
-            dirname = ftp.path.join(mgr.remote_dirname,
-                                    'test.sabio_rk.sqlite.tar.gz')
-            ftp.rmtree(dirname)
+        shutil.rmtree(self.tmp_dirname)
 
-            dirname = ftp.path.join(mgr.remote_dirname,
-                                    'test.sabio_rk.requests.py{}.sqlite.tar.gz'.format(sys.version_info[0]))
-            ftp.rmtree(dirname)
+        self.delete_test_package_locally()
+        self.delete_test_package_remotely()
+
+    def delete_test_package_locally(self):
+        # remove local package
+        with capturer.CaptureOutput(relay=False):
+            quilt.rm('{}/{}'.format(self.owner, self.package), force=True)
+
+    def delete_test_package_remotely(self):
+        # delete package from Quilt server, if it exists
+        try:
+            with capturer.CaptureOutput(relay=False):
+                quilt.access_list(self.owner_package)
+                with mock.patch('quilt.tools.command.input', return_value=self.owner_package):
+                    quilt.delete(self.owner_package)
+        except quilt.tools.command.HTTPResponseException as err:
+            if str(err) != 'Package {} does not exist'.format(self.owner_package):
+                raise(err)
 
     def test(self):
+        # create test Quilt package
+        os.mkdir(os.path.join(self.tmp_dirname, 'up'))
+        with open(os.path.join(self.tmp_dirname, 'up', 'README.md'), 'w') as file:
+            file.write('# kinetic_datanator_test__\n')
+            file.write('Test package for kinetic_datanator\n')
+
+        manager = wc_utils.quilt.QuiltManager(os.path.join(self.tmp_dirname, 'up'), self.package, owner=self.owner)
+        manager.upload()
+
         # backup and download
         src = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_1, download_backups=False, load_content=True,
-                               max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
+                               max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True,
+                               quilt_package=self.package)
         src.upload_backups()
 
         # download
         src2 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_2, download_backups=True, load_content=False,
-                                max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
+                                max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True,
+                                quilt_package=self.package)
         self.assertTrue(os.path.isfile(src2.filename))
         self.assertGreater(os.stat(src2.requests_cache_filename).st_size, 1e6)
         self.assertEqual(src2.session.query(KineticLaw).count(), 2)
 
         # setup with download and update
         src3 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_3, download_backups=True, load_content=True,
-                                max_entries=4, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
+                                max_entries=4, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True,
+                                quilt_package=self.package)
         self.assertEqual(src3.session.query(KineticLaw).count(), 4)
 
         # setup with update
         src4 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_4, download_backups=False, load_content=True,
-                                max_entries=4, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
+                                max_entries=4, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True,
+                                quilt_package=self.package)
         self.assertEqual(src4.session.query(KineticLaw).count(), 4)
 
         # no download or update
         src5 = sabio_rk.SabioRk(name='test.sabio_rk', cache_dirname=self.cache_dirname_5, download_backups=False, load_content=False,
-                                max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True)
+                                max_entries=2, webservice_batch_size=1, excel_batch_size=10, verbose=True, download_request_backup=True,
+                                quilt_package=self.package)
         self.assertEqual(src5.session.query(KineticLaw).count(), 0)
+
+        # check that README still in package
+        os.mkdir(os.path.join(self.tmp_dirname, 'down'))
+        manager = wc_utils.quilt.QuiltManager(os.path.join(self.tmp_dirname, 'down'), self.package, owner=self.owner)
+        manager.download()
+
+        with open(os.path.join(self.tmp_dirname, 'down', 'README.md'), 'r') as file:
+            self.assertEqual(file.readline(), '# kinetic_datanator_test__\n')
+            self.assertEqual(file.readline(), 'Test package for kinetic_datanator\n')
 
 
 class TestStats(unittest.TestCase):

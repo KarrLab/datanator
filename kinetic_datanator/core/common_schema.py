@@ -44,6 +44,8 @@ class CommonSchema(data_source.PostgresDataSource):
             load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
             flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
             test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
 
 

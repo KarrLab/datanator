@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import unittest
 
+@unittest.skip('Major refactoring in `backend` branch')
 class TestTextSearchSession(unittest.TestCase):
 
     @classmethod
