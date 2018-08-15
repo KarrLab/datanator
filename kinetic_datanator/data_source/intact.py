@@ -158,7 +158,6 @@ class IntAct(data_source.FtpDataSource):
 
         filenames = glob.glob(os.path.join(self.cache_dirname, 'intact', 'complextab', '*.tsv'))
         for filename in filenames:
-            print(filename)
             raw_data = pandas.read_csv(filename, delimiter='\t', encoding='utf-8')
             relabeled_data = raw_data.loc[:, raw_columns]
             relabeled_data.columns = relabeled_columns
