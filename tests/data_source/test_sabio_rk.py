@@ -69,8 +69,8 @@ class TestDownloader(unittest.TestCase):
 
         self.assertIsInstance(c.created, datetime.datetime)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 1200)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 1200)
+        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 3600)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 3600)
         h20_created = c.created
 
         c = session.query(Compound).filter_by(id=2562).first()
@@ -202,7 +202,7 @@ class TestDownloader(unittest.TestCase):
 
         self.assertEqual(c.created, h20_created)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 1200)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 3600)
 
     def test_load_and_update_kinetic_laws_and_compounds(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backups=False, load_content=False, verbose=True)
@@ -230,8 +230,8 @@ class TestDownloader(unittest.TestCase):
 
         self.assertIsInstance(c.created, datetime.datetime)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 1200)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 1200)
+        self.assertLess((datetime.datetime.utcnow() - c.created).total_seconds(), 3600)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 3600)
         h20_created = c.created
 
         c = session.query(Compound).filter_by(id=2562).first()
@@ -379,7 +379,7 @@ class TestDownloader(unittest.TestCase):
 
         self.assertEqual(c.created, h20_created)
         self.assertIsInstance(c.modified, datetime.datetime)
-        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 1200)
+        self.assertLess((datetime.datetime.utcnow() - c.modified).total_seconds(), 3600)
 
     def test_load_kinetic_laws_multiple(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backups=False, load_content=False, verbose=True)
