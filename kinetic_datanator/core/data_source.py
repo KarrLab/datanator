@@ -191,7 +191,7 @@ class PostgresDataSource(DataSource):
 
         """
 
-        command = 'pg_restore -h {0} -d {1} < {2}'\
+        command = 'pg_restore -h {0} -U postgres -d {1} < {2}'\
         .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
 
         p = Popen(command,shell=True,stdin=PIPE)
