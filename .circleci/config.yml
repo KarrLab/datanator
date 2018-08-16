@@ -16,9 +16,9 @@ jobs:
       # Load packages from cache
       - restore_cache:
           keys:
-            - cache-v12-{{ .Branch }}-{{ checksum "requirements.txt" }}
-            - cache-v12-{{ .Branch }}-
-            - cache-v12-
+            - cache-v13-{{ .Branch }}-{{ checksum "requirements.txt" }}
+            - cache-v13-{{ .Branch }}-
+            - cache-v13-
 
       # Python 3 installation tasks
       - run:
@@ -34,14 +34,16 @@ jobs:
           name: Upgrade requirements (Python 3)
           command: karr_lab_build_utils3 upgrade-requirements
 
-      - run: sudo apt install -y postgresql-client || true
+      - run:
+          name: Install Postgres Client
+          command: sudo apt install -y postgresql-client || true
 
       # Save packages to cache
       - save_cache:
           key: cache-v12-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
             - /usr/local/lib/python3.6/site-packages
-            
+
       # Restore Database
       - run:
           name: Restore Database
