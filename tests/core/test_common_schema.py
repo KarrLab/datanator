@@ -17,12 +17,14 @@ import random
 import os
 from six.moves import reload_module
 
+
+@unittest.skip('skip')
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(restore_backup=True, clear_content=True)
+        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname, restore_backup=True, clear_content=True)
 
     @classmethod
     def tearDownClass(self):
