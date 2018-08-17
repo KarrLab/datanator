@@ -66,7 +66,7 @@ class TestMetaboliteManager(unittest.TestCase):
 
         self.assertEqual(set(c.value for c in concentrations), set([385.0, 451.0, 361.0, 143.0, 550.0, 531.67]))
         self.assertEqual(set(c._metadata.taxon[0].name for c in concentrations), set(['Escherichia coli']))
-        self.assertEqual(set(c._metadata.cell_compartment[0].name for c in concentrations), set(['Periplasm']))
+        self.assertEqual(set(c._metadata.cell_compartment[0].name for c in concentrations), set(['Cytosol']))
 
         concentrations = metabolite_manager.get_concentration_by_structure(self.uridine_tp.structure._value_inchi, only_formula_and_connectivity=True)
         self.assertEqual(set(c.value for c in concentrations), set([8290.0, 3990.0, 2370.0, 663.0]))

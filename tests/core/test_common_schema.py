@@ -58,7 +58,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
 
-
+@unittest.skip('skip')
 class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
