@@ -14,13 +14,14 @@ import shutil
 import six
 import sqlalchemy
 import sqlalchemy.orm
+from sqlalchemy_utils.functions import database_exists, create_database
+from kinetic_datanator.util.constants import DATA_CACHE_DIR, DATA_DUMP_PATH
 import sys
 import tarfile
+import psycopg2
+from subprocess import PIPE,Popen
 import tempfile
 import wc_utils.quilt
-
-CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
-# :obj:`str`: default path for the sqlite database
 
 
 class DataSource(six.with_metaclass(abc.ABCMeta, object)):
@@ -30,7 +31,7 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
         name (:obj:`str`): name
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, verbose=False):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -38,6 +39,191 @@ class DataSource(six.with_metaclass(abc.ABCMeta, object)):
         if not name:
             name = self.__class__.__name__
         self.name = name
+        self.verbose = verbose
+
+    def vprint(self, str):
+        if self.verbose:
+            print(str)
+
+
+class PostgresDataSource(DataSource):
+    """ Represents a Postgres database
+
+    Need to have the data source be able to dump and restore from a dump
+
+    """
+
+    def __init__(self, cache_dirname=None, name=None, clear_content=False, load_content=False, max_entries=float('inf'),
+                 commit_intermediate_results=False, restore_backup=False, verbose=False, quilt_owner=None, quilt_package=None):
+
+        super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
+
+        self.base_model.configure_mappers()
+        # name
+        if not cache_dirname:
+            cache_dirname = DATA_CACHE_DIR
+        self.cache_dirname = cache_dirname
+        # max entries
+        self.max_entries = max_entries
+
+        # set Quilt configuration
+        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        self.quilt_owner = quilt_owner or quilt_config['owner']
+        self.quilt_package = quilt_package or quilt_config['package']
+
+        if restore_backup:
+            self.restore_backup()
+            self.engine = self.get_engine()
+            self.session = self.get_session()
+            if load_content:
+                self.load_content()
+        else:
+            self.engine = self.get_engine()
+            if clear_content:
+                self.clear_content()
+            self.session = self.get_session()
+            if load_content:
+                self.load_content()
+
+    def get_engine(self):
+        """ Get an engine for the postgres database. If the database doesn't exist, initialize its structure.
+
+        Returns:
+            :obj:`sqlalchemy.engine.Engine`: database engine
+        """
+
+
+        engine = self.base_model.engine
+        if not database_exists(engine.url):
+            create_database(engine.url)
+            self.base_model.metadata.create_all(engine)
+
+        return engine
+
+    def clear_content(self):
+        """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
+
+        self.base_model.drop_all()
+        self.base_model.create_all()
+
+    def get_session(self):
+        """ Get a session for the sqlite database
+
+        Returns:
+            :obj:`sqlalchemy.orm.session.Session`: database session
+        """
+        return self.base_model.session
+
+    def upload_backup(self):
+        """ Backup the local sqlite database to Quilt """
+
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy new files to package
+        paths = self.get_paths_to_backup()
+        for path in paths:
+            if os.path.isfile(os.path.join(self.cache_dirname, path)):
+                shutil.copyfile(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+            else:
+                shutil.copytree(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+
+        # build and push package
+        manager.upload()
+
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
+
+    def restore_backup(self):
+        """ Download the local sqlite database from Quilt """
+
+        # create temporary directory to checkout package
+        tmp_dirname = tempfile.mkdtemp()
+
+        # install and export package
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
+        manager.download()
+
+        # copy requested files from package
+        paths = self.get_paths_to_backup(download=True)
+        for path in paths:
+            if os.path.isfile(os.path.join(tmp_dirname, path)):
+                shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+            else:
+                shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+
+        # cleanup temporary directory
+        shutil.rmtree(tmp_dirname)
+        self.restore_database()
+
+    def get_paths_to_backup(self, download=False):
+        """ Get a list of the files to backup/unpack
+
+        Args:
+            download (:obj:`bool`, optional): if :obj:`True`, prepare the files for uploading
+
+        Returns:
+            :obj:`list` of :obj:`str`: list of paths to backup
+        """
+        paths = []
+        paths.append(self.name + '.dump')
+        return paths
+
+    def dump_database(self):
+        """ Create a dump file of the postgres database
+
+        """
+
+        command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
+
+        p = Popen(command,shell=True,stdin=PIPE)
+
+        return p.communicate()
+
+    def restore_database(self):
+        """ Restore a dump file of the postgres database
+
+        """
+
+        command = 'pg_restore -h {0} -U postgres -d {1} < {2}'\
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
+
+        p = Popen(command,shell=True,stdin=PIPE)
+
+        return p.communicate()
+
+    @abc.abstractmethod
+    def load_content(self):
+        """ Load the content of the local copy of the data source """
+        pass
+
+    def get_or_create_object(self, cls, **kwargs):
+        """ Get the SQLAlchemy object of type :obj:`cls` with attribute/value pairs specified by `**kwargs`. If
+        an object with these attribute/value pairs does not exist, create an object with these attribute/value pairs
+        and add it to the SQLAlchemy session.
+
+        Args:
+            cls (:obj:`class`): child class of :obj:`base_model`
+            **kwargs (:obj:`dict`, optional): attribute-value pairs of desired SQLAlchemy object of type :obj:`cls`
+
+        Returns:
+            :obj:`base_model`: SQLAlchemy object of type :obj:`cls`
+        """
+
+        q = self.session.query(cls).filter_by(**kwargs)
+        self.session.flush()
+        if q.count():
+            return q.first()
+        else:
+            obj = cls(**kwargs)
+            self.session.add(obj)
+            return obj
+
 
 
 class CachedDataSource(DataSource):
@@ -59,7 +245,7 @@ class CachedDataSource(DataSource):
     """
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backups=True, verbose=False, flask=False,
+                 commit_intermediate_results=False, download_backups=True, verbose=False,
                  quilt_owner=None, quilt_package=None):
         """
         Args:
@@ -81,7 +267,7 @@ class CachedDataSource(DataSource):
         """ Set settings """
         # name
         if not cache_dirname:
-            cache_dirname = CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
         
@@ -90,12 +276,6 @@ class CachedDataSource(DataSource):
 
         # committing
         self.commit_intermediate_results = commit_intermediate_results
-
-        # verbosity
-        self.verbose = verbose
-
-        # flaskosity
-        self.flask = flask
 
         # set Quilt configuration
         quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
@@ -133,26 +313,17 @@ class CachedDataSource(DataSource):
         if not os.path.isdir(os.path.dirname(self.filename)):
             os.makedirs(os.path.dirname(self.filename))
 
-        if self.flask:
-            self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + self.filename
-            engine = self.base_model.engine
-            if not os.path.isfile(self.filename):
-                self.base_model.metadata.create_all(engine)
-        else:
-            engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
-            if not os.path.isfile(self.filename):
-                self.base_model.metadata.create_all(engine)
+        engine = sqlalchemy.create_engine('sqlite:///' + self.filename)
+
+        if not os.path.isfile(self.filename):
+            self.base_model.metadata.create_all(engine)
 
         return engine
 
     def clear_content(self):
         """ Clear the content of the sqlite database (i.e. drop and recreate all tables). """
-        if self.flask:
-            self.base_model.drop_all()
-            self.base_model.create_all()
-        else:
-            self.base_model.metadata.drop_all(self.engine)
-            self.base_model.metadata.create_all(self.engine)
+        self.base_model.metadata.drop_all(self.engine)
+        self.base_model.metadata.create_all(self.engine)
 
     def get_session(self):
         """ Get a session for the sqlite database
@@ -160,10 +331,7 @@ class CachedDataSource(DataSource):
         Returns:
             :obj:`sqlalchemy.orm.session.Session`: database session
         """
-        if self.flask:
-            return self.base_model.session
-        else:
-            return sqlalchemy.orm.sessionmaker(bind=self.engine)()
+        return sqlalchemy.orm.sessionmaker(bind=self.engine)()
 
     def upload_backups(self):
         """ Backup the local sqlite database to Quilt """
@@ -275,8 +443,7 @@ class HttpDataSource(CachedDataSource):
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False,
                  clear_requests_cache=False, download_request_backup=False,
-                 quilt_owner=None, quilt_package=None,
-                 flask=False):
+                 quilt_owner=None, quilt_package=None,):
         """
         Args:
             name (:obj:`str`, optional): name
@@ -292,14 +459,13 @@ class HttpDataSource(CachedDataSource):
             download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
             quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
             quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
-            flask (:obj:`bool`, optional)
         """
 
         """ CachedDataSource settings """
         if not name:
             name = self.__class__.__name__
         if not cache_dirname:
-            cache_dirname = CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
 
         """ Request settings """
         # todo (enhancement): avoid python version-specific requests cache; this currently is necessary because request_cache uses
@@ -317,8 +483,7 @@ class HttpDataSource(CachedDataSource):
                                              clear_content=clear_content, load_content=load_content, max_entries=max_entries,
                                              commit_intermediate_results=commit_intermediate_results,
                                              download_backups=download_backups, verbose=verbose,
-                                             quilt_owner=quilt_owner, quilt_package=quilt_package,
-                                             flask=flask)
+                                             quilt_owner=quilt_owner, quilt_package=quilt_package)
 
     def get_requests_session(self):
         """ Setup an cache-enabled HTTP request session

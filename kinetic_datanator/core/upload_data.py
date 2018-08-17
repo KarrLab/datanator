@@ -3,7 +3,7 @@ import os
 from os import path
 from Bio import SeqIO
 import openpyxl
-from kinetic_datanator.core import flask_common_schema, models
+from kinetic_datanator.core import common_schema, models
 import json
 import sqlalchemy_utils
 import sqlalchemy
@@ -19,7 +19,7 @@ class Uploader():
 class UploadData():
     def __init__(self, cache_dirname=CACHE_DIRNAME):
         self.cache_dirname = cache_dirname
-        self.flask = flask_common_schema.FlaskCommonSchema(cache_dirname=cache_dirname)
+        self.flask = common_schema.CommonSchema(cache_dirname=cache_dirname)
 
 
     def upload_reference_genome(self, path_to_annotation_file):

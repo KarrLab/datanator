@@ -150,12 +150,6 @@ class TestDownloadController(unittest.TestCase):
                 app.run()
                 self.assertTrue(os.path.exists(self.dirname+'/Pax.sqlite'))
 
-    def test_download_aggregate(self):
-        with App(argv=['download', 'aggregate', '--path='+self.dirname]) as app:
-            with CaptureOutput(termination_delay=0.1) as capturer:
-                app.run()
-                self.assertTrue(os.path.exists(self.dirname+'/FlaskCommonSchema.sqlite'))
-
     def test_download_array_express(self):
         with App(argv=['download', 'array-express', '--path='+self.dirname]) as app:
             with CaptureOutput(termination_delay=0.1) as capturer:

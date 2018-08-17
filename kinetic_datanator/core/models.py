@@ -1,67 +1,20 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, BaseQuery
+from sqlalchemy_searchable import SearchQueryMixin, make_searchable
+from sqlalchemy_utils.types import TSVectorType
 from flask_migrate import Migrate
 from kinetic_datanator.config import config
+from kinetic_datanator import db
+from flask_sqlalchemy import SQLAlchemy
 import os
 
+make_searchable(db.metadata)
+#TODO: Need to add search vectors for full text searching
 
+class FullTextQuery(BaseQuery, SearchQueryMixin):
+    pass
 
-app = Flask(__name__)
-app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.Config')
-#NOTE: Line below used to migrate the schema
-# app_settings = os.getenv('APP_SETTINGS', 'kinetic_datanator.config.config.LocalMigrationConfig')
-app.config.from_object(app_settings)
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-
-
-class SerializeClassMixin(object):
-    """
-    Mixin class provides data object special functions such as serialization
-    """
-    ##TODO: Make more succinct and use a stack instead of recursion
-    def serialize_relationships(self):
-        result_json = {}
-        for relation in self.__mapper__.relationships.keys():
-            if relation == '_metadata':
-                continue
-            objs = getattr(self, relation)
-
-            if objs == None:
-                result_json[relation] = None
-            elif isinstance(objs, list):
-                result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)}
-            else:
-                result_json[relation] = {c.name: getattr(objs, c.name) for c in objs.__table__.columns}
-
-        return(result_json)
-
-    def serialize_metadata(self, obj):
-        result_json = {}
-        for relation in obj.__mapper__.relationships.keys():
-            if relation == 'observation':
-                continue
-            objs = getattr(obj, relation)
-            result_json[relation] ={i: {c.name: getattr(meta, c.name) for c in meta.__table__.columns} for i,meta in enumerate(objs)} if objs else None
-        return(result_json)
-
-    def serialize(self, metadata=False, relationships=False):
-        """
-        Attributes:
-            metadata (:obj:`bool`): Switch for gathering metadata serialization data
-            relationships (:obj:`bool`): Switch for gathering relationship serialization data
-
-        """
-
-        json = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        if relationships:
-            json['relationships'] = self.serialize_relationships()
-        if metadata:
-            json['metadata'] = self.serialize_metadata(self._metadata)
-        return json
-
-
-class Observation(SerializeClassMixin, db.Model):
+class Observation(db.Model):
     """
     Represents an Observation of a Physical Entity or Property in the Common Schema
 
@@ -80,7 +33,7 @@ class Observation(SerializeClassMixin, db.Model):
 
 
     def __repr__(self):
-        return 'Observation(%s)' % (self.id)
+        return 'Observation({0})'.format(self.id)
 
 
 """
@@ -229,7 +182,7 @@ class Metadata(db.Model):
     __tablename__ = '_metadata'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True)
+    name = db.Column(db.Unicode, unique=True)
 
     taxon = db.relationship(
         'Taxon', secondary=_metadata_taxon, backref='_metadata')
@@ -267,7 +220,7 @@ class ExperimentMetadata(db.Model):
     """
     __tablename__ = '_experimentmetadata'
 
-    name = db.Column(db.String(255), unique=True)
+    name = db.Column(db.Unicode, unique=True)
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.Text())
 
@@ -311,14 +264,15 @@ class Method(db.Model):
 
     """
     __tablename__ = 'method'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
-    comments = db.Column(db.String(255))
-    performer = db.Column(db.String(255))
-    hardware = db.Column(db.String(255))
-    software = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
+    comments = db.Column(db.Unicode)
+    performer = db.Column(db.Unicode)
+    hardware = db.Column(db.Unicode)
+    software = db.Column(db.Unicode)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Method(%s||%s)' % (self.name, self.id)
@@ -335,11 +289,12 @@ class Characteristic(db.Model):
 
     """
     __tablename__ = 'characteristic'
-    #__searchable__ = ['name']
+    #query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    category = db.Column(db.String(255))
-    value = db.Column(db.String(255))
+    category = db.Column(db.Unicode)
+    value = db.Column(db.Unicode)
+    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Charactaristic(%s)' % (self.id)
@@ -355,12 +310,13 @@ class Variable(db.Model):
 
     """
     __tablename__ = 'variable'
-    #__searchable__ = ['name']
+    #query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    category = db.Column(db.String(255))
-    value = db.Column(db.String(255))
-    units = db.Column(db.String(255))
+    category = db.Column(db.Unicode)
+    value = db.Column(db.Unicode)
+    units = db.Column(db.Unicode)
+    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Variable(%s)' % (self.id)
@@ -376,7 +332,7 @@ class ExperimentDesign(db.Model):
     __tablename__ = 'experiment_design'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'ExperimentDesign(%s||%s)' % (self.name, self.id)
@@ -393,7 +349,7 @@ class ExperimentType(db.Model):
     __tablename__ = 'experiment_type'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'ExperimentType(%s||%s)' % (self.name, self.id)
@@ -410,7 +366,7 @@ class DataFormat(db.Model):
     __tablename__ = 'data_format'
 
     _id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
     bio_assay_data_cubes = db.Column(db.Integer)
 
     def __repr__(self):
@@ -428,10 +384,12 @@ class Taxon(db.Model):
 
     """
     __tablename__ = 'taxon'
-    __searchable__ = ['ncbi_id', 'name']
+    query_class = FullTextQuery
 
     ncbi_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
+    search_vector = db.Column(TSVectorType('name'))
+
 
     def __repr__(self):
         return 'Taxon(%s||%s)' % (self.name, self.ncbi_id)
@@ -448,10 +406,11 @@ class Synonym(db.Model):
 
     """
 
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
+    search_vector = db.Column(TSVectorType('name'))
 
     __tablename__ = 'synonym'
 
@@ -469,18 +428,15 @@ class Resource(db.Model):
         release_date(:obj:`str`): The date that resource released the data
 
     """
-    id = db.Column(db.Integer, primary_key=True)
-    namespace = db.Column(db.String(255))
-    _id = db.Column(db.String(255))
-    release_date = db.Column(db.String(255))
-
     __tablename__ = 'resource'
 
+    id = db.Column(db.Integer, primary_key=True)
+    namespace = db.Column(db.Unicode)
+    _id = db.Column(db.Unicode)
+    release_date = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'Resource(%s)' % (self.id)
-
-
 
 class CellLine(db.Model):
     """
@@ -491,10 +447,11 @@ class CellLine(db.Model):
 
     """
     __tablename__ = 'cell_line'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255))
+    name = db.Column(db.Unicode)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'CellLine(%s||%s)' % (self.name, self.id)
@@ -515,11 +472,11 @@ class Conditions(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    growth_status = db.Column(db.String(255))
-    media = db.Column(db.String(255))
+    growth_status = db.Column(db.Unicode)
+    media = db.Column(db.Unicode)
     temperature = db.Column(db.Float)
     ph = db.Column(db.Float)
-    growth_system = db.Column(db.String(255))
+    growth_system = db.Column(db.Unicode)
 
     __tablename__ = 'conditions'
 
@@ -539,10 +496,11 @@ class CellCompartment(db.Model):
 
     """
     __tablename__ = 'cell_compartment'
-    __searchable__ = ['name']
+    query_class = FullTextQuery
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True, index=True)
+    name = db.Column(db.Unicode, unique=True, index=True)
+    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'CellCompartment(%s||%s)' % (self.name, self.id)
@@ -561,9 +519,9 @@ class PhysicalEntity(Observation):
     __tablename__ = 'physical_entity'
 
     observation_id = db.Column(db.Integer, db.ForeignKey(
-        'observation.id'), primary_key=True)
-    type = db.Column(db.String(255))
-    name = db.Column(db.String(255))
+        'observation.id'), primary_key=True, autoincrement=True)
+    type = db.Column(db.Unicode)
+    name = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'PhysicalEntity(%s||%s)' % (self.name, self.observation_id)
@@ -589,25 +547,26 @@ class ProteinSubunit(PhysicalEntity):
     """
 
     __tablename__ = 'protein_subunit'
-    __searchable__ = ['subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence']
+    query_class = FullTextQuery
 
     subunit_id = db.Column(db.Integer, db.ForeignKey(
-        'physical_entity.observation_id'), primary_key=True)
-    subunit_name = db.Column(db.String(255))
-    uniprot_id = db.Column(db.String(255))
+        'physical_entity.observation_id'), primary_key=True, autoincrement=True)
+    subunit_name = db.Column(db.Unicode)
+    uniprot_id = db.Column(db.Unicode)
     entrez_id = db.Column(db.Integer)
-    ec_number = db.Column(db.String(255))
-    gene_name = db.Column(db.String(255))
-    gene_syn = db.Column(db.String(255))
-    class_name = db.Column(db.String(255))
-    family_name = db.Column(db.String(255))
+    ec_number = db.Column(db.Unicode)
+    gene_name = db.Column(db.Unicode)
+    gene_syn = db.Column(db.Unicode)
+    class_name = db.Column(db.Unicode)
+    family_name = db.Column(db.Unicode)
     coefficient = db.Column(db.Integer)
-    canonical_sequence = db.Column(db.String(255))
-    mass = db.Column(db.Integer)
-    length = db.Column(db.Integer)
+    canonical_sequence = db.Column(db.Unicode)
+    mass = db.Column(db.Unicode)
+    length = db.Column(db.Unicode)
     molecular_weight = db.Column(db.Float)
     pax_load = db.Column(db.Integer)
     uniprot_checked = db.Column(db.Boolean)
+    search_vector = db.Column(TSVectorType('subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence'))
 
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
@@ -639,21 +598,22 @@ class ProteinComplex(PhysicalEntity):
         molecular_weight (:obj:`float`): Molecular weight of subunit
     """
     __tablename__ = 'protein_complex'
-    __searchable__ = ['complex_name', 'go_id', 'funcat_id', 'su_cmt']
+    query_class = FullTextQuery
 
     complex_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
-    complex_name = db.Column(db.String(255))
-    go_id = db.Column(db.String(255))
-    go_dsc = db.Column(db.String(255))
-    funcat_id = db.Column(db.String(255))
-    funcat_dsc = db.Column(db.String(255))
-    su_cmt = db.Column(db.String(255))
-    complex_cmt = db.Column(db.String(255))
-    disease_cmt = db.Column(db.String(255))
-    class_name = db.Column(db.String(255))
-    family_name = db.Column(db.String(255))
+    complex_name = db.Column(db.Unicode)
+    go_id = db.Column(db.Unicode)
+    go_dsc = db.Column(db.Unicode)
+    funcat_id = db.Column(db.Unicode)
+    funcat_dsc = db.Column(db.Unicode)
+    su_cmt = db.Column(db.Unicode)
+    complex_cmt = db.Column(db.Unicode)
+    disease_cmt = db.Column(db.Unicode)
+    class_name = db.Column(db.Unicode)
+    family_name = db.Column(db.Unicode)
     molecular_weight = db.Column(db.Float)
+    search_vector = db.Column(TSVectorType('complex_name', 'go_id', 'funcat_id', 'su_cmt'))
 
     def __repr__(self):
         return self.__class__.__name__+'||%s' % (self.id)
@@ -668,19 +628,20 @@ class Compound(PhysicalEntity):
         compound_id (:obj:`int`): Common Schema Observation Identifier
         compound_name (:obj:`str`): Name of the Compound
         description (:obj:`str`):
-        comment = db.Column(db.String(255))
+        comment = db.Column(db.Unicode)
         _is_name_ambiguous = db.Column(db.Boolean)
 
     """
     __tablename__ = 'compound'
-    __searchable__ = ['compound_name', 'description']
+    query_class = FullTextQuery
 
     compound_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
-    compound_name = db.Column(db.String(255))
-    description = db.Column(db.String(255))
-    comment = db.Column(db.String(255))
+    compound_name = db.Column(db.Unicode)
+    description = db.Column(db.Unicode)
+    comment = db.Column(db.Unicode)
     _is_name_ambiguous = db.Column(db.Boolean)
+    search_vector = db.Column(TSVectorType('compound_name', 'description'))
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
     structure = db.relationship('Structure', backref='compound')
@@ -699,8 +660,8 @@ class PhysicalProperty(Observation):
     """
     observation_id = db.Column(db.Integer, db.ForeignKey(
         'observation.id'), primary_key=True)
-    type = db.Column(db.String(255))
-    name = db.Column(db.String(255))
+    type = db.Column(db.Unicode)
+    name = db.Column(db.Unicode)
 
     __tablename__ = 'physical_property'
 
@@ -723,9 +684,9 @@ class Structure(PhysicalProperty):
 
     struct_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    _value_smiles = db.Column(db.String(255))
-    _value_inchi = db.Column(db.String(255))
-    _structure_formula_connectivity = db.Column(db.String(255))
+    _value_smiles = db.Column(db.Unicode)
+    _value_inchi = db.Column(db.Unicode)
+    _structure_formula_connectivity = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'Structure(%s)' % (self.struct_id)
@@ -750,7 +711,7 @@ class Concentration(PhysicalProperty):
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
-    units = db.Column(db.String(255))
+    units = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'Concentration(%s)' % (self.concentration_id)
@@ -771,25 +732,26 @@ class ProteinInteraction(PhysicalProperty):
     """
 
     __tablename__ = 'protein_interactions'
-    __searchable__ = ['protein_a', 'protein_b', 'gene_a', 'gene_b']
+    query_class = FullTextQuery
 
     interaction_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
 
-    protein_a = db.Column(db.String(255))
-    protein_b = db.Column(db.String(255))
-    gene_a = db.Column(db.String(255))
-    gene_b = db.Column(db.String(255))
-    type_a = db.Column(db.String(255))
-    type_b = db.Column(db.String(255))
-    role_a = db.Column(db.String(255))
-    role_b = db.Column(db.String(255))
-    loc_a = db.Column(db.String(255))
-    loc_b = db.Column(db.String(255))
-    stoich_a = db.Column(db.String(255))
-    stoich_b = db.Column(db.String(255))
-    interaction_type = db.Column(db.String(255))
-    confidence = db.Column(db.String(255))
+    protein_a = db.Column(db.Unicode)
+    protein_b = db.Column(db.Unicode)
+    gene_a = db.Column(db.Unicode)
+    gene_b = db.Column(db.Unicode)
+    type_a = db.Column(db.Unicode)
+    type_b = db.Column(db.Unicode)
+    role_a = db.Column(db.Unicode)
+    role_b = db.Column(db.Unicode)
+    loc_a = db.Column(db.Unicode)
+    loc_b = db.Column(db.Unicode)
+    stoich_a = db.Column(db.Unicode)
+    stoich_b = db.Column(db.Unicode)
+    interaction_type = db.Column(db.Unicode)
+    confidence = db.Column(db.Unicode)
+    search_vector = db.Column(TSVectorType('protein_a', 'protein_b', 'gene_a', 'gene_b'))
 
     def __repr__(self):
         return 'ProteinInteratction(%s)' % (self.interaction_id)
@@ -817,10 +779,10 @@ class KineticLaw(PhysicalProperty):
         'protein_complex.complex_id'), index=True)
     enzyme = db.relationship(ProteinComplex, backref='kinetic_law')
 
-    enzyme_type = db.Column(db.String(255))
-    tissue = db.Column(db.String(255))
-    mechanism = db.Column(db.String(255))
-    equation = db.Column(db.String(255))
+    enzyme_type = db.Column(db.Unicode)
+    tissue = db.Column(db.Unicode)
+    mechanism = db.Column(db.Unicode)
+    equation = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'KineticLaw(%s)' % (self.kinetic_law_id)
@@ -852,7 +814,7 @@ class Reaction(db.Model):
     _is_reactant = db.Column(db.Boolean)
     _is_product = db.Column(db.Boolean)
     _is_modifier = db.Column(db.Boolean)
-    rxn_type = db.Column(db.String(255))
+    rxn_type = db.Column(db.Unicode)
 
     kinetic_law_id = db.Column(
         db.Integer, db.ForeignKey('kinetic_law.kinetic_law_id'))
@@ -877,7 +839,7 @@ class AbundanceDataSet(PhysicalProperty):
 
     dataset_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    file_name = db.Column(db.String, unique=True)
+    file_name = db.Column(db.Unicode, unique=True)
     score = db.Column(db.Float)
     weight = db.Column(db.Integer)
     coverage = db.Column(db.Integer)
@@ -891,11 +853,11 @@ class RNASeqDataSet(PhysicalProperty):
 
     sample_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    experiment_accession_number = db.Column(db.String)
-    sample_name = db.Column(db.String)
-    assay = db.Column(db.String)
-    ensembl_organism_strain = db.Column(db.String)
-    read_type = db.Column(db.String)
+    experiment_accession_number = db.Column(db.Unicode)
+    sample_name = db.Column(db.Unicode)
+    assay = db.Column(db.Unicode)
+    ensembl_organism_strain = db.Column(db.Unicode)
+    read_type = db.Column(db.Unicode)
     full_strain_specificity = db.Column(db.Boolean)
     reference_genome = db.relationship(
         'ReferenceGenome', secondary= rnaseqdataset_referencegenome, backref='sample')
@@ -910,8 +872,8 @@ class RNASeqExperiment(Experiment):
         'experiment.id'), primary_key=True)
     samples = db.relationship(
         'RNASeqDataSet', secondary= rnaseqdataset_rnaseqexperiment, backref='experiment')
-    accession_number = db.Column(db.String)
-    exp_name = db.Column(db.String)
+    accession_number = db.Column(db.Unicode)
+    exp_name = db.Column(db.Unicode)
     has_fastq_files = db.Column(db.Boolean)
 
     def __repr__(self):
@@ -925,9 +887,9 @@ class ReferenceGenome(PhysicalProperty):
     __tablename__ = 'reference_genome'
     reference_genome_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
-    namespace = db.Column(db.String(255))
-    organism_strain = db.Column(db.String(255))
-    download_url = db.Column(db.String(255))
+    namespace = db.Column(db.Unicode)
+    organism_strain = db.Column(db.Unicode)
+    download_url = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'ReferenceGenome(%s)' % ( self.reference_genome_id)
@@ -995,13 +957,13 @@ class Parameter(db.Model):
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
-    units = db.Column(db.String(255), index=True)
+    units = db.Column(db.Unicode, index=True)
 
-    observed_name = db.Column(db.String(255))
+    observed_name = db.Column(db.Unicode)
     observed_sabio_type = db.Column(db.Integer)
     observed_value = db.Column(db.Float)
     observed_error = db.Column(db.Float)
-    observed_units = db.Column(db.String(255))
+    observed_units = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'Parameter(%s)' % (self.parameter_id)
@@ -1032,7 +994,7 @@ class AbundanceData(db.Model):
     subunit = db.relationship('ProteinSubunit')
 
     pax_load = db.Column(db.Integer)
-    uniprot_id = db.Column(db.String(255))
+    uniprot_id = db.Column(db.Unicode)
 
     def __repr__(self):
         return 'AbundanceData(%s)' % (self.abundance_id)
@@ -1081,7 +1043,7 @@ class Progress(db.Model):
     """
     __tablename__ = 'progress'
 
-    database_name = db.Column(db.String, primary_key=True)
+    database_name = db.Column(db.Unicode, primary_key=True)
     amount_loaded = db.Column(db.Integer)
 
     def __repr__(self):

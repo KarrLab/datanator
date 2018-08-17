@@ -10,7 +10,7 @@ from kinetic_datanator import io
 from kinetic_datanator.core import data_model
 from kinetic_datanator.data_source import ezyme
 from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.data_query import reaction_kinetics
+from kinetic_datanator.api.query import reaction_kinetics
 
 
 class Datanator(object):
