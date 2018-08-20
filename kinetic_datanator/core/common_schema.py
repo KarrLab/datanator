@@ -12,7 +12,7 @@ import re
 import sqlalchemy.ext.declarative
 from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
 from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.util.build_util import timemethod, timeloadcontent
+from kinetic_datanator.util.build_util import timemethod, timeloadcontent, continuousload
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
 from kinetic_datanator import db
@@ -59,11 +59,12 @@ class CommonSchema(data_source.PostgresDataSource):
 
         if load_content:
 
-            self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
-            self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
-            self.get_or_create_object(models.Progress, database_name=ARRAY_EXPRESS_NAME, amount_loaded=ARRAY_EXPRESS_INITIAL_AMOUNT)
-            self.get_or_create_object(models.Progress, database_name=INTACT_NAME, amount_loaded=INTACT_INITIAL_AMOUNT)
-            self.session.commit()
+            if not self.session.query(models.Progress).all():
+                self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
+                self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
+                self.get_or_create_object(models.Progress, database_name=ARRAY_EXPRESS_NAME, amount_loaded=ARRAY_EXPRESS_INITIAL_AMOUNT)
+                self.get_or_create_object(models.Progress, database_name=INTACT_NAME, amount_loaded=INTACT_INITIAL_AMOUNT)
+                self.session.commit()
 
             self.load_small_db_switch = True
             self.load_content()
@@ -101,13 +102,13 @@ class CommonSchema(data_source.PostgresDataSource):
         self.build_ncbi()
 
 
+    @continuousload
     @timemethod
     def build_intact_interactions(self):
         """
         Collects IntAct.sqlite file and integrates interaction data into the common ORM
 
         """
-
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
         batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
@@ -151,7 +152,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
-
+    @continuousload
     @timemethod
     def build_pax(self):
         """
@@ -217,6 +218,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
+    @continuousload
     @timemethod
     def build_array_express(self):
 
@@ -347,6 +349,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
+    @continuousload
     @timemethod
     def build_sabio(self):
         """
@@ -470,6 +473,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
+    @continuousload
     @timemethod
     def build_corum(self):
         """
@@ -526,6 +530,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
+    @continuousload
     @timemethod
     def build_jaspar(self):
         """
@@ -611,6 +616,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
+    @continuousload
     @timemethod
     def build_ecmdb(self):
         """
@@ -678,6 +684,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
+    @continuousload
     @timemethod
     def build_intact_complexes(self):
         """
@@ -724,6 +731,7 @@ class CommonSchema(data_source.PostgresDataSource):
         self.session.commit()
 
 
+    @continuousload
     @timemethod
     def build_uniprot(self):
         """
@@ -753,6 +761,9 @@ class CommonSchema(data_source.PostgresDataSource):
         self.vprint('Comitting')
         self.session.commit()
 
+
+    @continuousload
+    @timemethod
     def build_ncbi(self):
         """
         Uses NCBI package to integrate data into existing Taxon table
