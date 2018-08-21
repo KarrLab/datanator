@@ -44,12 +44,25 @@ class ProteinComplexManager(BaseManager):
         _complex = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
 
         for complex in _complex:
-            metadata= self.metadata_dump(item)
-            self._port(complex)
+            metadata= self.metadata_dump(complex)
+            ported_complex = self._port(complex)
 
-            observed_specie.append(data_model.ObservedSpecie(specie = complex, metadata=metadata))
+            observed_specie.append(data_model.ObservedSpecie(specie = ported_complex, metadata=metadata))
 
         return observed_specie
+
+    def get_known_complex_by_subunit(self, uniprot, select = models.ProteinComplex):
+        """ Get known complexes that were observed for a given uniprot id subunit
+
+        Args:
+            uniprot (:obj:`str`): uniprot id to search for
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for protein complexes that contain the uniprot_id
+        """
+        q = self.data_source.session.query(select).join(models.ProteinSubunit, select.protein_subunit)
+        condition = models.ProteinSubunit.uniprot_id == uniprot
+        return q.filter(condition)
 
 
 complex_manager = ProteinComplexManager()

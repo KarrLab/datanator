@@ -190,7 +190,7 @@ class PostgresDataSource(DataSource):
 
         """
 
-        command = 'pg_restore -h {0} -U postgres -d {1} < {2}'\
+        command = 'pg_restore -c -C -h {0} -U postgres -d {1} < {2}'\
         .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
 
         p = Popen(command,shell=True,stdin=PIPE)
@@ -270,7 +270,7 @@ class CachedDataSource(DataSource):
             cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
         self.filename = os.path.join(cache_dirname, self.name + '.sqlite')
-        
+
         # loading
         self.max_entries = max_entries
 

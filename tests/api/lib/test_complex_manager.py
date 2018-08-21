@@ -15,12 +15,8 @@ class TestProteinComplexManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.protein_Q9CWF2 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q9CWF2').first()
-        self.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
-        self.protein_p49418 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
-        self.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
-        self.collagen = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Collagen type III trimer').first()
+        self.protein_p53622 = complex_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
 
     def test_get_observable_complex(self):
-        complex = self.q.get_observable_complex(self.protein_p53622)
+        complex = complex_manager.get_observable_complex(self.protein_p53622)
         self.assertEqual(complex[0].specie.name,'COPI vesicle coat complex')
