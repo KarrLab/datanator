@@ -1,19 +1,14 @@
-from cement.core.foundation import CementApp
-from cement.core import hook
-from cement.utils.misc import init_defaults
-from cement.core import controller
-from cement.core import foundation
-
 from kinetic_datanator.data_source.process_rna_seq import core
+import cement
 
-class BaseController(controller.CementBaseController):
+class BaseController(cement.Controller):
 
     class Meta:
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
 
 
-class DownloadCDNA(controller.CementBaseController):
+class DownloadCDNA(cement.Controller):
 
     class Meta:
         label = 'download-cdna'
@@ -26,12 +21,12 @@ class DownloadCDNA(controller.CementBaseController):
             (['temp_directory'], dict(type=str, help="location to save the reference genome")),
         ]
 
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         core.download_cdna(self.app.pargs.strain_name, self.app.pargs.url, self.app.pargs.temp_directory)
 
 
-class DownloadFASTQ(controller.CementBaseController):
+class DownloadFASTQ(cement.Controller):
 
     class Meta:
         label = 'download-fastq'
@@ -44,14 +39,14 @@ class DownloadFASTQ(controller.CementBaseController):
             (['temp_directory'], dict(type=str, help="location to save the fastq files")),
             (['fastq_urls'], dict(type=str, help="space seperated list of fastq urls")),
         ]
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         pargs = self.app.pargs
         core.download_fastq(pargs.experiment_name, pargs.sample_name, pargs.temp_directory, pargs.fastq_urls)
 
 
 
-class ProcessCDNA(controller.CementBaseController):
+class ProcessCDNA(cement.Controller):
 
     class Meta:
         label = 'process-cdna'
@@ -64,13 +59,13 @@ class ProcessCDNA(controller.CementBaseController):
             (['temp_directory'], dict(type=str, help="location of the reference genomes")),
         ]
 
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         pargs = self.app.pargs
         core.process_cdna(pargs.strain_name, pargs.output_directory, pargs.temp_directory)
 
 
-class ProcessFASTQ(controller.CementBaseController):
+class ProcessFASTQ(cement.Controller):
 
     class Meta:
         label = 'process-fastq'
@@ -86,12 +81,12 @@ class ProcessFASTQ(controller.CementBaseController):
             (['output_directory'], dict(type=str, help="location to save the processed files")),
             (['temp_directory'], dict(type=str, help="location of the fastq files")),
         ]
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         pargs = self.app.pargs
         core.process_fastq(pargs.experiment_name, pargs.sample_name, pargs.strain_name, pargs.num_fastq_files, pargs.read_type, pargs.output_directory, pargs.temp_directory)
 
-class DeleteCDNAFiles(controller.CementBaseController):
+class DeleteCDNAFiles(cement.Controller):
 
     class Meta:
         label = 'delete-cdna'
@@ -103,12 +98,12 @@ class DeleteCDNAFiles(controller.CementBaseController):
             (['temp_directory'], dict(type=str, help="location where strain is saved")),
 
         ]
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         pargs = self.app.pargs
         core.delete_cdna_files(pargs.strain_name, pargs.temp_directory)
 
-class DeleteFASTQFiles(controller.CementBaseController):
+class DeleteFASTQFiles(cement.Controller):
 
     class Meta:
         label = 'delete-fastq'
@@ -121,13 +116,13 @@ class DeleteFASTQFiles(controller.CementBaseController):
             (['temp_directory'], dict(type=str, help="location where strain is saved")),
 
         ]
-    @controller.expose(hide=True)
-    def default(self):
+    @cement.ex(hide=True)
+    def _default(self):
         pargs = self.app.pargs
         core.delete_fastq_files(pargs.experiment_name, pargs.sample_name, pargs.temp_directory)
 
 
-class App(foundation.CementApp):
+class App(cement.App):
 
     class Meta:
         label = "kinetic_datanator"

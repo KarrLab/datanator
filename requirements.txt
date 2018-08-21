@@ -1,7 +1,7 @@
 git+https://github.com/cokelaer/bioservices.git#egg=bioservices-1.5.0
 beautifulsoup4
 biopython
-cement
+cement >= 3.0.0
 demjson
 enum34
 ete3
