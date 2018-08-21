@@ -4,6 +4,9 @@ import os
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA_CACHE_DIR = os.path.join(BASEDIR, 'kinetic_datanator', 'data', 'cache')
 
+## Endpoints
+CURRENT_VERSION_ENDPOINT = '/v0'
+
 # Common Schema Constants
 DATA_DUMP_PATH = os.path.join(DATA_CACHE_DIR , 'CommonSchema.dump')
 PAX_NAME = 'Pax'

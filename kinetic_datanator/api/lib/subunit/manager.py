@@ -27,6 +27,71 @@ class ProteinSubunitManager(BaseManager):
                                         gene_name=protein.gene_name, length=protein.length,
                                         mass=protein.mass, sequence = protein.canonical_sequence)
 
+    def get_observable_interactions(self, protein_subunit):
+        """ Get known protein interactions that were observed for a given subunit
+
+        Args:
+            protein_subunit (:obj:`models.ProteinSubunit`): subunit to find interactions for
+
+        Returns:
+            :obj:`list` of :obj:`data_model.ObservedInteraction`: list of Observed Protein Interactions
+
+        """
+        interact = self.get_interaction_by_subunit(protein_subunit.uniprot_id).all()
+        observed_interaction= []
+
+        for item in interact:
+
+            participants = []
+            for participant, protein in [(item.type_a, item.protein_a), (item.type_b, item.protein_b)]:
+                if participant == None:
+                    specie = None
+
+                if participant == 'protein':
+                    prot = self.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = protein).first()
+                    if prot:
+                        specie =  data_model.ProteinSpecie(name=prot.uniprot_id, uniprot_id =prot.uniprot_id,
+                            entrez_id=prot.entrez_id, gene_name=prot.gene_name, length=prot.length,
+                            mass=prot.mass, sequence=prot.canonical_sequence)
+                elif participant == 'peptide':
+                    specie = data_model.PolymerSpecie(name=protein, sequence=protein)
+
+                participants.append(specie)
+
+            metadata = self.metadata_dump(item)
+            resource = [data_model.Resource(namespace=source.namespace, id=source._id) for source in item._metadata.resource]
+            interaction = data_model.SpecieInteraction(specie_a=participants[0], specie_b=participants[1], stoichiometry_a = item.stoich_a, stoichiometry_b = item.stoich_b,
+            loc_a=item.loc_a, loc_b=item.loc_b, cross_references=resource, name=item.name, confidence=item.confidence, type_a = item.type_a, type_b=item.type_b, interaction_type=item.interaction_type)
+            observed_interaction.append(data_model.ObservedInteraction(interaction=interaction, metadata=metadata))
+
+
+        return observed_interaction
+
+    def get_observable_subunits(self, protein_complex):
+        """ Get known protein subunit that were observed for a given protein complex
+
+        Args:
+            protein_subunit (:obj:`models.ProteinComplex`): complex to find subunits for
+
+        Returns:
+            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Subunits
+        """
+
+        subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
+        observed_specie = []
+        for item in subunits:
+            metadata = self.metadata_dump(item)
+            resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
+                id = item._metadata.resource[0]._id)
+            specie = data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
+                sequence = item.canonical_sequence, entrez_id = item.entrez_id,
+                gene_name = item.gene_name, length = item.length, mass= item.mass,
+                cross_references = [resource])
+
+            observed_specie.append(data_model.ObservedSpecie(specie = specie, metadata=metadata))
+
+        return observed_specie
+
 
     def get_observed_abundances(self, protein):
         """ Find the observed values for protein abundance

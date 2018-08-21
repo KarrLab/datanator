@@ -11,6 +11,7 @@ from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.api.lib.search.manager import search_manager
 from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
 from kinetic_datanator.api.lib.subunit.manager import subunit_manager
+from kinetic_datanator.api.lib.complex.manager import complex_manager
 from kinetic_datanator.api.serializer import *
 import json
 import os
@@ -50,6 +51,11 @@ class ProteinSubunit(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
         return jsonify(ProteinSubunitSerializer().dump(subunit_manager._search(value) , many=True).data)
+
+class ProteinComplex(Resource):
+    @api.doc(params={'value': 'Value to search over in the protein complex space'})
+    def get(self,value):
+        return jsonify(ProteinComplexSerializer().dump(complex_manager._search(value) , many=True).data)
 
 class Concentration(Resource):
 

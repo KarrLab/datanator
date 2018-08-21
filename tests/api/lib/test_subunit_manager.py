@@ -16,12 +16,7 @@ class TestProteinSubunitManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
         self.protein_P00323 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
-
-    @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
 
     def test_get_abundance_by_uniprot(self):
         uniprot = self.protein_P00323.uniprot_id

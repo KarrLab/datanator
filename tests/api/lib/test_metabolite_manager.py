@@ -16,13 +16,8 @@ class TestMetaboliteManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
         self.proline = metabolite_manager.data_source.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
         self.uridine_tp = metabolite_manager.data_source.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
-
-    @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
 
     def test_get_compound_by_id(self):
         result = metabolite_manager.get_compound_by_id(61696)
@@ -57,8 +52,6 @@ class TestMetaboliteManager(unittest.TestCase):
         self.assertEqual(set(c.metadata.environment.media for c in obs), set(['Gutnick minimal complete medium (4.7 g/L KH2PO4; 13.5 g/L K2HPO4; 1 g/L K2SO4; 0.1 g/L MgSO4-7H2O; 10 mM NH4Cl) with 4 g/L glycerol', 'Gutnick minimal complete medium (4.7 g/L KH2PO4; 13.5 g/L K2HPO4; 1 g/L K2SO4; 0.1 g/L MgSO4-7H2O; 10 mM NH4Cl) with 4 g/L glucose', '48 mM Na2HPO4, 22 mM KH2PO4, 10 mM NaCl, 45 mM (NH4)2SO4, supplemented with 1 mM MgSO4, 1 mg/l thiamine·HCl, 5.6 mg/l CaCl2, 8 mg/l FeCl3, 1 mg/l MnCl2·4H2O, 1.7 mg/l ZnCl2, 0.43 mg/l CuCl2·2H2O, 0.6 mg/l CoCl2·2H2O and 0.6 mg/l Na2MoO4·2H2O.  4 g/L Gluco', 'Gutnick minimal complete medium (4.7 g/L KH2PO4; 13.5 g/L K2HPO4; 1 g/L K2SO4; 0.1 g/L MgSO4-7H2O; 10 mM NH4Cl) with 4 g/L acetate']))
         self.assertEqual(set(c.observable.specie.name for c in obs), set(['Uridine triphosphate']))
         self.assertEqual(set(c.observable.specie.structure for c in obs), set(['InChI=1S/C9H15N2O15P3/c12-5-1-2-11(9(15)10-5)8-7(14)6(13)4(24-8)3-23-28(19,20)26-29(21,22)25-27(16,17)18/h1-2,4,6-8,13-14H,3H2,(H,19,20)(H,21,22)(H,10,12,15)(H2,16,17,18)/t4-,6-,7-,8-/m1/s1']))
-
-
 
     def test_get_concentration_by_structure(self):
 
