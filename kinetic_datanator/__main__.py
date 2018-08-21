@@ -44,7 +44,8 @@ class BaseController(cement.Controller):
         ]
 
     @cement.ex(hide=True)
-    def _default(self): self.app.args.print_help()
+    def _default(self): 
+        self._parser.print_help()
 
 
 class UploadDataController(cement.Controller):
@@ -58,7 +59,7 @@ class UploadDataController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class UploadReferenceGenome(cement.Controller):
@@ -193,7 +194,7 @@ class BuildController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class AggregateBuildController(cement.Controller):
@@ -276,7 +277,7 @@ class DownloadController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class GetDataController(cement.Controller):
@@ -397,7 +398,7 @@ class TaxonomyController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class TaxonomyGetRankController(cement.Controller):
@@ -530,7 +531,7 @@ class MoleculeController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class MoleculeGetStructureController(cement.Controller):
@@ -609,7 +610,7 @@ class ReactionController(cement.Controller):
 
     @cement.ex(hide=True)
     def _default(self):
-        self.app.args.print_help()
+        self._parser.print_help()
 
 
 class ReactionGetEcNumberController(cement.Controller):
