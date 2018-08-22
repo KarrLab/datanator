@@ -48,8 +48,9 @@ body {
   position: fixed;
   left: 50%;
   transform: translate(-50%, 0);
-  min-width: 80vw;
-  min-height: 60vh;
+  width: 80vw;
+  height: 60vh;
+  overflow: scroll;
   border-radius: 20px;
   background-color: white;
   color:black;

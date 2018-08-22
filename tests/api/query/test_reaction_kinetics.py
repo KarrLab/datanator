@@ -19,6 +19,7 @@ import random
 import tempfile
 import shutil
 
+@unittest.skip('skip')
 class TestReactionKineticsQuery(unittest.TestCase):
     """
     Tests for 10000 entry limited Common Schema on Karr Lab Server

@@ -6,7 +6,8 @@
 """
 
 from flask_restplus import Api, Resource, reqparse
-from flask import  Blueprint, jsonify, Response, render_template, make_response
+import json
+from flask import  Blueprint, Response, render_template, make_response
 from kinetic_datanator.core import common_schema, models
 from kinetic_datanator.api.lib.search.manager import search_manager
 from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
@@ -16,16 +17,25 @@ from kinetic_datanator.api.serializer import *
 import json
 import os
 
-# def output_html(data, code, headers=None):
-#     resp = make_response(render_template('api/api.html', content = data), code)
-#     resp.headers.extend(headers or {})
-#     return resp
+
 
 api_blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(api_blueprint, version='0.0', title='Datanator API',
     description='Providing Data for Modelers', doc='/docs/')
 # api.representations['text/html'] = output_html
 
+@api.representation('text/html')
+def output_html(data, code, headers=None):
+    resp = make_response(render_template('api/api.html', content = json.dumps(data, sort_keys=True, indent=4)), code)
+    resp.headers.extend(headers or {})
+    return resp
+
+@api.representation('application/json')
+def output_html(data, code, headers=None):
+    print(headers)
+    resp = make_response(json.dumps(data, sort_keys=True, indent=4), code)
+    resp.headers.extend(headers or {})
+    return resp
 
 cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
 
@@ -40,22 +50,22 @@ class Search(Resource):
         resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
         resp.append(ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data)
         resp.append(ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data)
-        return jsonify(resp)
+        return resp
 
 class Metabolite(Resource):
     @api.doc(params={'value': 'Value to search over in the metabolite space'})
     def get(self,value):
-        return jsonify(CompoundSerializer().dump(metabolite_manager._search(value) , many=True).data)
+        return CompoundSerializer().dump(metabolite_manager._search(value) , many=True).data
 
 class ProteinSubunit(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
-        return jsonify(ProteinSubunitSerializer().dump(subunit_manager._search(value) , many=True).data)
+        return ProteinSubunitSerializer().dump(subunit_manager._search(value) , many=True).data
 
 class ProteinComplex(Resource):
     @api.doc(params={'value': 'Value to search over in the protein complex space'})
     def get(self,value):
-        return jsonify(ProteinComplexSerializer().dump(complex_manager._search(value) , many=True).data)
+        return ProteinComplexSerializer().dump(complex_manager._search(value) , many=True).data
 
 class Concentration(Resource):
 
@@ -64,7 +74,7 @@ class Concentration(Resource):
         compound = metabolite_manager.get_compound_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(compound)
 
-        return jsonify(ObservedValueSerializer().dump(observed_concentrations, many=True).data)
+        return ObservedValueSerializer().dump(observed_concentrations, many=True).data
 
 # class DataDump(Resource):
 #     """

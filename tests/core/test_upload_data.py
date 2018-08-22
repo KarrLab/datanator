@@ -37,8 +37,8 @@ class TestUploadData(unittest.TestCase):
         #self.assertEqual(sam
 
 class TestUploadDataFromJson(unittest.TestCase):
-    
-    
+
+
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
@@ -50,17 +50,17 @@ class TestUploadDataFromJson(unittest.TestCase):
     def tearDownClass(self):
         #pass
         shutil.rmtree(self.cache_dirname)
-    
-    
-    
 
 
 
+
+
+    @unittest.skip('skip')
     def test_upload_from_json(self):
-        
+
         flk = self.flk
         session = flk.session
-        
+
 
         test_json = """
              {
@@ -178,10 +178,10 @@ class TestUploadDataFromJson(unittest.TestCase):
             ]
         }
         """
-        
+
         upload_data.UploadData(self.cache_dirname).upload_from_json(json.loads(test_updated_json), "RNASeqExperiment")
         #upload_data.UploadData().upload_from_json(json.loads(test_updated_json), "RNASeqExperiment")
-        
+
         exp = session.query(models.RNASeqExperiment).filter_by(accession_number = "E-MTAB-3").first()
         self.assertEqual(exp.accession_number, "E-MTAB-3")
         self.assertEqual(exp.exp_name, "test experiment name")
@@ -192,5 +192,3 @@ class TestUploadDataFromJson(unittest.TestCase):
         experiment_metadata = exp._experimentmetadata
         self.assertEqual(experiment_metadata.description, "a test of experiment metadata")
         self.assertEqual(experiment_metadata.experiment_design[0].name, "a new experiment design")
-
-        

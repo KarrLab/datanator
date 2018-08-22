@@ -9,6 +9,7 @@ api.add_resource(Search, get_version_endpoint('/search/<value>'))
 api.add_resource(Metabolite, get_version_endpoint('/search/metabolite/<value>'))
 api.add_resource(ProteinSubunit, get_version_endpoint('/search/subunit/<value>'))
 api.add_resource(ProteinComplex, get_version_endpoint('/search/complex/<value>'))
+
 api.add_resource(Concentration, get_version_endpoint('/concentrations/<id>'))
 
 #
