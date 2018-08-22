@@ -43,6 +43,11 @@ jobs:
           paths:
             - /usr/local/lib/python3.6/site-packages
 
+      # Install package configuration files including credentials
+      - run:
+          name: Install package configuration files including credentials
+          command: karr_lab_build_utils3 download-install-package-config-files
+
       # Restore Database
       - run:
           name: Restore Database
