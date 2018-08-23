@@ -32,7 +32,7 @@ class CompoundSerializer(ma.ModelSchema):
 
     _metadata = ma.Nested(MetadataSerializer)
     structure = ma.Nested(StructureSerializer)
-    
+
     class Meta:
         exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "concentration"]
         model = models.Compound
@@ -54,18 +54,56 @@ class ProteinSubunitSerializer(ma.ModelSchema):
 
 ### ----------------------------------------------------- ######
 
+class ResourceSerializer(ma.Schema):
 
+    class Meta:
+        fields = ['namespace', 'id']
+
+class SpecieSerializer(ma.Schema):
+
+    class Meta:
+        fields = ['structure']
+
+
+class EntityInteractionOrPropertySerializer(ma.Schema):
+
+    cross_references = ma.Nested(ResourceSerializer, many=True)
+
+    class Meta:
+        fields = ['id', 'name', 'cross_references']
+
+class InteractionSerializer(EntityInteractionOrPropertySerializer):
+
+
+    class Meta(EntityInteractionOrPropertySerializer):
+        # Fields to expose
+        fields = EntityInteractionOrPropertySerializer.Meta.fields + ['position', 'score', 'confidence']
+
+
+class ReactionParticipantSerializer(ma.Schema):
+
+    specie = ma.Nested(SpecieSerializer)
+
+    class Meta:
+        fields = ['specie', 'coefficient', 'order']
+
+class ReactionSerializer(InteractionSerializer):
+
+    participants = ma.Nested(ReactionParticipantSerializer, many=True)
+
+    class Meta(InteractionSerializer):
+        fields = InteractionSerializer.Meta.fields+['kinetic_law_id', 'reversible', 'participants']
 
 
 class ObservableSerializer(ma.Schema):
 
-    # interaction = ma.Nested(InteractionSerializer)
-    # specie = ma.Nested(SpecieSerializer)
+    interaction = ma.Nested(InteractionSerializer)
+    specie = ma.Nested(SpecieSerializer)
     # compartment = ma.Nested(CompartmentSerializer)
 
     class Meta:
         # Fields to expose
-        fields = ['property']
+        fields = ['property', 'interaction', 'specie']
 
 class GeneticsSerializer(ma.Schema):
 

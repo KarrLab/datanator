@@ -73,6 +73,31 @@ class MetaboliteManager(BaseManager):
 
         return q.filter(condition).all()
 
+
+    def get_metabolite_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
+        """ Get compounds with the same structure. Optionally, get compounds which only have
+        the same core empirical formula and core atom connecticity (i.e. same InChI formula
+        and connectivity layers).
+
+        Args:
+            inchi (:obj:`str`): molecule structure in InChI format
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
+                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
+                identical structure.
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
+        """
+        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
+        if only_formula_and_connectivity:
+            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
+            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
+        else:
+            condition = models.Structure._value_inchi == inchi
+
+        return q.filter(condition).all()
+
+
     def _search(self, value):
         """
         Args:

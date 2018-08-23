@@ -11,8 +11,8 @@ from kinetic_datanator.core import data_model, data_query, models, common_schema
 from kinetic_datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
-import sqlalchemy.orm
 from kinetic_datanator.api.lib.data_manager import BaseManager
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 
 class ReactionManager(BaseManager):
     """ Finds relevant kinetics observations for reactions
@@ -161,7 +161,7 @@ class ReactionManager(BaseManager):
         return observed_vals
 
 
-    def convert_rxn_to_data_model(self, reaction_list):
+    def _port(self, reaction_list):
         """
         Converts SQL model reaction into a Obj Model based data_model reaction
 
@@ -203,7 +203,7 @@ class ReactionManager(BaseManager):
 
     def get_reaction_by_kinetic_law_id(self, id):
         rxn_list = self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=id).all()
-        return self.convert_rxn_to_data_model(rxn_list)
+        return self._port(rxn_list)
 
 
     def get_reaction_by_compound(self, compound, select=models.Reaction):
@@ -220,7 +220,7 @@ class ReactionManager(BaseManager):
 
         reaction_list = []
         for rxn in rxn_cluster:
-            reaction= self.convert_rxn_to_data_model(rxn)
+            reaction= self._port(rxn)
             reaction_list.append(reaction)
 
 
@@ -400,24 +400,4 @@ class ReactionManager(BaseManager):
 
         return result
 
-    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
-        """ Get compounds with the same structure. Optionally, get compounds which only have
-        the same core empirical formula and core atom connecticity (i.e. same InChI formula
-        and connectivity layers).
-
-        Args:
-            inchi (:obj:`str`): molecule structure in InChI format
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
-                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
-                identical structure.
-
-        Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
-        """
-        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
-        if only_formula_and_connectivity:
-            formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
-            condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
-        else:
-            condition = models.Structure._value_inchi == inchi
-        return q.filter(condition)
+reaction_manager = ReactionManager()
