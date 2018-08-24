@@ -295,7 +295,7 @@ class Interaction(EntityInteractionOrProperty):
     """
     #TODO: Assess difference between score and confidence
     position = obj_model.core.IntegerAttribute()
-    score = obj_model.core.FloatAttribute()
+    score = obj_model.core.FloatAttribute(default=0)
     confidence = obj_model.core.StringAttribute()
 
 class SpecieInteraction(Interaction):

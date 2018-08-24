@@ -14,3 +14,6 @@ class TestSearchManager(unittest.TestCase):
     def test_search(self):
         dict= search_manager.search('2-Oxopentanoate')
         self.assertGreater(len(dict['Compound']), 0)
+        self.assertGreater(len(dict['Reaction']), 0)
+        self.assertEqual(len(dict['ProteinSubunit']), 0)
+        self.assertEqual(len(dict['ProteinComplex']), 0)

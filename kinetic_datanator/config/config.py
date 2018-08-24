@@ -23,8 +23,6 @@ class LocalDevelopmentConfig(BaseConfig):
     # SQLALCHEMY_BINDS = {'data': 'postgres://localhost/User'}
     DEBUG_TB_ENABLED = True
 
-
-
 class CircleTestingConfig(BaseConfig):
     """Testing configuration."""
     DEBUG = True
