@@ -36,7 +36,6 @@ jobs:
       - run:
           name: Enable Database Utilities
           command: |
-            sudo apt-get install postgresql-client-9.6
             echo '/usr/lib/postgresql/9.6/bin/:$PATH' >> $BASH_ENV
 
       # Save packages to cache
