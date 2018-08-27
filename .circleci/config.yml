@@ -55,7 +55,6 @@ jobs:
       - run:
           name: Restore Database
           command: |
-            mkdir kinetic_datanator/data/cache
             python3 manage.py restore_db
 
       # Test code
