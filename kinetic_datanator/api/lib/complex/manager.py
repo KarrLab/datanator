@@ -22,14 +22,14 @@ class ProteinComplexManager(BaseManager):
         return models.ProteinComplex.query.search(value).all()
 
     def _port(self, complex):
-        resource = data_model.Resource(namespace = complex._metadata.resource[0].namespace,
-            id = complex._metadata.resource[0]._id)
+        resource = [data_model.Resource(namespace = resource.namespace,
+            id = resource._id) for resource in complex._metadata.resource] 
         return data_model.ProteinComplexSpecie(name = complex.complex_name,
         go_id = complex.go_id, go_dsc = complex. go_dsc, funcat_id = complex.funcat_id,
         funcat_dsc = complex.funcat_dsc, su_cmt = complex.su_cmt, complex_cmt = complex.complex_cmt,
         disease_cmt = complex.disease_cmt, class_name = complex.class_name,
         family_name = complex.family_name, molecular_weight= complex.molecular_weight,
-        cross_references = [resource])
+        cross_references = resource)
 
     def get_observable_complex(self, protein_subunit):
         """ Get known protein complex that were observed for a given subunit

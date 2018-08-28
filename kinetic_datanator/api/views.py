@@ -44,7 +44,6 @@ class Search(Resource):
     def get(self, value):
         search_dict = search_manager.search(value)
 
-        print(ReactionSerializer().dump(search_dict['Reaction'], many=True).data)
         resp = []
         resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
         resp.append(ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data)

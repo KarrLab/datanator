@@ -111,6 +111,7 @@ tests/fixtures/secret/
 # cache files
 kinetic_datanator/data_source/cache/
 kinetic_datanator/data/cache/CommonSchema.dump
+*.sqlite
 
 # configuration
 kinetic_datanator.cfg

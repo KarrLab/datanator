@@ -16,6 +16,20 @@ class TestProteinComplexManager(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.protein_p53622 = complex_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
+        self.signal_peptidase = complex_manager.data_source.session.query(models.ProteinComplex).filter_by(complex_name = 'signal peptidase I').first()
+
+    def test_get_complex_by_id(self):
+        prot = complex_manager.get_complex_by_id(self.signal_peptidase.id)
+        self.assertEqual(prot.complex_name, self.signal_peptidase.complex_name)
+
+    def test__search(self):
+        result = complex_manager._search('signal peptidase I')
+        self.assertIn(self.signal_peptidase, result)
+
+    def test__port(self):
+        ported_prot = complex_manager._port(self.signal_peptidase)
+        self.assertEqual(ported_prot.name, 'signal peptidase I')
+        self.assertEqual(ported_prot.cross_references, [])
 
     def test_get_observable_complex(self):
         complex = complex_manager.get_observable_complex(self.protein_p53622)
