@@ -152,6 +152,8 @@ class PostgresDataSource(DataSource):
         paths = self.get_paths_to_backup(download=True)
         for path in paths:
             if os.path.isfile(os.path.join(tmp_dirname, path)):
+                if not os.path.isdir(self.cache_dirname):
+                    os.makedirs(self.cache_dirname)
                 shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
             else:
                 shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))

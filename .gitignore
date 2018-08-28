@@ -115,9 +115,6 @@ kinetic_datanator/data/cache/CommonSchema.dump
 # configuration
 kinetic_datanator.cfg
 
-# whoosh index
-whoosh_index/
-kinetic_datanator/data_source/.DS_Store
 
 # minerva
 minerva/*
