@@ -37,19 +37,18 @@ class CompoundSerializer(ma.ModelSchema):
         exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "concentration"]
         model = models.Compound
 
-class ProteinComplexSerializer(ma.ModelSchema):
-    _metadata = ma.Nested(MetadataSerializer)
-    class Meta:
-        exclude = ["search_vector"]
-        model = models.ProteinComplex
-
 class ProteinSubunitSerializer(ma.ModelSchema):
     _metadata = ma.Nested(MetadataSerializer)
     class Meta:
         exclude = ["search_vector"]
         model = models.ProteinSubunit
 
-
+class ProteinComplexSerializer(ma.ModelSchema):
+    _metadata = ma.Nested(MetadataSerializer)
+    protein_subunit = ma.Nested(ProteinSubunitSerializer, many=True)
+    class Meta:
+        exclude = ["search_vector"]
+        model = models.ProteinComplex
 
 
 ### ----------------------------------------------------- ######
@@ -62,7 +61,7 @@ class ResourceSerializer(ma.Schema):
 class SpecieSerializer(ma.Schema):
 
     class Meta:
-        fields = ['structure']
+        fields = ['structure', 'name']
 
 
 class EntityInteractionOrPropertySerializer(ma.Schema):

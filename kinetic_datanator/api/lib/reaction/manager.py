@@ -39,7 +39,7 @@ class ReactionManager(BaseManager):
     def __init__(self, cache_dirname = DATA_CACHE_DIR):
         self.data_source = common_schema.CommonSchema(cache_dirname=cache_dirname)
 
-    def get_observed_result(self, reaction):
+    def get_observed_parameter_value(self, reaction):
         """ Find observed kinetics for the reaction or similar reactions
         TODO: Add compartment infomrmation
 

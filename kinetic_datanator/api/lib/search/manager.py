@@ -27,7 +27,7 @@ class SearchManager(BaseManager):
     """
 
     def __init__(self, cache_dirname = DATA_CACHE_DIR):
-        pass
+        self.data_source = common_schema.CommonSchema(cache_dirname=cache_dirname)
         # self.data_source = common_schema.CommonSchema(cache_dirname= cache_dirname)
         # self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname, include_variants=True)
 
@@ -59,5 +59,8 @@ class SearchManager(BaseManager):
         found_dict = {'Compound':compound, 'ProteinSubunit':subunit, 'ProteinComplex':complex, 'Reaction': reactions}
 
         return found_dict
+
+    def get_object_by_id(self, id):
+        return self.data_source.session.query(models.Observation).get(id)
 
 search_manager = SearchManager()

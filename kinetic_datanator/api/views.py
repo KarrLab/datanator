@@ -13,6 +13,7 @@ from kinetic_datanator.api.lib.search.manager import search_manager
 from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
 from kinetic_datanator.api.lib.subunit.manager import subunit_manager
 from kinetic_datanator.api.lib.complex.manager import complex_manager
+from kinetic_datanator.api.lib.reaction.manager import reaction_manager
 from kinetic_datanator.api.serializer import *
 import json
 import os
@@ -44,35 +45,72 @@ class Search(Resource):
     def get(self, value):
         search_dict = search_manager.search(value)
 
-        resp = []
-        resp.append(CompoundSerializer().dump(search_dict['Compound'], many=True).data)
-        resp.append(ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data)
-        resp.append(ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data)
-        resp.append(ReactionSerializer().dump(search_dict['Reaction'], many=True).data)
-        return resp
+        metabolite_data = CompoundSerializer().dump(search_dict['Compound'], many=True).data
+        complex_data = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data
+        subunuit_data = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data
+        reaction_data = ReactionSerializer().dump(search_dict['Reaction'], many=True).data
+        return [metabolite_data, complex_data, subunuit_data, reaction_data]
 
-class Metabolite(Resource):
+class MetaboliteSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the metabolite space'})
     def get(self,value):
         return CompoundSerializer().dump(metabolite_manager._search(value) , many=True).data
 
-class ProteinSubunit(Resource):
+class ProteinSubunitSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
         return ProteinSubunitSerializer().dump(subunit_manager._search(value) , many=True).data
 
-class ProteinComplex(Resource):
+class ProteinComplexSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein complex space'})
     def get(self,value):
         return ProteinComplexSerializer().dump(complex_manager._search(value) , many=True).data
 
-class Concentration(Resource):
+
+class Metabolite(Resource):
+
+    def get(self, id):
+        metabolite = metabolite_manager.get_compound_by_id(id)
+        observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
+        reactions = reaction_manager.get_reaction_by_compound(metabolite)
+
+        serialized_metabolite = CompoundSerializer().dump(metabolite).data
+        serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True).data
+        serialized_reactions =  ReactionSerializer().dump(reactions, many=True).data
+
+        return [serialized_metabolite, serialized_concentrations, serialized_reactions]
+
+class MetaboliteConcentration(Resource):
 
     @api.doc(params={'id': 'ID number of the given compound'})
     def get(self, id):
         compound = metabolite_manager.get_compound_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(compound)
         return ObservedValueSerializer().dump(observed_concentrations, many=True).data
+
+class ProteinAbundance(Resource):
+
+    def get(self, id):
+        subunit = subunit_manager.get_subunit_by_id(id)
+        observed_abundances = subunit_manager.get_observed_abundances(subunit)
+        return ObservedValueSerializer().dump(observed_abundances, many=True).data
+
+class ProteinInteraction(Resource):
+
+    def get(self,id):
+        pass
+
+class ReactionParameter(Resource):
+
+    def get(self,id):
+        reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
+        observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
+        return ObservedValueSerializer().dump(observed_parameters, many=True).data
+
+
+
+
+
 
 # class DataDump(Resource):
 #     """

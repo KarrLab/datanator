@@ -1,6 +1,7 @@
 from flask_testing import TestCase
 import unittest
 from kinetic_datanator import app
+from kinetic_datanator.api.views import *
 
 class TestAPIBlueprint(TestCase):
 
@@ -20,4 +21,9 @@ class TestAPIBlueprint(TestCase):
     def test_search_general(self):
         with self.client:
             response = self.client.get('/api/v0/search/{0}'.format(self.general_search)).json
-            
+
+
+    def test_metabolite(self):
+        with self.client:
+            response = self.client.get('/api/v0/metabolite/{0}'.format(61696)).json
+            self.assertEqual(response[0]['id'], 61696)

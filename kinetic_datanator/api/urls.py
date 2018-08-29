@@ -6,19 +6,15 @@ def get_version_endpoint(endpoint):
 
 # Text Search
 api.add_resource(Search, get_version_endpoint('/search/<value>'))
-api.add_resource(Metabolite, get_version_endpoint('/search/metabolite/<value>'))
-api.add_resource(ProteinSubunit, get_version_endpoint('/search/subunit/<value>'))
-api.add_resource(ProteinComplex, get_version_endpoint('/search/complex/<value>'))
+api.add_resource(MetaboliteSearch, get_version_endpoint('/search/metabolite/<value>'))
+api.add_resource(ProteinSubunitSearch, get_version_endpoint('/search/subunit/<value>'))
+api.add_resource(ProteinComplexSearch, get_version_endpoint('/search/complex/<value>'))
 
-api.add_resource(Concentration, get_version_endpoint('/concentrations/<id>'))
+# Object Specific Queries
+api.add_resource(Metabolite, get_version_endpoint('/metabolite/<id>'))
 
-#
-# """
-# Compound, /compound
-# Protein Subunit, /subunit
-# Protein Complex, /complex
-# Reaction, /reaction
-# ProteinInteractions, /interactions
-# Abundance, /abundance
-#
-# """
+# Data Specific Queries
+api.add_resource(MetaboliteConcentration, get_version_endpoint('/concentrations/<id>'))
+api.add_resource(ProteinAbundance, get_version_endpoint('/abundances/<id>'))
+api.add_resource(ProteinInteraction, get_version_endpoint('/interactions/<id>'))
+api.add_resource(ReactionParameter, get_version_endpoint('/parameters/<id>'))
