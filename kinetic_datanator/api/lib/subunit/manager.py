@@ -8,6 +8,8 @@
 from kinetic_datanator.core import data_model, data_query, common_schema, models
 from kinetic_datanator.api.lib.data_manager import BaseManager
 from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from kinetic_datanator.api.lib.complex.manager import complex_manager
+from sqlalchemy import or_
 
 class ProteinSubunitManager(BaseManager):
     """ Manages subunit information for API """
@@ -67,31 +69,25 @@ class ProteinSubunitManager(BaseManager):
 
         return observed_interaction
 
-    def get_observable_subunits(self, protein_complex):
-        """ Get known protein subunit that were observed for a given protein complex
+    def get_observable_complex(self, protein_subunit):
+        """ Get known protein complex that were observed for a given subunit
 
         Args:
-            protein_subunit (:obj:`models.ProteinComplex`): complex to find subunits for
+            protein_subunit (:obj:`models.ProteinSubunit`): subunit to find complex for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Subunits
+            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Complexes
         """
-
-        subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
         observed_specie = []
-        for item in subunits:
-            metadata = self.metadata_dump(item)
-            resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
-                id = item._metadata.resource[0]._id)
-            specie = data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
-                sequence = item.canonical_sequence, entrez_id = item.entrez_id,
-                gene_name = item.gene_name, length = item.length, mass= item.mass,
-                cross_references = [resource])
+        _complex = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
 
-            observed_specie.append(data_model.ObservedSpecie(specie = specie, metadata=metadata))
+        for complex in _complex:
+            metadata= self.metadata_dump(complex)
+            ported_complex = complex_manager._port(complex)
+
+            observed_specie.append(data_model.ObservedSpecie(specie = ported_complex, metadata=metadata))
 
         return observed_specie
-
 
     def get_observed_abundances(self, protein):
         """ Find the observed values for protein abundance
@@ -130,6 +126,19 @@ class ProteinSubunitManager(BaseManager):
 
         return observed_vals
 
+
+    def get_interaction_by_subunit(self, uniprot, select = models.ProteinInteraction):
+        """ Get interactions that were observed for a given uniprot id
+
+        Args:
+            uniprot (:obj:`str`): uniprot id to search for
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for protein interactions that contain the uniprot_id
+        """
+        return self.data_source.session.query(select).filter(or_(select.protein_a == uniprot,
+                select.protein_b == uniprot))
+
     def get_abundance_by_uniprot(self, uniprot, select=models.AbundanceData):
         """ Find the abundance from a uniprot id
 
@@ -144,6 +153,21 @@ class ProteinSubunitManager(BaseManager):
             models.ProteinSubunit, models.AbundanceData.subunit)
         condition = models.ProteinSubunit.uniprot_id == uniprot
         return q.filter(condition)
+
+
+    def get_known_complex_by_subunit(self, uniprot, select = models.ProteinComplex):
+        """ Get known complexes that were observed for a given uniprot id subunit
+
+        Args:
+            uniprot (:obj:`str`): uniprot id to search for
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for protein complexes that contain the uniprot_id
+        """
+        q = self.data_source.session.query(select).join(models.ProteinSubunit, select.protein_subunit)
+        condition = models.ProteinSubunit.uniprot_id == uniprot
+        return q.filter(condition)
+
 
     def get_abundance_by_gene_name(self, gene_name, select=models.AbundanceData):
         """ Find the abundance from gene_name

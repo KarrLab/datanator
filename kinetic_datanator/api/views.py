@@ -80,6 +80,21 @@ class Metabolite(Resource):
 
         return [serialized_metabolite, serialized_concentrations, serialized_reactions]
 
+class ProteinSubunit(Resource):
+
+    def get(self, id):
+        subunit = subunit_manager.get_subunit_by_id(id)
+        observed_abundances = subunit_manager.get_observed_abundances(subunit)
+        observed_interactions = subunit_manager.get_observable_interactions(subunit)
+        observed_complexes = subunit_manager.get_observable_complex(subunit)
+
+        serialized_subunit = ProteinSubunitSerializer().dump(subunit).data
+        serialized_abundances = ObservedValueSerializer().dump(observed_abundances, many=True).data
+        serialized_interactions = ObservedInteractionSerializer().dump(observed_interactions, many=True).data
+        serialized_complexes = ObservedSpecieSerializer().dump(observed_interactions, many=True).data
+
+        return [serialized_subunit, serialized_abundances, serialized_interactions, serialized_complexes]
+
 class MetaboliteConcentration(Resource):
 
     @api.doc(params={'id': 'ID number of the given compound'})

@@ -23,7 +23,7 @@ class ProteinComplexManager(BaseManager):
 
     def _port(self, complex):
         resource = [data_model.Resource(namespace = resource.namespace,
-            id = resource._id) for resource in complex._metadata.resource] 
+            id = resource._id) for resource in complex._metadata.resource]
         return data_model.ProteinComplexSpecie(name = complex.complex_name,
         go_id = complex.go_id, go_dsc = complex. go_dsc, funcat_id = complex.funcat_id,
         funcat_dsc = complex.funcat_dsc, su_cmt = complex.su_cmt, complex_cmt = complex.complex_cmt,
@@ -31,23 +31,28 @@ class ProteinComplexManager(BaseManager):
         family_name = complex.family_name, molecular_weight= complex.molecular_weight,
         cross_references = resource)
 
-    def get_observable_complex(self, protein_subunit):
-        """ Get known protein complex that were observed for a given subunit
+    def get_observable_subunits(self, protein_complex):
+        """ Get known protein subunit that were observed for a given protein complex
 
         Args:
-            protein_subunit (:obj:`models.ProteinSubunit`): subunit to find complex for
+            protein_subunit (:obj:`models.ProteinComplex`): complex to find subunits for
 
         Returns:
-            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Complexes
+            :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Subunits
         """
+
+        subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
         observed_specie = []
-        _complex = self.get_known_complex_by_subunit(protein_subunit.uniprot_id)
+        for item in subunits:
+            metadata = self.metadata_dump(item)
+            resource = data_model.Resource(namespace = item._metadata.resource[0].namespace,
+                id = item._metadata.resource[0]._id)
+            specie = data_model.ProteinSpecie(name = item.subunit_name, uniprot_id = item.uniprot_id,
+                sequence = item.canonical_sequence, entrez_id = item.entrez_id,
+                gene_name = item.gene_name, length = item.length, mass= item.mass,
+                cross_references = [resource])
 
-        for complex in _complex:
-            metadata= self.metadata_dump(complex)
-            ported_complex = self._port(complex)
-
-            observed_specie.append(data_model.ObservedSpecie(specie = ported_complex, metadata=metadata))
+            observed_specie.append(data_model.ObservedSpecie(specie = specie, metadata=metadata))
 
         return observed_specie
 

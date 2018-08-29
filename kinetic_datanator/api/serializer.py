@@ -61,7 +61,7 @@ class ResourceSerializer(ma.Schema):
 class SpecieSerializer(ma.Schema):
 
     class Meta:
-        fields = ['structure', 'name']
+        exclude = ['id']
 
 
 class EntityInteractionOrPropertySerializer(ma.Schema):
@@ -130,10 +130,24 @@ class ObservedResultSerializer(ma.Schema):
     class Meta:
         fields = ['metadata']
 
+class ObservedInteractionSerializer(ObservedResultSerializer):
+
+    interaction = ma.Nested(InteractionSerializer)
+
+    class Meta(ObservedResultSerializer):
+        fields = ObservedResultSerializer.Meta.fields + ['interaction']
+
+class ObservedSpecieSerializer(ObservedResultSerializer):
+
+    specie = ma.Nested(SpecieSerializer)
+
+    class Meta(ObservedResultSerializer):
+        fields = ObservedResultSerializer.Meta.fields + ['specie']
+
+
 class ObservedValueSerializer(ObservedResultSerializer):
 
     observable = ma.Nested(ObservableSerializer)
 
     class Meta(ObservedResultSerializer):
-        # Fields to expose
         fields = ObservedResultSerializer.Meta.fields + ['observable', 'value', 'error', 'units']
