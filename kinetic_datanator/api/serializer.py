@@ -109,12 +109,18 @@ class GeneticsSerializer(ma.Schema):
     class Meta:
         fields = ['taxon', 'variation']
 
+class EnvironmentSerializer(ma.Schema):
+
+    class Meta:
+        fields = ['temperature', 'ph', 'media', 'growth_status', 'growth_system']
+
 class ObservedResultMetadataSerializer(ma.Schema):
 
     genetics = ma.Nested(GeneticsSerializer)
+    environment = ma.Nested(EnvironmentSerializer)
 
     class Meta:
-        fields = ['genetics']
+        fields = ['genetics', 'environment']
 
 
 class ObservedResultSerializer(ma.Schema):
