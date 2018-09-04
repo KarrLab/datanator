@@ -145,12 +145,12 @@ class PostgresDataSource(DataSource):
         tmp_dirname = tempfile.mkdtemp()
 
         # install and export package
-        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
-        manager.download()
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)        
 
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
         for path in paths:
+            manager.download(system_path=path)
             if os.path.isfile(os.path.join(tmp_dirname, path)):
                 if not os.path.isdir(self.cache_dirname):
                     os.makedirs(self.cache_dirname)
@@ -366,12 +366,12 @@ class CachedDataSource(DataSource):
         tmp_dirname = tempfile.mkdtemp()
 
         # install and export package
-        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
-        manager.download()
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)        
 
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
         for path in paths:
+            manager.download(system_path=path)
             if os.path.isfile(os.path.join(tmp_dirname, path)):
                 shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
             else:

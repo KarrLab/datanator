@@ -869,7 +869,8 @@ class TestBackupAndInstall(unittest.TestCase):
     def test(self):
         # create test Quilt package
         os.mkdir(os.path.join(self.tmp_dirname, 'up'))
-        with open(os.path.join(self.tmp_dirname, 'up', 'README.md'), 'w') as file:
+        os.mkdir(os.path.join(self.tmp_dirname, 'up', 'subdir'))
+        with open(os.path.join(self.tmp_dirname, 'up', 'subdir', 'README.md'), 'w') as file:
             file.write('# kinetic_datanator_test__\n')
             file.write('Test package for kinetic_datanator\n')
 
@@ -911,9 +912,9 @@ class TestBackupAndInstall(unittest.TestCase):
         # check that README still in package
         os.mkdir(os.path.join(self.tmp_dirname, 'down'))
         manager = wc_utils.quilt.QuiltManager(os.path.join(self.tmp_dirname, 'down'), self.package, owner=self.owner)
-        manager.download()
+        manager.download(system_path='subdir/README.md')
 
-        with open(os.path.join(self.tmp_dirname, 'down', 'README.md'), 'r') as file:
+        with open(os.path.join(self.tmp_dirname, 'down', 'subdir', 'README.md'), 'r') as file:
             self.assertEqual(file.readline(), '# kinetic_datanator_test__\n')
             self.assertEqual(file.readline(), 'Test package for kinetic_datanator\n')
 
