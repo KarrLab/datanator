@@ -45,27 +45,32 @@ class Search(Resource):
     def get(self, value):
         search_dict = search_manager.search(value)
 
-        metabolite_data = CompoundSerializer().dump(search_dict['Compound'], many=True).data
-        complex_data = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True).data
-        subunuit_data = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True).data
-        reaction_data = ReactionSerializer().dump(search_dict['Reaction'], many=True).data
-        return [metabolite_data, complex_data, subunuit_data, reaction_data]
+        serialized_metabolites = CompoundSerializer().dump(search_dict['Compound'], many=True)
+        serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
+        serialized_subunuits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
+        serialized_reactions = ReactionSerializer().dump(search_dict['Reaction'], many=True)
+        return {'metabolites': serialized_metabolite.data,
+                'complexes': serialized_complex.data,
+                'subunits': serialized_subunits.data,
+                'reactions': serialized_reactions.data}
 
 class MetaboliteSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the metabolite space'})
     def get(self,value):
-        return CompoundSerializer().dump(metabolite_manager._search(value) , many=True).data
+        serialized_metabolites = CompoundSerializer().dump(search_dict['Compound'], many=True)
+        return {'metabolites': serialized_metabolite.data}
 
 class ProteinSubunitSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
-        return ProteinSubunitSerializer().dump(subunit_manager._search(value) , many=True).data
+        serialized_subunuits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
+        return {'subunits': serialized_subunits.data}
 
 class ProteinComplexSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein complex space'})
     def get(self,value):
-        return ProteinComplexSerializer().dump(complex_manager._search(value) , many=True).data
-
+        serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
+        return {'complexes': serialized_complex.data}
 
 class Metabolite(Resource):
 
@@ -74,11 +79,13 @@ class Metabolite(Resource):
         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
         reactions = reaction_manager.get_reaction_by_compound(metabolite)
 
-        serialized_metabolite = CompoundSerializer().dump(metabolite).data
-        serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True).data
-        serialized_reactions =  ReactionSerializer().dump(reactions, many=True).data
+        serialized_metabolite = CompoundSerializer().dump(metabolite)
+        serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
+        serialized_reactions =  ReactionSerializer().dump(reactions, many=True)
 
-        return [serialized_metabolite, serialized_concentrations, serialized_reactions]
+        return {'object':serialized_metabolite.data,
+                'concentrations': serialized_concentrations.data,
+                'reactions' : serialized_reactions.data}
 
 class ProteinSubunit(Resource):
 
@@ -88,41 +95,67 @@ class ProteinSubunit(Resource):
         observed_interactions = subunit_manager.get_observable_interactions(subunit)
         observed_complexes = subunit_manager.get_observable_complex(subunit)
 
-        serialized_subunit = ProteinSubunitSerializer().dump(subunit).data
-        serialized_abundances = ObservedValueSerializer().dump(observed_abundances, many=True).data
-        serialized_interactions = ObservedInteractionSerializer().dump(observed_interactions, many=True).data
-        serialized_complexes = ObservedSpecieSerializer().dump(observed_interactions, many=True).data
+        serialized_subunit = ProteinSubunitSerializer().dump(subunit)
+        serialized_abundances = ObservedValueSerializer().dump(observed_abundances, many=True)
+        serialized_interactions = ObservedInteractionSerializer().dump(observed_interactions, many=True)
+        serialized_complexes = ObservedSpecieSerializer().dump(observed_interactions, many=True)
 
-        return [serialized_subunit, serialized_abundances, serialized_interactions, serialized_complexes]
+        return {'object': serialized_subunit.data,
+                'abundances': serialized_abundances.data,
+                'interactions': serialized_interactions.data,
+                'complexes': serialized_complexes.data}
 
-class MetaboliteConcentration(Resource):
-
-    @api.doc(params={'id': 'ID number of the given compound'})
+class ProteinComplex(Resource):
     def get(self, id):
-        compound = metabolite_manager.get_compound_by_id(id)
-        observed_concentrations = metabolite_manager.get_observed_concentrations(compound)
-        return ObservedValueSerializer().dump(observed_concentrations, many=True).data
+        complex = complex_manager.get_complex_by_id(id)
+        observed_subunits = complex_manager.get_observable_subunits(complex)
 
-class ProteinAbundance(Resource):
+        serialized_complex = ProteinComplexSerializer().dump(complex)
+        serialized_subunits = ObservedSpecieSerializer().dump(observed_subunits, many=True)
 
+        return {'object':serialized_complex.data,
+                'subunits': serialized_subunits.data}
+
+class Reaction(Resource):
     def get(self, id):
-        subunit = subunit_manager.get_subunit_by_id(id)
-        observed_abundances = subunit_manager.get_observed_abundances(subunit)
-        return ObservedValueSerializer().dump(observed_abundances, many=True).data
-
-class ProteinInteraction(Resource):
-
-    def get(self,id):
-        pass
-
-class ReactionParameter(Resource):
-
-    def get(self,id):
         reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
         observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
-        return ObservedValueSerializer().dump(observed_parameters, many=True).data
 
+        serialized_reaction = ReactionSerializer().dump(reaction)
+        serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True)
 
+        return {'object': serialized_reaction.data,
+                'parameters': seralized_parameters.data]
+
+# class MetaboliteConcentration(Resource):
+#
+#     @api.doc(params={'id': 'ID number of the given compound'})
+#     def get(self, id):
+#         metabolite = metabolite_manager.get_compound_by_id(id)
+#         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
+#         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
+#         return {}
+#
+# class ProteinAbundance(Resource):
+#
+#     def get(self, id):
+#         subunit = subunit_manager.get_subunit_by_id(id)
+#         observed_abundances = subunit_manager.get_observed_abundances(subunit)
+#         return ObservedValueSerializer().dump(observed_abundances, many=True).data
+#
+# class ProteinInteraction(Resource):
+#
+#     def get(self,id):
+#         pass
+#
+# class ReactionParameter(Resource):
+#
+#     def get(self,id):
+#         reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
+#         observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
+#         return ObservedValueSerializer().dump(observed_parameters, many=True).data
+#
+#
 
 
 
