@@ -15,6 +15,7 @@ flask_marshmallow
 flask_cors
 flask_restplus
 flask_script
+flask_testing
 sqlalchemy_searchable
 jxmlease
 marshmallow_sqlalchemy
