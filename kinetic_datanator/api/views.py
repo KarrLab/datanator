@@ -47,10 +47,10 @@ class Search(Resource):
 
         serialized_metabolites = CompoundSerializer().dump(search_dict['Compound'], many=True)
         serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
-        serialized_subunuits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
+        serialized_subunits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
         serialized_reactions = ReactionSerializer().dump(search_dict['Reaction'], many=True)
-        return {'metabolites': serialized_metabolite.data,
-                'complexes': serialized_complex.data,
+        return {'metabolites': serialized_metabolites.data,
+                'complexes': serialized_complexes.data,
                 'subunits': serialized_subunits.data,
                 'reactions': serialized_reactions.data}
 
@@ -63,7 +63,7 @@ class MetaboliteSearch(Resource):
 class ProteinSubunitSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
-        serialized_subunuits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
+        serialized_subunits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
         return {'subunits': serialized_subunits.data}
 
 class ProteinComplexSearch(Resource):
@@ -125,7 +125,7 @@ class Reaction(Resource):
         serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True)
 
         return {'object': serialized_reaction.data,
-                'parameters': seralized_parameters.data}
+                'parameters': serialized_parameters.data}
 
 class MetaboliteConcentration(Resource):
 
@@ -144,7 +144,7 @@ class ProteinAbundance(Resource):
         observed_abundances = subunit_manager.get_observed_abundances(subunit)
         serialized_abundances =  ObservedValueSerializer().dump(observed_abundances, many=True).data
 
-        return {'abundances':'serialized_abundances'}
+        return {'abundances':serialized_abundances}
 
 class ProteinInteraction(Resource):
 

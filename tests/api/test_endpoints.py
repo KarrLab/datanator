@@ -22,7 +22,7 @@ class TestAPIBlueprint(TestCase):
     def test_search_general(self):
         with self.client:
             response = self.client.get('/api/v0/search/{0}'.format(self.general_search)).json
-            print(response.keys())
+            self.assertEqual(set(response.keys()),set(['complexes', 'metabolites', 'reactions', 'subunits']) )
 
     def test_search_metabolite(self):
         pass
@@ -37,16 +37,22 @@ class TestAPIBlueprint(TestCase):
     def test_metabolite(self):
         with self.client:
             response = self.client.get('/api/v0/metabolite/{0}'.format(61696)).json
-            self.assertEqual(response[0]['id'], 61696)
+            self.assertEqual(set(response.keys()),set(['object','concentrations','reactions']))
 
     def test_subunit(self):
-        pass
+        with self.client:
+            response = self.client.get('/api/v0/subunit/{0}'.format(5)).json
+            self.assertEqual(set(response.keys()),set(['object','abundances','interactions', 'complexes']))
 
     def test_complex(self):
-        pass
+        with self.client:
+            response = self.client.get('/api/v0/complex/{0}'.format(20520)).json
+            self.assertEqual(set(response.keys()),set(['object','subunits']))
 
     def test_reaction(self):
-        pass
+        with self.client:
+            response = self.client.get('/api/v0/reaction/{0}'.format(20480)).json
+            self.assertEqual(set(response.keys()),set(['object','parameters']))
 
     #NOTE: Data Specific Tests
     def test_metabolite_concentrations(self):

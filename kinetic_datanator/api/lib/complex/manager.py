@@ -40,7 +40,6 @@ class ProteinComplexManager(BaseManager):
         Returns:
             :obj:`list` of :obj:`data_model.ObservedSpecie`: list of Protein Subunits
         """
-
         subunits = self.get_subunits_by_known_complex(protein_complex.complex_name).all()
         observed_specie = []
         for item in subunits:
@@ -69,5 +68,17 @@ class ProteinComplexManager(BaseManager):
         condition = models.ProteinSubunit.uniprot_id == uniprot
         return q.filter(condition)
 
+    def get_subunits_by_known_complex(self, complex_name, select = models.ProteinSubunit):
+        """ Get known protein subunits that were observed for a given complex
+
+        Args:
+            complex_name (:obj:`str`): complex to find subunits for
+
+        Returns:
+            :obj:`sqlalchemy.orm.query.Query`: query for protein subunits that are within the given protein complex
+        """
+        q = self.data_source.session.query(select).join(models.ProteinComplex, select.proteincomplex)
+        condition = models.ProteinComplex.complex_name == complex_name
+        return q.filter(condition)
 
 complex_manager = ProteinComplexManager()
