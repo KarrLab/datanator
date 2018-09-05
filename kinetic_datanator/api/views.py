@@ -125,38 +125,40 @@ class Reaction(Resource):
         serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True)
 
         return {'object': serialized_reaction.data,
-                'parameters': seralized_parameters.data]
+                'parameters': seralized_parameters.data}
 
-# class MetaboliteConcentration(Resource):
-#
-#     @api.doc(params={'id': 'ID number of the given compound'})
-#     def get(self, id):
-#         metabolite = metabolite_manager.get_compound_by_id(id)
-#         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
-#         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
-#         return {}
-#
-# class ProteinAbundance(Resource):
-#
-#     def get(self, id):
-#         subunit = subunit_manager.get_subunit_by_id(id)
-#         observed_abundances = subunit_manager.get_observed_abundances(subunit)
-#         return ObservedValueSerializer().dump(observed_abundances, many=True).data
-#
-# class ProteinInteraction(Resource):
-#
-#     def get(self,id):
-#         pass
-#
-# class ReactionParameter(Resource):
-#
-#     def get(self,id):
-#         reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
-#         observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
-#         return ObservedValueSerializer().dump(observed_parameters, many=True).data
-#
-#
+class MetaboliteConcentration(Resource):
 
+    @api.doc(params={'id': 'ID number of the given compound'})
+    def get(self, id):
+        metabolite = metabolite_manager.get_compound_by_id(id)
+        observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
+        serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
+
+        return {'concentrations': serialized_concentrations}
+
+class ProteinAbundance(Resource):
+
+    def get(self, id):
+        subunit = subunit_manager.get_subunit_by_id(id)
+        observed_abundances = subunit_manager.get_observed_abundances(subunit)
+        serialized_abundances =  ObservedValueSerializer().dump(observed_abundances, many=True).data
+
+        return {'abundances':'serialized_abundances'}
+
+class ProteinInteraction(Resource):
+
+    def get(self,id):
+        pass
+
+class ReactionParameter(Resource):
+
+    def get(self,id):
+        reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
+        observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
+        serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True).data
+
+        return {'parameters': serialized_parameters}
 
 
 
