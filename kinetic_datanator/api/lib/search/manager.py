@@ -44,19 +44,19 @@ class SearchManager(BaseManager):
             dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
-        compound = metabolite_manager._search(string)
+        metabolite = metabolite_manager._search(string)
         complex = complex_manager._search(string)
         subunit = subunit_manager._search(string)
 
         rxns = []
-        for _compound in compound:
-            rxn_list = reaction_manager.get_reaction_by_compound(_compound)
+        for _metabolite in metabolite:
+            rxn_list = reaction_manager.get_reaction_by_metabolite(_metabolite)
             if rxn_list:
                 rxns.append(rxn_list)
 
         reactions = [y for x in rxns for y in x]
 
-        found_dict = {'Compound':compound, 'ProteinSubunit':subunit, 'ProteinComplex':complex, 'Reaction': reactions}
+        found_dict = {'Metabolite':metabolite, 'ProteinSubunit':subunit, 'ProteinComplex':complex, 'Reaction': reactions}
 
         return found_dict
 

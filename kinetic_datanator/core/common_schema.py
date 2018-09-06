@@ -396,8 +396,8 @@ class CommonSchema(data_source.PostgresDataSource):
                                                           _structure_formula_connectivity=struct._value_inchi_formula_connectivity, _metadata=metadata)\
                         if struct.format == 'smiles' else None
 
-                self.entity.compound = self.get_or_create_object(models.Compound, type='Compound',
-                                                                 name=item.name, compound_name=item.name,
+                self.entity.metabolite = self.get_or_create_object(models.Metabolite, type='Metabolite',
+                                                                 name=item.name, metabolite_name=item.name,
                                                                  _is_name_ambiguous=sabio_ses.query(
                                                                      sabio_rk.Compound).get(item._id)._is_name_ambiguous,
                                                                  structure=structure, _metadata=metadata)
@@ -435,9 +435,9 @@ class CommonSchema(data_source.PostgresDataSource):
                 self.property.kinetic_law = self.get_or_create_object(models.KineticLaw, type='Kinetic Law', enzyme=catalyst,
                                                                       enzyme_type=item.enzyme_type, tissue=item.tissue, mechanism=item.mechanism, equation=item.equation, _metadata=metadata)
 
-                def common_schema_compound(sabio_object):
-                    compound_name = sabio_object.name
-                    return self.session.query(models.Compound).filter_by(compound_name=compound_name).first()
+                def common_schema_metabolite(sabio_object):
+                    metabolite_name = sabio_object.name
+                    return self.session.query(models.Metabolite).filter_by(metabolite_name=metabolite_name).first()
 
                 def common_schema_compartment(sabio_object):
                     if sabio_object:
@@ -446,15 +446,15 @@ class CommonSchema(data_source.PostgresDataSource):
                     else:
                         return None
 
-                reactants = [models.Reaction(compound=common_schema_compound(r.compound),
+                reactants = [models.Reaction(metabolite=common_schema_metabolite(r.metabolite),
                                              compartment=common_schema_compartment(r.compartment), _is_reactant=1, rxn_type=r.type,
                                              kinetic_law=self.property.kinetic_law) for r in item.reactants if item.reactants]
 
-                products = [models.Reaction(compound=common_schema_compound(p.compound),
+                products = [models.Reaction(metabolite=common_schema_metabolite(p.metabolite),
                                             compartment=common_schema_compartment(p.compartment), _is_product=1, rxn_type=p.type,
                                             kinetic_law=self.property.kinetic_law) for p in item.products if item.products]
 
-                modifier = [models.Reaction(compound=common_schema_compound(m.compound),
+                modifier = [models.Reaction(metabolite=common_schema_metabolite(m.metabolite),
                                             compartment=common_schema_compartment(m.compartment), _is_modifier=1, rxn_type=m.type,
                                             kinetic_law=self.property.kinetic_law) for m in item.modifiers if item.products]
 
@@ -463,8 +463,8 @@ class CommonSchema(data_source.PostgresDataSource):
                                                  units=param.units, observed_name=param.observed_name, kinetic_law=self.property.kinetic_law,
                                                  observed_sabio_type=param.observed_type, observed_value=param.observed_value,
                                                  observed_error=param.observed_error, observed_units=param.observed_units)
-                    parameter.compound = common_schema_compound(
-                        param.compound) if param.compound else None
+                    parameter.metabolite = common_schema_metabolite(
+                        param.metabolite) if param.metabolite else None
                 continue
 
         sabio_progress.amount_loaded = load_count + batch
@@ -635,14 +635,14 @@ class CommonSchema(data_source.PostgresDataSource):
             max_entries = float('inf')
 
         entries = 0
-        for compound in ecmdb_compound:
+        for metabolite in ecmdb_compound:
             if entries < max_entries:
-                concentration = compound.concentrations
-                ref = compound.cross_references
-                compart = compound.compartments
-                syn = compound.synonyms
+                concentration = metabolite.concentrations
+                ref = metabolite.cross_references
+                compart = metabolite.compartments
+                syn = metabolite.synonyms
                 metadata = self.get_or_create_object(
-                    models.Metadata, name=compound.name)
+                    models.Metadata, name=metabolite.name)
                 tax = self.session.query(
                     models.Taxon).filter_by(ncbi_id=562).first()
                 metadata.taxon.append(tax) if tax else metadata.taxon.append(
@@ -653,18 +653,18 @@ class CommonSchema(data_source.PostgresDataSource):
                     models.CellCompartment, name=areas.name) for areas in compart]
                 metadata.synonym = [self.get_or_create_object(
                     models.Synonym, name=syns.name) for syns in syn]
-                self.property.structure = self.get_or_create_object(models.Structure, type='Structure', name=compound.name,
-                                                                    _value_inchi=compound.structure,
-                                                                    _structure_formula_connectivity=compound._structure_formula_connectivity, _metadata=metadata)
-                self.entity.compound = self.get_or_create_object(models.Compound, type='Compound', name=compound.name,
-                                                                 compound_name=compound.name, description=compound.description, comment=compound.comment, structure=self.property.structure,
+                self.property.structure = self.get_or_create_object(models.Structure, type='Structure', name=metabolite.name,
+                                                                    _value_inchi=metabolite.structure,
+                                                                    _structure_formula_connectivity=metabolite._structure_formula_connectivity, _metadata=metadata)
+                self.entity.metabolite = self.get_or_create_object(models.Metabolite, type='Metabolite', name=metabolite.name,
+                                                                 metabolite_name=metabolite.name, description=metabolite.description, comment=metabolite.comment, structure=self.property.structure,
                                                                  _metadata=metadata)
                 index = 0 if concentration else -1
                 if index == -1:
                     continue
                 for rows in concentration:
                     new_metadata = self.get_or_create_object(
-                        models.Metadata, name=compound.name + ' Concentration ' + str(index))
+                        models.Metadata, name=metabolite.name + ' Concentration ' + str(index))
                     new_metadata.taxon = metadata.taxon
                     new_metadata.cell_compartment = metadata.cell_compartment
                     new_metadata.synonym = metadata.synonym
@@ -674,8 +674,8 @@ class CommonSchema(data_source.PostgresDataSource):
                                                                              media=rows.media, temperature=rows.temperature, growth_system=rows.growth_system))
                     new_metadata.resource = [self.get_or_create_object(
                         models.Resource, namespace=docs.namespace, _id=docs.id) for docs in rows.references]
-                    self.property.concentration = self.get_or_create_object(models.Concentration, type='Concentration', name=compound.name + ' Concentration ' + str(index),
-                                                                            value=rows.value, error=rows.error, units='uM', _metadata=new_metadata, compound=self.entity.compound)
+                    self.property.concentration = self.get_or_create_object(models.Concentration, type='Concentration', name=metabolite.name + ' Concentration ' + str(index),
+                                                                            value=rows.value, error=rows.error, units='uM', _metadata=new_metadata, metabolite=self.entity.metabolite)
                     index += 1
                 entries += 1
 

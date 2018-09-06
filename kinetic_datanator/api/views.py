@@ -45,7 +45,7 @@ class Search(Resource):
     def get(self, value):
         search_dict = search_manager.search(value)
 
-        serialized_metabolites = CompoundSerializer().dump(search_dict['Compound'], many=True)
+        serialized_metabolites = MetaboliteSerializer().dump(search_dict['Metabolite'], many=True)
         serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
         serialized_subunits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
         serialized_reactions = ReactionSerializer().dump(search_dict['Reaction'], many=True)
@@ -57,7 +57,7 @@ class Search(Resource):
 class MetaboliteSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the metabolite space'})
     def get(self,value):
-        serialized_metabolites = CompoundSerializer().dump(search_dict['Compound'], many=True)
+        serialized_metabolites = MetaboliteSerializer().dump(search_dict['Metabolite'], many=True)
         return {'metabolites': serialized_metabolite.data}
 
 class ProteinSubunitSearch(Resource):
@@ -75,11 +75,11 @@ class ProteinComplexSearch(Resource):
 class Metabolite(Resource):
 
     def get(self, id):
-        metabolite = metabolite_manager.get_compound_by_id(id)
+        metabolite = metabolite_manager.get_metabolite_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
-        reactions = reaction_manager.get_reaction_by_compound(metabolite)
+        reactions = reaction_manager.get_reaction_by_metabolite(metabolite)
 
-        serialized_metabolite = CompoundSerializer().dump(metabolite)
+        serialized_metabolite = MetaboliteSerializer().dump(metabolite)
         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
         serialized_reactions =  ReactionSerializer().dump(reactions, many=True)
 
@@ -129,9 +129,9 @@ class Reaction(Resource):
 
 class MetaboliteConcentration(Resource):
 
-    @api.doc(params={'id': 'ID number of the given compound'})
+    @api.doc(params={'id': 'ID number of the given metabolite'})
     def get(self, id):
-        metabolite = metabolite_manager.get_compound_by_id(id)
+        metabolite = metabolite_manager.get_metabolite_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
 

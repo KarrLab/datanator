@@ -42,18 +42,18 @@ class TextSearchSession(object):
             dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
-        compound = models.Compound.query.search(string).all()
+        metabolite = models.Metabolite.query.search(string).all()
         complex = models.ProteinComplex.query.search(string).all()
         subunit = models.ProteinSubunit.query.search(string).all()
 
         rxns = []
-        for item in compound:
-            rxn_list = self.q.get_reaction_by_compound(item)
+        for item in metabolite:
+            rxn_list = self.q.get_reaction_by_metabolite(item)
             if rxn_list:
                 rxns.append(rxn_list)
         reactions = [y for x in rxns for y in x]
 
-        dict_db_models = {'Compound':compound, 'Reaction':reactions, 'ProteinSubunit':subunit, 'ProteinComplex':complex}
-        list_db_models = [item for sublist in [compound, reactions, subunit, complex] for item in sublist]
+        dict_db_models = {'Metabolite':metabolite, 'Reaction':reactions, 'ProteinSubunit':subunit, 'ProteinComplex':complex}
+        list_db_models = [item for sublist in [metabolite, reactions, subunit, complex] for item in sublist]
 
         return list_db_models, dict_db_models

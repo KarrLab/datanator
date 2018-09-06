@@ -104,7 +104,7 @@ class TestReactionKineticsQuery(unittest.TestCase):
         self.assertEqual(set([parts.coefficient for parts in ans.participants]), set([-1, 1]))
 
     def test_get_reaction_by_compound(self):
-        compound = self.flk.session.query(models.Compound).filter_by(compound_name = '2-Hydroxyisocaproate').first()
+        compound = self.flk.session.query(models.Metabolite).filter_by(compound_name = '2-Hydroxyisocaproate').first()
 
         rxn_list = self.q.get_reaction_by_compound(compound)
 
@@ -148,17 +148,17 @@ class TestReactionKineticsQuery(unittest.TestCase):
     def test_get_kinetic_laws_by_compound(self):
 
         #Reactant
-        compound = self.flk.session.query(models.Compound).filter_by(compound_name = '2-Hydroxyisocaproate').first()
+        compound = self.flk.session.query(models.Metabolite).filter_by(compound_name = '2-Hydroxyisocaproate').first()
         law = self.q.get_kinetic_laws_by_compound(compound, role = 'reactant')
         self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000]), 2)
 
         #Product
-        compound = self.flk.session.query(models.Compound).filter_by(compound_name = '4-Hydroxyphenylethyl alcohol').first()
+        compound = self.flk.session.query(models.Metabolite).filter_by(compound_name = '4-Hydroxyphenylethyl alcohol').first()
         law = self.q.get_kinetic_laws_by_compound(compound, role = 'product')
         self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ]), 1)
 
         #Modifier
-        compound = self.flk.session.query(models.Compound).filter_by(compound_name = 'Zn2+').first()
+        compound = self.flk.session.query(models.Metabolite).filter_by(compound_name = 'Zn2+').first()
         law = self.q.get_kinetic_laws_by_compound(compound, role = 'modifier')
         self.assertEqual(len([c.kinetic_law_id for c in law.all() if c.kinetic_law_id <400000 ]), 24)
 

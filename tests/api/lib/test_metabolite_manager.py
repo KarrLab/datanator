@@ -16,8 +16,8 @@ class TestMetaboliteManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.proline = metabolite_manager.data_source.session.query(models.Compound).filter_by(compound_name = 'L-Proline').first()
-        self.uridine_tp = metabolite_manager.data_source.session.query(models.Compound).filter_by(compound_name = 'Uridine triphosphate').first()
+        self.proline = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(compound_name = 'L-Proline').first()
+        self.uridine_tp = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(compound_name = 'Uridine triphosphate').first()
 
     def test_get_compound_by_id(self):
         result = metabolite_manager.get_compound_by_id(61696)

@@ -21,8 +21,8 @@ class ReactionManager(BaseManager):
 
       a. Find kinetics observed for the reaction
 
-        i. Find the compound(s) of each participant
-        ii. Find the  reaction(s) which contain all of these compounds
+        i. Find the metabolite(s) of each participant
+        ii. Find the  reaction(s) which contain all of these metabolites
         iii. Find the  kinetic laws associated with these reactions
 
       b. Find kinetics observed for similar reactions
@@ -45,8 +45,8 @@ class ReactionManager(BaseManager):
 
         1. Find kinetics observed for the reaction
 
-          a. Find the compound(s) of each participant
-          b. Find the reaction(s) which contain all of these compounds
+          a. Find the metabolite(s) of each participant
+          b. Find the reaction(s) which contain all of these metabolites
           c. Find the kinetic laws associated with these reactions
 
         2. Find kinetics observed for similar reactions
@@ -84,12 +84,12 @@ class ReactionManager(BaseManager):
             for reactant in reactants:
                 part = data_model.ReactionParticipant(coefficient=-1)
 
-                if reactant.compound_id not in species:
-                    species[reactant.compound_id] = data_model.Specie(name=reactant.compound.compound_name)
-                part.specie = species[reactant.compound_id]
+                if reactant.metabolite_id not in species:
+                    species[reactant.metabolite_id] = data_model.Specie(name=reactant.metabolite.metabolite_name)
+                part.specie = species[reactant.metabolite_id]
 
-                if reactant.compound.structure_id:
-                    part.specie.structure = reactant.compound.structure._value_inchi
+                if reactant.metabolite.structure_id:
+                    part.specie.structure = reactant.metabolite.structure._value_inchi
 
                 if reactant.compartment_id:
                     if reactant.compartment.name not in compartments:
@@ -101,12 +101,12 @@ class ReactionManager(BaseManager):
             for product in products:
                 part = data_model.ReactionParticipant(coefficient=1)
 
-                if product.compound_id not in species:
-                    species[product.compound_id] = data_model.Specie(name=product.compound.compound_name)
-                part.specie = species[product.compound_id]
+                if product.metabolite_id not in species:
+                    species[product.metabolite_id] = data_model.Specie(name=product.metabolite.metabolite_name)
+                part.specie = species[product.metabolite_id]
 
-                if product.compound.structure_id:
-                    part.specie.structure = product.compound.structure._value_inchi
+                if product.metabolite.structure_id:
+                    part.specie.structure = product.metabolite.structure._value_inchi
 
                 if product.compartment_id:
                     if product.compartment.name not in compartments:
@@ -118,12 +118,12 @@ class ReactionManager(BaseManager):
             for modifier in modifiers:
                 part = data_model.ReactionParticipant(coefficient=0)
 
-                if modifier.compound_id not in species:
-                    species[modifier.compound_id] = data_model.Specie(name=modifier.compound.compound_name)
-                part.specie = species[modifier.compound_id]
+                if modifier.metabolite_id not in species:
+                    species[modifier.metabolite_id] = data_model.Specie(name=modifier.metabolite.metabolite_name)
+                part.specie = species[modifier.metabolite_id]
 
-                if modifier.compound.structure_id:
-                    part.specie.structure = modifier.compound.structure._value_inchi
+                if modifier.metabolite.structure_id:
+                    part.specie.structure = modifier.metabolite.structure._value_inchi
 
                 if modifier.compartment_id:
                     if modifier.compartment.name not in compartments:
@@ -143,8 +143,8 @@ class ReactionManager(BaseManager):
                     property=parameter.observed_name,
                 )
 
-                if parameter.compound_id:
-                    observable.specie = species[parameter.compound_id]
+                if parameter.metabolite_id:
+                    observable.specie = species[parameter.metabolite_id]
                     # if parameter.compartment:
                     #     observable.compartment = data_model.Compartment(
                     #         id=parameter.compartment.name,
@@ -186,8 +186,8 @@ class ReactionManager(BaseManager):
 
             part = data_model.ReactionParticipant(
                 specie = data_model.Specie(
-                    name = rxn_part.compound.compound_name,
-                    structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
+                    name = rxn_part.metabolite.metabolite_name,
+                    structure = rxn_part.metabolite.structure._value_inchi if rxn_part.metabolite.structure else None ),
                 coefficient = coef)
             participants.append(part)
 
@@ -206,17 +206,17 @@ class ReactionManager(BaseManager):
         return self._port(rxn_list)
 
 
-    def get_reaction_by_compound(self, compound, select=models.Reaction):
-        """ Get reaction that contains the compound role :obj:`models.Compound`
+    def get_reaction_by_metabolite(self, metabolite, select=models.Reaction):
+        """ Get reaction that contains the metabolite role :obj:`models.Metabolite`
 
         Args:
-            structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
+            structure (:obj:`models.Metabolite`): InChI structure or formula and connectivity layers to search for
 
         Returns:
             :obj:`data_model.Reaction`: reaction to find data for
         """
 
-        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
+        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in metabolite.reaction]
 
         reaction_list = []
         for rxn in rxn_cluster:
@@ -336,12 +336,12 @@ class ReactionManager(BaseManager):
         session = self.data_source.session
 
         law = session.query(select).join(models.Reaction, models.KineticLaw.kinetic_law_id == models.Reaction.kinetic_law_id)\
-            .filter(participant_condition).join(models.Compound, models.Reaction.compound)\
-            .join(models.Structure, models.Compound.structure).filter(condition)
+            .filter(participant_condition).join(models.Metabolite, models.Reaction.metabolite)\
+            .join(models.Structure, models.Metabolite.structure).filter(condition)
 
         return law
 
-    def get_kinetic_laws_by_compound(self, compound, role='reactant', select=models.KineticLaw):
+    def get_kinetic_laws_by_metabolite(self, metabolite, role='reactant', select=models.KineticLaw):
         """ Get kinetic laws that contain a structure in role :obj:`role`
 
         Args:
@@ -355,7 +355,7 @@ class ReactionManager(BaseManager):
         """
 
 
-        condition = models.Compound.compound_id == compound.compound_id
+        condition = models.Metabolite.metabolite_id == metabolite.metabolite_id
 
         if role == 'reactant':
             participant_condition = models.Reaction._is_reactant == True
@@ -369,7 +369,7 @@ class ReactionManager(BaseManager):
         session = self.data_source.session
 
         law = session.query(select).join(models.Reaction, models.KineticLaw.reaction)\
-            .filter(participant_condition).join(models.Compound, models.Reaction.compound).filter(condition)
+            .filter(participant_condition).join(models.Metabolite, models.Reaction.metabolite).filter(condition)
 
         return law
 
