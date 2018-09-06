@@ -12,7 +12,7 @@ class TestSerializers(unittest.TestCase):
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
         flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
-        self.proline = flk.session.query(models.Metabolite).filter_by(compound_name = 'L-Proline').first()
+        self.proline = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
 
         q = metabolite_concentrations.MetaboliteConcentrationQuery(cache_dirname=self.cache_dirname, include_variants=True)
         self.obs = q.run(self.proline)

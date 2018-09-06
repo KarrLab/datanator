@@ -16,12 +16,12 @@ class TestMetaboliteManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.proline = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(compound_name = 'L-Proline').first()
-        self.uridine_tp = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(compound_name = 'Uridine triphosphate').first()
+        self.proline = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
+        self.uridine_tp = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'Uridine triphosphate').first()
 
-    def test_get_compound_by_id(self):
-        result = metabolite_manager.get_compound_by_id(61696)
-        self.assertEqual(result.compound_name, 'Guanine')
+    def test_get_metabolite_by_id(self):
+        result = metabolite_manager.get_metabolite_by_id(61696)
+        self.assertEqual(result.metabolite_name, 'Guanine')
 
     def test_get_observed_concentrations(self):
 
@@ -71,7 +71,7 @@ class TestMetaboliteManager(unittest.TestCase):
 
     def test__port(self):
         ported_specie = metabolite_manager._port(self.proline)
-        self.assertEqual(ported_specie.id, self.proline.compound_id)
-        self.assertEqual(ported_specie.name, self.proline.compound_name)
+        self.assertEqual(ported_specie.id, self.proline.metabolite_id)
+        self.assertEqual(ported_specie.name, self.proline.metabolite_name)
         self.assertEqual(ported_specie.structure, self.proline.structure._value_inchi)
         self.assertGreater(len(ported_specie.cross_references), 0)
