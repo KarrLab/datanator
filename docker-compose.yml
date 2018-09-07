@@ -1,18 +1,14 @@
-version: '2.1'
+version: '3'
 services:
   postgres:
-    restart: always
-    image: postgres:10
+    image: postgres:alpine
     environment:
-      - POSTGRES_USER=KarrLab
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=CommonSchema
-    volumes:
-      - ./postgres-data/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-  datanator:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_DB: 'postgres'
     restart: always
-    image: karrlab/wc_env_dependencies:latest
-    volumes:
-      - .:/app
+
+  wc_env:
+    image: karrlab/wc_env:latest
+    restart: always
+    stdin_open: true
+    tty: true
