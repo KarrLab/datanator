@@ -23,7 +23,7 @@ app = Flask(
 
 # set config
 app_settings = os.getenv(
-    'APP_SETTINGS', 'kinetic_datanator.config.config.CircleTestingConfig')
+    'APP_SETTINGS', 'kinetic_datanator.config.config.BuildVMConfig')
 app.config.from_object(app_settings)
 
 login_manager = LoginManager(app)

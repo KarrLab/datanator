@@ -33,6 +33,16 @@ class CircleTestingConfig(BaseConfig):
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
+class BuildVMConfig(BaseConfig):
+    """Testing configuration."""
+    DEBUG = True
+    TESTING = True
+    BCRYPT_LOG_ROUNDS = 4
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = 'postgresql://ubuntu@0.0.0.0/CommonSchema'
+    DEBUG_TB_ENABLED = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
+
 
 class BuildConfig(BaseConfig):
     """Testing configuration."""
