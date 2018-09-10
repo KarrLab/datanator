@@ -446,15 +446,15 @@ class CommonSchema(data_source.PostgresDataSource):
                     else:
                         return None
 
-                reactants = [models.Reaction(metabolite=common_schema_metabolite(r.metabolite),
+                reactants = [models.Reaction(metabolite=common_schema_metabolite(r.compound),
                                              compartment=common_schema_compartment(r.compartment), _is_reactant=1, rxn_type=r.type,
                                              kinetic_law=self.property.kinetic_law) for r in item.reactants if item.reactants]
 
-                products = [models.Reaction(metabolite=common_schema_metabolite(p.metabolite),
+                products = [models.Reaction(metabolite=common_schema_metabolite(p.compound),
                                             compartment=common_schema_compartment(p.compartment), _is_product=1, rxn_type=p.type,
                                             kinetic_law=self.property.kinetic_law) for p in item.products if item.products]
 
-                modifier = [models.Reaction(metabolite=common_schema_metabolite(m.metabolite),
+                modifier = [models.Reaction(metabolite=common_schema_metabolite(m.compound),
                                             compartment=common_schema_compartment(m.compartment), _is_modifier=1, rxn_type=m.type,
                                             kinetic_law=self.property.kinetic_law) for m in item.modifiers if item.products]
 
@@ -464,7 +464,7 @@ class CommonSchema(data_source.PostgresDataSource):
                                                  observed_sabio_type=param.observed_type, observed_value=param.observed_value,
                                                  observed_error=param.observed_error, observed_units=param.observed_units)
                     parameter.metabolite = common_schema_metabolite(
-                        param.metabolite) if param.metabolite else None
+                        param.compound) if param.compound else None
                 continue
 
         sabio_progress.amount_loaded = load_count + batch
