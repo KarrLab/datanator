@@ -94,9 +94,13 @@ class PostgresDataSource(DataSource):
 
 
         engine = self.base_model.engine
+        inspector = sqlalchemy.inspect(engine)
+
+        if not inspector.get_table_names():
+            self.base_model.metadata.create_all(engine)
+
         if not database_exists(engine.url):
             create_database(engine.url)
-            self.base_model.metadata.create_all(engine)
 
         return engine
 
@@ -145,7 +149,7 @@ class PostgresDataSource(DataSource):
         tmp_dirname = tempfile.mkdtemp()
 
         # install and export package
-        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)        
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
 
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
@@ -366,7 +370,7 @@ class CachedDataSource(DataSource):
         tmp_dirname = tempfile.mkdtemp()
 
         # install and export package
-        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)        
+        manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
 
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
