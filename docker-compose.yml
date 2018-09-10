@@ -1,5 +1,12 @@
 version: '3'
 services:
+  wc_env:
+    image: karrlab/wc_env:latest
+    restart: always
+    stdin_open: true
+    tty: true
+  depends_on:
+    - postgres
   postgres:
     image: postgres:alpine
     environment:
@@ -8,10 +15,5 @@ services:
     restart: always
     ports:
       - "5432:5432"
-    links:
-      - wc_env
-  wc_env:
-    image: karrlab/wc_env:latest
-    restart: always
-    stdin_open: true
-    tty: true
+    volumes:
+          - ./data/postgres:/var/lib/postgresql/data
