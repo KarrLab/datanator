@@ -56,9 +56,8 @@ def continuousload(method):
     def continuous(*args, **kw):
         try:
             result = method(*args, **kw)
+            return result
         except:
             print('Encountered an error. Please try loading this module again with a session rollback')
-
-        return result
 
     return continuous
