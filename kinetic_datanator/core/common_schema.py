@@ -29,7 +29,7 @@ class CommonSchema(data_source.PostgresDataSource):
     base_model = db
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=False, verbose=False, load_entire_small_DBs=False, test=True):
+                 commit_intermediate_results=False, restore_backup=False, verbose=False, load_entire_small_DBs=False, test=False):
         """
         Args:
             name (:obj:`str`, optional): name
