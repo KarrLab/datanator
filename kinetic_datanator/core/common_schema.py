@@ -177,6 +177,7 @@ class CommonSchema(data_source.PostgresDataSource):
                                                             (range(load_count, load_count + batch))).all()
 
         for dataset in pax_dataset:
+            print(dataset)
             metadata = self.get_or_create_object(
                 models.Metadata, name=dataset.file_name)
             metadata.taxon.append(self.get_or_create_object(
