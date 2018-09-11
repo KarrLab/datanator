@@ -553,7 +553,7 @@ class ProteinSubunit(PhysicalEntity):
         'physical_entity.observation_id'), primary_key=True, autoincrement=True)
     subunit_name = db.Column(db.Unicode)
     uniprot_id = db.Column(db.Unicode)
-    entrez_id = db.Column(db.Integer)
+    entrez_id = db.Column(db.BigInteger)
     ec_number = db.Column(db.Unicode)
     gene_name = db.Column(db.Unicode)
     gene_syn = db.Column(db.Unicode)

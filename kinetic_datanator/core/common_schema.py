@@ -83,19 +83,19 @@ class CommonSchema(data_source.PostgresDataSource):
         self.property = observation.physical_property
 
         # Chunk Larger DBs
-        self.build_pax()
-        self.build_intact_interactions()
-        self.build_sabio()
-        self.build_array_express()
-
-        # Add complete smaller DBs
-        if self.load_small_db_switch:
-            self.build_intact_complexes()
-            self.build_corum()
-            self.build_jaspar()
-            self.build_ecmdb()
-
-        # Add missing subunit information
+        # self.build_pax()
+        # self.build_intact_interactions()
+        # self.build_sabio()
+        # self.build_array_express()
+        #
+        # # Add complete smaller DBs
+        # if self.load_small_db_switch:
+        #     self.build_intact_complexes()
+        #     self.build_corum()
+        #     self.build_jaspar()
+        #     self.build_ecmdb()
+        #
+        # # Add missing subunit information
         self.build_uniprot()
 
         # Add missing Taxon information
@@ -177,7 +177,6 @@ class CommonSchema(data_source.PostgresDataSource):
                                                             (range(load_count, load_count + batch))).all()
 
         for dataset in pax_dataset:
-            print(dataset)
             metadata = self.get_or_create_object(
                 models.Metadata, name=dataset.file_name)
             metadata.taxon.append(self.get_or_create_object(
@@ -246,7 +245,6 @@ class CommonSchema(data_source.PostgresDataSource):
             exp_metadata.taxon = [
                 self.get_or_create_object(
                     models.Taxon,
-                    name=org.name,
                     ncbi_id=org.ncbi_id
                 )
                 for org in exp.organisms]
@@ -521,9 +519,10 @@ class CommonSchema(data_source.PostgresDataSource):
                     complex_name=subunit.complex.complex_name).first()
                 entry = self.session.query(
                     models.Observation).get(complx.complex_id)
+                entrez = subunit.su_entrezs if isinstance(subunit.su_entrezs, int) else 0
                 self.entity.protein_subunit = self.get_or_create_object(models.ProteinSubunit,
                                                                         type='Protein Subunit', uniprot_id=subunit.su_uniprot,
-                                                                        entrez_id=subunit.su_entrezs, name=subunit.protein_name, subunit_name=subunit.protein_name, gene_name=subunit.gene_name,
+                                                                        entrez_id=entrez, name=subunit.protein_name, subunit_name=subunit.protein_name, gene_name=subunit.gene_name,
                                                                         gene_syn=subunit.gene_syn, proteincomplex=complx, _metadata=self.session.query(models.Metadata).get(entry._metadata_id))
                 entries += 1
 
@@ -752,7 +751,7 @@ class CommonSchema(data_source.PostgresDataSource):
             subunit.uniprot_checked = True
             if info:
                 subunit.subunit_name = subunit.name = info.entry_name if not subunit.subunit_name else subunit.subunit_name
-                subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
+                # subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
                 subunit.gene_name = info.gene_name if not subunit.gene_name else subunit.gene_name
                 subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else subunit.canonical_sequence
                 subunit.length = info.length if not subunit.length else subunit.length
