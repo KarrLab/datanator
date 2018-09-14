@@ -19,7 +19,7 @@ class LocalDevelopmentConfig(BaseConfig):
     TESTING = False
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgres://localhost/CommonSchema'
+    SQLALCHEMY_DATABASE_URI = 'postgres://karrlab@localhost/CommonSchema'
     # SQLALCHEMY_BINDS = {'data': 'postgres://localhost/User'}
     DEBUG_TB_ENABLED = True
 

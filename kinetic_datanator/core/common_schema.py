@@ -20,7 +20,7 @@ from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 from ete3 import NCBITaxa
 from sqlalchemy.sql import func
-
+import threading
 
 class CommonSchema(data_source.PostgresDataSource):
     """
@@ -82,19 +82,43 @@ class CommonSchema(data_source.PostgresDataSource):
         observation.physical_property = models.PhysicalProperty()
         self.property = observation.physical_property
 
-        # Chunk Larger DBs
-        # self.build_pax()
-        # self.build_intact_interactions()
-        # self.build_sabio()
-        # self.build_array_express()
-        #
+
+        self.build_pax()
+
+        # # Chunk Larger DBs
+        t1 = threading.Thread(target=self.build_intact_interactions)
+        t2 = threading.Thread(target=self.build_sabio)
+        t3 = threading.Thread(target=self.build_array_express)
+
+        t1.start()
+        t2.start()
+        t3.start()
+
+
+        t1.join()
+        t2.join()
+        t3.join()
+
+
+
         # # Add complete smaller DBs
-        # if self.load_small_db_switch:
-        #     self.build_intact_complexes()
-        #     self.build_corum()
-        #     self.build_jaspar()
-        #     self.build_ecmdb()
-        #
+        if self.load_small_db_switch:
+            t4 = threading.Thread(target=self.build_intact_complexes)
+            t5 = threading.Thread(target=self.build_corum)
+            t6 = threading.Thread(target=self.build_jaspar)
+            t7 = threading.Thread(target=self.build_ecmdb)
+
+            t4.start()
+            t5.start()
+            t6.start()
+            t7.start()
+
+            t4.join()
+            t5.join()
+            t6.join()
+            t7.join()
+
+
         # # Add missing subunit information
         self.build_uniprot()
 
@@ -112,8 +136,7 @@ class CommonSchema(data_source.PostgresDataSource):
         t0 = time.time()
         intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
         batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
-        intact_progress = self.session.query(
-            models.Progress).filter_by(database_name=INTACT_NAME).first()
+        intact_progress = self.session.query(models.Progress).filter_by(database_name=INTACT_NAME).first()
         load_count = intact_progress.amount_loaded
 
         if self.max_entries == float('inf'):

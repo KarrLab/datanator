@@ -176,7 +176,7 @@ class PostgresDataSource(DataSource):
             :obj:`list` of :obj:`str`: list of paths to backup
         """
         paths = []
-        paths.append(self.name + '.dump')
+        paths.append(self.name + '.sql')
         return paths
 
     def dump_database(self):
@@ -185,7 +185,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
 
         p = Popen(command,shell=True,stdin=PIPE)
 
@@ -197,7 +197,7 @@ class PostgresDataSource(DataSource):
         """
 
         command = 'pg_restore -c -C -h {0} -U postgres -d {1} < {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.dump')
+        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
 
         p = Popen(command,shell=True,stdin=PIPE)
 
