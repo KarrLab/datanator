@@ -6,7 +6,7 @@ jobs:
       - image: karrlab/wc_env_dependencies:latest
       - image: circleci/postgres:9.6.5-alpine-ram
         environment:
-          POSTGRES_USER: karrlab
+          POSTGRES_USER: postgres
           POSTGRES_DB: CommonSchema
 
     steps:
@@ -41,8 +41,8 @@ jobs:
       - run:
           name: Enable Database Utilities
           command: |
-            sudo apt-get update
-            sudo apt-get -y install postgresql-client
+            apt-get update
+            apt-get -y install postgresql-client
             echo '/usr/lib/postgresql/9.6/bin/:$PATH' >> $BASH_ENV
 
       # Save packages to cache

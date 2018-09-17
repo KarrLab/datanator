@@ -91,16 +91,15 @@ class PostgresDataSource(DataSource):
         Returns:
             :obj:`sqlalchemy.engine.Engine`: database engine
         """
-
-
         engine = self.base_model.engine
-        inspector = sqlalchemy.inspect(engine)
-
-        if not inspector.get_table_names():
-            self.base_model.metadata.create_all(engine)
 
         if not database_exists(engine.url):
             create_database(engine.url)
+
+        inspector = sqlalchemy.inspect(engine)
+        if not inspector.get_table_names():
+            self.base_model.metadata.create_all(engine)
+
 
         return engine
 
@@ -184,7 +183,7 @@ class PostgresDataSource(DataSource):
 
         """
 
-        command = 'pg_dump -h {0} -d {1} -Fc -f {2}'\
+        command = 'pg_dump -Fc -h {0} -d {1}  -f {2}'\
         .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
 
         p = Popen(command,shell=True,stdin=PIPE)
@@ -196,7 +195,7 @@ class PostgresDataSource(DataSource):
 
         """
 
-        command = 'pg_restore -c -C -h {0} -U postgres -d {1} < {2}'\
+        command = 'pg_restore -O -c -h {0} -U postgres -d {1} < {2}'\
         .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
 
         p = Popen(command,shell=True,stdin=PIPE)
