@@ -19,7 +19,7 @@ class LocalDevelopmentConfig(BaseConfig):
     TESTING = False
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgres://karrlab@localhost/CommonSchema'
+    SQLALCHEMY_DATABASE_URI = 'postgres://postgres@localhost/CommonSchema'
     # SQLALCHEMY_BINDS = {'data': 'postgres://localhost/User'}
     DEBUG_TB_ENABLED = True
 
@@ -29,7 +29,7 @@ class CircleTestingConfig(BaseConfig):
     TESTING = True
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgresql://karrlab@localhost/CommonSchema'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@localhost/CommonSchema'
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
