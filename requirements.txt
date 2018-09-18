@@ -2,7 +2,7 @@ git+https://github.com/cokelaer/bioservices.git#egg=bioservices-1.5.0
 beautifulsoup4
 biopython
 cement >= 3.0.0
-demjson
+configobj
 enum34
 ete3
 flask
@@ -15,12 +15,8 @@ flask_marshmallow
 flask_cors
 flask_restplus
 flask_script
-flask_testing
 sqlalchemy_searchable
 jxmlease
-marshmallow_sqlalchemy
-mock
-natsort
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.5
 openbabel
@@ -40,8 +36,4 @@ setuptools
 six
 sqlalchemy
 sqlalchemy_utils
-unicodecsv
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils-0.0.1a5
-obonet
-networkx
-sqlalchemy_utils
