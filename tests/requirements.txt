@@ -1,3 +1,5 @@
 attrdict
 capturer
+flask_testing
+mock
 quilt
