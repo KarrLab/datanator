@@ -1,21 +1,20 @@
-git+https://github.com/cokelaer/bioservices.git#egg=bioservices-1.5.0
 beautifulsoup4
 biopython
+bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
 enum34
 ete3
 flask
-flask_migrate
-flask_sqlalchemy
-flask_login
 flask_bcrypt
-flask_debugtoolbar
-flask_marshmallow
 flask_cors
+flask_debugtoolbar
+flask_login
+flask_marshmallow
+flask_migrate
 flask_restplus
 flask_script
-sqlalchemy_searchable
+flask_sqlalchemy
 jxmlease
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.5
@@ -23,8 +22,8 @@ openbabel
 openpyxl
 pandas
 pint
-psycopg2
 pronto
+psycopg2
 pubchempy
 python_dateutil
 python_levenshtein
@@ -35,5 +34,6 @@ scipy
 setuptools
 six
 sqlalchemy
+sqlalchemy_searchable
 sqlalchemy_utils
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils-0.0.1a5
