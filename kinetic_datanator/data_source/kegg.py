@@ -15,7 +15,7 @@ class Kegg(data_source.HttpDataSource):
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        'kegg':
+        'kegg': '',
     }
 
     def load_content(self):
