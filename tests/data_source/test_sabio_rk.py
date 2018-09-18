@@ -829,7 +829,7 @@ class TestBackupAndInstall(unittest.TestCase):
         self.cache_dirname_5 = tempfile.mkdtemp()
 
         self.owner = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']['owner']
-        self.package = 'kinetic_datanator_test__'
+        self.package = 'datanator_test__'
         self.owner_package = '{}/{}'.format(self.owner, self.package)
         self.token = wc_utils.config.get_config()['wc_utils']['quilt']['token']
 
@@ -871,8 +871,8 @@ class TestBackupAndInstall(unittest.TestCase):
         os.mkdir(os.path.join(self.tmp_dirname, 'up'))
         os.mkdir(os.path.join(self.tmp_dirname, 'up', 'subdir'))
         with open(os.path.join(self.tmp_dirname, 'up', 'subdir', 'README.md'), 'w') as file:
-            file.write('# kinetic_datanator_test__\n')
-            file.write('Test package for kinetic_datanator\n')
+            file.write('# datanator_test__\n')
+            file.write('Test package for datanator\n')
 
         manager = wc_utils.quilt.QuiltManager(os.path.join(self.tmp_dirname, 'up'), self.package, owner=self.owner)
         manager.upload()
@@ -915,8 +915,8 @@ class TestBackupAndInstall(unittest.TestCase):
         manager.download(system_path='subdir/README.md')
 
         with open(os.path.join(self.tmp_dirname, 'down', 'subdir', 'README.md'), 'r') as file:
-            self.assertEqual(file.readline(), '# kinetic_datanator_test__\n')
-            self.assertEqual(file.readline(), 'Test package for kinetic_datanator\n')
+            self.assertEqual(file.readline(), '# datanator_test__\n')
+            self.assertEqual(file.readline(), 'Test package for datanator\n')
 
 
 class TestStats(unittest.TestCase):
