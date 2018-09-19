@@ -36,7 +36,7 @@ class TestAPIBlueprint(TestCase):
     #NOTE: Object Specifict Tests
     def test_metabolite(self):
         with self.client:
-            response = self.client.get('/api/v0/metabolite/{0}'.format(72098)).json
+            response = self.client.get('/api/v0/metabolite/{0}'.format(72100)).json
             self.assertEqual(set(response.keys()),set(['object','concentrations','reactions']))
 
     def test_subunit(self):
@@ -46,7 +46,7 @@ class TestAPIBlueprint(TestCase):
 
     def test_complex(self):
         with self.client:
-            response = self.client.get('/api/v0/complex/{0}'.format(69907)).json
+            response = self.client.get('/api/v0/complex/{0}'.format(69993)).json
             self.assertEqual(set(response.keys()),set(['object','subunits']))
 
     def test_reaction(self):
