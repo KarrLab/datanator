@@ -82,7 +82,6 @@ class CommonSchema(data_source.PostgresDataSource):
         observation.physical_property = models.PhysicalProperty()
         self.property = observation.physical_property
 
-
         self.build_pax()
 
         # # Chunk Larger DBs
@@ -125,56 +124,6 @@ class CommonSchema(data_source.PostgresDataSource):
         # Add missing Taxon information
         self.build_ncbi()
 
-
-    @continuousload
-    @timemethod
-    def build_intact_interactions(self):
-        """
-        Collects IntAct.sqlite file and integrates interaction data into the common ORM
-
-        """
-        t0 = time.time()
-        intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
-        batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
-        intact_progress = self.session.query(models.Progress).filter_by(database_name=INTACT_NAME).first()
-        load_count = intact_progress.amount_loaded
-
-        if self.max_entries == float('inf'):
-            interactiondb = intactdb.session.query(
-                intact.ProteinInteraction).all()
-        else:
-            interactiondb = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
-                (range(load_count, load_count + batch))).all()
-
-
-        batch_list = []
-        for i in interactiondb:
-
-            metadata = self.get_or_create_object(models.Metadata, name='protein_interaction_' + str(i.index))
-            metadata.method.append(self.get_or_create_object(models.Method, name=i.method))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
-
-            for c in dir(i):
-                if getattr(i, c) == None and '__' not in c:
-                    setattr(i, c, '')
-
-            for type, protein, gene in [(i.type_a, i.protein_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
-                if type == 'protein':
-                    self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
-
-            batch_list.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
-                protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
-                stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
-                role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
-
-        self.session.add_all(batch_list)
-
-        intact_progress.amount_loaded = load_count + batch
-
-        self.vprint('Comitting')
-        self.session.commit()
-
     @continuousload
     @timemethod
     def build_pax(self):
@@ -196,22 +145,18 @@ class CommonSchema(data_source.PostgresDataSource):
         if self.max_entries == float('inf'):
             pax_dataset = pax_ses.query(pax.Dataset).all()
         else:
-            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_
-                                                            (range(load_count, load_count + batch))).all()
+            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_(range(load_count, load_count + batch))).all()
 
         for dataset in pax_dataset:
-            metadata = self.get_or_create_object(
-                models.Metadata, name=dataset.file_name)
-            metadata.taxon.append(self.get_or_create_object(
-                models.Taxon, ncbi_id=dataset.taxon_ncbi_id))
-            metadata.resource.append(self.get_or_create_object(
-                models.Resource, namespace='url', _id=dataset.publication))
+            metadata = self.get_or_create_object(models.Metadata, name=dataset.file_name)
+            metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id=dataset.taxon_ncbi_id))
+            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='url', _id=dataset.publication))
             self.property.abundance_dataset = self.get_or_create_object(models.AbundanceDataSet, type='Protein Abundance Dataset',
-                                                                        name=dataset.file_name, file_name=dataset.file_name, score=dataset.score, weight=dataset.weight,
+                                                                        name=dataset.file_name, file_name=dataset.file_name,
+                                                                        score=dataset.score, weight=dataset.weight,
                                                                         coverage=dataset.coverage, _metadata=metadata)
-            abundance = pax_ses.query(pax.Observation).filter_by(
-                dataset_id=dataset.id).all()
-            uni = [str(d.protein.uniprot_id) for d in abundance]
+
+            abundance = pax_ses.query(pax.Observation).filter_by(dataset_id=dataset.id).all()
 
             self.session.bulk_insert_mappings(models.AbundanceData,
                                               [
@@ -236,7 +181,60 @@ class CommonSchema(data_source.PostgresDataSource):
                     pax_load=dataset.id).filter_by(uniprot_id=rows.uniprot_id).first()
                 rows.dataset = self.property.abundance_dataset
 
-        pax_progress.amount_loaded = load_count + batch
+        pax_progress.amount_loaded = self.session.query(models.AbundanceDataSet).count()
+
+        self.vprint('Comitting')
+        self.session.commit()
+
+    @continuousload
+    @timemethod
+    def build_intact_interactions(self):
+        """
+        Collects IntAct.sqlite file and integrates interaction data into the common ORM
+
+        """
+        t0 = time.time()
+        intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
+        batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
+        intact_progress = self.session.query(models.Progress).filter_by(database_name=INTACT_NAME).first()
+        load_count = intact_progress.amount_loaded
+
+        if self.max_entries == float('inf'):
+            interactions = intactdb.session.query(
+                intact.ProteinInteraction).all()
+        else:
+            interactions = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
+                (range(load_count, load_count + batch))).all()
+
+        sub_batch = []
+        for i in interactions:
+            if len(sub_batch) < INTACT_INTERACTION_BUILD_SUB_BATCH:
+                metadata = self.get_or_create_object(models.Metadata, name='protein_interaction_' + str(i.index))
+                metadata.method.append(self.get_or_create_object(models.Method, name=i.method))
+                metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
+                metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
+
+                for c in dir(i):
+                    if getattr(i, c) == None and '__' not in c:
+                        setattr(i, c, '')
+
+                for type, protein, gene in [(i.type_a, i.protein_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
+                    if type == 'protein':
+                        self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
+
+                sub_batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
+                    protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
+                    stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
+                    role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
+            else:
+                self.vprint('Batch of {} interactions was loaded'.format(INTACT_INTERACTION_BUILD_SUB_BATCH))
+                self.session.add_all(sub_batch)
+                self.session.commit()
+                sub_batch = []
+
+
+        self.session.add_all(sub_batch)
+        intact_progress.amount_loaded = self.session.query(models.ProteinInteraction).count()
 
         self.vprint('Comitting')
         self.session.commit()
