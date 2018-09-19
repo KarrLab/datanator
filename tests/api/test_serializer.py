@@ -24,4 +24,3 @@ class TestSerializers(unittest.TestCase):
 
     def test_observed_value(self):
         serialized = ObservedValueSerializer().dump(self.obs.observed_results, many=True)
-        print(serialized)
