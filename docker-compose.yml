@@ -2,9 +2,10 @@ version: '3'
 services:
   wc_env:
     image: karrlab/wc_env:latest
-    entrypoint: bash
     restart: always
     entrypoint: bash
+    volumes:
+      - ./:/root
     stdin_open: true
     tty: true
   postgres_service:
