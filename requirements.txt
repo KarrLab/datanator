@@ -23,6 +23,7 @@ openpyxl
 pandas
 pint
 pronto
+psycopg2
 pubchempy
 python_dateutil
 python_levenshtein
