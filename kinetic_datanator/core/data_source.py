@@ -18,9 +18,9 @@ from sqlalchemy_utils.functions import database_exists, create_database
 from kinetic_datanator.util.constants import DATA_CACHE_DIR, DATA_DUMP_PATH
 import sys
 import tarfile
-import psycopg2
-from subprocess import PIPE,Popen
+import subprocess
 import tempfile
+import time
 import wc_utils.quilt
 
 
@@ -183,24 +183,39 @@ class PostgresDataSource(DataSource):
 
         """
 
-        command = 'pg_dump -Fc -h {0} -d {1}  -f {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
+        cmd = [
+            'pg_dump',
+            '--dbname=' + str(self.base_model.engine.url),
+            '--format=c',
+            '--file=' + os.path.join(self.cache_dirname, self.name + '.sql'),
+            ]
 
-        p = Popen(command,shell=True,stdin=PIPE)
-
-        return p.communicate()
+        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        while p.poll() is None:
+            time.sleep(0.5)
+        if p.returncode != 0:
+            err = p.communicate()[1].decode()
+            raise Exception(err)
 
     def restore_database(self):
         """ Restore a dump file of the postgres database
 
         """
+        cmd = [
+            'pg_restore', 
+            '--dbname=' + str(self.base_model.engine.url),
+            '--clean',
+            '--no-owner', '--no-privileges',
+            '--exit-on-error',
+            os.path.join(self.cache_dirname, self.name + '.sql'),
+            ]
 
-        command = 'pg_restore -O -c -h {0} -U postgres -d {1} < {2}'\
-        .format(self.base_model.engine.url.host,self.base_model.engine.url.database, self.cache_dirname+'/'+self.name+'.sql')
-
-        p = Popen(command,shell=True,stdin=PIPE)
-
-        return p.communicate()
+        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        while p.poll() is None:
+            time.sleep(0.5)
+        if p.returncode != 0:
+            err = p.communicate()[1].decode()
+            raise Exception(err)
 
     @abc.abstractmethod
     def load_content(self):

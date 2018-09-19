@@ -38,13 +38,6 @@ jobs:
           name: Install package (Python 3)
           command: pip3 install -U --process-dependency-links -e .[all]
 
-      #- run:
-      #    name: Enable Database Utilities
-      #    command: |
-      #      apt-get update
-      #      apt-get -y install postgresql-client
-      #      echo '/usr/lib/postgresql/9.6/bin/:$PATH' >> $BASH_ENV
-
       # Save packages to cache
       - save_cache:
           key: v2-{{ arch }}-{{ .Branch }}-{{ checksum "/etc/docker-image-tag" }}-{{ checksum "requirements.txt" }}
