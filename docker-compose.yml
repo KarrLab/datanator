@@ -6,9 +6,9 @@ services:
     stdin_open: true
     tty: true
   postgres:
-    image: postgres:alpine
+    image: circleci/postgres:10.5-alpine-ram
     environment:
-      POSTGRES_USER: 'ubuntu'
+      POSTGRES_USER: 'postgres'
       POSTGRES_DB: 'CommonSchema'
     restart: always
     ports:
