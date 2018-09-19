@@ -3,7 +3,7 @@ sys.path.append("/Users/pochis01/Desktop/GitHub/kinetic_datanator")
 import datetime
 
 old_stdout = sys.stdout
-log_file = open("kinetic_datanator/builds/logs/{}.txt".format(str(datetime.datetime.now())),"w")
+log_file = open("./logs/{}.txt".format(str(datetime.datetime.now())),"w")
 sys.stdout = log_file
 
 from kinetic_datanator.core import common_schema
