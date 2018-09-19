@@ -6,8 +6,8 @@ jobs:
       - image: karrlab/wc_env_dependencies:latest
       - image: circleci/postgres:10.5-alpine-ram
         environment:
-          POSTGRES_USER: datanator
-          POSTGRES_DB: DatanatorCommonSchema
+          POSTGRES_USER: postgres
+          POSTGRES_DB: CommonSchema
 
     steps:
       # Clone repository
