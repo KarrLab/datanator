@@ -5,7 +5,7 @@ services:
     restart: always
     entrypoint: bash
     volumes:
-      - ./:/root
+      - ./:/root:z
     stdin_open: true
     tty: true
   postgres_service:
