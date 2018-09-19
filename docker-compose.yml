@@ -4,8 +4,6 @@ services:
     image: karrlab/wc_env:latest
     restart: always
     entrypoint: bash
-    volumes:
-      - ./:/root:z
     stdin_open: true
     tty: true
   postgres_service:
