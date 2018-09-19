@@ -6,7 +6,7 @@ services:
     entrypoint: bash
     stdin_open: true
     tty: true
-  postgres:
+  postgres_service:
     image: circleci/postgres:10.5-alpine-ram
     environment:
       POSTGRES_USER: postgres

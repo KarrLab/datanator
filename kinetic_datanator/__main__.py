@@ -44,7 +44,7 @@ class BaseController(cement.Controller):
         ]
 
     @cement.ex(hide=True)
-    def _default(self): 
+    def _default(self):
         self._parser.print_help()
 
 
@@ -119,13 +119,13 @@ class UploadData(cement.Controller):
     def _default(self):
         pargs = self.app.pargs
         data_type = pargs.data_type
-        
-        
+
+
         print(data_type)
         a_json_schema = json_schema.get_json_schema(data_type)
 
         the_json = render_html_from_schema.RenderForms().render(a_json_schema)
-        
+
 
         #the_json = """{"_experimentmetadata":[],"accession_number":"Test-Accesion","exp_name":"test_experiment","has_fastq_files":false,"samples":[{"_metadata":[],"assay":"blue","ensembl_organism_strain":"green","experiment_accession_number":"test","full_strain_specificity":false,"reference_genome":[]}]}"""
         print(the_json)
@@ -215,8 +215,7 @@ class AggregateBuildController(cement.Controller):
     @cement.ex(help='Controller that controls aggregated')
     def _default(self):
         pargs = self.app.pargs
-        common_schema.CommonSchema(cache_dirname=pargs.path, load_content=True,
-                                              download_backups=False, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        common_schema.CommonSchema(load_content=True, restore_bakckup=True, max_entries=pargs.max_entries, verbose=pargs.verbose)
 
 
 class DownloadController(cement.Controller):
@@ -273,7 +272,7 @@ class DownloadController(cement.Controller):
     @cement.ex(help='Loads Aggregated DB from Karr Lab Server')
     def aggregate(self):
         pargs = self.app.pargs
-        common_schema.CommonSchema(cache_dirname=pargs.path, download_backups=True)
+        common_schema.CommonSchema(restore_backup=True, clear_content=True, load_content=False, verbose=True)
 
     @cement.ex(hide=True)
     def _default(self):
@@ -330,10 +329,10 @@ class GetDataController(cement.Controller):
         print(filtered.observed_value_indices)
         print(data_query.ConsensusGenerator().calc_average(filtered.observed_value_indices, method='median'))
             #print(thing.)
-        
+
         #con_gen =  data_query.ConsensusGenerator().run(filtered, "median")
         #print(con_gen)
-        
+
         #print(gen.get_consensus(None, filtered))
         #print("the length after filtering is {}".format(len(filtered.observed_results)))
         #consensus = data_query.ConsensusGenerator().run(filtered, 'median')
