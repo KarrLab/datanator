@@ -62,8 +62,8 @@ class PostgresDataSource(DataSource):
         base_model (:obj:`Base`): base ORM model for the databse
     """
 
-    def __init__(self, name=None, 
-                 clear_content=False, 
+    def __init__(self, name=None,
+                 clear_content=False,
                  load_content=False, max_entries=float('inf'),
                  restore_backup_data=False, restore_backup_schema=False, restore_backup_exit_on_error=True,
                  quilt_owner=None, quilt_package=None, cache_dirname=None,
@@ -86,7 +86,7 @@ class PostgresDataSource(DataSource):
         super(PostgresDataSource, self).__init__(name=name, verbose=verbose)
 
         self.base_model.configure_mappers()
-        
+
         # max entries for loading content
         self.max_entries = max_entries
 
@@ -105,8 +105,8 @@ class PostgresDataSource(DataSource):
         if clear_content:
             self.clear_content()
         if restore_backup_data or restore_backup_schema:
-            self.restore_backup(restore_data=restore_backup_data, 
-                                restore_schema=restore_backup_schema, 
+            self.restore_backup(restore_data=restore_backup_data,
+                                restore_schema=restore_backup_schema,
                                 exit_on_error=restore_backup_exit_on_error)
         self.session = self.get_session()
         if load_content:
@@ -154,16 +154,17 @@ class PostgresDataSource(DataSource):
 
         # install and export package
         manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
-        manager.download()
+        manager.download(sym_links=True)
 
         # copy new files to package
         path = self._get_dump_path()
-        shutil.copyfile(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+        os.symlink(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
 
         # build and push package
         manager.upload()
 
         # cleanup temporary directory
+        os.remove(os.path.join(tmp_dirname, path))
         shutil.rmtree(tmp_dirname)
 
     def restore_backup(self, restore_data=True, restore_schema=False, exit_on_error=True):
@@ -181,21 +182,24 @@ class PostgresDataSource(DataSource):
         # install and export dumped database from package
         manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
         path = self._get_dump_path()
-        manager.download(system_path=path)
+        manager.download(system_path=path, sym_links=True)
         if not os.path.isdir(self.cache_dirname):
             os.makedirs(self.cache_dirname)
-        shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+        os.rename(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
 
         # restore database
-        self.restore_database(restore_data=restore_data, 
+        self.restore_database(restore_data=restore_data,
                               restore_schema=restore_schema,
                               exit_on_error=exit_on_error)
 
     def dump_database(self):
         """ Create a dump file of the Postgres database """
+        path = os.path.join(self.cache_dirname, self._get_dump_path())
+        if os.path.isfile(path):
+            os.remove(path)
 
         cmd = [
             'pg_dump',
@@ -203,11 +207,11 @@ class PostgresDataSource(DataSource):
             '--no-owner',
             '--no-privileges',
             '--format=c',
-            '--file=' + os.path.join(self.cache_dirname, self._get_dump_path()),
-            ]
+            '--file=' + path,
+        ]
 
         err = p.communicate()[1].decode()
-        if p.returncode != 0:            
+        if p.returncode != 0:
             raise Exception(err)
         if err:
             print(err, file=sys.stderr)
@@ -221,11 +225,11 @@ class PostgresDataSource(DataSource):
             exit_on_error (:obj:`bool`, optional): If :obj:`True`, exit on errors
         """
         cmd = [
-            'pg_restore', 
-            '--dbname=' + str(self.base_model.engine.url),            
+            'pg_restore',
+            '--dbname=' + str(self.base_model.engine.url),
             '--no-owner', '--no-privileges',
             os.path.join(self.cache_dirname, self._get_dump_path()),
-            ]
+        ]
         if not restore_data:
             cmd.append('--schema-only')
         if restore_schema:
@@ -393,15 +397,38 @@ class CachedDataSource(DataSource):
 
         # install and export package
         manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
-        manager.download()
+        manager.download(sym_links=False)
 
         # copy new files to package
         paths = self.get_paths_to_backup()
         for path in paths:
             if os.path.isfile(os.path.join(self.cache_dirname, path)):
-                shutil.copyfile(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+                if os.path.isfile(os.path.join(tmp_dirname, path)):
+                    os.remove(os.path.join(tmp_dirname, path))
+                os.symlink(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
             else:
-                shutil.copytree(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+                if os.path.isdir(os.path.join(tmp_dirname, path)):
+                    shutil.rmtree(os.path.join(tmp_dirname, path))
+
+                root_cache_path = os.path.join(self.cache_dirname, path)
+                root_tmp_path = os.path.join(tmp_dirname, path)
+                for abs_cache_dirname, subdirnames, filenames in os.walk(root_cache_path):
+                    rel_dirname = os.path.relpath(abs_cache_dirname, root_cache_path)
+
+                    for subdirname in subdirnames:
+                        if rel_dirname == '.':
+                            rel_subdirname = subdirname
+                        else:
+                            rel_subdirname = os.path.join(rel_dirname, subdirname)
+                        os.makedirs(os.path.join(root_tmp_path, rel_subdirname))
+
+                    for filename in filenames:
+                        if rel_dirname == '.':
+                            rel_filename = filename
+                        else:
+                            rel_filename = os.path.join(rel_dirname, filename)
+                        os.symlink(os.path.join(root_cache_path, rel_filename),
+                                   os.path.join(root_tmp_path, rel_filename))
 
         # build and push package
         manager.upload()
@@ -421,11 +448,8 @@ class CachedDataSource(DataSource):
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
         for path in paths:
-            manager.download(system_path=path)
-            if os.path.isfile(os.path.join(tmp_dirname, path)):
-                shutil.copyfile(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
-            else:
-                shutil.copytree(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+            manager.download(system_path=path, sym_links=False)
+            os.rename(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
