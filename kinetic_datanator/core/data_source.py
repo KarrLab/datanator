@@ -206,7 +206,6 @@ class PostgresDataSource(DataSource):
             '--file=' + os.path.join(self.cache_dirname, self._get_dump_path()),
             ]
 
-        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         err = p.communicate()[1].decode()
         if p.returncode != 0:            
             raise Exception(err)

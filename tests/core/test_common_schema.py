@@ -23,8 +23,8 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        # todo: set restore_backup_schema=False
-        # todo: restore_backup_exit_on_error=True
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
         self.flk = common_schema.CommonSchema(clear_content=True,
                                               restore_backup_data=True, restore_backup_schema=True,
                                               restore_backup_exit_on_error=False,
@@ -68,8 +68,8 @@ class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        # todo: set restore_backup_schema=False
-        # todo: restore_backup_exit_on_error=True
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
         self.cs = common_schema.CommonSchema(
             clear_content=True,
             restore_backup_data=True, restore_backup_schema=True,

@@ -215,8 +215,8 @@ class AggregateBuildController(cement.Controller):
     @cement.ex(help='Controller that controls aggregated')
     def _default(self):
         pargs = self.app.pargs
-        # todo: set restore_backup_schema=False
-        # todo: restore_backup_exit_on_error=True
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
         common_schema.CommonSchema(load_content=True, 
                                    restore_backup_data=True, restore_backup_schema=True,
                                    restore_backup_exit_on_error=False,
@@ -278,8 +278,8 @@ class DownloadController(cement.Controller):
     @cement.ex(help='Loads Aggregated DB from Karr Lab Server')
     def aggregate(self):
         pargs = self.app.pargs
-        # todo: set restore_backup_schema=False
-        # todo: restore_backup_exit_on_error=True
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
         common_schema.CommonSchema(clear_content=True,
                                    restore_backup_data=True, restore_backup_schema=False,
                                    load_content=False,
