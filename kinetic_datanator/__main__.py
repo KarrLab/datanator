@@ -215,7 +215,13 @@ class AggregateBuildController(cement.Controller):
     @cement.ex(help='Controller that controls aggregated')
     def _default(self):
         pargs = self.app.pargs
-        common_schema.CommonSchema(load_content=True, restore_bakckup=True, max_entries=pargs.max_entries, verbose=pargs.verbose)
+        # todo: set restore_backup_schema=False
+        # todo: restore_backup_exit_on_error=True
+        common_schema.CommonSchema(load_content=True, 
+                                   restore_backup_data=True, restore_backup_schema=True,
+                                   restore_backup_exit_on_error=False,
+                                   max_entries=pargs.max_entries, 
+                                   verbose=pargs.verbose)
 
 
 class DownloadController(cement.Controller):
@@ -272,7 +278,12 @@ class DownloadController(cement.Controller):
     @cement.ex(help='Loads Aggregated DB from Karr Lab Server')
     def aggregate(self):
         pargs = self.app.pargs
-        common_schema.CommonSchema(restore_backup=True, clear_content=True, load_content=False, verbose=True)
+        # todo: set restore_backup_schema=False
+        # todo: restore_backup_exit_on_error=True
+        common_schema.CommonSchema(clear_content=True,
+                                   restore_backup_data=True, restore_backup_schema=False,
+                                   load_content=False,
+                                   verbose=True)
 
     @cement.ex(hide=True)
     def _default(self):
@@ -649,7 +660,7 @@ class ReactionGetEcNumberController(cement.Controller):
                     coefficient=coefficient,
                 ))
 
-        match = re.match('^(.*?)<*[\-=]{1,2}>(.*?)$', self.app.pargs.reaction)
+        match = re.match(r'^(.*?)<*[\-=]{1,2}>(.*?)$', self.app.pargs.reaction)
         if not match:
             print('The reaction is ill-formed', file=sys.stderr)
             return

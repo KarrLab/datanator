@@ -23,7 +23,12 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname, restore_backup=True, clear_content=True)
+        # todo: set restore_backup_schema=False
+        # todo: restore_backup_exit_on_error=True
+        self.flk = common_schema.CommonSchema(clear_content=True,
+                                              restore_backup_data=True, restore_backup_schema=True,
+                                              restore_backup_exit_on_error=False,
+                                              cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
@@ -63,11 +68,15 @@ class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
-                                clear_content = True, restore_backup= False,
-                                load_content = True, max_entries = 10,
-                                verbose = True, test=True)
-
+        # todo: set restore_backup_schema=False
+        # todo: restore_backup_exit_on_error=True
+        self.cs = common_schema.CommonSchema(
+            clear_content=True,
+            restore_backup_data=True, restore_backup_schema=True,
+            restore_backup_exit_on_error=False,
+            cache_dirname=self.cache_dirname,
+            load_content=True, max_entries=10,
+            verbose=True, test=True)
 
     @classmethod
     def tearDownClass(self):

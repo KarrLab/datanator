@@ -23,42 +23,51 @@ from sqlalchemy.sql import func
 import threading
 
 class CommonSchema(data_source.PostgresDataSource):
-    """
-    A Local SQLlite copy of the aggregation of data_source modules
+    """ A Local Postgres copy of the aggregation of data_source modules
+
+    Attributes:
+        load_entire_small_dbs (:obj:`bool`): Loads all entire databases that fall under 50 MB
+        load_small_db_switch (:obj:`bool`)
+        test (:obj:`bool`): Designates whether tests are being completed for brevity of tests
     """
     base_model = db
 
-    def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=False, verbose=False, load_entire_small_DBs=False, test=False):
+    def __init__(self, name=None, 
+                 clear_content=False, 
+                 load_content=False, max_entries=float('inf'),
+                 restore_backup_data=False, restore_backup_schema=False, restore_backup_exit_on_error=True,
+                 quilt_owner=None, quilt_package=None, cache_dirname=None, 
+                 verbose=False, load_entire_small_dbs=False, test=False):
         """
         Args:
             name (:obj:`str`, optional): name
-            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
-            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
-                process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
-            verbose (:obj:`bool`, optional): if :obj:`True`, self.vprint status information to the standard output
-            load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
-            flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
-            test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
+            restore_backup_data (:obj:`bool`, optional): if :obj:`True`, download and restore data from dump in Quilt package
+            restore_backup_schema (:obj:`bool`, optional): if :obj:`True`, download and restore schema from dump in Quilt package
+            restore_backup_exit_on_error (:obj:`bool`, optional): if :obj:`True`, exit on errors in restoring backups
             quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
             quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
+            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
+            verbose (:obj:`bool`, optional): if :obj:`True`, self.vprint status information to the standard output
+            load_entire_small_dbs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
+            test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
         """
 
-
-        super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
-                                                load_content=False, max_entries=max_entries,
-                                                commit_intermediate_results=commit_intermediate_results,
-                                                restore_backup=restore_backup, verbose=verbose)
-
-        self.load_entire_small_DBs = load_entire_small_DBs
+        self.load_entire_small_dbs = load_entire_small_dbs
+        self.load_small_db_switch = False
         self.test = test
 
-        if load_content:
+        super(CommonSchema, self).__init__(
+            name=name, clear_content=clear_content,
+            load_content=load_content, max_entries=max_entries,
+            restore_backup_data=restore_backup_data, restore_backup_schema=restore_backup_schema, 
+            restore_backup_exit_on_error=restore_backup_exit_on_error,
+            quilt_owner=quilt_owner, quilt_package=quilt_package, cache_dirname=cache_dirname,
+            verbose=verbose)
 
+        if load_content:
             if not self.session.query(models.Progress).all():
                 self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
                 self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
@@ -510,7 +519,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
@@ -582,7 +591,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
@@ -652,7 +661,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
@@ -721,7 +730,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         complexdb = intactdb.session.query(intact.ProteinComplex).all() if max_entries == float('inf') \
