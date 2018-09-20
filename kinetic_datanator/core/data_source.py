@@ -190,7 +190,7 @@ class PostgresDataSource(DataSource):
             '--file=' + os.path.join(self.cache_dirname, self.name + '.sql'),
             ]
 
-        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell=False, stderr=subprocess.PIPE)
         while p.poll() is None:
             time.sleep(0.5)
         if p.returncode != 0:
@@ -202,20 +202,20 @@ class PostgresDataSource(DataSource):
 
         """
         cmd = [
-            'pg_restore', 
+            'pg_restore',
             '--dbname=' + str(self.base_model.engine.url),
             '--clean',
             '--no-owner', '--no-privileges',
-            '--exit-on-error',
             os.path.join(self.cache_dirname, self.name + '.sql'),
             ]
 
-        p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell=False, stderr=subprocess.PIPE)
         while p.poll() is None:
             time.sleep(0.5)
+        # NOTE: Alembic issue with migrations is not allowing us to do this at the moment
         if p.returncode != 0:
             err = p.communicate()[1].decode()
-            raise Exception(err)
+            print(err)
 
     @abc.abstractmethod
     def load_content(self):
