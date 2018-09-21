@@ -168,7 +168,7 @@ class PostgresDataSource(DataSource):
         shutil.rmtree(tmp_dirname)
 
     def restore_backup(self, restore_data=True, restore_schema=False, exit_on_error=True):
-        """ Download and restore the database from Quilt 
+        """ Download and restore the database from Quilt
 
         Args:
             restore_data (:obj:`bool`, optional): If :obj:`True`, restore data
@@ -217,7 +217,7 @@ class PostgresDataSource(DataSource):
             print(err, file=sys.stderr)
 
     def restore_database(self, restore_data=True, restore_schema=False, exit_on_error=True):
-        """ Restore a dump file of the Postgres database 
+        """ Restore a dump file of the Postgres database
 
         Args:
             restore_data (:obj:`bool`, optional): If :obj:`True`, restore data
@@ -241,8 +241,8 @@ class PostgresDataSource(DataSource):
 
         p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         err = p.communicate()[1].decode()
-        if p.returncode != 0:
-            raise Exception(err)
+        # if p.returncode != 0:
+        #     raise Exception(err)
         if err:
             print(err, file=sys.stderr)
 
