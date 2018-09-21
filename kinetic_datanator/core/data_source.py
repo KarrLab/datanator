@@ -241,6 +241,14 @@ class PostgresDataSource(DataSource):
 
         p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         err = p.communicate()[1].decode()
+        # Return code is not checked because `pg_restore` exits with non-zero
+        # codes even without the `--exit-on-error` option. E.g. `pg_restore`
+        # exits with 1 when there are warnings for errors. See:
+        # https://stackoverflow.com/questions/32147653/how-do-i-reliably-determine-whether-pg-restore-succeeded-when-success-sometimes
+        #
+        # todo: try to uncomment below after implementing first migration and
+        #       creating new database dump
+        #
         # if p.returncode != 0:
         #     raise Exception(err)
         if err:
