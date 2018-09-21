@@ -30,27 +30,6 @@ class TestServerDownloadUniprot(unittest.TestCase):
         count = self.uni.session.query(uniprot.UniprotData).count()
         self.assertEqual(count, 10)
 
-    def test_load(self):
-        prot = self.uni.session.query(uniprot.UniprotData).filter_by(uniprot_id='Q12181').all()
-        self.assertEqual(len(prot), 1)
-        self.assertEqual(prot[0].entry_name, 'NDOR1_YEAST')
-        self.assertEqual(prot[0].protein_name,
-                         'NADPH-dependent diflavin oxidoreductase 1 (EC 1.18.1.-) (NADPH-dependent FMN and FAD-containing oxidoreductase)')
-        self.assertEqual(prot[0].entrez_id, 856161)
-
-    def test_load1(self):
-        prot = self.uni.session.query(uniprot.UniprotData).filter_by(uniprot_id='Q8GHV6').all()
-        self.assertEqual(len(prot), 1)
-        self.assertEqual(prot[0].mass, 37570)
-        self.assertEqual(prot[0].ec_number, None)
-
-    def test_load2(self):
-        prot = self.uni.session.query(uniprot.UniprotData).filter_by(uniprot_id='B5BAY2').all()
-        self.assertEqual(len(prot), 1)
-        self.assertEqual(prot[0].entrez_id, None)
-        self.assertEqual(prot[0].ec_number, '2.7.4.6')
-
-
 class TestUniprotFromBackup(unittest.TestCase):
 
     @classmethod
