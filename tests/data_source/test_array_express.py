@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 
-
+@unittest.skip('skip')
 class QuickTest(unittest.TestCase):
 
     def setUp(self):
@@ -154,7 +154,7 @@ class QuickTest(unittest.TestCase):
             "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR173/002/ERR1736192/ERR1736192_2.fastq.gz",
         ])), list(set([u.url for u in a_sample.fastq_urls])))
 
-
+@unittest.skip('skip')
 class TestLoadFASTQ_Url(unittest.TestCase):
 
     def setUp(self):
@@ -176,7 +176,7 @@ class TestLoadFASTQ_Url(unittest.TestCase):
         self.assertEqual(a_sample.fastq_urls[0].url, "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR580/SRR580556/SRR580556.fastq.gz")
 
 
-
+@unittest.skip('skip')
 class TestDownloadCDNA(unittest.TestCase):
 
     def setUp(self):
@@ -197,6 +197,7 @@ class TestDownloadCDNA(unittest.TestCase):
         self.assertTrue(os.path.isfile('{}/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz'.format(self.cache_dirname)))
         self.assertTrue(os.path.isfile('{}/kallisto_index_files/burkholderia_cenocepacia_j2315.idx'.format(self.cache_dirname)))
 
+@unittest.skip('skip')
 class TestEnsemblTools(unittest.TestCase):
 
     def setUp(self):
@@ -267,6 +268,7 @@ class TestEnsemblTools(unittest.TestCase):
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
 
+@unittest.skip('skip')
 class TestProcessData(unittest.TestCase):
 
     def setUp(self):
@@ -403,6 +405,7 @@ class TestCommandLineProcessing(unittest.TestCase):
 
 
 #@unittest.skip("need to use an example of RNA-SEQ sample")
+@unittest.skip('skip')
 class TestHTTPError(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
