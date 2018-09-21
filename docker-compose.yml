@@ -1,7 +1,7 @@
 version: '3'
 services:
   wc_env:
-    image: karrlab/wc_env:latest
+    image: karrlab/wc_env_dependencies:latest
     restart: always
     entrypoint: bash
     stdin_open: true
@@ -12,5 +12,3 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: CommonSchema
     restart: always
-    ports:
-      - "5432:5432"
