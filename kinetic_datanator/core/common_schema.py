@@ -20,45 +20,54 @@ from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
 from ete3 import NCBITaxa
 from sqlalchemy.sql import func
-
+import threading
 
 class CommonSchema(data_source.PostgresDataSource):
-    """
-    A Local SQLlite copy of the aggregation of data_source modules
+    """ A Local Postgres copy of the aggregation of data_source modules
+
+    Attributes:
+        load_entire_small_dbs (:obj:`bool`): Loads all entire databases that fall under 50 MB
+        load_small_db_switch (:obj:`bool`)
+        test (:obj:`bool`): Designates whether tests are being completed for brevity of tests
     """
     base_model = db
 
-    def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, restore_backup=False, verbose=False, load_entire_small_DBs=False, test=True):
+    def __init__(self, name=None, 
+                 clear_content=False, 
+                 load_content=False, max_entries=float('inf'),
+                 restore_backup_data=False, restore_backup_schema=False, restore_backup_exit_on_error=True,
+                 quilt_owner=None, quilt_package=None, cache_dirname=None, 
+                 verbose=False, load_entire_small_dbs=False, test=False):
         """
         Args:
             name (:obj:`str`, optional): name
-            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
             clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
             load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
             max_entries (:obj:`float`, optional): maximum number of entries to save locally
-            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
-                process. This is particularly helpful for restarting this method when webservices go offline.
-            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
-            verbose (:obj:`bool`, optional): if :obj:`True`, self.vprint status information to the standard output
-            load_entire_small_DBs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
-            flask (:obj:`bool`, optional): Designates whether the database is defined as a Flask models
-            test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
+            restore_backup_data (:obj:`bool`, optional): if :obj:`True`, download and restore data from dump in Quilt package
+            restore_backup_schema (:obj:`bool`, optional): if :obj:`True`, download and restore schema from dump in Quilt package
+            restore_backup_exit_on_error (:obj:`bool`, optional): if :obj:`True`, exit on errors in restoring backups
             quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
             quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
+            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
+            verbose (:obj:`bool`, optional): if :obj:`True`, self.vprint status information to the standard output
+            load_entire_small_dbs (:obj:`bool`, optional): Loads all entire databases that fall under 50 MB
+            test (:obj:`bool`, optional): Designates whether tests are being completed for brevity of tests
         """
 
-
-        super(CommonSchema, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
-                                                load_content=False, max_entries=max_entries,
-                                                commit_intermediate_results=commit_intermediate_results,
-                                                restore_backup=restore_backup, verbose=verbose)
-
-        self.load_entire_small_DBs = load_entire_small_DBs
+        self.load_entire_small_dbs = load_entire_small_dbs
+        self.load_small_db_switch = False
         self.test = test
 
-        if load_content:
+        super(CommonSchema, self).__init__(
+            name=name, clear_content=clear_content,
+            load_content=load_content, max_entries=max_entries,
+            restore_backup_data=restore_backup_data, restore_backup_schema=restore_backup_schema, 
+            restore_backup_exit_on_error=restore_backup_exit_on_error,
+            quilt_owner=quilt_owner, quilt_package=quilt_package, cache_dirname=cache_dirname,
+            verbose=verbose)
 
+        if load_content:
             if not self.session.query(models.Progress).all():
                 self.get_or_create_object(models.Progress, database_name=PAX_NAME, amount_loaded=PAX_INITIAL_AMOUNT)
                 self.get_or_create_object(models.Progress, database_name=SABIO_NAME, amount_loaded=SABIO_INITIAL_AMOUNT)
@@ -82,75 +91,47 @@ class CommonSchema(data_source.PostgresDataSource):
         observation.physical_property = models.PhysicalProperty()
         self.property = observation.physical_property
 
-        # Chunk Larger DBs
         self.build_pax()
-        self.build_intact_interactions()
-        self.build_sabio()
-        self.build_array_express()
 
-        # Add complete smaller DBs
+        # # Chunk Larger DBs
+        t1 = threading.Thread(target=self.build_intact_interactions)
+        t2 = threading.Thread(target=self.build_sabio)
+        t3 = threading.Thread(target=self.build_array_express)
+
+        t1.start()
+        t2.start()
+        t3.start()
+
+
+        t1.join()
+        t2.join()
+        t3.join()
+
+
+
+        # # Add complete smaller DBs
         if self.load_small_db_switch:
-            self.build_intact_complexes()
-            self.build_corum()
-            self.build_jaspar()
-            self.build_ecmdb()
+            t4 = threading.Thread(target=self.build_intact_complexes)
+            t5 = threading.Thread(target=self.build_corum)
+            t6 = threading.Thread(target=self.build_jaspar)
+            t7 = threading.Thread(target=self.build_ecmdb)
 
-        # Add missing subunit information
+            t4.start()
+            t5.start()
+            t6.start()
+            t7.start()
+
+            t4.join()
+            t5.join()
+            t6.join()
+            t7.join()
+
+
+        # # Add missing subunit information
         self.build_uniprot()
 
         # Add missing Taxon information
         self.build_ncbi()
-
-
-    @continuousload
-    @timemethod
-    def build_intact_interactions(self):
-        """
-        Collects IntAct.sqlite file and integrates interaction data into the common ORM
-
-        """
-        t0 = time.time()
-        intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
-        batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
-        intact_progress = self.session.query(
-            models.Progress).filter_by(database_name=INTACT_NAME).first()
-        load_count = intact_progress.amount_loaded
-
-        if self.max_entries == float('inf'):
-            interactiondb = intactdb.session.query(
-                intact.ProteinInteraction).all()
-        else:
-            interactiondb = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
-                (range(load_count, load_count + batch))).all()
-
-
-        batch_list = []
-        for i in interactiondb:
-
-            metadata = self.get_or_create_object(models.Metadata, name='protein_interaction_' + str(i.index))
-            metadata.method.append(self.get_or_create_object(models.Method, name=i.method))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
-            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
-
-            for c in dir(i):
-                if getattr(i, c) == None and '__' not in c:
-                    setattr(i, c, '')
-
-            for type, protein, gene in [(i.type_a, i.protein_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
-                if type == 'protein':
-                    self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
-
-            batch_list.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
-                protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
-                stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
-                role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
-
-        self.session.add_all(batch_list)
-
-        intact_progress.amount_loaded = load_count + batch
-
-        self.vprint('Comitting')
-        self.session.commit()
 
     @continuousload
     @timemethod
@@ -173,22 +154,18 @@ class CommonSchema(data_source.PostgresDataSource):
         if self.max_entries == float('inf'):
             pax_dataset = pax_ses.query(pax.Dataset).all()
         else:
-            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_
-                                                            (range(load_count, load_count + batch))).all()
+            pax_dataset = pax_ses.query(pax.Dataset).filter(pax.Dataset.id.in_(range(load_count, load_count + batch))).all()
 
         for dataset in pax_dataset:
-            metadata = self.get_or_create_object(
-                models.Metadata, name=dataset.file_name)
-            metadata.taxon.append(self.get_or_create_object(
-                models.Taxon, ncbi_id=dataset.taxon_ncbi_id))
-            metadata.resource.append(self.get_or_create_object(
-                models.Resource, namespace='url', _id=dataset.publication))
+            metadata = self.get_or_create_object(models.Metadata, name=dataset.file_name)
+            metadata.taxon.append(self.get_or_create_object(models.Taxon, ncbi_id=dataset.taxon_ncbi_id))
+            metadata.resource.append(self.get_or_create_object(models.Resource, namespace='url', _id=dataset.publication))
             self.property.abundance_dataset = self.get_or_create_object(models.AbundanceDataSet, type='Protein Abundance Dataset',
-                                                                        name=dataset.file_name, file_name=dataset.file_name, score=dataset.score, weight=dataset.weight,
+                                                                        name=dataset.file_name, file_name=dataset.file_name,
+                                                                        score=dataset.score, weight=dataset.weight,
                                                                         coverage=dataset.coverage, _metadata=metadata)
-            abundance = pax_ses.query(pax.Observation).filter_by(
-                dataset_id=dataset.id).all()
-            uni = [str(d.protein.uniprot_id) for d in abundance]
+
+            abundance = pax_ses.query(pax.Observation).filter_by(dataset_id=dataset.id).all()
 
             self.session.bulk_insert_mappings(models.AbundanceData,
                                               [
@@ -213,7 +190,60 @@ class CommonSchema(data_source.PostgresDataSource):
                     pax_load=dataset.id).filter_by(uniprot_id=rows.uniprot_id).first()
                 rows.dataset = self.property.abundance_dataset
 
-        pax_progress.amount_loaded = load_count + batch
+        pax_progress.amount_loaded = self.session.query(models.AbundanceDataSet).count()
+
+        self.vprint('Comitting')
+        self.session.commit()
+
+    @continuousload
+    @timemethod
+    def build_intact_interactions(self):
+        """
+        Collects IntAct.sqlite file and integrates interaction data into the common ORM
+
+        """
+        t0 = time.time()
+        intactdb = intact.IntAct(cache_dirname=self.cache_dirname)
+        batch = INTACT_INTERACTION_TEST_BATCH if self.test else INTACT_INTERACTION_BUILD_BATCH
+        intact_progress = self.session.query(models.Progress).filter_by(database_name=INTACT_NAME).first()
+        load_count = intact_progress.amount_loaded
+
+        if self.max_entries == float('inf'):
+            interactions = intactdb.session.query(
+                intact.ProteinInteraction).all()
+        else:
+            interactions = intactdb.session.query(intact.ProteinInteraction).filter(intact.ProteinInteraction.index.in_
+                (range(load_count, load_count + batch))).all()
+
+        sub_batch = []
+        for i in interactions:
+            if len(sub_batch) < INTACT_INTERACTION_BUILD_SUB_BATCH:
+                metadata = self.get_or_create_object(models.Metadata, name='protein_interaction_' + str(i.index))
+                metadata.method.append(self.get_or_create_object(models.Method, name=i.method))
+                metadata.resource.append(self.get_or_create_object(models.Resource, namespace='pubmed', _id=i.publication))
+                metadata.resource.append(self.get_or_create_object(models.Resource, namespace='paper', _id=i.publication_author))
+
+                for c in dir(i):
+                    if getattr(i, c) == None and '__' not in c:
+                        setattr(i, c, '')
+
+                for type, protein, gene in [(i.type_a, i.protein_a, i.gene_a), (i.type_b, i.protein_b, i.gene_b)]:
+                    if type == 'protein':
+                        self.get_or_create_object(models.ProteinSubunit, uniprot_id=protein, gene_name=gene)
+
+                sub_batch.append(models.ProteinInteraction(name=i.protein_a + " + " + i.protein_b, type='protein protein interaction', protein_a=i.protein_a,
+                    protein_b=i.protein_b,gene_a=i.gene_a, gene_b=i.gene_b, loc_a=i.feature_a, loc_b=i.feature_b, type_a=i.type_a, type_b=i.type_b,
+                    stoich_a=i.stoich_a, stoich_b=i.stoich_b, confidence=i.confidence,interaction_type=i.interaction_type,
+                    role_a = i.role_a, role_b= i.role_b, _metadata=metadata))
+            else:
+                self.vprint('Batch of {} interactions was loaded'.format(INTACT_INTERACTION_BUILD_SUB_BATCH))
+                self.session.add_all(sub_batch)
+                self.session.commit()
+                sub_batch = []
+
+
+        self.session.add_all(sub_batch)
+        intact_progress.amount_loaded = self.session.query(models.ProteinInteraction).count()
 
         self.vprint('Comitting')
         self.session.commit()
@@ -245,7 +275,6 @@ class CommonSchema(data_source.PostgresDataSource):
             exp_metadata.taxon = [
                 self.get_or_create_object(
                     models.Taxon,
-                    name=org.name,
                     ncbi_id=org.ncbi_id
                 )
                 for org in exp.organisms]
@@ -396,8 +425,8 @@ class CommonSchema(data_source.PostgresDataSource):
                                                           _structure_formula_connectivity=struct._value_inchi_formula_connectivity, _metadata=metadata)\
                         if struct.format == 'smiles' else None
 
-                self.entity.compound = self.get_or_create_object(models.Compound, type='Compound',
-                                                                 name=item.name, compound_name=item.name,
+                self.entity.metabolite = self.get_or_create_object(models.Metabolite, type='Metabolite',
+                                                                 name=item.name, metabolite_name=item.name,
                                                                  _is_name_ambiguous=sabio_ses.query(
                                                                      sabio_rk.Compound).get(item._id)._is_name_ambiguous,
                                                                  structure=structure, _metadata=metadata)
@@ -435,9 +464,9 @@ class CommonSchema(data_source.PostgresDataSource):
                 self.property.kinetic_law = self.get_or_create_object(models.KineticLaw, type='Kinetic Law', enzyme=catalyst,
                                                                       enzyme_type=item.enzyme_type, tissue=item.tissue, mechanism=item.mechanism, equation=item.equation, _metadata=metadata)
 
-                def common_schema_compound(sabio_object):
-                    compound_name = sabio_object.name
-                    return self.session.query(models.Compound).filter_by(compound_name=compound_name).first()
+                def common_schema_metabolite(sabio_object):
+                    metabolite_name = sabio_object.name
+                    return self.session.query(models.Metabolite).filter_by(metabolite_name=metabolite_name).first()
 
                 def common_schema_compartment(sabio_object):
                     if sabio_object:
@@ -446,15 +475,15 @@ class CommonSchema(data_source.PostgresDataSource):
                     else:
                         return None
 
-                reactants = [models.Reaction(compound=common_schema_compound(r.compound),
+                reactants = [models.Reaction(metabolite=common_schema_metabolite(r.compound),
                                              compartment=common_schema_compartment(r.compartment), _is_reactant=1, rxn_type=r.type,
                                              kinetic_law=self.property.kinetic_law) for r in item.reactants if item.reactants]
 
-                products = [models.Reaction(compound=common_schema_compound(p.compound),
+                products = [models.Reaction(metabolite=common_schema_metabolite(p.compound),
                                             compartment=common_schema_compartment(p.compartment), _is_product=1, rxn_type=p.type,
                                             kinetic_law=self.property.kinetic_law) for p in item.products if item.products]
 
-                modifier = [models.Reaction(compound=common_schema_compound(m.compound),
+                modifier = [models.Reaction(metabolite=common_schema_metabolite(m.compound),
                                             compartment=common_schema_compartment(m.compartment), _is_modifier=1, rxn_type=m.type,
                                             kinetic_law=self.property.kinetic_law) for m in item.modifiers if item.products]
 
@@ -463,7 +492,7 @@ class CommonSchema(data_source.PostgresDataSource):
                                                  units=param.units, observed_name=param.observed_name, kinetic_law=self.property.kinetic_law,
                                                  observed_sabio_type=param.observed_type, observed_value=param.observed_value,
                                                  observed_error=param.observed_error, observed_units=param.observed_units)
-                    parameter.compound = common_schema_compound(
+                    parameter.metabolite = common_schema_metabolite(
                         param.compound) if param.compound else None
                 continue
 
@@ -490,7 +519,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
@@ -520,9 +549,10 @@ class CommonSchema(data_source.PostgresDataSource):
                     complex_name=subunit.complex.complex_name).first()
                 entry = self.session.query(
                     models.Observation).get(complx.complex_id)
+                entrez = subunit.su_entrezs if isinstance(subunit.su_entrezs, int) else 0
                 self.entity.protein_subunit = self.get_or_create_object(models.ProteinSubunit,
                                                                         type='Protein Subunit', uniprot_id=subunit.su_uniprot,
-                                                                        entrez_id=subunit.su_entrezs, name=subunit.protein_name, subunit_name=subunit.protein_name, gene_name=subunit.gene_name,
+                                                                        entrez_id=entrez, name=subunit.protein_name, subunit_name=subunit.protein_name, gene_name=subunit.gene_name,
                                                                         gene_syn=subunit.gene_syn, proteincomplex=complx, _metadata=self.session.query(models.Metadata).get(entry._metadata_id))
                 entries += 1
 
@@ -561,7 +591,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
@@ -631,18 +661,18 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         entries = 0
-        for compound in ecmdb_compound:
+        for metabolite in ecmdb_compound:
             if entries < max_entries:
-                concentration = compound.concentrations
-                ref = compound.cross_references
-                compart = compound.compartments
-                syn = compound.synonyms
+                concentration = metabolite.concentrations
+                ref = metabolite.cross_references
+                compart = metabolite.compartments
+                syn = metabolite.synonyms
                 metadata = self.get_or_create_object(
-                    models.Metadata, name=compound.name)
+                    models.Metadata, name=metabolite.name)
                 tax = self.session.query(
                     models.Taxon).filter_by(ncbi_id=562).first()
                 metadata.taxon.append(tax) if tax else metadata.taxon.append(
@@ -653,18 +683,18 @@ class CommonSchema(data_source.PostgresDataSource):
                     models.CellCompartment, name=areas.name) for areas in compart]
                 metadata.synonym = [self.get_or_create_object(
                     models.Synonym, name=syns.name) for syns in syn]
-                self.property.structure = self.get_or_create_object(models.Structure, type='Structure', name=compound.name,
-                                                                    _value_inchi=compound.structure,
-                                                                    _structure_formula_connectivity=compound._structure_formula_connectivity, _metadata=metadata)
-                self.entity.compound = self.get_or_create_object(models.Compound, type='Compound', name=compound.name,
-                                                                 compound_name=compound.name, description=compound.description, comment=compound.comment, structure=self.property.structure,
+                self.property.structure = self.get_or_create_object(models.Structure, type='Structure', name=metabolite.name,
+                                                                    _value_inchi=metabolite.structure,
+                                                                    _structure_formula_connectivity=metabolite._structure_formula_connectivity, _metadata=metadata)
+                self.entity.metabolite = self.get_or_create_object(models.Metabolite, type='Metabolite', name=metabolite.name,
+                                                                 metabolite_name=metabolite.name, description=metabolite.description, comment=metabolite.comment, structure=self.property.structure,
                                                                  _metadata=metadata)
                 index = 0 if concentration else -1
                 if index == -1:
                     continue
                 for rows in concentration:
                     new_metadata = self.get_or_create_object(
-                        models.Metadata, name=compound.name + ' Concentration ' + str(index))
+                        models.Metadata, name=metabolite.name + ' Concentration ' + str(index))
                     new_metadata.taxon = metadata.taxon
                     new_metadata.cell_compartment = metadata.cell_compartment
                     new_metadata.synonym = metadata.synonym
@@ -674,8 +704,8 @@ class CommonSchema(data_source.PostgresDataSource):
                                                                              media=rows.media, temperature=rows.temperature, growth_system=rows.growth_system))
                     new_metadata.resource = [self.get_or_create_object(
                         models.Resource, namespace=docs.namespace, _id=docs.id) for docs in rows.references]
-                    self.property.concentration = self.get_or_create_object(models.Concentration, type='Concentration', name=compound.name + ' Concentration ' + str(index),
-                                                                            value=rows.value, error=rows.error, units='uM', _metadata=new_metadata, compound=self.entity.compound)
+                    self.property.concentration = self.get_or_create_object(models.Concentration, type='Concentration', name=metabolite.name + ' Concentration ' + str(index),
+                                                                            value=rows.value, error=rows.error, units='uM', _metadata=new_metadata, metabolite=self.entity.metabolite)
                     index += 1
                 entries += 1
 
@@ -700,7 +730,7 @@ class CommonSchema(data_source.PostgresDataSource):
 
         max_entries = self.max_entries
 
-        if self.load_entire_small_DBs:
+        if self.load_entire_small_dbs:
             max_entries = float('inf')
 
         complexdb = intactdb.session.query(intact.ProteinComplex).all() if max_entries == float('inf') \
@@ -751,7 +781,7 @@ class CommonSchema(data_source.PostgresDataSource):
             subunit.uniprot_checked = True
             if info:
                 subunit.subunit_name = subunit.name = info.entry_name if not subunit.subunit_name else subunit.subunit_name
-                subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
+                # subunit.entrez_id = info.entrez_id if not subunit.entrez_id else subunit.entrez_id
                 subunit.gene_name = info.gene_name if not subunit.gene_name else subunit.gene_name
                 subunit.canonical_sequence = info.canonical_sequence if not subunit.canonical_sequence else subunit.canonical_sequence
                 subunit.length = info.length if not subunit.length else subunit.length

@@ -23,7 +23,12 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname, restore_backup=True, clear_content=True)
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
+        self.flk = common_schema.CommonSchema(clear_content=True,
+                                              restore_backup_data=True, restore_backup_schema=True,
+                                              restore_backup_exit_on_error=False,
+                                              cache_dirname=self.cache_dirname)
 
     @classmethod
     def tearDownClass(self):
@@ -63,11 +68,15 @@ class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.cache_dirname = tempfile.mkdtemp()
-        self.cs = common_schema.CommonSchema(cache_dirname=self.cache_dirname,
-                                clear_content = True, restore_backup= False,
-                                load_content = True, max_entries = 10,
-                                verbose = True, test=True)
-
+        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
+        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
+        self.cs = common_schema.CommonSchema(
+            clear_content=True,
+            restore_backup_data=True, restore_backup_schema=True,
+            restore_backup_exit_on_error=False,
+            cache_dirname=self.cache_dirname,
+            load_content=True, max_entries=10,
+            verbose=True, test=True)
 
     @classmethod
     def tearDownClass(self):
@@ -120,9 +129,9 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_ecmdb(self):
         session = self.cs.session
-        compound = session.query(models.Compound).filter_by(name = 'Deoxyuridine').first()
-        self.assertEqual(compound.description, "2'-Deoxyuridine is a naturally occurring nucleoside. It is similar in chemical structure to uridine, but without the 2'-hydroxyl group.  It is considered to be an antimetabolite that is converted to deoxyuridine triphosphate during DNA synthesis.")
-        structure = session.query(models.Structure).get(compound.structure_id)
+        metabolite = session.query(models.Metabolite).filter_by(name = 'Deoxyuridine').first()
+        self.assertEqual(metabolite.description, "2'-Deoxyuridine is a naturally occurring nucleoside. It is similar in chemical structure to uridine, but without the 2'-hydroxyl group.  It is considered to be an antimetabolite that is converted to deoxyuridine triphosphate during DNA synthesis.")
+        structure = session.query(models.Structure).get(metabolite.structure_id)
         self.assertEqual(structure._value_inchi , 'InChI=1S/C9H12N2O5/c12-4-6-5(13)3-8(16-6)11-2-1-7(14)10-9(11)15/h1-2,5-6,8,12-13H,3-4H2,(H,10,14,15)/t5-,6+,8+/m0/s1')
 
 
@@ -150,9 +159,9 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_sabio(self):
         session = self.cs.session
-        compound = session.query(models.Compound).filter_by(compound_name = 'Peptide').first()
-        self.assertEqual(compound._is_name_ambiguous , 1)
-        structure = session.query(models.Structure).get(compound.structure_id)
+        metabolite = session.query(models.Metabolite).filter_by(metabolite_name = 'Peptide').first()
+        self.assertEqual(metabolite._is_name_ambiguous , 1)
+        structure = session.query(models.Structure).get(metabolite.structure_id)
         self.assertEqual(structure._value_smiles, '[*]C(N)C(=O)NC([*])C(O)=O')
 
         metadata = session.query(models.Metadata).filter_by(name = 'Kinetic Law 1').first()
@@ -224,6 +233,6 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
     def test_text_search(self):
         search_name = 'Riboflavin-5-phosphate'
-        search = models.Compound.query.search(search_name).all()
+        search = models.Metabolite.query.search(search_name).all()
         self.assertEqual(len(search), 1)
-        self.assertEqual(search[0].compound_name, search_name)
+        self.assertEqual(search[0].metabolite_name, search_name)

@@ -1,0 +1,14 @@
+version: '3'
+services:
+  wc_env:
+    image: karrlab/wc_env_dependencies:latest
+    restart: always
+    entrypoint: bash
+    stdin_open: true
+    tty: true
+  postgres_service:
+    image: circleci/postgres:10.5-alpine-ram
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: CommonSchema
+    restart: always

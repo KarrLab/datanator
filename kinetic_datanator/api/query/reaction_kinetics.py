@@ -20,8 +20,8 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
       a. Find kinetics observed for the reaction
 
-        i. Find the compound(s) of each participant
-        ii. Find the  reaction(s) which contain all of these compounds
+        i. Find the metabolite(s) of each participant
+        ii. Find the  reaction(s) which contain all of these metabolites
         iii. Find the  kinetic laws associated with these reactions
 
       b. Find kinetics observed for similar reactions
@@ -66,8 +66,8 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         1. Find kinetics observed for the reaction
 
-          a. Find the compound(s) of each participant
-          b. Find the reaction(s) which contain all of these compounds
+          a. Find the metabolite(s) of each participant
+          b. Find the reaction(s) which contain all of these metabolites
           c. Find the kinetic laws associated with these reactions
 
         2. Find kinetics observed for similar reactions
@@ -105,12 +105,12 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             for reactant in reactants:
                 part = data_model.ReactionParticipant(coefficient=-1)
 
-                if reactant.compound_id not in species:
-                    species[reactant.compound_id] = data_model.Specie(name=reactant.compound.compound_name)
-                part.specie = species[reactant.compound_id]
+                if reactant.metabolite_id not in species:
+                    species[reactant.metabolite_id] = data_model.Specie(name=reactant.metabolite.metabolite_name)
+                part.specie = species[reactant.metabolite_id]
 
-                if reactant.compound.structure_id:
-                    part.specie.structure = reactant.compound.structure._value_inchi
+                if reactant.metabolite.structure_id:
+                    part.specie.structure = reactant.metabolite.structure._value_inchi
 
                 if reactant.compartment_id:
                     if reactant.compartment.name not in compartments:
@@ -122,12 +122,12 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             for product in products:
                 part = data_model.ReactionParticipant(coefficient=1)
 
-                if product.compound_id not in species:
-                    species[product.compound_id] = data_model.Specie(name=product.compound.compound_name)
-                part.specie = species[product.compound_id]
+                if product.metabolite_id not in species:
+                    species[product.metabolite_id] = data_model.Specie(name=product.metabolite.metabolite_name)
+                part.specie = species[product.metabolite_id]
 
-                if product.compound.structure_id:
-                    part.specie.structure = product.compound.structure._value_inchi
+                if product.metabolite.structure_id:
+                    part.specie.structure = product.metabolite.structure._value_inchi
 
                 if product.compartment_id:
                     if product.compartment.name not in compartments:
@@ -139,12 +139,12 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
             for modifier in modifiers:
                 part = data_model.ReactionParticipant(coefficient=0)
 
-                if modifier.compound_id not in species:
-                    species[modifier.compound_id] = data_model.Specie(name=modifier.compound.compound_name)
-                part.specie = species[modifier.compound_id]
+                if modifier.metabolite_id not in species:
+                    species[modifier.metabolite_id] = data_model.Specie(name=modifier.metabolite.metabolite_name)
+                part.specie = species[modifier.metabolite_id]
 
-                if modifier.compound.structure_id:
-                    part.specie.structure = modifier.compound.structure._value_inchi
+                if modifier.metabolite.structure_id:
+                    part.specie.structure = modifier.metabolite.structure._value_inchi
 
                 if modifier.compartment_id:
                     if modifier.compartment.name not in compartments:
@@ -164,8 +164,8 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
                     property=parameter.observed_name,
                 )
 
-                if parameter.compound_id:
-                    observable.specie = species[parameter.compound_id]
+                if parameter.metabolite_id:
+                    observable.specie = species[parameter.metabolite_id]
                     # if parameter.compartment:
                     #     observable.compartment = data_model.Compartment(
                     #         id=parameter.compartment.name,
@@ -207,8 +207,8 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
             part = data_model.ReactionParticipant(
                 specie = data_model.Specie(
-                    name = rxn_part.compound.compound_name,
-                    structure = rxn_part.compound.structure._value_inchi if rxn_part.compound.structure else None ),
+                    name = rxn_part.metabolite.metabolite_name,
+                    structure = rxn_part.metabolite.structure._value_inchi if rxn_part.metabolite.structure else None ),
                 coefficient = coef)
             participants.append(part)
 
@@ -227,17 +227,17 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         return self.convert_rxn_to_data_model(rxn_list)
 
 
-    def get_reaction_by_compound(self, compound, select=models.Reaction):
-        """ Get reaction that contains the compound role :obj:`models.Compound`
+    def get_reaction_by_metabolite(self, metabolite, select=models.Reaction):
+        """ Get reaction that contains the metabolite role :obj:`models.Metabolite`
 
         Args:
-            structure (:obj:`models.Compound`): InChI structure or formula and connectivity layers to search for
+            structure (:obj:`models.Metabolite`): InChI structure or formula and connectivity layers to search for
 
         Returns:
             :obj:`data_model.Reaction`: reaction to find data for
         """
 
-        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in compound.reaction]
+        rxn_cluster= [self.data_source.session.query(models.Reaction).filter_by(kinetic_law_id=rxn.kinetic_law_id).all() for rxn in metabolite.reaction]
 
         reaction_list = []
         for rxn in rxn_cluster:
@@ -357,12 +357,12 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         session = self.data_source.session
 
         law = session.query(select).join(models.Reaction, models.KineticLaw.kinetic_law_id == models.Reaction.kinetic_law_id)\
-            .filter(participant_condition).join(models.Compound, models.Reaction.compound)\
-            .join(models.Structure, models.Compound.structure).filter(condition)
+            .filter(participant_condition).join(models.Metabolite, models.Reaction.metabolite)\
+            .join(models.Structure, models.Metabolite.structure).filter(condition)
 
         return law
 
-    def get_kinetic_laws_by_compound(self, compound, role='reactant', select=models.KineticLaw):
+    def get_kinetic_laws_by_metabolite(self, metabolite, role='reactant', select=models.KineticLaw):
         """ Get kinetic laws that contain a structure in role :obj:`role`
 
         Args:
@@ -376,7 +376,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         """
 
 
-        condition = models.Compound.compound_id == compound.compound_id
+        condition = models.Metabolite.metabolite_id == metabolite.metabolite_id
 
         if role == 'reactant':
             participant_condition = models.Reaction._is_reactant == True
@@ -390,7 +390,7 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
         session = self.data_source.session
 
         law = session.query(select).join(models.Reaction, models.KineticLaw.reaction)\
-            .filter(participant_condition).join(models.Compound, models.Reaction.compound).filter(condition)
+            .filter(participant_condition).join(models.Metabolite, models.Reaction.metabolite).filter(condition)
 
         return law
 
@@ -421,21 +421,21 @@ class ReactionKineticsQuery(data_query.CachedDataSourceQueryGenerator):
 
         return result
 
-    def get_compounds_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
-        """ Get compounds with the same structure. Optionally, get compounds which only have
+    def get_metabolites_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Metabolite):
+        """ Get metabolites with the same structure. Optionally, get metabolites which only have
         the same core empirical formula and core atom connecticity (i.e. same InChI formula
         and connectivity layers).
 
         Args:
             inchi (:obj:`str`): molecule structure in InChI format
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
-                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get metabolites which only have
+                the same core empirical formula and core atom connecticity. if :obj:`False`, get metabolites with the
                 identical structure.
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
+            :obj:`sqlalchemy.orm.query.Query`: query for matching metabolites
         """
-        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
+        q = self.data_source.session.query(select).join((models.Structure, models.Metabolite.structure))
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
             condition = models.Structure._structure_formula_connectivity == formula_and_connectivity

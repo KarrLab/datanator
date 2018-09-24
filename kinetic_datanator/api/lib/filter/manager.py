@@ -14,5 +14,4 @@ class FilterManager(BaseManager):
 
 
     def run(self):
-        print(self.params)
-        print(self.data)
+        pass

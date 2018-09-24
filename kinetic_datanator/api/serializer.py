@@ -25,17 +25,17 @@ class MetadataSerializer(ma.ModelSchema):
 class StructureSerializer(ma.ModelSchema):
 
     class Meta:
-        exclude = ['compound', 'name', 'type']
+        exclude = ['metabolite', 'name', 'type']
         model = models.Structure
 
-class CompoundSerializer(ma.ModelSchema):
+class MetaboliteSerializer(ma.ModelSchema):
 
     _metadata = ma.Nested(MetadataSerializer)
     structure = ma.Nested(StructureSerializer)
 
     class Meta:
         exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "concentration"]
-        model = models.Compound
+        model = models.Metabolite
 
 class ProteinSubunitSerializer(ma.ModelSchema):
     _metadata = ma.Nested(MetadataSerializer)

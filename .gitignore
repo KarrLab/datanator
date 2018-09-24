@@ -110,7 +110,9 @@ tests/fixtures/secret/
 
 # cache files
 kinetic_datanator/data_source/cache/
-kinetic_datanator/data/cache/CommonSchema.dump
+intact/
+kinetic_datanator/data/cache/CommonSchema.sql
+kinetic_datanator/builds/logs/
 *.sqlite
 
 # configuration

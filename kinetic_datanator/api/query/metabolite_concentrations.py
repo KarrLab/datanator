@@ -39,27 +39,27 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
         # self.filters.append(data_query.SpecieStructuralSimilarityFilter())
         # self.filters.append(data_query.MolecularSimilarityFilter())
 
-    def get_observed_result(self, compound):
+    def get_observed_result(self, metabolite):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         Args:
-            compound (:obj:`models.Compound`): compound to find data for
+            metabolite (:obj:`models.Metabolite`): metabolite to find data for
 
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
         """
 
-        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False).all()
+        concentrations = self.get_concentration_by_structure(metabolite.structure._value_inchi, only_formula_and_connectivity=False).all()
         observed_values = []
 
-        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
+        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in metabolite._metadata.resource]
 
         for c in concentrations:
             metadata = self.metadata_dump(c)
 
             observable = data_model.Observable(
-                specie = data_model.Specie(name = compound.compound_name,
-                cross_references = references , structure=compound.structure._value_inchi),
+                specie = data_model.Specie(name = metabolite.metabolite_name,
+                cross_references = references , structure=metabolite.structure._value_inchi),
                 compartment = data_model.Compartment(name = c._metadata.cell_compartment[0].name)
             )
 
@@ -82,8 +82,8 @@ class MetaboliteConcentrationQuery(data_query.CachedDataSourceQueryGenerator):
             :obj:`sqlalchemy.orm.query.Query`: query for matching concentration rows
         """
 
-        q = self.data_source.session.query(select).join((models.Compound, select.compound)).\
-            join((models.Structure, models.Compound.structure))
+        q = self.data_source.session.query(select).join((models.Metabolite, select.metabolite)).\
+            join((models.Structure, models.Metabolite.structure))
 
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()

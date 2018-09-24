@@ -19,27 +19,27 @@ class MetaboliteManager(BaseManager):
         self.data_source = common_schema.CommonSchema(cache_dirname=cache_dirname)
         # super(MetaboliteManager, self).__init__(cache_dirname=cache_dirname)
 
-    def get_compound_by_id(self, id):
-        return self.data_source.session.query(models.Compound).get(id)
+    def get_metabolite_by_id(self, id):
+        return self.data_source.session.query(models.Metabolite).get(id)
 
-    def get_observed_concentrations(self, compound):
+    def get_observed_concentrations(self, metabolite):
         """ Find observed concentrations for the metabolite or similar metabolites
 
         Args:
-            compound (:obj:`models.Compound`): compound to find data for
+            metabolite (:obj:`models.Metabolite`): metabolite to find data for
 
         Returns:
             :obj:`list` of :obj:`data_model.ObservedValue`: list of relevant observations
         """
 
-        concentrations = self.get_concentration_by_structure(compound.structure._value_inchi, only_formula_and_connectivity=False)
+        concentrations = self.get_concentration_by_structure(metabolite.structure._value_inchi, only_formula_and_connectivity=False)
         observed_values = []
 
         for c in concentrations:
             metadata = self.metadata_dump(c)
 
             observable = data_model.Observable(
-                specie = self._port(compound),
+                specie = self._port(metabolite),
                 compartment = data_model.Compartment(name = c._metadata.cell_compartment[0].name)
             )
 
@@ -62,8 +62,8 @@ class MetaboliteManager(BaseManager):
             :obj:`list`: List of models.Concentration Objects
         """
 
-        q = self.data_source.session.query(select).join((models.Compound, select.compound)).\
-            join((models.Structure, models.Compound.structure))
+        q = self.data_source.session.query(select).join((models.Metabolite, select.metabolite)).\
+            join((models.Structure, models.Metabolite.structure))
 
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
@@ -74,21 +74,21 @@ class MetaboliteManager(BaseManager):
         return q.filter(condition).all()
 
 
-    def get_metabolite_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Compound):
-        """ Get compounds with the same structure. Optionally, get compounds which only have
+    def get_metabolite_by_structure(self, inchi, only_formula_and_connectivity=False, select=models.Metabolite):
+        """ Get metabolites with the same structure. Optionally, get metabolites which only have
         the same core empirical formula and core atom connecticity (i.e. same InChI formula
         and connectivity layers).
 
         Args:
             inchi (:obj:`str`): molecule structure in InChI format
-            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get compounds which only have
-                the same core empirical formula and core atom connecticity. if :obj:`False`, get compounds with the
+            only_formula_and_connectivity (:obj:`bool`, optional): if :obj:`True`, get metabolites which only have
+                the same core empirical formula and core atom connecticity. if :obj:`False`, get metabolites with the
                 identical structure.
 
         Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching compounds
+            :obj:`sqlalchemy.orm.query.Query`: query for matching metabolites
         """
-        q = self.data_source.session.query(select).join((models.Structure, models.Compound.structure))
+        q = self.data_source.session.query(select).join((models.Structure, models.Metabolite.structure))
         if only_formula_and_connectivity:
             formula_and_connectivity = molecule_util.InchiMolecule(inchi).get_formula_and_connectivity()
             condition = models.Structure._structure_formula_connectivity == formula_and_connectivity
@@ -104,16 +104,16 @@ class MetaboliteManager(BaseManager):
             value (:obj:`str`): string to search table for
 
         Returns:
-            :obj:`list` of `models.Compound`: List of found models.Compound objects
+            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects
         """
 
-        return models.Compound.query.search(value).all()
+        return models.Metabolite.query.search(value).all()
 
 
-    def _port(self, compound):
-        structure = compound.structure._value_inchi if compound.structure else None
-        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in compound._metadata.resource]
-        return data_model.Specie(id=compound.compound_id, name=compound.compound_name, structure = structure, cross_references = references)
+    def _port(self, metabolite):
+        structure = metabolite.structure._value_inchi if metabolite.structure else None
+        references = [data_model.Resource(namespace=item.namespace, id=item._id) for item in metabolite._metadata.resource]
+        return data_model.Specie(id=metabolite.metabolite_id, name=metabolite.metabolite_name, structure = structure, cross_references = references)
 
 
 metabolite_manager = MetaboliteManager()

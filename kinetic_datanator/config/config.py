@@ -19,7 +19,7 @@ class LocalDevelopmentConfig(BaseConfig):
     TESTING = False
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgres://localhost/CommonSchema'
+    SQLALCHEMY_DATABASE_URI = 'postgres://postgres@localhost/CommonSchema'
     # SQLALCHEMY_BINDS = {'data': 'postgres://localhost/User'}
     DEBUG_TB_ENABLED = True
 
@@ -29,12 +29,21 @@ class CircleTestingConfig(BaseConfig):
     TESTING = True
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'postgresql://ubuntu@localhost/CommonSchema'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@postgres_service/CommonSchema'
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
-
 class BuildConfig(BaseConfig):
+    """Testing configuration."""
+    DEBUG = False
+    TESTING = False
+    BCRYPT_LOG_ROUNDS = 4
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@postgres_service/CommonSchema'
+    DEBUG_TB_ENABLED = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
+
+class ProductionConfig(BaseConfig):
     """Testing configuration."""
     DEBUG = True
     TESTING = True

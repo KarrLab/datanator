@@ -512,7 +512,7 @@ class PhysicalEntity(Observation):
 
     Attributes:
         observation_id (:obj:`int`): Common Schema Observation Identifier
-        type (:obj:`str`): Type of Physical Entity (Ex. Compound)
+        type (:obj:`str`): Type of Physical Entity (Ex. Metabolite)
         name (:obj:`str`): Name of the Physical Entity (Ex. Water )
     """
 
@@ -553,7 +553,7 @@ class ProteinSubunit(PhysicalEntity):
         'physical_entity.observation_id'), primary_key=True, autoincrement=True)
     subunit_name = db.Column(db.Unicode)
     uniprot_id = db.Column(db.Unicode)
-    entrez_id = db.Column(db.Integer)
+    entrez_id = db.Column(db.BigInteger)
     ec_number = db.Column(db.Unicode)
     gene_name = db.Column(db.Unicode)
     gene_syn = db.Column(db.Unicode)
@@ -620,31 +620,31 @@ class ProteinComplex(PhysicalEntity):
 
 
 
-class Compound(PhysicalEntity):
+class Metabolite(PhysicalEntity):
     """
-    Represents a Compound - An instance of Physical Entity
+    Represents a Metabolite - An instance of Physical Entity
 
     Attributes:
-        compound_id (:obj:`int`): Common Schema Observation Identifier
-        compound_name (:obj:`str`): Name of the Compound
+        metabolite_id (:obj:`int`): Common Schema Observation Identifier
+        metabolite_name (:obj:`str`): Name of the Metabolite
         description (:obj:`str`):
         comment = db.Column(db.Unicode)
         _is_name_ambiguous = db.Column(db.Boolean)
 
     """
-    __tablename__ = 'compound'
+    __tablename__ = 'metabolite'
     query_class = FullTextQuery
 
-    compound_id = db.Column(db.Integer, db.ForeignKey(
+    metabolite_id = db.Column(db.Integer, db.ForeignKey(
         'physical_entity.observation_id'), primary_key=True)
-    compound_name = db.Column(db.Unicode)
+    metabolite_name = db.Column(db.Unicode)
     description = db.Column(db.Unicode)
     comment = db.Column(db.Unicode)
     _is_name_ambiguous = db.Column(db.Boolean)
-    search_vector = db.Column(TSVectorType('compound_name', 'description'))
+    search_vector = db.Column(TSVectorType('metabolite_name', 'description'))
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
-    structure = db.relationship('Structure', backref='compound')
+    structure = db.relationship('Structure', backref='metabolite')
 
     def __repr__(self):
         return self.__class__.__name__+'||%s' % (self.id)
@@ -671,12 +671,12 @@ class PhysicalProperty(Observation):
 
 class Structure(PhysicalProperty):
     """
-    Represents a structure of a compound
+    Represents a structure of a metabolite
 
     Attributes:
-        _value_smiles (:obj:`str`): Smiles format for compound representation
-        _value_inchi (:obj:`str`): Inchi format for compound representation
-        _structure_formula_connectivity (:obj:`str`): Connectivity of compound
+        _value_smiles (:obj:`str`): Smiles format for metabolite representation
+        _value_inchi (:obj:`str`): Inchi format for metabolite representation
+        _structure_formula_connectivity (:obj:`str`): Connectivity of metabolite
 
     """
 
@@ -697,7 +697,7 @@ class Concentration(PhysicalProperty):
     Represents the concentration of an entity
 
     Attributes:
-        value (:obj:`float`): concentration of a tagged compound
+        value (:obj:`float`): concentration of a tagged metabolite
         error (:obj:`float`): uncertainty of corresponding concentration value
     """
 
@@ -706,8 +706,8 @@ class Concentration(PhysicalProperty):
     concentration_id = db.Column(db.Integer, db.ForeignKey(
         'physical_property.observation_id'), primary_key=True)
 
-    compound_id = db.Column(db.Integer, db.ForeignKey('compound.compound_id'))
-    compound = db.relationship('Compound', backref='concentration')
+    metabolite_id = db.Column(db.Integer, db.ForeignKey('metabolite.metabolite_id'))
+    metabolite = db.relationship('Metabolite', backref='concentration')
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
@@ -793,11 +793,11 @@ class Reaction(db.Model):
     Represents a reaction
 
     Attributes:
-        compound_id (:obj:`int`): ID of the corresponding compound
+        metabolite_id (:obj:`int`): ID of the corresponding metabolite
         coefficient (:obj:`float`): Stoichiometric coefficient
-        _is_reactant (:obj:`bool`): Indicates of corresponding compound is a reactant
-        _is_product (:obj:`bool`): Indicates of corresponding compound is a product
-        _is_modifier (:obj:`bool`): Indicates of corresponding compound is a modifier
+        _is_reactant (:obj:`bool`): Indicates of corresponding metabolite is a reactant
+        _is_product (:obj:`bool`): Indicates of corresponding metabolite is a product
+        _is_modifier (:obj:`bool`): Indicates of corresponding metabolite is a modifier
         rxn_type (:obj:`str`): Classifer of reaction
 
     """
@@ -805,8 +805,8 @@ class Reaction(db.Model):
     __tablename__ = 'reaction'
 
     reaction_id = db.Column(db.Integer, primary_key=True)
-    compound_id = db.Column(db.Integer, db.ForeignKey('compound.compound_id'))
-    compound = db.relationship(Compound, backref='reaction')
+    metabolite_id = db.Column(db.Integer, db.ForeignKey('metabolite.metabolite_id'))
+    metabolite = db.relationship(Metabolite, backref='reaction')
     compartment_id = db.Column(
         db.Integer, db.ForeignKey('cell_compartment.id'))
     compartment = db.relationship(CellCompartment, backref='reaction')
@@ -925,12 +925,12 @@ class DNABindingDataset(PhysicalProperty):
 
 class Parameter(db.Model):
     """
-    Represents a parameter for a given kinetic law and compound
+    Represents a parameter for a given kinetic law and metabolite
 
     Attributes:
         kinetic_law_id (:obj:`int`): corresponding kinetic law to the parameter
         sabio_type (:obj:`int`): sabio identifier for type of parameter
-        compound_id (:obj:`int`): corresponding compound for the parameter
+        metabolite_id (:obj:`int`): corresponding metabolite for the parameter
         value (:obj:`float`): Value of parameter
         error (:obj:`float`): Uncertainty of the value
         units (:obj:`str`): units of the parameter
@@ -951,9 +951,9 @@ class Parameter(db.Model):
     kinetic_law = db.relationship(KineticLaw, backref='parameter')
 
     sabio_type = db.Column(db.Integer, index=True)
-    compound_id = db.Column(db.Integer, db.ForeignKey(
-        'compound.compound_id'), index=True)
-    compound = db.relationship(Compound, backref='parameter')
+    metabolite_id = db.Column(db.Integer, db.ForeignKey(
+        'metabolite.metabolite_id'), index=True)
+    metabolite = db.relationship(Metabolite, backref='parameter')
 
     value = db.Column(db.Float)
     error = db.Column(db.Float)
