@@ -6,21 +6,17 @@ This code is a common schema for all the kinetic_datanator modules
 :Copyright: 2017, Karr Lab
 :License: MIT
 """
-import os
-import time
-import re
-import sqlalchemy.ext.declarative
-from sqlalchemy import Column, BigInteger, Integer, Float, String, Text, ForeignKey, Boolean, Table,  Numeric, or_
-from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.util.build_util import timemethod, timeloadcontent, continuousload
+from ete3 import NCBITaxa
+from kinetic_datanator import db
 from kinetic_datanator.config import config
 from kinetic_datanator.core import data_source, models
-from kinetic_datanator import db
-from kinetic_datanator.util.constants import *
 from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
-from ete3 import NCBITaxa
-from sqlalchemy.sql import func
+from kinetic_datanator.util.build_util import timemethod, timeloadcontent, continuousload
+from kinetic_datanator.util.constants import *
+import os
+import re
 import threading
+import time
 
 class CommonSchema(data_source.PostgresDataSource):
     """ A Local Postgres copy of the aggregation of data_source modules

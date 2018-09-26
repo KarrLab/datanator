@@ -12,9 +12,12 @@ from cement.utils import test
 from kinetic_datanator.__main__ import App
 from kinetic_datanator.util import warning_util
 import kinetic_datanator
+import mock
 import os
 import re
 import shutil
+import sqlalchemy.orm
+import sqlalchemy_utils
 import tempfile
 import unittest
 from os import path
@@ -168,7 +171,6 @@ class TestWithTempFile(unittest.TestCase):
 
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
-
 
     def tearDown(self):
 
@@ -327,3 +329,78 @@ class HelpTestCase(unittest.TestCase):
             app.run()
         with App(argv=['reaction']) as app:
             app.run()
+
+
+class DbControllerTestCase(unittest.TestCase):
+    def setUp(self):
+        self.url = kinetic_datanator.db.engine.url
+        if sqlalchemy_utils.functions.database_exists(self.url):
+            sqlalchemy_utils.functions.drop_database(self.url)
+        self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
+
+        if os.path.isdir('migrations'):
+            shutil.rmtree('migrations')
+        self.assertFalse(os.path.isdir('migrations'))
+
+    def tearDown(self):
+        if sqlalchemy_utils.functions.database_exists(self.url):
+            sqlalchemy_utils.functions.drop_database(self.url)
+        self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
+
+        if os.path.isdir('migrations'):
+            shutil.rmtree('migrations')
+        self.assertFalse(os.path.isdir('migrations'))
+
+    def test_create(self):
+        with App(argv=['db', 'create']) as app:
+            app.run()
+        self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
+        self.assertNotEqual(kinetic_datanator.db.engine.table_names(), [])
+
+    def test_create_table_only(self):
+        sqlalchemy_utils.functions.create_database(self.url)
+        kinetic_datanator.db.engine.dispose()
+        kinetic_datanator.db.engine.connect()
+        self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
+        self.assertEqual(kinetic_datanator.db.engine.table_names(), [])
+        with App(argv=['db', 'create']) as app:
+            app.run()
+        self.assertNotEqual(kinetic_datanator.db.engine.table_names(), [])
+
+    def test_migrate(self):
+        with App(argv=['db', 'create']) as app:
+            app.run()
+
+        with App(argv=['db', 'migrate']) as app:
+            app.run()
+        self.assertTrue(os.path.isdir('migrations'))
+        self.assertNotEqual(os.listdir('migrations'), [])
+
+    def test_drop(self):
+        with App(argv=['db', 'create']) as app:
+            app.run()
+        self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
+
+        with App(argv=['db', 'drop']) as app:
+            app.run()
+        self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
+
+    def test_restore(self):
+        with App(argv=['db', 'create']) as app:
+            app.run()
+        self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
+
+        session = sqlalchemy.orm.sessionmaker(bind=kinetic_datanator.db.engine)()
+        query = session.query(kinetic_datanator.core.models.Observation)
+        self.assertEqual(query.count(), 0)
+        session.close()
+
+        kinetic_datanator.db.engine.dispose()
+        with App(argv=['db', 'restore', '--restore-schema', '--do-not-exit-on-error']) as app:
+            # todo: remove --restore-schema and --do-not-exit-on-error after fixing Alembic issue with migrations
+            app.run()
+
+        session = sqlalchemy.orm.sessionmaker(bind=kinetic_datanator.db.engine)()
+        query = session.query(kinetic_datanator.core.models.Observation)
+        self.assertGreater(query.count(), 0)
+        session.close()

@@ -8,10 +8,9 @@
 :License: MIT
 """
 
-# from kinetic_datanator import datanator #todo
 from __future__ import print_function
 from kinetic_datanator import io
-from kinetic_datanator.core import data_model, common_schema, upload_data, data_query#, json_schema
+from kinetic_datanator.core import data_model, common_schema, upload_data, data_query  # , json_schema
 from kinetic_datanator.core.render_form import render_html_from_schema
 from kinetic_datanator.data_source import *
 from kinetic_datanator.data_source import refseq
@@ -20,12 +19,14 @@ from kinetic_datanator.util import taxonomy_util
 from pkg_resources import resource_filename
 import bioservices
 import cement
+import flask_migrate
 import kinetic_datanator
+import os
 import pubchempy
 import re
 import shutil
+import sqlalchemy_utils
 import sys
-import os
 from Bio import SeqIO
 from kinetic_datanator.api.query import reaction_kinetics
 #from kinetic_datanator.core import data_query
@@ -104,6 +105,7 @@ class UploadRNASeqExperiment(cement.Controller):
         list_of_bio_seqio_objects = [bio_seqio_object]
         refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
 
+
 class UploadData(cement.Controller):
 
     class Meta:
@@ -120,12 +122,10 @@ class UploadData(cement.Controller):
         pargs = self.app.pargs
         data_type = pargs.data_type
 
-
         print(data_type)
         a_json_schema = json_schema.get_json_schema(data_type)
 
         the_json = render_html_from_schema.RenderForms().render(a_json_schema)
-
 
         #the_json = """{"_experimentmetadata":[],"accession_number":"Test-Accesion","exp_name":"test_experiment","has_fastq_files":false,"samples":[{"_metadata":[],"assay":"blue","ensembl_organism_strain":"green","experiment_accession_number":"test","full_strain_specificity":false,"reference_genome":[]}]}"""
         print(the_json)
@@ -139,10 +139,22 @@ class BuildController(cement.Controller):
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
-            (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
-            (['--path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
-            (['--clear-existing-content'], dict(type=bool, help="clears existing content of the db if exists", default=False)),
-            (['--verbose'], dict(type=bool, help="verbosity", default=CACHE_DIRNAME))
+            (['--max-entries'], dict(
+                type=int,
+                default=float('inf'),
+                help="number of normalized entries to add per database. Default: Full Database")),
+            (['--path'], dict(
+                type=str,
+                default=CACHE_DIRNAME,
+                help="path to build the database")),
+            (['--clear-existing-content'], dict(
+                type=bool,
+                default=False,
+                help="clears existing content of the db if exists")),
+            (['--verbose'], dict(
+                type=bool,
+                default=False,
+                help="verbosity"))
         ]
 
     @cement.ex(help='Builds Corum Complex DB from source')
@@ -205,11 +217,26 @@ class AggregateBuildController(cement.Controller):
         stacked_on = 'build'
         stacked_type = 'nested'
         arguments = [
-            (['--path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
-            (['--verbose'], dict(type=bool, help="verbosity", default=CACHE_DIRNAME)),
-            (['--max-entries'], dict(type=int, help="number of normalized entries to add per database. Default: Full Database", default=float('inf'))),
-            (['--build-on-existing'], dict(type=bool, help="load from existing database on karr lab server", default=False)),
-            (['--load-full-small-dbs'], dict(type=bool, help="loads entire small database modules", default=True))
+            (['--path'], dict(
+                type=str,
+                default=CACHE_DIRNAME,
+                help="path to build the database")),
+            (['--verbose'], dict(
+                type=bool,
+                default=False,
+                help="verbosity")),
+            (['--max-entries'], dict(
+                type=int,
+                default=float('inf'),
+                help="number of normalized entries to add per database. Default: Full Database")),
+            (['--build-on-existing'], dict(
+                type=bool,
+                default=False,
+                help="load from existing database on karr lab server")),
+            (['--load-full-small-dbs'], dict(
+                type=bool,
+                default=True,
+                help="loads entire small database modules"))
         ]
 
     @cement.ex(help='Controller that controls aggregated')
@@ -217,10 +244,10 @@ class AggregateBuildController(cement.Controller):
         pargs = self.app.pargs
         # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
         # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
-        common_schema.CommonSchema(load_content=True, 
+        common_schema.CommonSchema(load_content=True,
                                    restore_backup_data=True, restore_backup_schema=True,
                                    restore_backup_exit_on_error=False,
-                                   max_entries=pargs.max_entries, 
+                                   max_entries=pargs.max_entries,
                                    verbose=pargs.verbose)
 
 
@@ -318,12 +345,12 @@ class GetDataController(cement.Controller):
     def _default(self):
         pargs = self.app.pargs
         genetics, compartments, species, reactions = io.InputReader().run(pargs.input_file)
-        #print(reactions)
-        #for thing in reactions[0].get_reactants():
+        # print(reactions)
+        # for thing in reactions[0].get_reactants():
         #    print(thing.specie.to_inchi())
         #    print(thing.specie.to_smiles())
         cache_dirname = '{}/data_source/cache'.format(os.path.dirname(__file__))
-        #print(cache_dirname)
+        # print(cache_dirname)
         observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
 
         class ConcreteDataQueryGenerator(data_query.DataQueryGenerator):
@@ -334,21 +361,20 @@ class GetDataController(cement.Controller):
         gen = ConcreteDataQueryGenerator()
         gen.filters = [
             data_query.TemperatureRangeFilter(min=36., max=38.),
-            data_query.TaxonomicDistanceFilter(taxon='Mycoplasma genitalium')#, max=7)
+            data_query.TaxonomicDistanceFilter(taxon='Mycoplasma genitalium')  # , max=7)
         ]
         filtered = gen.filter_observed_results(None, observed_values)
         print(filtered.observed_value_indices)
         print(data_query.ConsensusGenerator().calc_average(filtered.observed_value_indices, method='median'))
-            #print(thing.)
+        # print(thing.)
 
         #con_gen =  data_query.ConsensusGenerator().run(filtered, "median")
-        #print(con_gen)
+        # print(con_gen)
 
         #print(gen.get_consensus(None, filtered))
         #print("the length after filtering is {}".format(len(filtered.observed_results)))
         #consensus = data_query.ConsensusGenerator().run(filtered, 'median')
-        #print(consensus)
-
+        # print(consensus)
 
         # todo: implement
         return
@@ -686,6 +712,74 @@ class ReactionGetEcNumberController(cement.Controller):
             print('There is no appropriate EC number for the reaction')
 
 
+class DbController(cement.Controller):
+
+    class Meta:
+        label = 'db'
+        description = 'Database management utilities'
+        stacked_on = 'base'
+        stacked_type = 'nested'
+        arguments = []
+
+    @cement.ex(hide=True)
+    def _default(self):
+        self._parser.print_help()
+
+    @cement.ex(help='Create the structure of the Datanator database')
+    def create(self):        
+        if not sqlalchemy_utils.functions.database_exists(kinetic_datanator.db.engine.url):
+            sqlalchemy_utils.functions.create_database(kinetic_datanator.db.engine.url)
+            kinetic_datanator.db.engine.dispose()
+            kinetic_datanator.db.engine.connect()
+        kinetic_datanator.db.create_all()
+
+    @cement.ex(help='Migrate the structure of the Datanator database')
+    def migrate(self):
+        with kinetic_datanator.app.app_context():
+            if not os.path.isdir('migrations'):
+                flask_migrate.init()
+            flask_migrate.migrate()
+            flask_migrate.upgrade()
+
+    @cement.ex(help='Drop the Datanator database')
+    def drop(self):
+        kinetic_datanator.db.engine.dispose()
+        sqlalchemy_utils.functions.drop_database(kinetic_datanator.db.engine.url)
+
+
+class DbRestoreController(cement.Controller):
+
+    class Meta:
+        label = 'restore'
+        description = 'Restore the content of the Datanator database'
+        stacked_on = 'db'
+        stacked_type = 'nested'
+        arguments = [
+            (['--do-not-restore-data'], dict(
+                dest='restore_data',
+                action='store_false',
+                help='If set, do not restore the data')),
+            (['--restore-schema'], dict(
+                dest='restore_schema',
+                action='store_true',
+                help='If set, restore the schema')),
+            (['--do-not-exit-on-error'], dict(
+                dest='exit_on_error',
+                action='store_false',
+                help='If set, do not exit on errors')),
+        ]
+
+    @cement.ex(hide=True)
+    def _default(self):
+        pargs = self.app.pargs
+        common_schema.CommonSchema(clear_content=True,
+                                   restore_backup_data=pargs.restore_data,
+                                   restore_backup_schema=pargs.restore_schema,
+                                   restore_backup_exit_on_error=pargs.exit_on_error,
+                                   load_content=False,
+                                   verbose=True)
+
+
 class App(cement.App):
 
     class Meta:
@@ -723,6 +817,9 @@ class App(cement.App):
 
             ReactionController,
             ReactionGetEcNumberController,
+
+            DbController,
+            DbRestoreController,
         ]
 
 
