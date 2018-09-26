@@ -121,3 +121,6 @@ kinetic_datanator.cfg
 
 # minerva
 minerva/*
+
+# migrations
+migrations/
