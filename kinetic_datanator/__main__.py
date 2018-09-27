@@ -78,7 +78,6 @@ class UploadReferenceGenome(cement.Controller):
     @cement.ex(hide=True)
     def _default(self):
         pargs = self.app.pargs
-        print(pargs.__dict__)
         #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
         #list_of_bio_seqio_objects = [bio_seqio_object]
         upload_data.UploadData(cache_dirname=pargs.db_path).upload_reference_genome(pargs.path_to_annotation_file)
@@ -93,15 +92,14 @@ class UploadRNASeqExperiment(cement.Controller):
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
-            (['path_to_folder with excel files'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
+            (['ref-genome-path'], dict(type=str, help="path to reference genome", default=CACHE_DIRNAME)),
             (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
         ]
 
     @cement.ex(hide=True)
     def _default(self):
         pargs = self.app.pargs
-        print(pargs.__dict__)
-        bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        bio_seqio_object = SeqIO.parse(pargs.ref_genome_path, "genbank")
         list_of_bio_seqio_objects = [bio_seqio_object]
         refseq.Refseq(cache_dirname=pargs.db_path).load_content(list_of_bio_seqio_objects)
 
@@ -122,7 +120,6 @@ class UploadData(cement.Controller):
         pargs = self.app.pargs
         data_type = pargs.data_type
 
-        print(data_type)
         a_json_schema = json_schema.get_json_schema(data_type)
 
         the_json = render_html_from_schema.RenderForms().render(a_json_schema)
