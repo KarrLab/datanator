@@ -51,7 +51,7 @@ class TestUploadData(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_upload_ref_seq(self):
-        with App(argv=['upload', 'reference-genome', 
+        with App(argv=['upload', 'reference-genome',
                        os.path.join(path.dirname(__file__), 'data_source', 'test_mpn_sequence.gb'),
                        '--db-path', self.dirname]) as app:
             app.run()
@@ -335,6 +335,7 @@ class DbControllerTestCase(unittest.TestCase):
         self.url = kinetic_datanator.db.engine.url
         if sqlalchemy_utils.functions.database_exists(self.url):
             sqlalchemy_utils.functions.drop_database(self.url)
+            kinetic_datanator.db.engine.dispose()
         self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
 
         if os.path.isdir('migrations'):
@@ -344,6 +345,7 @@ class DbControllerTestCase(unittest.TestCase):
     def tearDown(self):
         if sqlalchemy_utils.functions.database_exists(self.url):
             sqlalchemy_utils.functions.drop_database(self.url)
+            kinetic_datanator.db.engine.dispose()
         self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
 
         if os.path.isdir('migrations'):
@@ -358,8 +360,6 @@ class DbControllerTestCase(unittest.TestCase):
 
     def test_create_table_only(self):
         sqlalchemy_utils.functions.create_database(self.url)
-        kinetic_datanator.db.engine.dispose()
-        kinetic_datanator.db.engine.connect()
         self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
         self.assertEqual(kinetic_datanator.db.engine.table_names(), [])
         with App(argv=['db', 'create']) as app:
@@ -394,7 +394,6 @@ class DbControllerTestCase(unittest.TestCase):
         self.assertEqual(query.count(), 0)
         session.close()
 
-        kinetic_datanator.db.engine.dispose()
         with App(argv=['db', 'restore', '--restore-schema', '--do-not-exit-on-error']) as app:
             # todo: remove --restore-schema and --do-not-exit-on-error after fixing Alembic issue with migrations
             app.run()

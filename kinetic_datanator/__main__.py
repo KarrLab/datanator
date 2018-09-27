@@ -726,8 +726,6 @@ class DbController(cement.Controller):
     def create(self):
         if not sqlalchemy_utils.functions.database_exists(kinetic_datanator.db.engine.url):
             sqlalchemy_utils.functions.create_database(kinetic_datanator.db.engine.url)
-            kinetic_datanator.db.engine.dispose()
-            kinetic_datanator.db.engine.connect()
         kinetic_datanator.db.create_all()
 
     @cement.ex(help='Migrate the structure of the Datanator database')
