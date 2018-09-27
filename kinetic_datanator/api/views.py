@@ -98,7 +98,7 @@ class ProteinSubunit(Resource):
         serialized_subunit = ProteinSubunitSerializer().dump(subunit)
         serialized_abundances = ObservedValueSerializer().dump(observed_abundances, many=True)
         serialized_interactions = ObservedInteractionSerializer().dump(observed_interactions, many=True)
-        serialized_complexes = ObservedSpecieSerializer().dump(observed_interactions, many=True)
+        serialized_complexes = ObservedComplexSpecieSerializer().dump(observed_complexes, many=True)
 
         return {'object': serialized_subunit.data,
                 'abundances': serialized_abundances.data,
@@ -111,7 +111,7 @@ class ProteinComplex(Resource):
         observed_subunits = complex_manager.get_observable_subunits(complex)
 
         serialized_complex = ProteinComplexSerializer().dump(complex)
-        serialized_subunits = ObservedSpecieSerializer().dump(observed_subunits, many=True)
+        serialized_subunits = ObservedProteinSpecieSerializer().dump(observed_subunits, many=True)
 
         return {'object':serialized_complex.data,
                 'subunits': serialized_subunits.data}
