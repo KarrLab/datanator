@@ -51,7 +51,6 @@ class TestUploadData(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_upload_ref_seq(self):
-        raise Exception('here')
         with App(argv=['upload', 'reference-genome', 
                        os.path.join(path.dirname(__file__), 'data_source', 'test_mpn_sequence.gb'),
                        '--db-path', self.dirname]) as app:
