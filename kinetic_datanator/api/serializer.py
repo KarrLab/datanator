@@ -58,18 +58,32 @@ class ResourceSerializer(ma.Schema):
     class Meta:
         fields = ['namespace', 'id']
 
-class SpecieSerializer(ma.Schema):
-
-    class Meta:
-        exclude = ['id']
-
-
 class EntityInteractionOrPropertySerializer(ma.Schema):
 
     cross_references = ma.Nested(ResourceSerializer, many=True)
 
     class Meta:
         fields = ['id', 'name', 'cross_references']
+
+
+class SpecieSerializer(EntityInteractionOrPropertySerializer):
+
+    class Meta:
+        fields = EntityInteractionOrPropertySerializer.Meta.fields + ['structure']
+        exclude = ['id']
+
+class PolymerSpecieSerializer(SpecieSerializer):
+    class Meta:
+        fields  = SpecieSerializer.Meta.fields + ['sequence']
+
+class ProteinSpecieSerializer(PolymerSpecieSerializer):
+
+    class Meta:
+        fields = PolymerSpecieSerializer.Meta.fields + ['uniprot_id', 'entrez_id', 'gene_name','length','mass']
+
+class ProteinComplexSpecieSerializer(ProteinSpecieSerializer):
+    class Meta:
+        fields = ProteinSpecieSerializer.Meta.fields + ['go_id', 'go_dsc', 'funcat_id', 'funcat_dsc', 'su_cmt', 'complex_cmt', 'disease_cmt', 'class_name', 'family_name', 'molecular_weight']
 
 class InteractionSerializer(EntityInteractionOrPropertySerializer):
 
@@ -144,6 +158,21 @@ class ObservedSpecieSerializer(ObservedResultSerializer):
     class Meta(ObservedResultSerializer):
         fields = ObservedResultSerializer.Meta.fields + ['specie']
 
+class ObservedProteinSpecieSerializer(ObservedResultSerializer):
+
+    specie = ma.Nested(ProteinSpecieSerializer)
+
+    class Meta(ObservedResultSerializer):
+        fields = ObservedResultSerializer.Meta.fields + ['specie']
+
+
+
+class ObservedComplexSpecieSerializer(ObservedResultSerializer):
+
+    specie = ma.Nested(ProteinComplexSpecieSerializer)
+
+    class Meta(ObservedResultSerializer):
+        fields = ObservedResultSerializer.Meta.fields + ['specie']
 
 class ObservedValueSerializer(ObservedResultSerializer):
 
