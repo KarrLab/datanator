@@ -71,16 +71,16 @@ class UploadReferenceGenome(cement.Controller):
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
-            (['path_to_annotation_file'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
+            (['genome_path'], dict(type=str, help="path to reference genome", default=CACHE_DIRNAME)),
             (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
         ]
 
     @cement.ex(hide=True)
     def _default(self):
         pargs = self.app.pargs
-        #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
+        #bio_seqio_object = SeqIO.parse(pargs.genome_path, "genbank")
         #list_of_bio_seqio_objects = [bio_seqio_object]
-        upload_data.UploadData(cache_dirname=pargs.db_path).upload_reference_genome(pargs.path_to_annotation_file)
+        upload_data.UploadData(cache_dirname=pargs.db_path).upload_reference_genome(pargs.genome_path)
         # refseq.Refseq(cache_dirname=pargs.db_path).load_content(list_of_bio_seqio_objects)
 
 
@@ -723,7 +723,7 @@ class DbController(cement.Controller):
         self._parser.print_help()
 
     @cement.ex(help='Create the structure of the Datanator database')
-    def create(self):        
+    def create(self):
         if not sqlalchemy_utils.functions.database_exists(kinetic_datanator.db.engine.url):
             sqlalchemy_utils.functions.create_database(kinetic_datanator.db.engine.url)
             kinetic_datanator.db.engine.dispose()

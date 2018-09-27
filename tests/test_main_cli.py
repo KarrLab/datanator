@@ -51,12 +51,12 @@ class TestUploadData(unittest.TestCase):
         shutil.rmtree(self.dirname)
 
     def test_upload_ref_seq(self):
-        with App(argv=['upload',
-                       'reference-genome', "{}/data_source/test_mpn_sequence.gb".format(path.dirname(__file__)),
+        raise Exception('here')
+        with App(argv=['upload', 'reference-genome', 
+                       os.path.join(path.dirname(__file__), 'data_source', 'test_mpn_sequence.gb'),
                        '--db-path', self.dirname]) as app:
-            with CaptureOutput(termination_delay=0.1) as capturer:
-                app.run()
-                self.assertTrue(os.path.exists(self.dirname+'/Refseq.sqlite'))
+            app.run()
+        self.assertTrue(os.path.exists(os.path.join(self.dirname, 'Refseq.sqlite')))
 
 
 class TestBuildController(unittest.TestCase):
