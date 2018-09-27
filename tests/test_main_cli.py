@@ -53,7 +53,7 @@ class TestUploadData(unittest.TestCase):
     def test_upload_ref_seq(self):
         with App(argv=['upload',
                        'reference-genome', "{}/data_source/test_mpn_sequence.gb".format(path.dirname(__file__)),
-                       '--path_to_database='+self.dirname]) as app:
+                       '--db-path', self.dirname]) as app:
             with CaptureOutput(termination_delay=0.1) as capturer:
                 app.run()
                 self.assertTrue(os.path.exists(self.dirname+'/Refseq.sqlite'))

@@ -72,7 +72,7 @@ class UploadReferenceGenome(cement.Controller):
         stacked_type = 'nested'
         arguments = [
             (['path_to_annotation_file'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
-            (['--path_to_database'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
         ]
 
     @cement.ex(hide=True)
@@ -81,8 +81,8 @@ class UploadReferenceGenome(cement.Controller):
         print(pargs.__dict__)
         #bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
         #list_of_bio_seqio_objects = [bio_seqio_object]
-        upload_data.UploadData(cache_dirname=pargs.path_to_database).upload_reference_genome(pargs.path_to_annotation_file)
-        # refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+        upload_data.UploadData(cache_dirname=pargs.db_path).upload_reference_genome(pargs.path_to_annotation_file)
+        # refseq.Refseq(cache_dirname=pargs.db_path).load_content(list_of_bio_seqio_objects)
 
 
 class UploadRNASeqExperiment(cement.Controller):
@@ -94,7 +94,7 @@ class UploadRNASeqExperiment(cement.Controller):
         stacked_type = 'nested'
         arguments = [
             (['path_to_folder with excel files'], dict(type=str, help="path to reference genome file", default=CACHE_DIRNAME)),
-            (['--path_to_database'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
         ]
 
     @cement.ex(hide=True)
@@ -103,7 +103,7 @@ class UploadRNASeqExperiment(cement.Controller):
         print(pargs.__dict__)
         bio_seqio_object = SeqIO.parse(pargs.path_to_annotation_file, "genbank")
         list_of_bio_seqio_objects = [bio_seqio_object]
-        refseq.Refseq(cache_dirname=pargs.path_to_database).load_content(list_of_bio_seqio_objects)
+        refseq.Refseq(cache_dirname=pargs.db_path).load_content(list_of_bio_seqio_objects)
 
 
 class UploadData(cement.Controller):
