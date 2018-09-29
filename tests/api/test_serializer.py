@@ -9,18 +9,17 @@ import unittest
 class TestSerializers(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
-        self.proline = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
+        cls.proline = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
 
-        q = metabolite_concentrations.MetaboliteConcentrationQuery(cache_dirname=self.cache_dirname, include_variants=True)
-        self.obs = q.run(self.proline)
+        q = metabolite_concentrations.MetaboliteConcentrationQuery(cache_dirname=cls.cache_dirname, include_variants=True)
+        cls.obs = q.run(cls.proline)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
-
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_observed_value(self):
         serialized = ObservedValueSerializer().dump(self.obs.observed_results, many=True)

@@ -14,8 +14,8 @@ import unittest
 class TestProteinComplexManager(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.signal_peptidase = complex_manager.data_source.session.query(models.ProteinComplex).filter_by(complex_name = 'signal peptidase I').first()
+    def setUpClass(cls):
+        cls.signal_peptidase = complex_manager.data_source.session.query(models.ProteinComplex).filter_by(complex_name = 'signal peptidase I').first()
 
     def test_get_complex_by_id(self):
         prot = complex_manager.get_complex_by_id(self.signal_peptidase.id)

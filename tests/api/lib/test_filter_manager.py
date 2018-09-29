@@ -16,9 +16,8 @@ import shutil
 class TestFilterManager(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.adenine = metabolite_manager._search('adenine')
-
+    def setUpClass(cls):
+        cls.adenine = metabolite_manager._search('adenine')
 
     def test_run(self):
         results = FilterManager(data=self.adenine)

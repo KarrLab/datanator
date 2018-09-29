@@ -215,13 +215,13 @@ class TestEcmdbFromCache(unittest.TestCase):
     """
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backups=True, load_content=False, verbose=True)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.src = ecmdb.Ecmdb(cache_dirname=cls.cache_dirname, download_backups=True, load_content=False, verbose=True)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_proper_loading(self):
         session = self.src.session

@@ -19,10 +19,10 @@ warning_util.disable_warnings()
 class TestDatanator(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
+    def setUpClass(cls):
+        cls.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
 
-        out_dir = self.output_dir = path.join(path.dirname(__file__), "output")
+        out_dir = cls.output_dir = path.join(path.dirname(__file__), "output")
         if not path.isdir(out_dir):
             os.makedirs(out_dir)
 

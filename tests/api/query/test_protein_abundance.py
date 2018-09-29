@@ -16,18 +16,18 @@ import unittest
 class TestProteinAbundanceQuery(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
-        self.protein_P00323 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
-        # self.protein_Q42025 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q42025').first()
-        # print(self.protein_Q42025)
-        self.q = protein_abundance.ProteinAbundanceQuery(cache_dirname=self.cache_dirname)
+        cls.protein_P00323 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
+        # cls.protein_Q42025 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q42025').first()
+        # print(cls.protein_Q42025)
+        cls.q = protein_abundance.ProteinAbundanceQuery(cache_dirname=cls.cache_dirname)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_filter_observed_results(self):
 

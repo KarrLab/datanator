@@ -43,12 +43,12 @@ class BaseControllerTestCase(unittest.TestCase):
 class TestUploadData(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_upload_ref_seq(self):
         with App(argv=['upload', 'reference-genome',
@@ -61,12 +61,12 @@ class TestUploadData(unittest.TestCase):
 class TestBuildController(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_build_corum(self):
         with App(argv=['build', '--path='+self.dirname, '--max-entries=1', '--verbose=True', 'corum']) as app:
@@ -110,12 +110,12 @@ class TestBuildController(unittest.TestCase):
 class TestDownloadController(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_download_corum(self):
         with App(argv=['download', '--path='+self.dirname, 'corum']) as app:

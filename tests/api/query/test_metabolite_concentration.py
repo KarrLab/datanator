@@ -17,17 +17,17 @@ import mock
 class TestMetaboliteConcentrationQuery(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
-        self.proline = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
-        self.uridine_tp = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'Uridine triphosphate').first()
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
+        cls.proline = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
+        cls.uridine_tp = flk.session.query(models.Metabolite).filter_by(metabolite_name = 'Uridine triphosphate').first()
 
-        self.q = metabolite_concentrations.MetaboliteConcentrationQuery(cache_dirname=self.cache_dirname, include_variants=True)
+        cls.q = metabolite_concentrations.MetaboliteConcentrationQuery(cache_dirname=cls.cache_dirname, include_variants=True)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_filter_observed_results(self):
 

@@ -25,12 +25,12 @@ class TestProteintoDNAInteractionQuery(unittest.TestCase):
     """
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
-        self.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
-        self.q = dpi.ProteintoDNAInteractionQuery(cache_dirname=self.cache_dirname)
+        cls.arnt  = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53762').first()
+        cls.q = dpi.ProteintoDNAInteractionQuery(cache_dirname=cls.cache_dirname)
 
     def test_get_observed_result(self):
 
@@ -59,12 +59,12 @@ class TestDNAtoProteinInteractionQuery(unittest.TestCase):
 
     """
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.dna_segment1 = data_model.DnaSpecie(sequence = 'CCTTTGTT')
-        self.dna_segment2 = data_model.DnaSpecie(sequence = 'AAGGTCAA')
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.dna_segment1 = data_model.DnaSpecie(sequence = 'CCTTTGTT')
+        cls.dna_segment2 = data_model.DnaSpecie(sequence = 'AAGGTCAA')
 
-        self.q = dpi.DNAtoProteinInteractionQuery(cache_dirname=self.cache_dirname)
+        cls.q = dpi.DNAtoProteinInteractionQuery(cache_dirname=cls.cache_dirname)
 
     def test_get_observed_result(self):
         
