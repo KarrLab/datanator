@@ -15,6 +15,7 @@ from kinetic_datanator.api.lib.subunit.manager import subunit_manager
 from kinetic_datanator.api.lib.complex.manager import complex_manager
 from kinetic_datanator.api.lib.reaction.manager import reaction_manager
 from kinetic_datanator.api.serializer import *
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 import json
 import os
 
@@ -35,8 +36,6 @@ def output_json(data, code, headers=None):
     resp = make_response(json.dumps(data, sort_keys=True, indent=4), code)
     resp.headers.extend(headers or {})
     return resp
-
-cachedir = os.path.join(os.path.abspath(os.path.dirname(__file__)),'..', 'cache')
 
 
 class Search(Resource):
@@ -182,7 +181,7 @@ class ReactionParameter(Resource):
 #
 #         ## Full Table Return
 #         if all(value == None for value in parser.parse_args().values()):
-#             with open(cachedir+'/'+str(table)+'.json') as json_data:
+#             with open(DATA_CACHE_DIR+'/'+str(table)+'.json') as json_data:
 #                 return json.load(json_data)
 #
 #         ##Filtered Return and Download

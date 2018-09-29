@@ -912,7 +912,7 @@ class TestBackupAndInstall(unittest.TestCase):
         # check that README still in package
         os.mkdir(os.path.join(self.tmp_dirname, 'down'))
         manager = wc_utils.quilt.QuiltManager(os.path.join(self.tmp_dirname, 'down'), self.package, owner=self.owner)
-        manager.download(system_path='subdir/README.md')
+        manager.download(system_path='subdir/README.md', sym_links=True)
 
         with open(os.path.join(self.tmp_dirname, 'down', 'subdir', 'README.md'), 'r') as file:
             self.assertEqual(file.readline(), '# datanator_test__\n')

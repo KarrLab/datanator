@@ -185,7 +185,11 @@ class PostgresDataSource(DataSource):
         manager.download(system_path=path, sym_links=True)
         if not os.path.isdir(self.cache_dirname):
             os.makedirs(self.cache_dirname)
-        os.rename(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+        if os.path.isfile(os.path.join(self.cache_dirname, path)):
+            os.remove(os.path.join(self.cache_dirname, path))
+        os.symlink(os.path.realpath(os.path.join(tmp_dirname, path)),
+                   os.path.join(self.cache_dirname, path))
+        os.remove(os.path.join(tmp_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
@@ -209,7 +213,7 @@ class PostgresDataSource(DataSource):
             '--format=c',
             '--file=' + path,
         ]
-        
+
         p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         err = p.communicate()[1].decode()
         if p.returncode != 0:
@@ -406,7 +410,7 @@ class CachedDataSource(DataSource):
 
         # install and export package
         manager = wc_utils.quilt.QuiltManager(tmp_dirname, self.quilt_package, owner=self.quilt_owner)
-        manager.download(sym_links=False)
+        manager.download(sym_links=True)
 
         # copy new files to package
         paths = self.get_paths_to_backup()
@@ -457,8 +461,12 @@ class CachedDataSource(DataSource):
         # copy requested files from package
         paths = self.get_paths_to_backup(download=True)
         for path in paths:
-            manager.download(system_path=path, sym_links=False)
-            os.rename(os.path.join(tmp_dirname, path), os.path.join(self.cache_dirname, path))
+            manager.download(system_path=path, sym_links=True)
+            if os.path.isfile(os.path.join(self.cache_dirname, path)):
+                os.remove(os.path.join(self.cache_dirname, path))
+            os.symlink(os.path.realpath(os.path.join(tmp_dirname, path)),
+                       os.path.join(self.cache_dirname, path))
+            os.remove(os.path.join(tmp_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)

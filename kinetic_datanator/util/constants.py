@@ -1,8 +1,8 @@
 import os
+import pkg_resources
 
 ## Paths
-BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DATA_CACHE_DIR = os.path.join(BASEDIR, 'kinetic_datanator', 'data', 'cache')
+DATA_CACHE_DIR = os.path.expanduser(os.path.join('~', '.wc', 'datanator_data'))
 
 ## Endpoints
 CURRENT_VERSION_ENDPOINT = '/v0'

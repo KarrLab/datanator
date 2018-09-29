@@ -7,6 +7,7 @@
 """
 
 from kinetic_datanator.core import data_source
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 import json
 import kinetic_datanator.config.core
 import os
@@ -25,12 +26,10 @@ class BioPortal(data_source.CachedDataSource):
 
         BIOPORTAL_ENDPOINT (:obj:`str`): URL pattern to download ontologies
         CCO_DOWNLOAD_URL (:obj:`str`): URL to download CCO ontology
-        DEFAULT_CACHE_DIR (:obj:`str`): default directory to store local copies of ontologies
     """
 
     BIOPORTAL_ENDPOINT = 'http://data.bioontology.org'
     CCO_DOWNLOAD_URL = 'http://www.bio.ntnu.no/ontology/CCO/cco.obo'
-    DEFAULT_CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
 
     DEFAULT_ONTOLOGIES = (
         'BTO.obo',
@@ -71,7 +70,7 @@ class BioPortal(data_source.CachedDataSource):
         self.name = name
 
         if not cache_dirname:
-            cache_dirname = data_source.CACHE_DIRNAME
+            cache_dirname = DATA_CACHE_DIR
         self.cache_dirname = cache_dirname
 
         # verbosity

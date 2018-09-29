@@ -4,12 +4,11 @@ from os import path
 from Bio import SeqIO
 import openpyxl
 from kinetic_datanator.core import common_schema, models
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 import json
 import sqlalchemy_utils
 import sqlalchemy
 
-
-CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), '..', 'data_source', 'cache')
 
 class Uploader():
     def __init__(self, parent_node, dict_of_new_objects):
@@ -17,7 +16,7 @@ class Uploader():
         self.dict_of_new_objects = dict_of_new_objects
 
 class UploadData():
-    def __init__(self, cache_dirname=CACHE_DIRNAME):
+    def __init__(self, cache_dirname=DATA_CACHE_DIR):
         self.cache_dirname = cache_dirname
         self.flask = common_schema.CommonSchema(cache_dirname=cache_dirname)
 

@@ -30,9 +30,7 @@ import sys
 from Bio import SeqIO
 from kinetic_datanator.api.query import reaction_kinetics
 #from kinetic_datanator.core import data_query
-
-
-CACHE_DIRNAME = os.path.join(os.path.dirname(__file__), 'data_source', 'cache')
+from kinetic_datanator.util.constants import DATA_CACHE_DIR
 
 
 class BaseController(cement.Controller):
@@ -71,8 +69,8 @@ class UploadReferenceGenome(cement.Controller):
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
-            (['genome_path'], dict(type=str, help="path to reference genome", default=CACHE_DIRNAME)),
-            (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['genome_path'], dict(type=str, help="path to reference genome", default=DATA_CACHE_DIR)),
+            (['--db-path'], dict(type=str, help="path to build the database", default=DATA_CACHE_DIR)),
         ]
 
     @cement.ex(hide=True)
@@ -92,8 +90,8 @@ class UploadRNASeqExperiment(cement.Controller):
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
-            (['ref-genome-path'], dict(type=str, help="path to reference genome", default=CACHE_DIRNAME)),
-            (['--db-path'], dict(type=str, help="path to build the database", default=CACHE_DIRNAME)),
+            (['ref-genome-path'], dict(type=str, help="path to reference genome", default=DATA_CACHE_DIR)),
+            (['--db-path'], dict(type=str, help="path to build the database", default=DATA_CACHE_DIR)),
         ]
 
     @cement.ex(hide=True)
@@ -142,7 +140,7 @@ class BuildController(cement.Controller):
                 help="number of normalized entries to add per database. Default: Full Database")),
             (['--path'], dict(
                 type=str,
-                default=CACHE_DIRNAME,
+                default=DATA_CACHE_DIR,
                 help="path to build the database")),
             (['--clear-existing-content'], dict(
                 type=bool,
@@ -216,7 +214,7 @@ class AggregateBuildController(cement.Controller):
         arguments = [
             (['--path'], dict(
                 type=str,
-                default=CACHE_DIRNAME,
+                default=DATA_CACHE_DIR,
                 help="path to build the database")),
             (['--verbose'], dict(
                 type=bool,
@@ -256,7 +254,7 @@ class DownloadController(cement.Controller):
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
-            (['--path'], dict(type=str, help="path to download the modules", default=CACHE_DIRNAME))
+            (['--path'], dict(type=str, help="path to download the modules", default=DATA_CACHE_DIR))
         ]
 
     @cement.ex(help='Loads Corum Complex DB from Karr Lab Server')
@@ -346,7 +344,7 @@ class GetDataController(cement.Controller):
         # for thing in reactions[0].get_reactants():
         #    print(thing.specie.to_inchi())
         #    print(thing.specie.to_smiles())
-        cache_dirname = '{}/data_source/cache'.format(os.path.dirname(__file__))
+        cache_dirname = DATA_CACHE_DIR
         # print(cache_dirname)
         observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
 
