@@ -1,5 +1,4 @@
 downstream_dependencies:
-  - datanator_website
   - h1_hesc  
   - wc
 email_notifications:
