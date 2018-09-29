@@ -187,9 +187,10 @@ class PostgresDataSource(DataSource):
             os.makedirs(self.cache_dirname)
         if os.path.isfile(os.path.join(self.cache_dirname, path)):
             os.remove(os.path.join(self.cache_dirname, path))
-        os.symlink(os.path.realpath(os.path.join(tmp_dirname, path)),
-                   os.path.join(self.cache_dirname, path))
-        os.remove(os.path.join(tmp_dirname, path))
+        elif os.path.isdir(os.path.join(self.cache_dirname, path)):
+            shutil.rmtree(os.path.join(self.cache_dirname, path))
+        os.rename(os.path.join(tmp_dirname, path),
+                  os.path.join(self.cache_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
@@ -464,9 +465,10 @@ class CachedDataSource(DataSource):
             manager.download(system_path=path, sym_links=True)
             if os.path.isfile(os.path.join(self.cache_dirname, path)):
                 os.remove(os.path.join(self.cache_dirname, path))
-            os.symlink(os.path.realpath(os.path.join(tmp_dirname, path)),
-                       os.path.join(self.cache_dirname, path))
-            os.remove(os.path.join(tmp_dirname, path))
+            elif os.path.isdir(os.path.join(self.cache_dirname, path)):
+                shutil.rmtree(os.path.join(self.cache_dirname, path))
+            os.rename(os.path.join(tmp_dirname, path),
+                      os.path.join(self.cache_dirname, path))
 
         # cleanup temporary directory
         shutil.rmtree(tmp_dirname)
