@@ -8,8 +8,8 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.data_source import pax
+from datanator.core import common_schema, models
+from datanator.data_source import pax
 import flask
 import tempfile
 import shutil

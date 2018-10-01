@@ -1,10 +1,10 @@
-from kinetic_datanator.data_source import refseq
+from datanator.data_source import refseq
 import os
 from os import path
 from Bio import SeqIO
 import openpyxl
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.core import common_schema, models
+from datanator.util.constants import DATA_CACHE_DIR
 import json
 import sqlalchemy_utils
 import sqlalchemy

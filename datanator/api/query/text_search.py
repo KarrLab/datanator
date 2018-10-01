@@ -11,8 +11,8 @@
 import abc
 import six
 import os
-from kinetic_datanator.api.query import dna_protein_interactions, metabolite_concentrations, protein_abundance, protein_protein_interactions, reaction_kinetics
-from kinetic_datanator.core import common_schema, models
+from datanator.api.query import dna_protein_interactions, metabolite_concentrations, protein_abundance, protein_protein_interactions, reaction_kinetics
+from datanator.core import common_schema, models
 
 
 class TextSearchSession(object):

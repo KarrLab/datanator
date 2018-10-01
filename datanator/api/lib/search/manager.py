@@ -9,14 +9,14 @@
 import abc
 import six
 import os
-# from kinetic_datanator.api.query import reaction_kinetics
-from kinetic_datanator.core import models, common_schema
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
-from kinetic_datanator.api.lib.data_manager import BaseManager
-from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
-from kinetic_datanator.api.lib.subunit.manager import subunit_manager
-from kinetic_datanator.api.lib.complex.manager import complex_manager
-from kinetic_datanator.api.lib.reaction.manager import reaction_manager
+# from datanator.api.query import reaction_kinetics
+from datanator.core import models, common_schema
+from datanator.util.constants import DATA_CACHE_DIR
+from datanator.api.lib.data_manager import BaseManager
+from datanator.api.lib.metabolite.manager import metabolite_manager
+from datanator.api.lib.subunit.manager import subunit_manager
+from datanator.api.lib.complex.manager import complex_manager
+from datanator.api.lib.reaction.manager import reaction_manager
 
 class SearchManager(BaseManager):
     """

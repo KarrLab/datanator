@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
+from datanator.core import data_model
 from wc_utils.workbook.core import Row, Workbook, Worksheet
 from wc_utils.workbook.io import WorkbookStyle, WorksheetStyle, write
 import re
@@ -197,7 +197,7 @@ class ResultsWriter(object):
 
         Args:
             taxon (:obj:`str`): taxon
-            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.SabioResult`): list of reactions and their kinetic data
+            reactions (:obj:`list` of :obj:`datanator.datanator.SabioResult`): list of reactions and their kinetic data
             filename (:obj:`str`): filename to store the list reaction kinetic data
         """
         wb = Workbook()
@@ -256,7 +256,7 @@ class ResultsWriter(object):
 
         Args:
             taxon (:obj:`str`): taxon name
-            reactions (:obj:`list` of :obj:`kinetic_datanator.datanator.SabioResult`): list of reactions and their kinetic data
+            reactions (:obj:`list` of :obj:`datanator.datanator.SabioResult`): list of reactions and their kinetic data
             filename (:obj:`str`): filename to store the list reaction kinetic data
         """
         # kinetics
@@ -333,7 +333,7 @@ class ResultsWriter(object):
         """ Generate a string representation of the proximity of the first of a list of entry
 
         Args:
-            entries (:obj:`list of :obj:`kinetic_datanator.sabio_rk.Entry`): list of entries
+            entries (:obj:`list of :obj:`datanator.sabio_rk.Entry`): list of entries
 
         Returns:
             :obj:`str`: string representation of the proximity of the first of a list of entry

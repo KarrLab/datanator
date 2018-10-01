@@ -6,11 +6,11 @@
 :License: MIT
 """
 
-from kinetic_datanator import io
-from kinetic_datanator.core import data_model
-from kinetic_datanator.data_source import ezyme
-from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.api.query import reaction_kinetics
+from datanator import io
+from datanator.core import data_model
+from datanator.data_source import ezyme
+from datanator.data_source import sabio_rk
+from datanator.api.query import reaction_kinetics
 
 
 class Datanator(object):

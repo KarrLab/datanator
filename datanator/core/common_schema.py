@@ -1,5 +1,5 @@
 """
-This code is a common schema for all the kinetic_datanator modules
+This code is a common schema for all the datanator modules
 
 :Author: Saahith Pochiraju <saahith116@gmail.com>
 :Date: 2017-07-31
@@ -7,12 +7,12 @@ This code is a common schema for all the kinetic_datanator modules
 :License: MIT
 """
 from ete3 import NCBITaxa
-from kinetic_datanator import db
-from kinetic_datanator.config import config
-from kinetic_datanator.core import data_source, models
-from kinetic_datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
-from kinetic_datanator.util.build_util import timemethod, timeloadcontent, continuousload
-from kinetic_datanator.util.constants import *
+from datanator import db
+from datanator.config import config
+from datanator.core import data_source, models
+from datanator.data_source import corum, pax, jaspar, jaspar, ecmdb, sabio_rk, intact, uniprot, array_express
+from datanator.util.build_util import timemethod, timeloadcontent, continuousload
+from datanator.util.constants import *
 import os
 import re
 import threading

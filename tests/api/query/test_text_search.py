@@ -7,8 +7,8 @@
 """
 
 
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.api.query import text_search
+from datanator.core import common_schema, models
+from datanator.api.query import text_search
 import tempfile
 import shutil
 import unittest

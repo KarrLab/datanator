@@ -1,7 +1,7 @@
 import sys
 import datetime
 old_stdout = sys.stdout
-log_file = open("kinetic_datanator/builds/logs/{}.txt".format(str(datetime.datetime.now())),"w")
+log_file = open("datanator/builds/logs/{}.txt".format(str(datetime.datetime.now())),"w")
 sys.stdout = log_file
 
 

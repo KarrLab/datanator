@@ -6,10 +6,10 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, common_schema, models
-from kinetic_datanator.api.lib.data_manager import BaseManager
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.core import data_model, common_schema, models
+from datanator.api.lib.data_manager import BaseManager
+from datanator.util import molecule_util
+from datanator.util.constants import DATA_CACHE_DIR
 
 class MetaboliteManager(BaseManager):
 

@@ -8,14 +8,14 @@
 from flask_restplus import Api, Resource, reqparse
 import json
 from flask import  Blueprint, Response, render_template, make_response
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.api.lib.search.manager import search_manager
-from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
-from kinetic_datanator.api.lib.subunit.manager import subunit_manager
-from kinetic_datanator.api.lib.complex.manager import complex_manager
-from kinetic_datanator.api.lib.reaction.manager import reaction_manager
-from kinetic_datanator.api.serializer import *
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.core import common_schema, models
+from datanator.api.lib.search.manager import search_manager
+from datanator.api.lib.metabolite.manager import metabolite_manager
+from datanator.api.lib.subunit.manager import subunit_manager
+from datanator.api.lib.complex.manager import complex_manager
+from datanator.api.lib.reaction.manager import reaction_manager
+from datanator.api.serializer import *
+from datanator.util.constants import DATA_CACHE_DIR
 import json
 import os
 

@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, ForeignKey, exists, Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 
 
 Base = declarative_base()

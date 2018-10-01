@@ -12,7 +12,7 @@ This codebase takes CORUM protein complexes database and formats it to an SQL da
 from sqlalchemy import exists, ForeignKey, Column, Integer, String, Numeric
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 import csv
 import ete3
 import os

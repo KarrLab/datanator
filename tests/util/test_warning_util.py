@@ -7,8 +7,8 @@
 """
 
 from capturer import CaptureOutput
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import warning_util
+from datanator.util import molecule_util
+from datanator.util import warning_util
 import unittest
 
 

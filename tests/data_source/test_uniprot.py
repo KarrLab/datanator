@@ -8,7 +8,7 @@
 :Copyright: 2017-2018, Karr Lab
 :License: MIT
 """
-from kinetic_datanator.data_source import uniprot
+from datanator.data_source import uniprot
 import shutil
 import tempfile
 import unittest

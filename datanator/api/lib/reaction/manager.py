@@ -7,12 +7,12 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query, models, common_schema
-from kinetic_datanator.util import molecule_util
+from datanator.core import data_model, data_query, models, common_schema
+from datanator.util import molecule_util
 from wc_utils.util import string
 import sqlalchemy
-from kinetic_datanator.api.lib.data_manager import BaseManager
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.api.lib.data_manager import BaseManager
+from datanator.util.constants import DATA_CACHE_DIR
 
 class ReactionManager(BaseManager):
     """ Finds relevant kinetics observations for reactions

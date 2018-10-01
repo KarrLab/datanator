@@ -6,7 +6,7 @@
 """
 
 import abc
-import kinetic_datanator.config
+import datanator.config
 import os
 import requests
 import requests_cache
@@ -15,7 +15,7 @@ import six
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy_utils.functions import database_exists, create_database
-from kinetic_datanator.util.constants import DATA_CACHE_DIR, DATA_DUMP_PATH
+from datanator.util.constants import DATA_CACHE_DIR, DATA_DUMP_PATH
 import sys
 import tarfile
 import subprocess
@@ -91,7 +91,7 @@ class PostgresDataSource(DataSource):
         self.max_entries = max_entries
 
         # set Quilt configuration
-        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        quilt_config = datanator.config.get_config()['datanator']['quilt']
         self.quilt_owner = quilt_owner or quilt_config['owner']
         self.quilt_package = quilt_package or quilt_config['package']
 
@@ -348,7 +348,7 @@ class CachedDataSource(DataSource):
         self.commit_intermediate_results = commit_intermediate_results
 
         # set Quilt configuration
-        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        quilt_config = datanator.config.get_config()['datanator']['quilt']
         self.quilt_owner = quilt_owner or quilt_config['owner']
         self.quilt_package = quilt_package or quilt_config['package']
 

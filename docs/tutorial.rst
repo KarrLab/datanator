@@ -1,10 +1,10 @@
-Tutorial - Getting Familiar With kinetic_datanator's Command Line Interface
+Tutorial - Getting Familiar With datanator's Command Line Interface
 ===========================================================================
 
 Generate Template Doc
 ---------------------
 
-kinetic_datanator can be used run directly from the command line.
+datanator can be used run directly from the command line.
 
 
 Let's do an example
@@ -13,9 +13,9 @@ Create a new directory
 
 In that directory run the following command::
 
-    $ kinetic_datanator generate-template
+    $ datanator generate-template
 
-This will output a template document to your directory. This template is an example of an excel sheet that can be entered into kinetic_datanator
+This will output a template document to your directory. This template is an example of an excel sheet that can be entered into datanator
 
 Collecting Kinetic Data
 -----------------------
@@ -36,13 +36,13 @@ The third argument is the name of the species we are searching for. We will use 
 
 Run "get-kinetics"::
 
-    $ kinetic_datanator get-kinetics InputTemplate.xlsx Results.xlsx 'homo sapiens'
+    $ datanator get-kinetics InputTemplate.xlsx Results.xlsx 'homo sapiens'
 
 
-$ kinetic_datanator get-taxonomic-lineage 'Escherichia coli'
+$ datanator get-taxonomic-lineage 'Escherichia coli'
 
 
-Entering Reactions Into kinetic_datanator
+Entering Reactions Into datanator
 -----------------------------------------
 
 Open up the template document InputTemplate.xlsx
@@ -153,7 +153,7 @@ Open up the "Metabolites" worksheet. Add the name of the compound used in the st
 
 Once again, run "get-kinetics"::
 
-    $ kinetic_datanator get-kinetics InputTemplate.xlsx Results.xlsx 'Escherichia coli'
+    $ datanator get-kinetics InputTemplate.xlsx Results.xlsx 'Escherichia coli'
 
 
 You should see results for the new reaction you inputted. 
@@ -172,7 +172,7 @@ Let's try an example:
 
 First, you want to get taxonomic infomation about the organism you are stuyding. Run::
 
-    $ kinetic_datanator get-taxonomic-lineage 'Escherichia coli'
+    $ datanator get-taxonomic-lineage 'Escherichia coli'
 
 You should see::
 
@@ -194,4 +194,4 @@ optional argument --proximit-limit. The number given after --proxim-limit is the
 
 So, run::
 
-    kinetic_datanator get-kinetics InputTemplate.xlsx Results.xlsx 'Escherichia coli' --proxim-limit 6
+    datanator get-kinetics InputTemplate.xlsx Results.xlsx 'Escherichia coli' --proxim-limit 6

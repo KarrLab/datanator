@@ -1,5 +1,5 @@
 #from . import download_cdna
-from kinetic_datanator.util import rna_seq_util
+from datanator.util import rna_seq_util
 #from six.moves.urllib.request import urlretrieve
 import urllib
 #from six.moves import urllib 

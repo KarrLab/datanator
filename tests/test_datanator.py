@@ -1,4 +1,4 @@
-""" Tests of kinetic_datanator
+""" Tests of datanator
 
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
@@ -7,8 +7,8 @@
 :License: MIT
 """
 
-from kinetic_datanator import datanator
-from kinetic_datanator.util import warning_util
+from datanator import datanator
+from datanator.util import warning_util
 from os import path
 import os
 import unittest

@@ -1,5 +1,5 @@
-from kinetic_datanator.api.views import *
-from kinetic_datanator.util.constants import CURRENT_VERSION_ENDPOINT
+from datanator.api.views import *
+from datanator.util.constants import CURRENT_VERSION_ENDPOINT
 
 def get_version_endpoint(endpoint):
     return CURRENT_VERSION_ENDPOINT+endpoint

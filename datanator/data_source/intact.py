@@ -8,7 +8,7 @@
 """
 
 from ftplib import FTP
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 from six import BytesIO
 from sqlalchemy import Column, Integer, String
 import glob

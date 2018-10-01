@@ -6,8 +6,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.api.lib.subunit.manager import subunit_manager
-from kinetic_datanator.core import common_schema, models
+from datanator.api.lib.subunit.manager import subunit_manager
+from datanator.core import common_schema, models
 import unittest
 import tempfile
 import shutil

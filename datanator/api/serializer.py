@@ -1,5 +1,5 @@
-from kinetic_datanator import ma
-from kinetic_datanator.core import models
+from datanator import ma
+from datanator.core import models
 
 
 class CellCompartmentSerializer(ma.ModelSchema):

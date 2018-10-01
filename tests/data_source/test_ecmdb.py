@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.data_source import ecmdb
+from datanator.data_source import ecmdb
 import datetime
 import dateutil
 import os

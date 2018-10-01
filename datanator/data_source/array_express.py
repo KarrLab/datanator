@@ -12,8 +12,8 @@ import pkg_resources
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-from kinetic_datanator.core import data_source
-from kinetic_datanator.data_source.array_express_tools import ensembl_tools
+from datanator.core import data_source
+from datanator.data_source.array_express_tools import ensembl_tools
 import requests
 import time
 from ete3 import NCBITaxa
@@ -351,7 +351,7 @@ class ArrayExpress(data_source.HttpDataSource):
             quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
             quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
-        #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+        #with open(pkg_resources.resource_filename('datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
         #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
         super(ArrayExpress, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
                                            load_content=load_content, max_entries=max_entries,
@@ -360,7 +360,7 @@ class ArrayExpress(data_source.HttpDataSource):
                                            clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
                                            quilt_owner=quilt_owner, quilt_package=quilt_package)
         
-        #with open(pkg_resources.resource_filename('kinetic_datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
+        #with open(pkg_resources.resource_filename('datanator', 'data_source/array_express_excluded_dataset_ids.txt'), 'r') as file:
         #    self.EXCLUDED_DATASET_IDS = [line.rstrip() for line in file]
 
     def load_content(self, test_url=""):

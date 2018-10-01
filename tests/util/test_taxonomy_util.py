@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.util import taxonomy_util
+from datanator.util import taxonomy_util
 import unittest
 
 

@@ -6,9 +6,9 @@
 :License: MIT
 """
 
-from kinetic_datanator.api.lib.filter.manager import FilterManager
-from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
-from kinetic_datanator.core import common_schema, models
+from datanator.api.lib.filter.manager import FilterManager
+from datanator.api.lib.metabolite.manager import metabolite_manager
+from datanator.core import common_schema, models
 import unittest
 import tempfile
 import shutil

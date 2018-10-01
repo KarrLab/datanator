@@ -1,14 +1,14 @@
 
 from capturer import CaptureOutput
 from cement.utils import test
-from kinetic_datanator.core import upload_data
-from kinetic_datanator.util import warning_util
+from datanator.core import upload_data
+from datanator.util import warning_util
 import os
 import re
 import shutil
 import tempfile
 import unittest
-from kinetic_datanator.core import common_schema, models
+from datanator.core import common_schema, models
 import json
 
 

@@ -1,4 +1,4 @@
-from kinetic_datanator.core import models
+from datanator.core import models
 import pprint as pp
 from alchemyjsonschema import SchemaFactory
 from alchemyjsonschema import StructuralWalker

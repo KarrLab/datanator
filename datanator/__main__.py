@@ -9,18 +9,18 @@
 """
 
 from __future__ import print_function
-from kinetic_datanator import io
-from kinetic_datanator.core import data_model, common_schema, upload_data, data_query  # , json_schema
-from kinetic_datanator.core.render_form import render_html_from_schema
-from kinetic_datanator.data_source import *
-from kinetic_datanator.data_source import refseq
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import taxonomy_util
+from datanator import io
+from datanator.core import data_model, common_schema, upload_data, data_query  # , json_schema
+from datanator.core.render_form import render_html_from_schema
+from datanator.data_source import *
+from datanator.data_source import refseq
+from datanator.util import molecule_util
+from datanator.util import taxonomy_util
 from pkg_resources import resource_filename
 import bioservices
 import cement
 import flask_migrate
-import kinetic_datanator
+import datanator
 import os
 import pubchempy
 import re
@@ -28,9 +28,9 @@ import shutil
 import sqlalchemy_utils
 import sys
 from Bio import SeqIO
-from kinetic_datanator.api.query import reaction_kinetics
-#from kinetic_datanator.core import data_query
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.api.query import reaction_kinetics
+#from datanator.core import data_query
+from datanator.util.constants import DATA_CACHE_DIR
 
 
 class BaseController(cement.Controller):
@@ -39,7 +39,7 @@ class BaseController(cement.Controller):
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
         arguments = [
-            (['-v', '--version'], dict(action='version', version=kinetic_datanator.__version__)),
+            (['-v', '--version'], dict(action='version', version=datanator.__version__)),
         ]
 
     @cement.ex(hide=True)
@@ -396,7 +396,7 @@ class GenerateTemplateController(cement.Controller):
     @cement.ex(hide=True)
     def _default(self):
         # todo: generate template
-        template_filename = resource_filename('kinetic_datanator', 'data/InputTemplate.xlsx')
+        template_filename = resource_filename('datanator', 'data/InputTemplate.xlsx')
         shutil.copyfile(template_filename, self.app.pargs.filename)
 
 
@@ -414,7 +414,7 @@ class GenerateRNASeqTemplate(cement.Controller):
     @cement.ex(hide=True)
     def _default(self):
         # todo: generate template
-        template_directory = resource_filename('kinetic_datanator', 'data/RNA-Seq_Experiment_Template')
+        template_directory = resource_filename('datanator', 'data/RNA-Seq_Experiment_Template')
         shutil.copytree(template_directory, "{}/RNA-Seq_Experiment_Template".format(self.app.pargs.directory_name))
 
 
@@ -722,13 +722,13 @@ class DbController(cement.Controller):
 
     @cement.ex(help='Create the structure of the Datanator database')
     def create(self):
-        if not sqlalchemy_utils.functions.database_exists(kinetic_datanator.db.engine.url):
-            sqlalchemy_utils.functions.create_database(kinetic_datanator.db.engine.url)
-        kinetic_datanator.db.create_all()
+        if not sqlalchemy_utils.functions.database_exists(datanator.db.engine.url):
+            sqlalchemy_utils.functions.create_database(datanator.db.engine.url)
+        datanator.db.create_all()
 
     @cement.ex(help='Migrate the structure of the Datanator database')
     def migrate(self):
-        with kinetic_datanator.app.app_context():
+        with datanator.app.app_context():
             if not os.path.isdir('migrations'):
                 flask_migrate.init()
             flask_migrate.migrate()
@@ -736,8 +736,8 @@ class DbController(cement.Controller):
 
     @cement.ex(help='Drop the Datanator database')
     def drop(self):
-        kinetic_datanator.db.engine.dispose()
-        sqlalchemy_utils.functions.drop_database(kinetic_datanator.db.engine.url)
+        datanator.db.engine.dispose()
+        sqlalchemy_utils.functions.drop_database(datanator.db.engine.url)
 
 
 class DbRestoreController(cement.Controller):
@@ -776,7 +776,7 @@ class DbRestoreController(cement.Controller):
 class App(cement.App):
 
     class Meta:
-        label = "kinetic_datanator"
+        label = "datanator"
         base_controller = "base"
         handlers = [
             BaseController,

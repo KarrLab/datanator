@@ -12,7 +12,7 @@ import pkg_resources
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 from Bio import SeqIO
 
 

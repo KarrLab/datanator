@@ -1,7 +1,7 @@
 import tempfile
 import shutil
 import unittest
-from kinetic_datanator.data_source import ensembl
+from datanator.data_source import ensembl
 
 
 

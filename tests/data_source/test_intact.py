@@ -8,7 +8,7 @@ Test for IntAct database module
 :License: MIT
 """
 
-from kinetic_datanator.data_source import intact
+from datanator.data_source import intact
 import shutil
 import unittest
 import tempfile

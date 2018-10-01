@@ -1,8 +1,8 @@
 
 import unittest
-from kinetic_datanator.core import data_model
-from kinetic_datanator.api.query import protein_protein_interactions as ppi
-from kinetic_datanator.core import models, common_schema
+from datanator.core import data_model
+from datanator.api.query import protein_protein_interactions as ppi
+from datanator.core import models, common_schema
 import tempfile
 import shutil
 import unittest

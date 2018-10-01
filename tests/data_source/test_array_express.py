@@ -6,10 +6,10 @@
 :License: MIT
 """
 
-from kinetic_datanator.data_source import array_express
-from kinetic_datanator.data_source.array_express_tools import ensembl_tools
-from kinetic_datanator.data_source.process_rna_seq import core
-from kinetic_datanator.data_source.process_rna_seq import download_cdna
+from datanator.data_source import array_express
+from datanator.data_source.array_express_tools import ensembl_tools
+from datanator.data_source.process_rna_seq import core
+from datanator.data_source.process_rna_seq import download_cdna
 from six.moves.urllib.request import urlretrieve
 import datetime
 import os
@@ -321,7 +321,7 @@ class TestCommandLineProcessing(unittest.TestCase):
         sample_name = 'Control_2'
         sample = session.query(array_express.Sample).filter_by(name=sample_name).first()
         #core.get_processed_data_samples([sample], self.cache_dirname, "{}/temporary_files".format(self.cache_dirname))
-        python_file = "python kinetic_datanator/data_source/process_rna_seq/command_line_core.py"
+        python_file = "python datanator/data_source/process_rna_seq/command_line_core.py"
         output_directory = self.cache_dirname
         temp_directory = "{}/temporary_files".format(self.cache_dirname)
 
@@ -359,7 +359,7 @@ class TestCommandLineProcessing(unittest.TestCase):
         sample_name = 'Control_2'
         sample = session.query(array_express.Sample).filter_by(name=sample_name).first()
         #core.get_processed_data_samples([sample], self.cache_dirname, "{}/temporary_files".format(self.cache_dirname))
-        python_file = "python kinetic_datanator/data_source/process_rna_seq/command_line_core.py"
+        python_file = "python datanator/data_source/process_rna_seq/command_line_core.py"
         output_directory = self.cache_dirname
         temp_directory = "{}/temporary_files".format(self.cache_dirname)
 

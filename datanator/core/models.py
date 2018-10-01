@@ -3,8 +3,8 @@ from flask_sqlalchemy import SQLAlchemy, BaseQuery
 from sqlalchemy_searchable import SearchQueryMixin, make_searchable
 from sqlalchemy_utils.types import TSVectorType
 from flask_migrate import Migrate
-from kinetic_datanator.config import config
-from kinetic_datanator import db
+from datanator.config import config
+from datanator import db
 from flask_sqlalchemy import SQLAlchemy
 import os
 

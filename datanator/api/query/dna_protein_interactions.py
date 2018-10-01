@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query,  models, common_schema
+from datanator.core import data_model, data_query,  models, common_schema
 from Bio import motifs
 from Bio.Seq import Seq
 from Bio.Alphabet import IUPAC

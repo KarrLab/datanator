@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.util import molecule_util
+from datanator.util import molecule_util
 import copy
 import enum
 import numpy

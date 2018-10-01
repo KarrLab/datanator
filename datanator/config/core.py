@@ -23,11 +23,11 @@ def get_config(extra=None):
         :obj:`configobj.ConfigObj`: nested dictionary with the configuration settings loaded from the configuration source(s).
     """
     paths = wc_utils.config.core.ConfigPaths(
-        default=pkg_resources.resource_filename('kinetic_datanator', 'config/core.default.cfg'),
-        schema=pkg_resources.resource_filename('kinetic_datanator', 'config/core.schema.cfg'),
+        default=pkg_resources.resource_filename('datanator', 'config/core.default.cfg'),
+        schema=pkg_resources.resource_filename('datanator', 'config/core.schema.cfg'),
         user=(
-            'kinetic_datanator.cfg',
-            os.path.expanduser('~/.wc/kinetic_datanator.cfg'),
+            'datanator.cfg',
+            os.path.expanduser('~/.wc/datanator.cfg'),
         ),
     )
 
@@ -45,7 +45,7 @@ def get_debug_logs_config(extra=None):
     """
     paths = wc_utils.debug_logs.config.paths.deepcopy()
     paths.user = (
-        'kinetic_datanator.debug.cfg',
-        os.path.expanduser('~/.wc/kinetic_datanator.debug.cfg'),
+        'datanator.debug.cfg',
+        os.path.expanduser('~/.wc/datanator.debug.cfg'),
     )
     return wc_utils.config.core.ConfigManager(paths).get_config(extra=extra)

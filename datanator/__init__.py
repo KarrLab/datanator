@@ -11,7 +11,7 @@ from flask_cors import CORS
 
 def register_blueprints(app):
     # register blueprints
-    from kinetic_datanator.api.urls import api_blueprint
+    from datanator.api.urls import api_blueprint
     app.register_blueprint(api_blueprint)
 
 #TODO: Include API Templates
@@ -23,7 +23,7 @@ app = Flask(
 
 # set config
 app_settings = os.getenv(
-    'APP_SETTINGS', 'kinetic_datanator.config.config.CircleTestingConfig')
+    'APP_SETTINGS', 'datanator.config.config.CircleTestingConfig')
 app.config.from_object(app_settings)
 
 login_manager = LoginManager(app)
@@ -68,7 +68,7 @@ def page_not_found(error):
 
 import pkg_resources
 
-with open(pkg_resources.resource_filename('kinetic_datanator', 'VERSION'), 'r') as file:
+with open(pkg_resources.resource_filename('datanator', 'VERSION'), 'r') as file:
     __version__ = file.read().strip()
 # :obj:`str`: version
 

@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.api.lib.search.manager import search_manager
+from datanator.api.lib.search.manager import search_manager
 import unittest
 
 class TestSearchManager(unittest.TestCase):

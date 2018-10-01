@@ -8,14 +8,14 @@
 :License: MIT
 """
 
-from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme,
+from datanator.data_source import sabio_rk
+from datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme,
                                                     ReactionParticipant, KineticLaw, Parameter, Resource)
-from kinetic_datanator.util import warning_util
+from datanator.util import warning_util
 import capturer
 import datetime
 import ftputil
-import kinetic_datanator.config
+import datanator.config
 import math
 import mock
 import numpy
@@ -828,7 +828,7 @@ class TestBackupAndInstall(unittest.TestCase):
         self.cache_dirname_4 = tempfile.mkdtemp()
         self.cache_dirname_5 = tempfile.mkdtemp()
 
-        self.owner = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']['owner']
+        self.owner = datanator.config.get_config()['datanator']['quilt']['owner']
         self.package = 'datanator_test__'
         self.owner_package = '{}/{}'.format(self.owner, self.package)
         self.token = wc_utils.config.get_config()['wc_utils']['quilt']['token']

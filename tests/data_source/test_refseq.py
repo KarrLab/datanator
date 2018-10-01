@@ -1,5 +1,5 @@
 import unittest
-from kinetic_datanator.data_source import refseq
+from datanator.data_source import refseq
 import tempfile
 import shutil
 from Bio import SeqIO

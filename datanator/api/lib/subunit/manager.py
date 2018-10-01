@@ -5,10 +5,10 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query, common_schema, models
-from kinetic_datanator.api.lib.data_manager import BaseManager
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
-from kinetic_datanator.api.lib.complex.manager import complex_manager
+from datanator.core import data_model, data_query, common_schema, models
+from datanator.api.lib.data_manager import BaseManager
+from datanator.util.constants import DATA_CACHE_DIR
+from datanator.api.lib.complex.manager import complex_manager
 from sqlalchemy import or_
 
 class ProteinSubunitManager(BaseManager):

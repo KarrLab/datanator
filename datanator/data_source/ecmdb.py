@@ -8,8 +8,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_source
-from kinetic_datanator.util import molecule_util
+from datanator.core import data_source
+from datanator.util import molecule_util
 import datetime
 import dateutil.parser
 import io

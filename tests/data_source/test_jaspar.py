@@ -9,7 +9,7 @@ This module tests all aspects of jaspar.py
 
 """
 
-from kinetic_datanator.data_source import jaspar
+from datanator.data_source import jaspar
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import random

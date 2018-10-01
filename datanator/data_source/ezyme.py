@@ -7,8 +7,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
-from kinetic_datanator.core import data_source
+from datanator.core import data_model
+from datanator.core import data_source
 import itertools
 import re
 import requests

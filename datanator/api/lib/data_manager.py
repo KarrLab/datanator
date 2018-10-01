@@ -1,4 +1,4 @@
-from kinetic_datanator.core import data_model, common_schema
+from datanator.core import data_model, common_schema
 
 
 class BaseManager(object):

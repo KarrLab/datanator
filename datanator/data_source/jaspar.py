@@ -9,7 +9,7 @@ via a seris of text files, parses them, and stores them in an SQLlite database.
 :License: MIT
 """
 
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 from sqlalchemy import Column, Integer, String,Numeric, ForeignKey
 from sqlalchemy.orm import relationship, backref
 import requests

@@ -7,13 +7,13 @@
 """
 
 from datetime import datetime
-from kinetic_datanator.core import data_model
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import taxonomy_util
+from datanator.core import data_model
+from datanator.util import molecule_util
+from datanator.util import taxonomy_util
 import abc
 import getpass
 import itertools
-import kinetic_datanator.core.data_source
+import datanator.core.data_source
 import Levenshtein
 import math
 import numpy
@@ -193,7 +193,7 @@ class CachedDataSourceQueryGenerator(DataQueryGenerator):
     """ Represents a query of a cached data source
 
     Attributes:
-        data_source (:obj:`kinetic_datanator.core.data_source.CachedDataSource`): cached data source
+        data_source (:obj:`datanator.core.data_source.CachedDataSource`): cached data source
     """
 
     def __init__(self,
@@ -212,7 +212,7 @@ class CachedDataSourceQueryGenerator(DataQueryGenerator):
             temperature_std (:obj:`float`, optional): how much to penalize observed values from other temperatures
             ph (:obj:`float`, optional): desired pH to search for
             ph_std (:obj:`float`, optional): how much to penalize observed values from other pHs
-            data_source (:obj:`kinetic_datanator.core.data_source.CachedDataSource`, optional): cached data source
+            data_source (:obj:`datanator.core.data_source.CachedDataSource`, optional): cached data source
         """
         super(CachedDataSourceQueryGenerator, self).__init__(
             taxon=taxon, max_taxon_dist=max_taxon_dist, taxon_dist_scale=taxon_dist_scale, include_variants=include_variants,

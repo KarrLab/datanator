@@ -1,7 +1,7 @@
 from flask_testing import TestCase
 import unittest
-from kinetic_datanator import app
-from kinetic_datanator.api.views import *
+from datanator import app
+from datanator.api.views import *
 
 class TestAPIBlueprint(TestCase):
 

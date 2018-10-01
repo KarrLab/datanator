@@ -1,4 +1,4 @@
-from kinetic_datanator.data_source.process_rna_seq import core
+from datanator.data_source.process_rna_seq import core
 import cement
 
 class BaseController(cement.Controller):
@@ -125,7 +125,7 @@ class DeleteFASTQFiles(cement.Controller):
 class App(cement.App):
 
     class Meta:
-        label = "kinetic_datanator"
+        label = "datanator"
         base_controller = "base"
         handlers = [
             BaseController,

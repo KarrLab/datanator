@@ -5,9 +5,9 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query, common_schema, models
-from kinetic_datanator.api.lib.data_manager import BaseManager
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.core import data_model, data_query, common_schema, models
+from datanator.api.lib.data_manager import BaseManager
+from datanator.util.constants import DATA_CACHE_DIR
 
 class ProteinComplexManager(BaseManager):
     """ Manages protein complex information for API """

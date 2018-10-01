@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# kinetic_datanator documentation build configuration file, created by
+# datanator documentation build configuration file, created by
 # sphinx-quickstart on Tue Aug  2 09:29:29 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -62,7 +62,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'kinetic_datanator'
+project = u'datanator'
 copyright = u'{}, Karr Lab'.format(datetime.datetime.now().year)
 author = u'Karr Lab'
 
@@ -71,7 +71,7 @@ author = u'Karr Lab'
 # built documents.
 #
 # The short X.Y version.
-filename = os.path.join(os.path.dirname(__file__), '..', 'kinetic_datanator', 'VERSION')
+filename = os.path.join(os.path.dirname(__file__), '..', 'datanator', 'VERSION')
 with open(filename, 'r') as file:
     version = file.read()
 # The full version, including alpha/beta/rc tags.
@@ -155,9 +155,9 @@ def linkcode_resolve(domain, info):
         return None
     rel_filename = info['module'].replace('.', '/')
     if os.path.isfile(os.path.join(os.path.dirname(__file__), '..', rel_filename + '.py')):
-        return "https://github.com/KarrLab/kinetic_datanator/blob/master/{}.py".format(rel_filename)
+        return "https://github.com/KarrLab/datanator/blob/master/{}.py".format(rel_filename)
     else:
-        return "https://github.com/KarrLab/kinetic_datanator/blob/master/{}/__init__.py".format(rel_filename)
+        return "https://github.com/KarrLab/datanator/blob/master/{}/__init__.py".format(rel_filename)
 
 
 # -- napoleon options -----------------------------------------------------
@@ -190,7 +190,7 @@ html_theme_options = {
     'collapse_navigation': False,
     'display_version': True,
     'navigation_depth': 4,
-    'canonical_url': 'http://docs.karrlab.org/kinetic_datanator',
+    'canonical_url': 'http://docs.karrlab.org/datanator',
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -199,7 +199,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-# html_title = u'kinetic_datanator v0.1.19'
+# html_title = u'datanator v0.1.19'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
@@ -299,7 +299,7 @@ html_show_copyright = True
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'kinetic_datanator_doc'
+htmlhelp_basename = 'datanator_doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -325,7 +325,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'kinetic_datanator.tex', u'kinetic_datanator documentation',
+    (master_doc, 'datanator.tex', u'datanator documentation',
      author, 'manual'),
 ]
 
@@ -367,7 +367,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'kinetic_datanator', u'kinetic_datanator documentation',
+    (master_doc, 'datanator', u'datanator documentation',
      [author], 1)
 ]
 
@@ -382,8 +382,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'kinetic_datanator', u'kinetic_datanator documentation',
-     author, 'kinetic_datanator', 'One line description of project.',
+    (master_doc, 'datanator', u'datanator documentation',
+     author, 'datanator', 'One line description of project.',
      'Miscellaneous'),
 ]
 
@@ -411,5 +411,5 @@ googleanalytics_id = 'UA-86340737-1'
 
 # -- if RTD, redirect to https://docs.karrlab.org  ------------------------
 
-addmetahtml_content = '<meta http-equiv="refresh" content="0; url=https://docs.karrlab.org/kinetic_datanator" />'
+addmetahtml_content = '<meta http-equiv="refresh" content="0; url=https://docs.karrlab.org/datanator" />'
 addmetahtml_enabled = os.getenv('READTHEDOCS', '') == 'True'

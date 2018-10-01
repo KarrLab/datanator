@@ -1,7 +1,7 @@
 
-from kinetic_datanator.api.serializer import *
-from kinetic_datanator.api.query import metabolite_concentrations
-from kinetic_datanator.core import models, common_schema
+from datanator.api.serializer import *
+from datanator.api.query import metabolite_concentrations
+from datanator.core import models, common_schema
 import tempfile
 import shutil
 import unittest

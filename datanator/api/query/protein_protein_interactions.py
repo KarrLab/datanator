@@ -5,7 +5,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model, data_query, common_schema, models
+from datanator.core import data_model, data_query, common_schema, models
 from sqlalchemy import or_
 
 class ProteinInteractionandComplexQuery(data_query.CachedDataSourceQueryGenerator):

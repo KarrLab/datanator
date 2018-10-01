@@ -7,7 +7,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_source
+from datanator.core import data_source
 from sqlalchemy import Column, Integer, String, Float
 import io
 import math

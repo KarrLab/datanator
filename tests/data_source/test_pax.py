@@ -9,7 +9,7 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.data_source import pax
+from datanator.data_source import pax
 from sqlalchemy.orm import sessionmaker
 import tempfile
 import shutil

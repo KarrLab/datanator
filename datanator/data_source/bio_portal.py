@@ -6,10 +6,10 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_source
-from kinetic_datanator.util.constants import DATA_CACHE_DIR
+from datanator.core import data_source
+from datanator.util.constants import DATA_CACHE_DIR
 import json
-import kinetic_datanator.config.core
+import datanator.config.core
 import os
 import pickle
 import pronto
@@ -77,7 +77,7 @@ class BioPortal(data_source.CachedDataSource):
         self.verbose = verbose
 
         # set Quilt configuration
-        quilt_config = kinetic_datanator.config.get_config()['kinetic_datanator']['quilt']
+        quilt_config = datanator.config.get_config()['datanator']['quilt']
         self.quilt_owner = quilt_owner or quilt_config['owner']
         self.quilt_package = quilt_package or quilt_config['package']
 
@@ -263,4 +263,4 @@ class BioPortal(data_source.CachedDataSource):
         Returns:
             :obj:`str`: key
         """
-        return kinetic_datanator.config.core.get_config()['kinetic_datanator']['bioportal']['key']
+        return datanator.config.core.get_config()['datanator']['bioportal']['key']

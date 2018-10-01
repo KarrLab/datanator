@@ -7,8 +7,8 @@
 :License: MIT
 """
 
-from kinetic_datanator import io
-from kinetic_datanator.core import data_model
+from datanator import io
+from datanator.core import data_model
 from os import path
 from wc_utils.util.types import assert_value_equal
 import unittest

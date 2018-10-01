@@ -8,10 +8,10 @@
 """
 
 from attrdict import AttrDict
-from kinetic_datanator.data_source import ezyme
-from kinetic_datanator.core import data_model
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import warning_util
+from datanator.data_source import ezyme
+from datanator.core import data_model
+from datanator.util import molecule_util
+from datanator.util import warning_util
 import unittest
 
 warning_util.disable_warnings()
