@@ -125,14 +125,14 @@ class InputReader(object):
         compartments_dict = {c.id: c for c in compartments}
         species_dict = {s.id: s for s in species}
 
-        global_comp = '\[(?P<comp>[a-z0-9_]+)\]: *'
-        global_part = ' *(([0-9\.]+) )?([a-z0-9_]+)'
-        global_lhs = '(?P<lhs>{}( *\+ *{})*)'.format(global_part, global_part)
-        global_rhs = '(?P<rhs>{}( *\+ *{})*)'.format(global_part, global_part)
-        local_part = ' *(([0-9\.]+) )?([a-z0-9_]+)\[([a-z0-9_]+)\]'
-        local_lhs = '(?P<lhs>{}( *\+ *{})*)'.format(local_part, local_part)
-        local_rhs = '(?P<rhs>{}( *\+ *{})*)'.format(local_part, local_part)
-        sep = ' *(?P<sep><{0,1})[-=]{1,2}> *'
+        global_comp = r'\[(?P<comp>[a-z0-9_]+)\]: *'
+        global_part = r' *(([0-9\.]+) )?([a-z0-9_]+)'
+        global_lhs = r'(?P<lhs>{}( *\+ *{})*)'.format(global_part, global_part)
+        global_rhs = r'(?P<rhs>{}( *\+ *{})*)'.format(global_part, global_part)
+        local_part = r' *(([0-9\.]+) )?([a-z0-9_]+)\[([a-z0-9_]+)\]'
+        local_lhs = r'(?P<lhs>{}( *\+ *{})*)'.format(local_part, local_part)
+        local_rhs = r'(?P<rhs>{}( *\+ *{})*)'.format(local_part, local_part)
+        sep = r' *(?P<sep><{0,1})[-=]{1,2}> *'
 
         global_pattern = global_comp + global_lhs + sep + global_rhs
         local_pattern = local_lhs + sep + local_rhs
