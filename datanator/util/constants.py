@@ -2,7 +2,7 @@ import os
 import pkg_resources
 
 ## Paths
-DATA_CACHE_DIR = os.path.expanduser(os.path.join('~', '.wc', 'datanator_data'))
+DATA_CACHE_DIR = os.path.expanduser(os.path.join('~', '.wc', 'data', 'datanator'))
 
 ## Endpoints
 CURRENT_VERSION_ENDPOINT = '/v0'
