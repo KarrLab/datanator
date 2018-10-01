@@ -23,15 +23,8 @@ app = Flask(
 
 # set config
 app_settings = os.getenv(
-<<<<<<< HEAD:datanator/__init__.py
-<<<<<<< HEAD:kinetic_datanator/__init__.py
-    'APP_SETTINGS', 'kinetic_datanator.config.config.ProductionConfig')
-=======
     'APP_SETTINGS', 'datanator.config.config.CircleTestingConfig')
->>>>>>> 650d74fcc6d11695e9a12ba7db13ea71ad681d51:datanator/__init__.py
-=======
-    'APP_SETTINGS', 'datanator.config.config.CircleTestingConfig')
->>>>>>> 650d74fcc6d11695e9a12ba7db13ea71ad681d51:datanator/__init__.py
+
 app.config.from_object(app_settings)
 
 login_manager = LoginManager(app)
