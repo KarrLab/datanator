@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.util import rna_seq_util
+from datanator.util import rna_seq_util
 from six.moves import urllib
 import capturer
 import os

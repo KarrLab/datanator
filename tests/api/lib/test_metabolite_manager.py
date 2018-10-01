@@ -6,8 +6,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.api.lib.metabolite.manager import metabolite_manager
-from kinetic_datanator.core import common_schema, models
+from datanator.api.lib.metabolite.manager import metabolite_manager
+from datanator.core import common_schema, models
 import unittest
 import tempfile
 import shutil
@@ -15,9 +15,9 @@ import shutil
 class TestMetaboliteManager(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.proline = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
-        self.uridine_tp = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'Uridine triphosphate').first()
+    def setUpClass(cls):
+        cls.proline = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'L-Proline').first()
+        cls.uridine_tp = metabolite_manager.data_source.session.query(models.Metabolite).filter_by(metabolite_name = 'Uridine triphosphate').first()
 
     def test_get_metabolite_by_id(self):
         result = metabolite_manager.get_metabolite_by_id(self.proline.id)

@@ -1,4 +1,4 @@
-""" Tests of kinetic_datanator
+""" Tests of datanator
 
 :Author: Yosef Roth <yosefdroth@gmail.com>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
@@ -7,8 +7,8 @@
 :License: MIT
 """
 
-from kinetic_datanator import datanator
-from kinetic_datanator.util import warning_util
+from datanator import datanator
+from datanator.util import warning_util
 from os import path
 import os
 import unittest
@@ -19,10 +19,10 @@ warning_util.disable_warnings()
 class TestDatanator(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
+    def setUpClass(cls):
+        cls.fixtures_dir = path.join(path.dirname(__file__), "fixtures")
 
-        out_dir = self.output_dir = path.join(path.dirname(__file__), "output")
+        out_dir = cls.output_dir = path.join(path.dirname(__file__), "output")
         if not path.isdir(out_dir):
             os.makedirs(out_dir)
 

@@ -8,7 +8,7 @@ Test for IntAct database module
 :License: MIT
 """
 
-from kinetic_datanator.data_source import intact
+from datanator.data_source import intact
 import shutil
 import unittest
 import tempfile
@@ -20,17 +20,17 @@ class TestFromServerIntAct(unittest.TestCase):
     """
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.intact = intact.IntAct(cache_dirname=self.cache_dirname,
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.intact = intact.IntAct(cache_dirname=cls.cache_dirname,
                                     clear_content=False,
                                     download_backups=True,
                                     load_content=False,
                                     verbose=True)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_complexes(self):
         q = self.intact.session.query(intact.ProteinComplex).get('CPX-863')
@@ -60,13 +60,13 @@ class TestLoadingIntAct(unittest.TestCase):
     """
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.intact = intact.IntAct(cache_dirname=self.cache_dirname, download_backups=False, load_content=True, max_entries=500)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.intact = intact.IntAct(cache_dirname=cls.cache_dirname, download_backups=False, load_content=True, max_entries=500)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_complexes(self):
         q = self.intact.session.query(intact.ProteinComplex).filter_by(identifier='CPX-1326').first()

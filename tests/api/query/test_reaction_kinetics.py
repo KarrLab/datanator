@@ -9,11 +9,11 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
-from kinetic_datanator.data_source import sabio_rk
-from kinetic_datanator.api.query import reaction_kinetics
-from kinetic_datanator.util import taxonomy_util, molecule_util
-from kinetic_datanator.core import models, common_schema
+from datanator.core import data_model
+from datanator.data_source import sabio_rk
+from datanator.api.query import reaction_kinetics
+from datanator.util import taxonomy_util, molecule_util
+from datanator.core import models, common_schema
 import unittest
 import random
 import tempfile
@@ -28,13 +28,13 @@ class TestReactionKineticsQuery(unittest.TestCase):
     """
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
-        self.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=self.cache_dirname, include_variants=True)
+        cls.q = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cls.cache_dirname, include_variants=True)
 
-        self.reaction = data_model.Reaction(
+        cls.reaction = data_model.Reaction(
             participants = [
                 data_model.ReactionParticipant(
                     specie = data_model.Specie(
@@ -73,11 +73,9 @@ class TestReactionKineticsQuery(unittest.TestCase):
                     coefficient = 1)
         ])
 
-
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
-
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_get_observed_result(self):
 

@@ -109,14 +109,14 @@ tests/fixtures/secret/
 .idea/
 
 # cache files
-kinetic_datanator/data_source/cache/
+datanator/data_source/cache/
 intact/
-kinetic_datanator/data/cache/CommonSchema.sql
-kinetic_datanator/builds/logs/
+datanator/data/cache/CommonSchema.sql
+datanator/builds/logs/
 *.sqlite
 
 # configuration
-kinetic_datanator.cfg
+datanator.cfg
 
 
 # minerva

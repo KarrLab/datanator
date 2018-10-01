@@ -11,7 +11,7 @@
 """
 
 import unittest
-from kinetic_datanator.data_source import corum
+from datanator.data_source import corum
 from sqlalchemy.orm import sessionmaker
 import tempfile
 import shutil

@@ -6,8 +6,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.api.lib.subunit.manager import subunit_manager
-from kinetic_datanator.core import common_schema, models
+from datanator.api.lib.subunit.manager import subunit_manager
+from datanator.core import common_schema, models
 import unittest
 import tempfile
 import shutil
@@ -15,8 +15,8 @@ import shutil
 class TestProteinSubunitManager(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.protein_P00323 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
+    def setUpClass(cls):
+        cls.protein_P00323 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
 
     def test_get_abundance_by_uniprot(self):
         uniprot = self.protein_P00323.uniprot_id

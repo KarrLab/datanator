@@ -1,0 +1,65 @@
+ 
+
+                ===================================
+                |                                 |
+                |                                 |
+                |    Starting Datanator Build     |
+                |                                 |
+                |                                 |
+                ===================================
+
+                
+
+------------------------ Initializing 'build_pax' ------------------------
+(psycopg2.IntegrityError) duplicate key value violates unique constraint "physical_entity_pkey"
+DETAIL:  Key (observation_id)=(68061) already exists.
+ [SQL: 'INSERT INTO physical_entity (type) VALUES (%(type)s)'] [parameters: ({'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}  ... displaying 10 of 4974 total bound parameter sets ...  {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'})] (Background on this error at: http://sqlalche.me/e/gkpj)
+
+------------------------ Initializing 'build_intact_interactions' ------------------------
+
+------------------------ Initializing 'build_sabio' ------------------------
+
+------------------------ Initializing 'build_array_express' ------------------------
+Comitting
+'build_array_express' took 188.23 sec
+'build_array_express' completed
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Comitting
+'build_sabio' took 2839.64 sec
+'build_sabio' completed
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Batch of 5000 interactions was loaded
+Comitting
+'build_intact_interactions' took 10269.40 sec
+'build_intact_interactions' completed
+
+------------------------ Initializing 'build_uniprot' ------------------------
+This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg2.IntegrityError) duplicate key value violates unique constraint "physical_entity_pkey"
+DETAIL:  Key (observation_id)=(68061) already exists.
+ [SQL: 'INSERT INTO physical_entity (type) VALUES (%(type)s)'] [parameters: ({'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}  ... displaying 10 of 4974 total bound parameter sets ...  {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'})] (Background on this error at: http://sqlalche.me/e/gkpj)
+
+------------------------ Initializing 'build_ncbi' ------------------------
+This Session's transaction has been rolled back due to a previous exception during flush. To begin a new transaction with this Session, first issue Session.rollback(). Original exception was: (psycopg2.IntegrityError) duplicate key value violates unique constraint "physical_entity_pkey"
+DETAIL:  Key (observation_id)=(68061) already exists.
+ [SQL: 'INSERT INTO physical_entity (type) VALUES (%(type)s)'] [parameters: ({'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}  ... displaying 10 of 4974 total bound parameter sets ...  {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'})] (Background on this error at: http://sqlalche.me/e/gkpj)
+ 
+
+                =============================================
+                |                                           |
+                |             Finished Build                |
+                    Total time taken for build: 10273.75 secs
+                |                                           |
+                =============================================
+                

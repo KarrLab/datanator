@@ -7,7 +7,7 @@ except ImportError:
     import pkg_utils
 import os
 
-name = 'kinetic_datanator'
+name = 'datanator'
 dirname = os.path.dirname(__file__)
 
 # get package metadata
@@ -51,7 +51,7 @@ setuptools.setup(
     },
     entry_points={
         'console_scripts': [
-            'kinetic_datanator = kinetic_datanator.__main__:main',
+            'datanator = datanator.__main__:main',
         ],
     },
 

@@ -1,0 +1,32 @@
+import os
+import pkg_resources
+
+## Paths
+DATA_CACHE_DIR = os.path.expanduser(os.path.join('~', '.wc', 'data', 'datanator'))
+
+## Endpoints
+CURRENT_VERSION_ENDPOINT = '/v0'
+
+# Common Schema Constants
+DATA_DUMP_PATH = os.path.join(DATA_CACHE_DIR , 'CommonSchema.sql')
+PAX_NAME = 'Pax'
+PAX_INITIAL_AMOUNT = 1
+SABIO_NAME = 'Sabio'
+SABIO_INITIAL_AMOUNT = 1
+ARRAY_EXPRESS_NAME = 'Array Express'
+ARRAY_EXPRESS_INITIAL_AMOUNT = 1
+INTACT_NAME = 'IntAct'
+INTACT_INITIAL_AMOUNT = 0
+
+## Batching Test Constants
+PAX_TEST_BATCH = 2
+INTACT_INTERACTION_TEST_BATCH = 10
+ARRAY_EXPRESS_TEST_BATCH = 5
+SABIO_TEST_BATCH = 100
+
+## Batching Build Constants
+PAX_BUILD_BATCH = 300
+INTACT_INTERACTION_BUILD_BATCH = 100000
+ARRAY_EXPRESS_BUILD_BATCH = 1000
+SABIO_BUILD_BATCH = 100000
+INTACT_INTERACTION_BUILD_SUB_BATCH = 5000

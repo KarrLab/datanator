@@ -1,0 +1,22 @@
+ 
+
+                ===================================
+                |                                 |
+                |                                 |
+                |    Starting Datanator Build     |
+                |                                 |
+                |                                 |
+                ===================================
+
+                
+
+------------------------ Initializing 'build_pax' ------------------------
+(psycopg2.IntegrityError) duplicate key value violates unique constraint "physical_entity_pkey"
+DETAIL:  Key (observation_id)=(68063) already exists.
+ [SQL: 'INSERT INTO physical_entity (type) VALUES (%(type)s)'] [parameters: ({'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'}  ... displaying 10 of 956 total bound parameter sets ...  {'type': 'Protein Subunit'}, {'type': 'Protein Subunit'})] (Background on this error at: http://sqlalche.me/e/gkpj)
+
+------------------------ Initializing 'build_intact_interactions' ------------------------
+
+------------------------ Initializing 'build_sabio' ------------------------
+
+------------------------ Initializing 'build_array_express' ------------------------

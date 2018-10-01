@@ -9,7 +9,7 @@ This module tests all aspects of jaspar.py
 
 """
 
-from kinetic_datanator.data_source import jaspar
+from datanator.data_source import jaspar
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import random
@@ -22,13 +22,13 @@ import unittest
 class TestLoad(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.jaspar = jaspar.Jaspar(cache_dirname=self.cache_dirname, download_backups=False, load_content=True)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.jaspar = jaspar.Jaspar(cache_dirname=cls.cache_dirname, download_backups=False, load_content=True)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_load(self):
 

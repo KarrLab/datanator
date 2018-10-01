@@ -9,7 +9,7 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.data_source import pax
+from datanator.data_source import pax
 from sqlalchemy.orm import sessionmaker
 import tempfile
 import shutil
@@ -18,16 +18,16 @@ import shutil
 class TestPaxDBDownload(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.src = pax.Pax(cache_dirname=self.cache_dirname,
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.src = pax.Pax(cache_dirname=cls.cache_dirname,
                            load_content=False, clear_content=False,
                            download_backups=True, verbose=True,
                            max_entries=5)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_downloaded_content(self):
         session = self.src.session

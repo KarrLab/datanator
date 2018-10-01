@@ -1,5 +1,5 @@
 import unittest
-from kinetic_datanator.data_source import download_ax
+from datanator.data_source import download_ax
 import os
 import shutil
 import json

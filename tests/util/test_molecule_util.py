@@ -6,8 +6,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.util import molecule_util
-from kinetic_datanator.util import warning_util
+from datanator.util import molecule_util
+from datanator.util import warning_util
 from wc_utils.util.types import assert_value_equal
 import numpy
 import pybel

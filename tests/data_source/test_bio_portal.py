@@ -6,7 +6,7 @@
 :License: MIT
 """
 
-from kinetic_datanator.data_source import bio_portal
+from datanator.data_source import bio_portal
 import os
 import shutil
 import sys

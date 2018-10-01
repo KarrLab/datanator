@@ -1,7 +1,7 @@
 Installation
 ============
-The following instructions describe how to install ``kinetic_datanator`` onto Ubuntu Linux 16.04.
-Kinetic Datanator only supports Python 3.
+The following instructions describe how to install ``datanator`` onto Ubuntu Linux 16.04.
+Datanator only supports Python 3.
 
 Install dependencies
 --------------------
@@ -36,11 +36,11 @@ The following shell commands can be used to install these dependencies onto Ubun
     ldconfig
 
 
-Install ``kinetic_datanator``
+Install ``datanator``
 -----------------------------
-Second, please run the following shell commands to clone and install ``kinetic_datanator`` from GitHub::
+Second, please run the following shell commands to clone and install ``datanator`` from GitHub::
 
-    git clone git@github.com:KarrLab/kinetic_datanator.git
-    pip3 install -e kinetic_datanator
+    git clone git@github.com:KarrLab/datanator.git
+    pip3 install -e datanator
 
-Because ``kinetic_datanator`` is under active development, we recommend regularly pulling the latest revision of ``kinetic_datanator`` from GitHub.
+Because ``datanator`` is under active development, we recommend regularly pulling the latest revision of ``datanator`` from GitHub.

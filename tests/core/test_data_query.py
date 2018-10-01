@@ -7,9 +7,9 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
-from kinetic_datanator.core import data_query
-from kinetic_datanator.util import warning_util
+from datanator.core import data_model
+from datanator.core import data_query
+from datanator.util import warning_util
 import copy
 import math
 import numpy

@@ -10,7 +10,7 @@
 """
 
 from datetime import datetime
-from kinetic_datanator.core import data_model
+from datanator.core import data_model
 import unittest
 
 

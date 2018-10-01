@@ -6,8 +6,8 @@
 :License: MIT
 """
 
-from kinetic_datanator.core import data_model
-from kinetic_datanator.util import reaction_util
+from datanator.core import data_model
+from datanator.util import reaction_util
 import unittest
 
 

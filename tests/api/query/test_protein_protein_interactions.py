@@ -1,8 +1,8 @@
 
 import unittest
-from kinetic_datanator.core import data_model
-from kinetic_datanator.api.query import protein_protein_interactions as ppi
-from kinetic_datanator.core import models, common_schema
+from datanator.core import data_model
+from datanator.api.query import protein_protein_interactions as ppi
+from datanator.core import models, common_schema
 import tempfile
 import shutil
 import unittest
@@ -11,22 +11,21 @@ import unittest
 class ProteinInteractionandComplexQuery(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
-        self.protein_Q9CWF2 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q9CWF2').first()
-        self.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
-        self.protein_p49418 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
-        self.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
-        self.collagen = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Collagen type III trimer').first()
+        cls.protein_Q9CWF2 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q9CWF2').first()
+        cls.protein_p53622 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P53622').first()
+        cls.protein_p49418 = flk.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
+        cls.rhino_complex = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Rhino-Deadlock-Cutoff Complex').first()
+        cls.collagen = flk.session.query(models.ProteinComplex).filter_by(complex_name = 'Collagen type III trimer').first()
 
-
-        self.q= ppi.ProteinInteractionandComplexQuery(cache_dirname=self.cache_dirname)
+        cls.q= ppi.ProteinInteractionandComplexQuery(cache_dirname=cls.cache_dirname)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_get_observed_result_subunit(self):
         observed_interaction, observed_complex = self.q.get_observed_result(self.protein_p49418)

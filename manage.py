@@ -1,7 +1,7 @@
 from flask_script import Manager, Server
 from flask_migrate import Migrate, MigrateCommand
-from kinetic_datanator import app, db
-from kinetic_datanator.core import common_schema
+from datanator import app, db
+from datanator.core import common_schema
 # from app.server.model import User
 
 migrate = Migrate(app, db)

@@ -9,9 +9,9 @@
 
 from capturer import CaptureOutput
 from cement.utils import test
-from kinetic_datanator.__main__ import App
-from kinetic_datanator.util import warning_util
-import kinetic_datanator
+from datanator.__main__ import App
+from datanator.util import warning_util
+import datanator
 import mock
 import os
 import re
@@ -31,24 +31,24 @@ class BaseControllerTestCase(unittest.TestCase):
             with App(argv=['-v']) as app:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(capture_output.get_text(), kinetic_datanator.__version__)
+                self.assertEqual(capture_output.get_text(), datanator.__version__)
 
         with CaptureOutput() as capture_output:
             with App(argv=['--version']) as app:
                 with self.assertRaises(SystemExit):
                     app.run()
-                self.assertEqual(capture_output.get_text(), kinetic_datanator.__version__)
+                self.assertEqual(capture_output.get_text(), datanator.__version__)
 
 
 class TestUploadData(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_upload_ref_seq(self):
         with App(argv=['upload', 'reference-genome',
@@ -61,12 +61,12 @@ class TestUploadData(unittest.TestCase):
 class TestBuildController(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_build_corum(self):
         with App(argv=['build', '--path='+self.dirname, '--max-entries=1', '--verbose=True', 'corum']) as app:
@@ -110,12 +110,12 @@ class TestBuildController(unittest.TestCase):
 class TestDownloadController(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.dirname = tempfile.mkdtemp()
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.dirname)
 
     def test_download_corum(self):
         with App(argv=['download', '--path='+self.dirname, 'corum']) as app:
@@ -332,10 +332,10 @@ class HelpTestCase(unittest.TestCase):
 
 class DbControllerTestCase(unittest.TestCase):
     def setUp(self):
-        self.url = kinetic_datanator.db.engine.url
+        self.url = datanator.db.engine.url
         if sqlalchemy_utils.functions.database_exists(self.url):
             sqlalchemy_utils.functions.drop_database(self.url)
-            kinetic_datanator.db.engine.dispose()
+            datanator.db.engine.dispose()
         self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
 
         if os.path.isdir('migrations'):
@@ -345,7 +345,7 @@ class DbControllerTestCase(unittest.TestCase):
     def tearDown(self):
         if sqlalchemy_utils.functions.database_exists(self.url):
             sqlalchemy_utils.functions.drop_database(self.url)
-            kinetic_datanator.db.engine.dispose()
+            datanator.db.engine.dispose()
         self.assertFalse(sqlalchemy_utils.functions.database_exists(self.url))
 
         if os.path.isdir('migrations'):
@@ -356,15 +356,15 @@ class DbControllerTestCase(unittest.TestCase):
         with App(argv=['db', 'create']) as app:
             app.run()
         self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
-        self.assertNotEqual(kinetic_datanator.db.engine.table_names(), [])
+        self.assertNotEqual(datanator.db.engine.table_names(), [])
 
     def test_create_table_only(self):
         sqlalchemy_utils.functions.create_database(self.url)
         self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
-        self.assertEqual(kinetic_datanator.db.engine.table_names(), [])
+        self.assertEqual(datanator.db.engine.table_names(), [])
         with App(argv=['db', 'create']) as app:
             app.run()
-        self.assertNotEqual(kinetic_datanator.db.engine.table_names(), [])
+        self.assertNotEqual(datanator.db.engine.table_names(), [])
 
     def test_migrate(self):
         with App(argv=['db', 'create']) as app:
@@ -389,8 +389,8 @@ class DbControllerTestCase(unittest.TestCase):
             app.run()
         self.assertTrue(sqlalchemy_utils.functions.database_exists(self.url))
 
-        session = sqlalchemy.orm.sessionmaker(bind=kinetic_datanator.db.engine)()
-        query = session.query(kinetic_datanator.core.models.Observation)
+        session = sqlalchemy.orm.sessionmaker(bind=datanator.db.engine)()
+        query = session.query(datanator.core.models.Observation)
         self.assertEqual(query.count(), 0)
         session.close()
 
@@ -398,7 +398,7 @@ class DbControllerTestCase(unittest.TestCase):
             # todo: remove --restore-schema and --do-not-exit-on-error after fixing Alembic issue with migrations
             app.run()
 
-        session = sqlalchemy.orm.sessionmaker(bind=kinetic_datanator.db.engine)()
-        query = session.query(kinetic_datanator.core.models.Observation)
+        session = sqlalchemy.orm.sessionmaker(bind=datanator.db.engine)()
+        query = session.query(datanator.core.models.Observation)
         self.assertGreater(query.count(), 0)
         session.close()

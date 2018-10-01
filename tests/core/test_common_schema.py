@@ -8,8 +8,8 @@
 :License: MIT
 """
 import unittest
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.data_source import pax
+from datanator.core import common_schema, models
+from datanator.data_source import pax
 import flask
 import tempfile
 import shutil
@@ -21,20 +21,20 @@ from six.moves import reload_module
 class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
         # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
         # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
-        self.flk = common_schema.CommonSchema(clear_content=True,
+        cls.flk = common_schema.CommonSchema(clear_content=True,
                                               restore_backup_data=True, restore_backup_schema=True,
                                               restore_backup_exit_on_error=False,
-                                              cache_dirname=self.cache_dirname)
+                                              cache_dirname=cls.cache_dirname)
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         models.db.session.remove()
         models.db.drop_all()
-        shutil.rmtree(self.cache_dirname)
+        shutil.rmtree(cls.cache_dirname)
 
     def test_repr_methods(self):
 
@@ -66,24 +66,23 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 @unittest.skip('skip')
 class LoadingTestCommonSchema(unittest.TestCase):
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
         # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
         # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
-        self.cs = common_schema.CommonSchema(
+        cls.cs = common_schema.CommonSchema(
             clear_content=True,
             restore_backup_data=True, restore_backup_schema=True,
             restore_backup_exit_on_error=False,
-            cache_dirname=self.cache_dirname,
+            cache_dirname=cls.cache_dirname,
             load_content=True, max_entries=10,
             verbose=True, test=True)
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         models.db.session.remove()
         models.db.drop_all()
-        shutil.rmtree(self.cache_dirname)
-
+        shutil.rmtree(cls.cache_dirname)
 
     def test_ncbi(self):
         session = self.cs.session

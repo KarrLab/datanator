@@ -7,8 +7,8 @@
 """
 
 
-from kinetic_datanator.core import common_schema, models
-from kinetic_datanator.api.query import text_search
+from datanator.core import common_schema, models
+from datanator.api.query import text_search
 import tempfile
 import shutil
 import unittest
@@ -17,15 +17,15 @@ import unittest
 class TestTextSearchSession(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.sesh = text_search.TextSearchSession(db_cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.sesh = text_search.TextSearchSession(db_cache_dirname=cls.cache_dirname)
 
-        flaskdb = common_schema.CommonSchema(cache_dirname = self.cache_dirname)
+        flaskdb = common_schema.CommonSchema(cache_dirname = cls.cache_dirname)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_list_return_objects(self):
         """

@@ -1,14 +1,14 @@
 
 from capturer import CaptureOutput
 from cement.utils import test
-from kinetic_datanator.core import upload_data
-from kinetic_datanator.util import warning_util
+from datanator.core import upload_data
+from datanator.util import warning_util
 import os
 import re
 import shutil
 import tempfile
 import unittest
-from kinetic_datanator.core import common_schema, models
+from datanator.core import common_schema, models
 import json
 
 
@@ -20,13 +20,13 @@ warning_util.disable_warnings()
 class TestUploadData(unittest.TestCase):
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
     @classmethod
-    def tearDownClass(self):
-        shutil.rmtree(self.cache_dirname)
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
 
     def test_upload_rna_rseq_experiment(self):
     	dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fixtures/RNA-Seq_Experiment_Test_Template"))
@@ -40,16 +40,16 @@ class TestUploadDataFromJson(unittest.TestCase):
 
 
     @classmethod
-    def setUpClass(self):
-        self.cache_dirname = tempfile.mkdtemp()
-        #self.cache_dirname = "/home/yosef/Desktop/angular"
-        self.flk = common_schema.CommonSchema(cache_dirname=self.cache_dirname)
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        #cls.cache_dirname = "/home/yosef/Desktop/angular"
+        cls.flk = common_schema.CommonSchema(cache_dirname=cls.cache_dirname)
 
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         #pass
-        shutil.rmtree(self.cache_dirname)
+        shutil.rmtree(cls.cache_dirname)
 
 
 
