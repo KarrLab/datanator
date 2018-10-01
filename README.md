@@ -1,4 +1,4 @@
-[![PyPI package](https://img.shields.io/pypi/v/datanator.svg)](https://pypi.python.org/pypi/datanator) 
+[//]: # ( [![PyPI package](https://img.shields.io/pypi/v/datanator.svg)](https://pypi.python.org/pypi/datanator) )
 [![Documentation](https://readthedocs.org/projects/datanator/badge/?version=latest)](http://docs.karrlab.org/datanator)
 [![Test results](https://circleci.com/gh/KarrLab/datanator.svg?style=shield)](https://circleci.com/gh/KarrLab/datanator)
 [![Test coverage](https://coveralls.io/repos/github/KarrLab/datanator/badge.svg)](https://coveralls.io/github/KarrLab/datanator)
