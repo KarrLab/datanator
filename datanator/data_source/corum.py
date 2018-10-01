@@ -122,7 +122,7 @@ class Corum(data_source.HttpDataSource):
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        'corum': 'http://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
+        'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
     }
 
     def load_content(self):
