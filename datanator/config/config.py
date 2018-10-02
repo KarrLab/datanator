@@ -35,8 +35,8 @@ class CircleTestingConfig(BaseConfig):
 
 class BuildConfig(BaseConfig):
     """Testing configuration."""
-    DEBUG = False
-    TESTING = False
+    DEBUG = True
+    TESTING = True
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = 'postgresql://postgres@postgres_service/CommonSchema'
@@ -45,13 +45,12 @@ class BuildConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     """Testing configuration."""
-    DEBUG = True
-    TESTING = True
+    DEBUG = False
+    TESTING = False
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
     #TODO: Need to determine the URI
     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://karrlab:karr7116@commonschema.chqeewx1anny.us-east-1.rds.amazonaws.com/commonschema'
-    # SQLALCHEMY_BINDS = {'data': 'postgres:///localhost/User'}
     DEBUG_TB_ENABLED = False
     PRESERVE_CONTEXT_ON_EXCEPTION = False
 
