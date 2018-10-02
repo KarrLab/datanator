@@ -15,6 +15,7 @@ flask_migrate
 flask_restplus
 flask_script
 flask_sqlalchemy
+gunicorn
 jxmlease
 numpy
 git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.5

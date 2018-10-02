@@ -6,4 +6,4 @@ WORKDIR /home
 RUN pip3 install -U --process-dependency-links -e /home/[all]
 
 
-CMD python3 manage.py runserver --host 0.0.0.0 --port ${PORT}
+CMD gunicorn -w 4 -b 0.0.0.0:${PORT} manage:app
