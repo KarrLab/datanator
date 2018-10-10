@@ -272,7 +272,6 @@ class Method(db.Model):
     performer = db.Column(db.Unicode)
     hardware = db.Column(db.Unicode)
     software = db.Column(db.Unicode)
-    search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Method(%s||%s)' % (self.name, self.id)
@@ -294,7 +293,6 @@ class Characteristic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category = db.Column(db.Unicode)
     value = db.Column(db.Unicode)
-    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Charactaristic(%s)' % (self.id)
@@ -316,7 +314,6 @@ class Variable(db.Model):
     category = db.Column(db.Unicode)
     value = db.Column(db.Unicode)
     units = db.Column(db.Unicode)
-    #search_vector = db.Column(TSVectorType('name'))
 
     def __repr__(self):
         return 'Variable(%s)' % (self.id)
@@ -566,7 +563,8 @@ class ProteinSubunit(PhysicalEntity):
     molecular_weight = db.Column(db.Float)
     pax_load = db.Column(db.Integer)
     uniprot_checked = db.Column(db.Boolean)
-    search_vector = db.Column(TSVectorType('subunit_name', 'uniprot_id', 'gene_name', 'canonical_sequence'))
+    simple_search_vector = db.Column(TSVectorType('subunit_name'))
+    complex_search_vector = db.Column(TSVectorType('subunit_name', 'uniprot_id', 'gene_name'))
 
     proteincomplex_id = db.Column(
         db.Integer, db.ForeignKey('protein_complex.complex_id'))
@@ -613,7 +611,7 @@ class ProteinComplex(PhysicalEntity):
     class_name = db.Column(db.Unicode)
     family_name = db.Column(db.Unicode)
     molecular_weight = db.Column(db.Float)
-    search_vector = db.Column(TSVectorType('complex_name', 'go_id', 'funcat_id', 'su_cmt'))
+    simple_search_vector = db.Column(TSVectorType('complex_name'))
 
     def __repr__(self):
         return self.__class__.__name__+'||%s' % (self.id)
@@ -641,7 +639,8 @@ class Metabolite(PhysicalEntity):
     description = db.Column(db.Unicode)
     comment = db.Column(db.Unicode)
     _is_name_ambiguous = db.Column(db.Boolean)
-    search_vector = db.Column(TSVectorType('metabolite_name', 'description'))
+    simple_search_vector = db.Column(TSVectorType('metabolite_name'))
+    complex_search_vector = db.Column(TSVectorType('metabolite_name', 'description'))
 
     structure_id = db.Column(db.Integer, db.ForeignKey('structure.struct_id'))
     structure = db.relationship('Structure', backref='metabolite')
@@ -751,7 +750,6 @@ class ProteinInteraction(PhysicalProperty):
     stoich_b = db.Column(db.Unicode)
     interaction_type = db.Column(db.Unicode)
     confidence = db.Column(db.Unicode)
-    search_vector = db.Column(TSVectorType('protein_a', 'protein_b', 'gene_a', 'gene_b'))
 
     def __repr__(self):
         return 'ProteinInteratction(%s)' % (self.interaction_id)
