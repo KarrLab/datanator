@@ -34,20 +34,20 @@ class MetaboliteSerializer(ma.ModelSchema):
     structure = ma.Nested(StructureSerializer)
 
     class Meta:
-        exclude = ["simple_search_vector", 'complex_search_vector', "parameter", "reaction", "_is_name_ambiguous", "concentration"]
+        exclude = ["search_vector", "parameter", "reaction", "_is_name_ambiguous", "concentration"]
         model = models.Metabolite
 
 class ProteinSubunitSerializer(ma.ModelSchema):
     _metadata = ma.Nested(MetadataSerializer)
     class Meta:
-        exclude = ["simple_search_vector", 'complex_search_vector']
+        exclude = ["search_vector"]
         model = models.ProteinSubunit
 
 class ProteinComplexSerializer(ma.ModelSchema):
     _metadata = ma.Nested(MetadataSerializer)
     protein_subunit = ma.Nested(ProteinSubunitSerializer, many=True)
     class Meta:
-        exclude = ["simple_search_vector"]
+        exclude = ["search_vector"]
         model = models.ProteinComplex
 
 
