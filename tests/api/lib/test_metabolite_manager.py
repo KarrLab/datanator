@@ -68,8 +68,9 @@ class TestMetaboliteManager(unittest.TestCase):
 
     def test__search(self):
 
-        search_results = metabolite_manager._search('guanine')
-        self.assertGreater(len(search_results), 0)
+        simple_search_results = metabolite_manager._search_simple('guanine')
+        complex_search_results = metabolite_manager._search_complex('guanine')
+        self.assertGreater(len(complex_search_results), len(simple_search_results))
 
     def test__port(self):
         ported_specie = metabolite_manager._port(self.proline)

@@ -7,6 +7,9 @@ DATA_CACHE_DIR = os.path.expanduser(os.path.join('~', '.wc', 'data', 'datanator'
 ## Endpoints
 CURRENT_VERSION_ENDPOINT = '/v0'
 
+# Speed Contstants
+METABOLITE_REACTION_LIMIT = 5
+
 # Common Schema Constants
 DATA_DUMP_PATH = os.path.join(DATA_CACHE_DIR , 'CommonSchema.sql')
 PAX_NAME = 'Pax'

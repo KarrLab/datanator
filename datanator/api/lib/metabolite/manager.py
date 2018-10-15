@@ -98,16 +98,31 @@ class MetaboliteManager(BaseManager):
         return q.filter(condition).all()
 
 
-    def _search(self, value):
+    def _search_simple(self, value):
         """
         Args:
             value (:obj:`str`): string to search table for
 
         Returns:
-            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects
+            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects (search parameters: 'metabolite_name')
+
         """
 
-        return models.Metabolite.query.search(value).all()
+        return models.Metabolite.query.search(value, vector=models.Metabolite.simple_search_vector).all()
+
+
+    def _search_complex(self,value):
+        """
+        Args:
+            value (:obj:`str`): string to search table for
+
+        Returns:
+            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects search parameters: 'metabolite_name',  'description')
+            
+        """
+
+        return models.Metabolite.query.search(value, vector=models.Metabolite.complex_search_vector).all()
+
 
 
     def _port(self, metabolite):

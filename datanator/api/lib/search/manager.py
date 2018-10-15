@@ -11,7 +11,7 @@ import six
 import os
 # from datanator.api.query import reaction_kinetics
 from datanator.core import models, common_schema
-from datanator.util.constants import DATA_CACHE_DIR
+from datanator.util.constants import DATA_CACHE_DIR, METABOLITE_REACTION_LIMIT
 from datanator.api.lib.data_manager import BaseManager
 from datanator.api.lib.metabolite.manager import metabolite_manager
 from datanator.api.lib.subunit.manager import subunit_manager
@@ -44,12 +44,13 @@ class SearchManager(BaseManager):
             dict_db_models (:obj:`dict`): Dictionary of collected items from text search
         """
 
-        metabolite = metabolite_manager._search(string)
+        metabolite = metabolite_manager._search_simple(string)
         complex = complex_manager._search(string)
-        subunit = subunit_manager._search(string)
+        subunit = subunit_manager._search_simple(string)
 
         rxns = []
-        for _metabolite in metabolite:
+        print(metabolite[:METABOLITE_REACTION_LIMIT])
+        for _metabolite in metabolite[:METABOLITE_REACTION_LIMIT]:
             rxn_list = reaction_manager.get_reaction_by_metabolite(_metabolite)
             if rxn_list:
                 rxns.append(rxn_list)

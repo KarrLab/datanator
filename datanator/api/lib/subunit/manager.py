@@ -20,8 +20,13 @@ class ProteinSubunitManager(BaseManager):
     def get_subunit_by_id(self, id):
         return self.data_source.session.query(models.ProteinSubunit).get(id)
 
-    def _search(self, value):
-        return models.ProteinSubunit.query.search(value).all()
+    def _search_simple(self, value):
+        return models.ProteinSubunit.query.search(value, vector=models.ProteinSubunit.simple_search_vector).all()
+
+
+    def _search_complex(self, value):
+        return models.ProteinSubunit.query.search(value, vector=models.ProteinSubunit.complex_search_vector).all()
+
 
     def _port(self, protein):
         return data_model.ProteinSpecie(name=protein.subunit_name,
