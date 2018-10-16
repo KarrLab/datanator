@@ -76,8 +76,8 @@ class TestLoadingIntAct(unittest.TestCase):
         self.assertEqual(q.evidence, 'intact:EBI-2292448')
 
     def test_interactions(self):
-        q = self.intact.session.query(intact.ProteinInteraction).filter_by(index=99).first()
-        self.assertEqual(q.protein_a, 'Q14103-4')
+        q = self.intact.session.query(intact.ProteinInteraction).filter_by(protein_a='Q14103-2', protein_b='Q9Y6M1').first()
+        self.assertEqual(q.protein_a, 'Q14103-2')
         self.assertEqual(q.protein_b, 'Q9Y6M1')
         self.assertEqual(q.gene_b, 'IGF2BP2')
         self.assertEqual(q.gene_a, 'HNRNPD')
