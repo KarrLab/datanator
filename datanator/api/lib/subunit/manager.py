@@ -204,19 +204,19 @@ class ProteinSubunitManager(BaseManager):
         condition = models.ProteinSubunit.canonical_sequence == sequence
         return q.filter(condition)
 
-    def get_abundance_by_entrez(self, entrez_id, select=models.AbundanceData):
-        """ Find the abundance from uniprot
-
-        Args:
-            entrez_id (:obj:`str`): NCBI entrez id for a given protein
-
-        Returns:
-            :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
-        """
-        q = self.data_source.session.query(select).join(
-            models.ProteinSubunit, models.AbundanceData.subunit)
-        condition = models.ProteinSubunit.entrez_id == entrez_id
-        return q.filter(condition)
+    # def get_abundance_by_entrez(self, entrez_id, select=models.AbundanceData):
+    #     """ Find the abundance from uniprot
+    #
+    #     Args:
+    #         entrez_id (:obj:`str`): NCBI entrez id for a given protein
+    #
+    #     Returns:
+    #         :obj:`sqlalchemy.orm.query.Query`: query for matching abundance rows
+    #     """
+    #     q = self.data_source.session.query(select).join(
+    #         models.ProteinSubunit, models.AbundanceData.subunit)
+    #     condition = models.ProteinSubunit.entrez_id == entrez_id
+    #     return q.filter(condition)
 
     def get_abundance_by_mass(self, mass, select=models.AbundanceData):
         """ Find the abundance from uniprot

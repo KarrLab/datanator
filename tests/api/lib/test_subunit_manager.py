@@ -17,6 +17,8 @@ class TestProteinSubunitManager(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.protein_P00323 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P00323').first()
+        cls.protein_P49418 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'P49418').first()
+        cls.protein_O15169 = subunit_manager.data_source.session.query(models.ProteinSubunit).filter_by(uniprot_id = 'O15169').first()
 
     def test_get_abundance_by_uniprot(self):
         uniprot = self.protein_P00323.uniprot_id
@@ -61,3 +63,12 @@ class TestProteinSubunitManager(unittest.TestCase):
             models.AbundanceData.pax_load.in_([1, 2])).all()
         self.assertEqual(set(c.abundance for c in abundances),
                          set([1003.0, 1336.0, 1027.0, 1861.0]))
+
+
+    def test_get_observable_interactions(self):
+        interactions = subunit_manager.get_observable_interactions(self.protein_P49418)
+        self.assertGreater(len(interactions), 0)
+
+    def test_get_observable_complex(self):
+        complexes = subunit_manager.get_observable_complex(self.protein_O15169)
+        self.assertGreater(len(complexes), 0)

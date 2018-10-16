@@ -78,3 +78,11 @@ class TestMetaboliteManager(unittest.TestCase):
         self.assertEqual(ported_specie.name, self.proline.metabolite_name)
         self.assertEqual(ported_specie.structure, self.proline.structure._value_inchi)
         self.assertGreater(len(ported_specie.cross_references), 0)
+
+
+    def test_get_metabolite_by_structure(self):
+        metabolites = metabolite_manager.get_metabolite_by_structure(self.proline.structure._value_inchi)
+        self.assertIn(self.proline, metabolites)
+
+        metabolites = metabolite_manager.get_metabolite_by_structure(self.proline.structure._value_inchi, only_formula_and_connectivity=True)
+        self.assertIn(self.proline, metabolites)

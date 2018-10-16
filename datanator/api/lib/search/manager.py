@@ -49,7 +49,6 @@ class SearchManager(BaseManager):
         subunit = subunit_manager._search_simple(string)
 
         rxns = []
-        print(metabolite[:METABOLITE_REACTION_LIMIT])
         for _metabolite in metabolite[:METABOLITE_REACTION_LIMIT]:
             rxn_list = reaction_manager.get_reaction_by_metabolite(_metabolite)
             if rxn_list:

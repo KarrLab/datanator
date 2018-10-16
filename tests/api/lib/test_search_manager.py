@@ -17,3 +17,7 @@ class TestSearchManager(unittest.TestCase):
         self.assertGreater(len(dict['Reaction']), 0)
         self.assertEqual(len(dict['ProteinSubunit']), 0)
         self.assertEqual(len(dict['ProteinComplex']), 0)
+
+    def test_get_object_by_id(self):
+        obj = search_manager.get_object_by_id(5)
+        self.assertTrue(obj)
