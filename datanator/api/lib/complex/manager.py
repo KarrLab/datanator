@@ -19,7 +19,7 @@ class ProteinComplexManager(BaseManager):
         return self.data_source.session.query(models.ProteinComplex).get(id)
 
     def _search(self, value):
-        return models.ProteinComplex.query.search(value).all()
+        return models.ProteinComplex.query.search(value, vector=models.ProteinComplex.simple_search_vector).all()
 
     def _port(self, complex):
         resource = [data_model.Resource(namespace = resource.namespace,
