@@ -158,7 +158,9 @@ class PostgresDataSource(DataSource):
 
         # copy new files to package
         path = self._get_dump_path()
-        # os.symlink(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
+        if os.path.exists(os.path.join(tmp_dirname, path)):
+            os.remove(os.path.join(tmp_dirname, path))
+        os.symlink(os.path.join(self.cache_dirname, path), os.path.join(tmp_dirname, path))
 
         # build and push package
         manager.upload()
