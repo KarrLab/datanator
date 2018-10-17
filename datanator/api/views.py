@@ -56,20 +56,23 @@ class Search(Resource):
 class MetaboliteSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the metabolite space'})
     def get(self,value):
-        serialized_metabolites = MetaboliteSerializer().dump(search_dict['Metabolite'], many=True)
-        return {'metabolites': serialized_metabolite.data}
+        metabolite_search = metabolite_manager._search_complex(value)
+        serialized_metabolites = MetaboliteSerializer().dump(metabolite_search, many=True)
+        return {'metabolites': serialized_metabolites.data}
 
 class ProteinSubunitSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein subunit space'})
     def get(self,value):
-        serialized_subunits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
+        subunit_search = subunit_manager._search_complex(value)
+        serialized_subunits = ProteinSubunitSerializer().dump(subunit_search, many=True)
         return {'subunits': serialized_subunits.data}
 
 class ProteinComplexSearch(Resource):
     @api.doc(params={'value': 'Value to search over in the protein complex space'})
     def get(self,value):
-        serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
-        return {'complexes': serialized_complex.data}
+        complex_search  = complex_manager._search(value)
+        serialized_complexes = ProteinComplexSerializer().dump(complex_search, many=True)
+        return {'complexes': serialized_complexes.data}
 
 class Metabolite(Resource):
 
