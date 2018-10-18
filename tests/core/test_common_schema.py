@@ -17,24 +17,12 @@ import random
 import os
 from six.moves import reload_module
 
-@unittest.skip('skip for circle')
-class DownloadTestFlaskCommonSchema(unittest.TestCase):
+
+class TestExistingDatabase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cache_dirname = tempfile.mkdtemp()
-        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
-        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
-        cls.flk = common_schema.CommonSchema(clear_content=True,
-                                              restore_backup_data=True, restore_backup_schema=True,
-                                              restore_backup_exit_on_error=False,
-                                              cache_dirname=cls.cache_dirname)
-
-    @classmethod
-    def tearDownClass(cls):
-        models.db.session.remove()
-        models.db.drop_all()
-        shutil.rmtree(cls.cache_dirname)
+        cls.flk = common_schema.CommonSchema()
 
     def test_repr_methods(self):
 
@@ -62,6 +50,7 @@ class DownloadTestFlaskCommonSchema(unittest.TestCase):
 
         subunits = session.query(models.ProteinSubunit).all()
         self.assertGreater(len(subunits), 20000)
+
 
 @unittest.skip('skip')
 class LoadingTestCommonSchema(unittest.TestCase):

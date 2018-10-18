@@ -25,6 +25,9 @@ api_blueprint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(api_blueprint, version='0.0', title='Datanator API',
     description='Providing Data for Modelers', doc='/docs/')
 
+parser = reqparse.RequestParser()
+parser.add_argument('download', type=bool, default=False)
+
 # @api.representation('text/html')
 # def output_html(data, code, headers=None):
 #     resp = make_response(render_template('api/api.html', content = json.dumps(data, sort_keys=True, indent=4)), code)
@@ -40,7 +43,8 @@ def output_json(data, code, headers=None):
 
 class Search(Resource):
 
-    @api.doc(params={'value': 'Value to search for over the database'})
+    @api.doc(params={'value': 'Value to search for over the database',
+                    'download': 'Boolean option to download content'})
     def get(self, value):
         search_dict = search_manager.search(value)
 
@@ -48,34 +52,54 @@ class Search(Resource):
         serialized_complexes = ProteinComplexSerializer().dump(search_dict['ProteinComplex'], many=True)
         serialized_subunits = ProteinSubunitSerializer().dump(search_dict['ProteinSubunit'], many=True)
         serialized_reactions = ReactionSerializer().dump(search_dict['Reaction'], many=True)
+
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(value)
+
         return {'metabolites': serialized_metabolites.data,
                 'complexes': serialized_complexes.data,
                 'subunits': serialized_subunits.data,
-                'reactions': serialized_reactions.data}
+                'reactions': serialized_reactions.data}, 200, headers
 
 class MetaboliteSearch(Resource):
-    @api.doc(params={'value': 'Value to search over in the metabolite space'})
+    @api.doc(params={'value': 'Value to search over in the metabolite space',
+                    'download': 'Boolean option to download content'})
     def get(self,value):
         metabolite_search = metabolite_manager._search_complex(value)
         serialized_metabolites = MetaboliteSerializer().dump(metabolite_search, many=True)
-        return {'metabolites': serialized_metabolites.data}
+
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(value)
+
+        return {'metabolites': serialized_metabolites.data}, 200, headers
 
 class ProteinSubunitSearch(Resource):
-    @api.doc(params={'value': 'Value to search over in the protein subunit space'})
+    @api.doc(params={'value': 'Value to search over in the protein subunit space',
+                    'download': 'Boolean option to download content'})
     def get(self,value):
         subunit_search = subunit_manager._search_complex(value)
         serialized_subunits = ProteinSubunitSerializer().dump(subunit_search, many=True)
-        return {'subunits': serialized_subunits.data}
+
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(value)
+
+        return {'subunits': serialized_subunits.data}, 200, headers
 
 class ProteinComplexSearch(Resource):
-    @api.doc(params={'value': 'Value to search over in the protein complex space'})
+    @api.doc(params={'value': 'Value to search over in the protein complex space',
+                    'download': 'Boolean option to download content'})
     def get(self,value):
         complex_search  = complex_manager._search(value)
         serialized_complexes = ProteinComplexSerializer().dump(complex_search, many=True)
-        return {'complexes': serialized_complexes.data}
+        return {'complexes': serialized_complexes.data}, 200, headers
 
 class Metabolite(Resource):
 
+    @api.doc(params={'id': 'Metabolite ID to find information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         metabolite = metabolite_manager.get_metabolite_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
@@ -85,12 +109,18 @@ class Metabolite(Resource):
         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
         serialized_reactions =  ReactionSerializer().dump(reactions, many=True)
 
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(metabolite.metabolite_name)
+
         return {'object':serialized_metabolite.data,
                 'concentrations': serialized_concentrations.data,
-                'reactions' : serialized_reactions.data}
+                'reactions' : serialized_reactions.data}, 200, headers
 
 class ProteinSubunit(Resource):
 
+    @api.doc(params={'id': 'Protein Subunit ID to find information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         subunit = subunit_manager.get_subunit_by_id(id)
         observed_abundances = subunit_manager.get_observed_abundances(subunit)
@@ -102,12 +132,20 @@ class ProteinSubunit(Resource):
         serialized_interactions = ObservedInteractionSerializer().dump(observed_interactions, many=True)
         serialized_complexes = ObservedComplexSpecieSerializer().dump(observed_complexes, many=True)
 
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(subunit.uniprot_id)
+
+
         return {'object': serialized_subunit.data,
                 'abundances': serialized_abundances.data,
                 'interactions': serialized_interactions.data,
-                'complexes': serialized_complexes.data}
+                'complexes': serialized_complexes.data}, 200, headers
 
 class ProteinComplex(Resource):
+
+    @api.doc(params={'id': 'Protein Complex ID to find information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         complex = complex_manager.get_complex_by_id(id)
         observed_subunits = complex_manager.get_observable_subunits(complex)
@@ -115,10 +153,19 @@ class ProteinComplex(Resource):
         serialized_complex = ProteinComplexSerializer().dump(complex)
         serialized_subunits = ObservedProteinSpecieSerializer().dump(observed_subunits, many=True)
 
+
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(complex.complex_name)
+
+
         return {'object':serialized_complex.data,
-                'subunits': serialized_subunits.data}
+                'subunits': serialized_subunits.data}, 200, headers
 
 class Reaction(Resource):
+
+    @api.doc(params={'id': 'Reaction ID to find information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
         observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
@@ -126,27 +173,45 @@ class Reaction(Resource):
         serialized_reaction = ReactionSerializer().dump(reaction)
         serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True)
 
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}_reaction.json".format(reaction.id)
+
+
         return {'object': serialized_reaction.data,
-                'parameters': serialized_parameters.data}
+                'parameters': serialized_parameters.data}, 200, headers
 
 class MetaboliteConcentration(Resource):
 
-    @api.doc(params={'id': 'ID number of the given metabolite'})
+    @api.doc(params={'id': 'Metabolite ID to find concentration information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         metabolite = metabolite_manager.get_metabolite_by_id(id)
         observed_concentrations = metabolite_manager.get_observed_concentrations(metabolite)
         serialized_concentrations = ObservedValueSerializer().dump(observed_concentrations, many=True)
 
-        return {'concentrations': serialized_concentrations}
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}_concentrations.json".format(metabolite.metabolite_name)
+
+
+        return {'concentrations': serialized_concentrations}, 200, headers
 
 class ProteinAbundance(Resource):
 
+    @api.doc(params={'id': 'Protein Subunit ID to find abundance information for',
+                    'download': 'Boolean option to download content'})
     def get(self, id):
         subunit = subunit_manager.get_subunit_by_id(id)
         observed_abundances = subunit_manager.get_observed_abundances(subunit)
         serialized_abundances =  ObservedValueSerializer().dump(observed_abundances, many=True).data
 
-        return {'abundances':serialized_abundances}
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}_abundances.json".format(subunit.uniprot_id)
+
+
+        return {'abundances':serialized_abundances}, 200, headers
 
 class ProteinInteraction(Resource):
 
@@ -155,53 +220,15 @@ class ProteinInteraction(Resource):
 
 class ReactionParameter(Resource):
 
+    @api.doc(params={'id': 'Reaction ID to find reaction paramater information for',
+                    'download': 'Boolean option to download content'})
     def get(self,id):
         reaction = reaction_manager.get_reaction_by_kinetic_law_id(id)
         observed_parameters = reaction_manager.get_observed_parameter_value(reaction)
         serialized_parameters = ObservedValueSerializer().dump(observed_parameters, many=True).data
 
-        return {'parameters': serialized_parameters}
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}_rxn_parameters.json".format(reaction.id)
 
-
-
-# class DataDump(Resource):
-#     """
-#     Represents the API data dump from the common schema database
-#
-#     """
-#     #TODO: Account for other filetypes/Cache data tables
-#
-#     def get(self, table):
-#         type_mappings = {'INTEGER': int, 'VARCHAR(255)': str, 'BOOLEAN': bool, 'FLOAT': float, 'VARCHAR': str}
-#
-#         table_obj = getattr(model, table)
-#
-#         parser = reqparse.RequestParser()
-#         parser.add_argument('download', type=bool)
-#         parser.add_argument('format', type=str)
-#         for c in table_obj.__table__.columns:
-#             parser.add_argument(str(c.name), type=type_mappings[str(c.type)])
-#
-#         ## Full Table Return
-#         if all(value == None for value in parser.parse_args().values()):
-#             with open(DATA_CACHE_DIR+'/'+str(table)+'.json') as json_data:
-#                 return json.load(json_data)
-#
-#         ##Filtered Return and Download
-#         results = flk.session.query(table_obj)
-#         for key,value in parser.parse_args().items():
-#             if value == None or key=='download' or key=='format':
-#                 continue
-#             condition = getattr(table_obj, key) == value
-#             results = results.filter(condition)
-#
-#         ans = {}
-#         for item in results.all():
-#             ans[item.id] = item.serialize()
-#
-#         json_return = jsonify({table: ans})
-#
-#         if parser.parse_args()['download'] == True and parser.parse_args()['format'] == 'json' :
-#             json_return.headers['Content-Disposition'] = "attachment; filename="+str(table)+'.json'
-#
-#         return json_return
+        return {'parameters': serialized_parameters}, 200, headers
