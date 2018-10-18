@@ -94,6 +94,11 @@ class ProteinComplexSearch(Resource):
     def get(self,value):
         complex_search  = complex_manager._search(value)
         serialized_complexes = ProteinComplexSerializer().dump(complex_search, many=True)
+
+        headers = {}
+        if parser.parse_args()['download'] == True:
+            headers['Content-Disposition'] = "attachment; filename={0}.json".format(value)
+
         return {'complexes': serialized_complexes.data}, 200, headers
 
 class Metabolite(Resource):

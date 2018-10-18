@@ -25,50 +25,52 @@ class TestViews(TestCase):
     #NOTE: Text Search tests
     def test_search_general(self):
         response = Search().get(self.general_search)
-        self.assertEqual(set(response.keys()),set(['complexes', 'metabolites', 'reactions', 'subunits']) )
+        self.assertEqual(set(response[0].keys()),set(['complexes', 'metabolites', 'reactions', 'subunits']) )
 
     def test_search_metabolite(self):
         response = MetaboliteSearch().get(self.metabolite_search)
-        self.assertEqual(set(response.keys()),set(['metabolites']) )
+        self.assertEqual(set(response[0].keys()),set(['metabolites']) )
 
     def test_search_subunit(self):
         response = ProteinSubunitSearch().get(self.subunit_search)
-        self.assertEqual(set(response.keys()),set(['subunits']) )
+        self.assertEqual(set(response[0].keys()),set(['subunits']) )
 
     def test_search_complex(self):
         response = ProteinComplexSearch().get(self.complex_search)
-        self.assertEqual(set(response.keys()),set(['complexes']) )
+        self.assertEqual(set(response[0].keys()),set(['complexes']) )
 
     #NOTE: Object Specifict Tests
     def test_metabolite(self):
         response = Metabolite().get(self.metabolite_id)
-        self.assertEqual(set(response.keys()),set(['object','concentrations','reactions']))
+        self.assertEqual(set(response[0].keys()),set(['object','concentrations','reactions']))
 
     def test_subunit(self):
         response = ProteinSubunit().get(self.subunit_id)
-        self.assertEqual(set(response.keys()),set(['object','abundances','interactions', 'complexes']))
+        self.assertEqual(set(response[0].keys()),set(['object','abundances','interactions', 'complexes']))
 
     def test_complex(self):
         response = ProteinComplex().get(self.complex_id)
-        self.assertEqual(set(response.keys()),set(['object','subunits']))
+        self.assertEqual(set(response[0].keys()),set(['object','subunits']))
 
     def test_reaction(self):
         response = Reaction().get(self.reaction_id)
-        self.assertEqual(set(response.keys()),set(['object','parameters']))
+        self.assertEqual(set(response[0].keys()),set(['object','parameters']))
 
 
     #NOTE: Data Specific Tests
     def test_metabolite_concentrations(self):
         response = MetaboliteConcentration().get(self.metabolite_id)
-        self.assertEqual(set(response.keys()),set(['concentrations']))
+        self.assertEqual(set(response[0].keys()),set(['concentrations']))
 
     def test_protein_abundances(self):
         response = ProteinAbundance().get(self.subunit_id)
-        self.assertEqual(set(response.keys()),set(['abundances']))
+        self.assertEqual(set(response[0].keys()),set(['abundances']))
 
     def test_reaction_parameters(self):
         response = ReactionParameter().get(self.reaction_id)
-        self.assertEqual(set(response.keys()),set(['parameters']))
+        self.assertEqual(set(response[0].keys()),set(['parameters']))
+
+
 
 class TestAPIBlueprint(TestCase):
 
