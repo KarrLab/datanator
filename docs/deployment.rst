@@ -1,4 +1,4 @@
-Installation
+Deployment
 ============
 The following instructions describe how to deploy ``datanator`` to the heroku server
 
