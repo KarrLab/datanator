@@ -117,6 +117,7 @@ datanator/builds/logs/
 
 # configuration
 datanator.cfg
+datanator/production_server.py
 
 
 # minerva

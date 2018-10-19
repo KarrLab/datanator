@@ -1,5 +1,9 @@
 import os
 basedir = os.path.abspath(os.path.dirname(__file__))
+if os.path.isfile(os.path.join(basedir, '..', 'production_server.py')):
+    from datanator.production_server import PROD_SERVER_URI
+else:
+    PROD_SERVER_URI = 'postgres://postgres@localhost/CommonSchema'
 
 
 class BaseConfig(object):
@@ -50,15 +54,5 @@ class ProductionConfig(BaseConfig):
     BCRYPT_LOG_ROUNDS = 4
     WTF_CSRF_ENABLED = False
     #TODO: Need to determine the URI
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://karrlab:karr7116@commonschema.chqeewx1anny.us-east-1.rds.amazonaws.com/commonschema'
-    DEBUG_TB_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = PROD_SERVER_URI
     PRESERVE_CONTEXT_ON_EXCEPTION = False
-
-# class ProductionConfig(BaseConfig):
-#     """Production configuration."""
-#     SECRET_KEY = 'my_precious'
-#     DEBUG = False
-#     SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://karrlab:karr7116@CommonSchema.chqeewx1anny.us-east-1.rds.amazonaws.com/CommonSchema'
-#     DEBUG_TB_ENABLED = False
-#     WTF_CSRF_ENABLED = True
-#     TESTING = False
