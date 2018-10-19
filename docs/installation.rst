@@ -44,3 +44,30 @@ Second, please run the following shell commands to clone and install ``datanator
     pip3 install -e datanator
 
 Because ``datanator`` is under active development, we recommend regularly pulling the latest revision of ``datanator`` from GitHub.
+
+Run ``datanator``
+-----------------------------
+The API for datanator can be run with a test and production server.
+
+In order to run the test server, run the following command::
+
+    python3 manage.py runserver
+
+NOTE: You will need to have the correct configuration in the datanator/__init__.py
+file. Configurations can be found in datanator/config.py include:
+
+* LocalDevelopmentConfig - Local server for database
+* CircleTestingConfig - CircleCI server for database
+* BuildConfig - Docker Compose/UCONN HPC server for database
+* ProductionConfig - AWS RDS server for database (PRIVATE) 
+
+In order to run the production server, run the following command::
+
+    gunicorn -w 4 -b localhost:5000 --timeout 120 manage:app
+        
+This command will create a gunicorn production server with 4 workers at the localhost:5000 address with a timeout of 2 min 
+
+
+
+
+Contact `Saahith <mailto:saahith116@gmail.com>`_ for any questions regarding installation and running the server
