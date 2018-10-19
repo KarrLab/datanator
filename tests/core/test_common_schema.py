@@ -16,6 +16,8 @@ import shutil
 import random
 import os
 from six.moves import reload_module
+from sqlalchemy_utils.functions import drop_database
+
 
 
 class TestExistingDatabase(unittest.TestCase):
@@ -53,25 +55,21 @@ class TestExistingDatabase(unittest.TestCase):
 
 
 @unittest.skip('skip')
-class LoadingTestCommonSchema(unittest.TestCase):
+class TestLoadingDatabase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        # todo: set restore_backup_schema=False after fixing Alembic issue with migrations
-        # todo: restore_backup_exit_on_error=True after fixing Alembic issue with migrations
         cls.cs = common_schema.CommonSchema(
+            name = 'TestCommonSchema',
+            cache_dirname = cls.cache_dirname,
             clear_content=True,
-            restore_backup_data=True, restore_backup_schema=True,
-            restore_backup_exit_on_error=False,
-            cache_dirname=cls.cache_dirname,
             load_content=True, max_entries=10,
             verbose=True, test=True)
 
     @classmethod
     def tearDownClass(cls):
-        models.db.session.remove()
-        models.db.drop_all()
         shutil.rmtree(cls.cache_dirname)
+        drop_database(cls.cs.engine.url)
 
     def test_ncbi(self):
         session = self.cs.session
@@ -216,11 +214,4 @@ class LoadingTestCommonSchema(unittest.TestCase):
 
         uni = session.query(models.ProteinSubunit).filter_by(uniprot_id = 'Q72DQ8').first()
         self.assertEqual(uni.subunit_name, 'PYRH_DESVH')
-        self.assertEqual(uni.entrez_id, 2795170)
         self.assertEqual(uni.length, '238')
-
-    def test_text_search(self):
-        search_name = 'Riboflavin-5-phosphate'
-        search = models.Metabolite.query.search(search_name).all()
-        self.assertEqual(len(search), 1)
-        self.assertEqual(search[0].metabolite_name, search_name)
