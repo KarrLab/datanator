@@ -716,12 +716,14 @@ class SabioRk(data_source.HttpDataSource):
         functions_sbml = model.getListOfFunctionDefinitions()
         for i_function in range(functions_sbml.size()):
             function_sbml = functions_sbml.get(i_function)
-            eq = libsbml.formulaToString(function_sbml.getMath())
-            _, _, eq = eq.rpartition(', ')
-            eq = eq[0:-1]
-            if eq == 'NaN':
-                eq = ''
-            functions[function_sbml.getId()] = eq or None
+            math_sbml = function_sbml.getMath()
+            if math_sbml.isLambda() and math_sbml.getNumChildren():
+                eq = libsbml.formulaToL3String(math_sbml.getChild(math_sbml.getNumChildren() - 1))
+            else:
+                eq = None
+            if eq in ('', 'NaN'):
+                eq = None
+            functions[function_sbml.getId()] = eq
 
         units = {}
         units_sbml = model.getListOfUnitDefinitions()
@@ -885,14 +887,14 @@ class SabioRk(data_source.HttpDataSource):
         Raises:
             :obj:`ValueError`: if the enzyme name is formatted in an unsupport format
         """
-        match = re.match('^(.*?)\(Enzyme\) (wildtype|mutant),?(.*?)$', sbml, re.IGNORECASE)
+        match = re.match(r'^(.*?)\(Enzyme\) (wildtype|mutant),?(.*?)$', sbml, re.IGNORECASE)
         if match:
             name = match.group(1)
             is_wildtype = match.group(2).lower() == 'wildtype'
             variant = match.group(3).strip()
             return (name, is_wildtype, variant)
 
-        match = re.match('^Enzyme (wildtype|mutant),?( (.*?))*$', sbml, re.IGNORECASE)
+        match = re.match(r'^Enzyme (wildtype|mutant),?( (.*?))*$', sbml, re.IGNORECASE)
         if match:
             if match.group(3):
                 name = match.group(3).strip()
@@ -902,7 +904,7 @@ class SabioRk(data_source.HttpDataSource):
             variant = None
             return (name, is_wildtype, variant)
 
-        match = re.match('^Enzyme - *$', sbml, re.IGNORECASE)
+        match = re.match(r'^Enzyme - *$', sbml, re.IGNORECASE)
         if match:
             name = None
             is_wildtype = True
@@ -991,7 +993,7 @@ class SabioRk(data_source.HttpDataSource):
         for i_param in range(params.size()):
             param = params.get(i_param)
 
-            match = re.match('^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
+            match = re.match(r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
                 observed_name = match.group(1)
                 compound, compartment = self.get_specie_reference_from_sbml(match.group(2))
@@ -1761,11 +1763,11 @@ class SabioRk(data_source.HttpDataSource):
 
                 subunits = tmp['subunits']
                 if not subunits:
-                    matches = re.findall('<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text[start+1:end])
+                    matches = re.findall(r'<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text[start+1:end])
                     for match in matches:
                         subunits[match] = 1
 
-                match = re.match('^\)\*(\d+)', text[i:])
+                match = re.match(r'^\)\*(\d+)', text[i:])
                 if match:
                     i += len(match.group(0))
                     coefficient = int(float(match.group(1)))
@@ -1782,7 +1784,7 @@ class SabioRk(data_source.HttpDataSource):
                 i += 1
 
         # check that all subunits were extracted
-        matches = re.findall('<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text)
+        matches = re.findall(r'<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>', text)
         if len(set(matches)) != len(stack[0]['subunits'].keys()):
             raise ValueError('Subunit structure could not be parsed: {}'.format(text))
 
@@ -1811,7 +1813,7 @@ class SabioRk(data_source.HttpDataSource):
                         seqs = list(csv.DictReader(response.text.split('\n'), delimiter='\t'))
                         if seqs:
                             subunit.sequence = next((seq['Sequence'] for seq in seqs if seq['Entry'] == xref.id), seqs[0]['Sequence'])
-                            iupac_seq = re.sub('[^' + Bio.Alphabet.IUPAC.IUPACProtein.letters + ']', '', subunit.sequence)
+                            iupac_seq = re.sub(r'[^' + Bio.Alphabet.IUPAC.IUPACProtein.letters + r']', '', subunit.sequence)
                             subunit.molecular_weight = \
                                 + Bio.SeqUtils.molecular_weight(iupac_seq, seq_type='protein') \
                                 + (len(subunit.sequence) - len(iupac_seq)) * mean_aa_mw

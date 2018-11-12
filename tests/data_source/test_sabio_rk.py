@@ -10,7 +10,7 @@
 
 from datanator.data_source import sabio_rk
 from datanator.data_source.sabio_rk import (Entry, Compartment, Compound, Enzyme,
-                                                    ReactionParticipant, KineticLaw, Parameter, Resource)
+                                            ReactionParticipant, KineticLaw, Parameter, Resource)
 from datanator.util import warning_util
 import capturer
 import datetime
@@ -798,6 +798,19 @@ class TestDownloader(unittest.TestCase):
         s.calc_inchi_formula_connectivity()
         self.assertEqual(s._value_inchi, 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
         self.assertEqual(s._value_inchi_formula_connectivity, 'C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')
+
+    def test_full_kinetic_laws(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname,
+                               download_backups=False,
+                               load_content=False, verbose=True)
+        session = src.session
+
+        src.load_kinetic_laws([23637])
+        src.load_compounds()
+        src.load_missing_kinetic_law_information_from_tsv([23637])
+
+        law = session.query(KineticLaw).filter_by(id=23637).first()
+        self.assertEqual(law.equation, 'V * S / (Km + S + S^2 / Ki)')
 
     def test_load_content(self):
         # get some kinetic laws
