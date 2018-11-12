@@ -161,6 +161,7 @@ class Parameter(Entry):
         kinetic_law (:obj:`KineticLaw`): kinetic law
         type (:obj:`int`): SBO term
         compound (:obj:`Compound`): compound
+        enzyme (:obj:`Enzyme`): enzyme
         compartment (:obj:`Compartment`): compartment
         value (:obj:`float`): normalized value
         error (:obj:`float`): normalized error
@@ -205,10 +206,19 @@ class Parameter(Entry):
     type = sqlalchemy.Column(sqlalchemy.Integer(), index=True)
     compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
     compound = sqlalchemy.orm.relationship(
-        'Compound', uselist=False, backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compound_id])
+        'Compound', uselist=False, 
+        backref=sqlalchemy.orm.backref('parameters'), 
+        foreign_keys=[compound_id])
+    enzyme_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('enzyme._id'), index=True)
+    enzyme = sqlalchemy.orm.relationship(
+        'Enzyme', uselist=False,
+        backref=sqlalchemy.orm.backref('parameters'),
+        foreign_keys=[enzyme_id])
     compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
-    compartment = sqlalchemy.orm.relationship('Compartment', uselist=False,
-                                              backref=sqlalchemy.orm.backref('parameters'), foreign_keys=[compartment_id])
+    compartment = sqlalchemy.orm.relationship(
+        'Compartment', uselist=False,
+        backref=sqlalchemy.orm.backref('parameters'),
+        foreign_keys=[compartment_id])
     value = sqlalchemy.Column(sqlalchemy.Float())
     error = sqlalchemy.Column(sqlalchemy.Float())
     units = sqlalchemy.Column(sqlalchemy.String(), index=True)
@@ -369,6 +379,7 @@ class Enzyme(Entry):
         subunits (:obj:`list` of :obj:`EnzymeSubunit`): list of subunits
         kinetic_laws (:obj:`list` of :obj:`KineticLaw`): list of kinetic laws
         molecular_weight (:obj:`float`): molecular weight in Daltons
+        parameters (:obj:`list` of :obj:`Parameter`): list of parameters
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
     molecular_weight = sqlalchemy.Column(sqlalchemy.Float())
@@ -996,10 +1007,17 @@ class SabioRk(data_source.HttpDataSource):
             match = re.match(r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
                 observed_name = match.group(1)
-                compound, compartment = self.get_specie_reference_from_sbml(match.group(2))
+                species, compartment = self.get_specie_reference_from_sbml(match.group(2))
+                if isinstance(species, Compound):
+                    compound = species
+                    enzyme = None
+                else:
+                    compound = None
+                    enzyme = species
             else:
                 observed_name = param.getId()
                 compound = None
+                enzyme = None
                 compartment = None
             observed_name = observed_name.replace('div', '/')
 
@@ -1018,6 +1036,7 @@ class SabioRk(data_source.HttpDataSource):
 
             parameter = Parameter(
                 compound=compound,
+                enzyme=enzyme,
                 compartment=compartment,
                 observed_name=observed_name,
                 observed_type=observed_type,
@@ -1606,7 +1625,7 @@ class SabioRk(data_source.HttpDataSource):
                     namespace = 'chebi'
                     id = 'CHEBI:' + id
                 else:
-                    namespace='None'
+                    namespace = 'None'
                     ValueError('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, url))
 
                 q = self.session.query(Resource).filter_by(namespace=namespace, id=id)

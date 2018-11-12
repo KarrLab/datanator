@@ -741,6 +741,23 @@ class TestDownloader(unittest.TestCase):
 
         self.assertRaises(ValueError, src.normalize_parameter_value, 'k_cat', 25, 0.25, 0.15, 'm', None)
 
+    def test_enzyme_parameter(self):
+        src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname,
+                               download_backups=False,
+                               load_content=False, verbose=True)
+        session = src.session
+
+        src.load_kinetic_laws([213])
+        src.load_compounds()
+        src.load_missing_kinetic_law_information_from_tsv([213])
+
+        law = session.query(KineticLaw).filter_by(id=213).first()
+
+        params = list(filter(lambda param: isinstance(param.enzyme, sabio_rk.Enzyme), law.parameters))
+        self.assertEqual(len(params), 1)
+        self.assertEqual(params[0].enzyme.id, 1000)
+        self.assertEqual(params[0].enzyme.name, 'inorganic diphosphatase')
+
     def test_infer_compound_structures_from_names(self):
         src = sabio_rk.SabioRk(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
 
