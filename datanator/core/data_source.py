@@ -333,7 +333,7 @@ class CachedDataSource(DataSource):
             quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
         """
 
-        super(CachedDataSource, self).__init__(name=name)
+        super(CachedDataSource, self).__init__(name=name, verbose=verbose)
 
         """ Set settings """
         # name
