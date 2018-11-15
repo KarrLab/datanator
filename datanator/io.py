@@ -62,7 +62,7 @@ class InputReader(object):
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`list` of `data_model.Compartment`: list of compartments
+            :obj:`list` of :obj:`data_model.Compartment`: list of compartments
         """
         compartments = []
         for i in range(2, ws.max_row + 1):
@@ -79,7 +79,7 @@ class InputReader(object):
             ws (:obj:`openpyxl.Worksheet`): worksheet
 
         Returns:
-            :obj:`list` of `data_model.Specie`: list of species
+            :obj:`list` of :obj:`data_model.Specie`: list of species
         """
         species = []
         for i in range(2, ws.max_row + 1):
@@ -99,7 +99,7 @@ class InputReader(object):
             species (:obj:`list` of :obj:`data_model.Specie`): list of species
 
         Returns:
-            :obj:`list` of `data_model.Reaction`: list of reactions
+            :obj:`list` of :obj:`data_model.Reaction`: list of reactions
         """
         reactions = []
         for i in range(2, ws.max_row + 1):

@@ -104,7 +104,7 @@ class MetaboliteManager(BaseManager):
             value (:obj:`str`): string to search table for
 
         Returns:
-            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects (search parameters: 'metabolite_name')
+            :obj:`list` of :obj:`models.Metabolite`: List of found models.Metabolite objects (search parameters: 'metabolite_name')
 
         """
 
@@ -117,7 +117,7 @@ class MetaboliteManager(BaseManager):
             value (:obj:`str`): string to search table for
 
         Returns:
-            :obj:`list` of `models.Metabolite`: List of found models.Metabolite objects search parameters: 'metabolite_name',  'description')
+            :obj:`list` of :obj:`models.Metabolite`: List of found models.Metabolite objects search parameters: 'metabolite_name',  'description')
             
         """
 

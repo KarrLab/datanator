@@ -1255,7 +1255,7 @@ class SabioRk(data_source.HttpDataSource):
             sbml (:obj:`libsbml.SBase`): object in an SBML documentation
 
         Returns:
-            :obj:`list` of `Resource`: list of resources
+            :obj:`list` of :obj:`Resource`: list of resources
         """
         if not sbml.isSetAnnotation():
             return []

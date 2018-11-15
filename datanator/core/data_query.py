@@ -351,20 +351,20 @@ class FilterResult(object):
     """ Represents the results of applying a list of filters to a dataset
 
     Attributes:
-        observed_results (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+        observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): prioritized list of observed values
         scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_results`; columns: filters, in same orders as in `filters`)
         observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
-        all_observed_results (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+        all_observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): input list of observed values
         all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_results`; columns: filters, in same orders as in `filters`)
     """
 
     def __init__(self, observed_results, scores, observed_value_indices, all_observed_results, all_scores):
         """
         Args:
-            observed_results (:obj:`list` of `data_model.ObservedValue`): prioritized list of observed values
+            observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): prioritized list of observed values
             scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `ordered_observed_results`; columns: filters, in same orders as in `filters`)
             observed_value_indices (:obj:`list` of :obj:`int`): indices of the ordered observed values in the input list of observed values
-            all_observed_results (:obj:`list` of `data_model.ObservedValue`): input list of observed values
+            all_observed_results (:obj:`list` of :obj:`data_model.ObservedValue`): input list of observed values
             all_scores (:obj:`numpy.ndarray`): matrix of scores (rows: observed values in same order as in `observed_results`; columns: filters, in same orders as in `filters`)
         """
         self.observed_results = observed_results
