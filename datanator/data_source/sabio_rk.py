@@ -1198,7 +1198,8 @@ class SabioRk(data_source.HttpDataSource):
                 # off by liter^(-1)
                 return (None, None, None, None, None)
 
-            if units in ['mg/ml', 'M^2', 'mol/mol', 'katal*g^(-1)', 's^(-1)', 'mol*s^(-1)*g^(-1)', 'l*g^(-1)*s^(-1)']:
+            if units in ['mg/ml', 'M^2', 'mol/mol', 'katal*g^(-1)', 's^(-1)', 'mol*s^(-1)*g^(-1)',
+                'l*g^(-1)*s^(-1)', 'M^(-1)*s^(-1)', 'M^(-1)']:
                 return (None, None, None, None, None)
 
             if units is None:
@@ -1228,7 +1229,8 @@ class SabioRk(data_source.HttpDataSource):
                 return (None, None, None, None, None)
 
             if units in ['mol*s^(-1)*m^(-1)', 'M', 'g', 'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml',
-                         'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)']:
+                         'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)', 'mol*s^',
+                         's^(-1)*g^(-1)']:
                 return (None, None, None, None, None)
 
             if units is None:
