@@ -214,7 +214,7 @@ class TestWithoutTempFile(unittest.TestCase):
                 self.assertEqual(capturer.get_text(), "species")
 
         with App(argv=['taxonomy', 'get-rank', 'Mycoplasma genitalium XXX']) as app:
-            self.assertRaises(ValueError, lambda: app.run())
+            self.assertRaises(SystemExit, lambda: app.run())
 
     def test_taxonomy_get_parents(self):
         with App(argv=['taxonomy', 'get-parents', 'bacteria']) as app:
@@ -223,7 +223,7 @@ class TestWithoutTempFile(unittest.TestCase):
                 self.assertEqual(capturer.get_text(), "root\ncellular organisms")
 
         with App(argv=['taxonomy', 'get-parents', 'XXX']) as app:
-            self.assertRaises(ValueError, lambda: app.run())
+            self.assertRaises(SystemExit, lambda: app.run())
 
     def test_taxonomy_get_common_ancestor(self):
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
@@ -233,7 +233,7 @@ class TestWithoutTempFile(unittest.TestCase):
 
         with App(argv=['taxonomy', 'get-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
             with CaptureOutput(termination_delay=0.1) as capturer:
-                self.assertRaises(ValueError, lambda: app.run())
+                self.assertRaises(SystemExit, lambda: app.run())
 
     def test_taxonomy_get_distance_to_common_ancestor(self):
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'Mycoplasma pneumoniae']) as app:
@@ -242,7 +242,7 @@ class TestWithoutTempFile(unittest.TestCase):
                 self.assertEqual(float(capturer.get_text()), 1.)
 
         with App(argv=['taxonomy', 'get-distance-to-common-ancestor', 'Mycoplasma genitalium', 'XXX']) as app:
-            self.assertRaises(ValueError, lambda: app.run())
+            self.assertRaises(SystemExit, lambda: app.run())
 
     def test_taxonomy_get_distance_to_root(self):
         with App(argv=['taxonomy', 'get-distance-to-root', 'bacteria']) as app:
@@ -251,7 +251,7 @@ class TestWithoutTempFile(unittest.TestCase):
                 self.assertEqual(float(capturer.get_text()), 2.)
 
         with App(argv=['taxonomy', 'get-distance-to-root', 'XXX']) as app:
-            self.assertRaises(ValueError, lambda: app.run())
+            self.assertRaises(SystemExit, lambda: app.run())
 
     def test_molecule_get_structure(self):
         name = 'water'

@@ -447,7 +447,7 @@ class TaxonomyGetRankController(cement.Controller):
     def _default(self):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.distance_from_nearest_ncbi_taxon != 0:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'
                              .format(self.app.pargs.taxon_id_or_name))
         print(taxon.get_rank())
 
@@ -467,7 +467,7 @@ class TaxonomyGetParentsController(cement.Controller):
     def _default(self):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'
                              .format(self.app.pargs.taxon_id_or_name))
 
         parents = taxon.get_parent_taxa()
@@ -493,10 +493,10 @@ class TaxonomyGetCommonAncestorController(cement.Controller):
         taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
                 self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
                 self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_common_ancestor(taxon_2).name)
@@ -520,10 +520,10 @@ class TaxonomyGetDistanceToCommonAncestorController(cement.Controller):
         taxon_2 = create_taxon(self.app.pargs.taxon_id_or_name_2)
 
         if taxon_1.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
                 self.app.pargs.taxon_id_or_name_1))
         if taxon_2.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'.format(
                 self.app.pargs.taxon_id_or_name_2))
 
         print(taxon_1.get_distance_to_common_ancestor(taxon_2))
@@ -545,7 +545,7 @@ class TaxonomyGetDistanceToRoot(cement.Controller):
         taxon = create_taxon(self.app.pargs.taxon_id_or_name)
 
         if taxon.id_of_nearest_ncbi_taxon is None:
-            raise ValueError('The NCBI taxonomy database does not contain a taxon with id or name {}'
+            raise SystemExit('The NCBI taxonomy database does not contain a taxon with id or name {}'
                              .format(self.app.pargs.taxon_id_or_name))
 
         print(taxon.get_distance_to_root())
