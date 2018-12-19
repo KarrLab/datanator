@@ -11,7 +11,7 @@ import copy
 import enum
 import numpy
 import obj_model.core
-import obj_model.extra_attributes
+import obj_model.bio
 import six.moves
 
 
@@ -241,7 +241,7 @@ class DnaSpecie(PolymerSpecie):
     Attributes:
         binding_matrix (:obj:`Bio.motifs.matrix.FrequencyPositionMatrix`): Binding motif
     """
-    binding_matrix = obj_model.extra_attributes.FrequencyPositionMatrixAttribute()
+    binding_matrix = obj_model.bio.FrequencyPositionMatrixAttribute()
 
 
 class RnaSpecie(PolymerSpecie):
