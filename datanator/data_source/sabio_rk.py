@@ -16,6 +16,7 @@ import Bio.SeqUtils
 import bs4
 import csv
 import datetime
+import html
 import libsbml
 import math
 import os
@@ -1626,9 +1627,18 @@ class SabioRk(data_source.HttpDataSource):
                 elif url.startswith('http://www.ebi.ac.uk/chebi/searchId.do?chebiId='):
                     namespace = 'chebi'
                     id = 'CHEBI:' + id
+                elif url.startswith('https://reactome.org/content/detail/'):
+                    namespace = 'reactome'
+                elif url.startswith('https://biocyc.org/compound?orgid=META&id='):
+                    namespace = 'biocyc'
+                elif url.startswith('https://www.metanetx.org/chem_info/'):
+                    namespace = 'metanetx.chemical'
+                elif url.startswith('http://sabiork.h-its.org/newSearch?q=sabiocompoundid:'):
+                    continue
                 else:
-                    namespace = 'None'
-                    ValueError('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, url))
+                    namespace = html.unescape(node.parent.parent.parent.find_all('td').get_text()).strip()
+                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, namespace), 
+                        data_source.DataSourceWarning)
 
                 q = self.session.query(Resource).filter_by(namespace=namespace, id=id)
                 if q.count():
