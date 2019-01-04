@@ -1633,10 +1633,12 @@ class SabioRk(data_source.HttpDataSource):
                     namespace = 'biocyc'
                 elif url.startswith('https://www.metanetx.org/chem_info/'):
                     namespace = 'metanetx.chemical'
+                elif url.startswith('http://www.chemspider.com/Chemical-Structure.'):
+                    namespace = 'chemspider'
                 elif url.startswith('http://sabiork.h-its.org/newSearch?q=sabiocompoundid:'):
                     continue
                 else:
-                    namespace = html.unescape(node.parent.parent.parent.find_all('td').get_text()).strip()
+                    namespace = html.unescape(node.parent.parent.parent.find_all('td')[0].get_text()).strip()
                     warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, namespace), 
                         data_source.DataSourceWarning)
 
