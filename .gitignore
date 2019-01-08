@@ -119,6 +119,8 @@ datanator/builds/logs/
 datanator.cfg
 datanator/production_server.py
 
+#data source files for YMDB
+datanator/data_source/YMDB/
 
 # minerva
 minerva/*
