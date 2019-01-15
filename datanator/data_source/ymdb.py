@@ -385,7 +385,7 @@ class Ymdb(data_source.HttpDataSource):
             if id:
                 compound.cross_references.append(self.get_or_create_object(Resource, namespace='foodb.compound', id=id))
 
-            id = self.get_node_text(entry_details['het_id'])
+            id = self.get_node_text(entry_details.get('het_id','default'))
             if id:
                 compound.cross_references.append(self.get_or_create_object(Resource, namespace='ligandexpo', id=id))
 
@@ -397,7 +397,7 @@ class Ymdb(data_source.HttpDataSource):
             if id:
                 compound.cross_references.append(self.get_or_create_object(Resource, namespace='kegg.compound', id=id))
 
-            id = self.get_node_text(entry_details['msds_url'])
+            id = self.get_node_text(entry_details.get('msds_url','default'))
             if id:
                 compound.cross_references.append(self.get_or_create_object(Resource, namespace='msds.url', id=id))
 
@@ -438,7 +438,7 @@ class Ymdb(data_source.HttpDataSource):
             :obj:`list` of :obj:`XMLNode`: list of child nodes
         """
         default = 'default'
-        nodes = node[children_name]
+        nodes = node.get(children_name, default)
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes
         return [nodes]
