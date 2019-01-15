@@ -22,7 +22,8 @@ import sqlalchemy.ext.declarative
 import sqlalchemy.orm
 import warnings
 import zipfile
-
+import sdf
+import numpy as np
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -148,10 +149,10 @@ class Compound(Base):
         compartments (:obj:`list` of :obj:`Compartment`): compartments
         concentrations (:obj:`list` of :obj:`Concentration`): concentrations
         cross_references (:obj:`list` of :obj:`Resources`): cross references
-        comment (:obj:`str`): internal ECMDB comments about the entry
-        created (:obj:`datetime.datetime`): time that the entry was created in ECMDB
-        updated (:obj:`datetime.datetime`): time that the entry was last updated in ECMDB
-        downloaded (:obj:`datetime.datetime`): time that the entry was downloaded from ECMDB
+        comment (:obj:`str`): internal YMDB comments about the entry
+        created (:obj:`datetime.datetime`): time that the entry was created in YMDB
+        updated (:obj:`datetime.datetime`): time that the entry was last updated in YMDB
+        downloaded (:obj:`datetime.datetime`): time that the entry was downloaded from YMDB
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
@@ -166,7 +167,7 @@ class Compound(Base):
                                                  foreign_keys=[Concentration.compound_id],
                                                  backref=sqlalchemy.orm.backref('compound'),
                                                  cascade="all, delete-orphan")
-    cross_references = sqlalchemy.orm.relatlionship('Resource', secondary=compound_resource, backref=sqlalchemy.orm.backref('compounds'))
+    cross_references = sqlalchemy.orm.relationship('Resource', secondary=compound_resource, backref=sqlalchemy.orm.backref('compounds'))
     comment = sqlalchemy.Column(sqlalchemy.Text())
     created = sqlalchemy.Column(sqlalchemy.DateTime)
     updated = sqlalchemy.Column(sqlalchemy.DateTime)
@@ -187,11 +188,13 @@ class Ymdb(data_source.HttpDataSource):
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        'ecmdb': 'http://ecmdb.ca',
+        # 'ecmdb': 'http://ecmdb.ca',
         'ymdb': 'http://ymdb.ca',
     }
     DOWNLOAD_FULL_DB_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/ymdb.json.zip'
     DOWNLOAD_STRUCTURES_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/ymdb.sdf.zip'
+    DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAINS['ymdb'] + '/compounds/{}.xml'
+    DOWNLOAD_COMPOUND_STRUCTURE_URL = ENDPOINT_DOMAINS['ymdb'] + '/structures/compounds/{}.inchi'
     DOWNLOAD_PROTEIN_SEQUENCE_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/protein_sequences.fasta.zip'
     DOWNLOAD_GENE_SEQUENCE_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/gene_sequences.fasta.zip'
 
@@ -221,13 +224,8 @@ class Ymdb(data_source.HttpDataSource):
         if self.verbose:
             print('  found {} compounds'.format(len(entries)))
 
-
-#end point of 20190108
-	#TODO: parse full database JSON
-
-
         # sort entires
-        entries.sort(key=lambda e: e['m2m_id'])
+        entries.sort(key=lambda e: e['ymdb_id'])
 
         # limit number of processed entries
         if len(entries) > self.max_entries:
@@ -243,16 +241,16 @@ class Ymdb(data_source.HttpDataSource):
                 print('  Downloading compound {} of {}'.format(i_entry + 1, len(entries)))
 
             # get details
-            response = req_session.get(self.DOWNLOAD_COMPOUND_URL.format(entry['m2m_id']))
+            response = req_session.get(self.DOWNLOAD_COMPOUND_URL.format(entry['ymdb_id']))
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError:
-                warnings.warn('Unable to download data for compound {}'.format(entry['m2m_id']), data_source.DataSourceWarning)
+                warnings.warn('Unable to download data for compound {}'.format(entry['ymdb_id']), data_source.DataSourceWarning)
                 continue
 
             entry_details = xml_parser(response.text)['compound']
 
-            compound = self.get_or_create_object(Compound, id=self.get_node_text(entry_details['m2m_id']))
+            compound = self.get_or_create_object(Compound, id=self.get_node_text(entry_details['ymdb_id']))
 
             if 'name' in entry_details:
                 compound.name = self.get_node_text(entry_details['name'])
@@ -262,11 +260,11 @@ class Ymdb(data_source.HttpDataSource):
 
             compound.structure = self.get_node_text(entry_details['inchi'])
             if not compound.structure:
-                response2 = req_session.get(self.DOWNLOAD_COMPOUND_STRUCTURE_URL.format(entry['m2m_id']))
+                response2 = req_session.get(self.DOWNLOAD_COMPOUND_STRUCTURE_URL.format(entry['ymdb_id']))
                 response2.raise_for_status()
                 compound.structure = response2.text
 
-            compound.comment = entry['comment']
+            compound.comment = entry.get('comment','default')
 
             compound.created = dateutil.parser.parse(self.get_node_text(entry_details['creation_date'])).replace(tzinfo=None)
             compound.updated = dateutil.parser.parse(self.get_node_text(entry_details['update_date'])).replace(tzinfo=None)
@@ -276,7 +274,7 @@ class Ymdb(data_source.HttpDataSource):
                 compound._structure_formula_connectivity = molecule_util.InchiMolecule(compound.structure) \
                     .get_formula_and_connectivity()
             except ValueError:
-                warnings.warn('Unable to encode structure for {} in InChI'.format(entry['m2m_id']), data_source.DataSourceWarning)
+                warnings.warn('Unable to encode structure for {} in InChI'.format(entry['ymdb_id']), data_source.DataSourceWarning)
                 compound._structure_formula_connectivity = None
 
             # synonyms
@@ -439,6 +437,7 @@ class Ymdb(data_source.HttpDataSource):
         Returns:
             :obj:`list` of :obj:`XMLNode`: list of child nodes
         """
+        default = 'default'
         nodes = node[children_name]
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes

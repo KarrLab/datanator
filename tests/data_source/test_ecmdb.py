@@ -72,17 +72,15 @@ class TestEcmdbFromRemote(unittest.TestCase):
         self.assertEqual(set([(xr.namespace, xr.id) for xr in compound.cross_references]), set([
             ('biocyc', '2-OXOBUTANOATE'),
             ('cas', '600-18-0'),
-            ('chebi', 'CHEBI:16763'),
-            ('chemspider', '57'),
-            ('ligandexpo', '2KT'),
-            ('hmdb', 'HMDB00005'),
-            ('kegg.compound', 'C00109'),
-            ('pubchem.compound', '58'),
-            ('wikipedia.en', 'Alpha-ketobutyric_acid'),
+            ('chebi', 'CHEBI:18272'),
+            ('chemspider', '115687'),
+            ('hmdb', 'HMDB01308'),
+            ('kegg.compound', 'C04376'),
+            ('pubchem.compound', '151'),
         ]))
         self.assertEqual(compound.comment, None)
 
-        self.assertEqual(compound.created, dateutil.parser.parse('2012-05-31 09:55:11 -0600').replace(tzinfo=None))
+        self.assertEqual(compound.created, dateutil.parser.parse('2011-05-29 15:47:17 UTC').replace(tzinfo=None))
         #self.assertEqual(compound.updated, dateutil.parser.parse('2015-06-03 15:00:41 -0600').replace(tzinfo=None))
         self.assertLess((datetime.datetime.utcnow() - compound.downloaded).total_seconds(), 3000)
 
