@@ -192,11 +192,8 @@ class Ymdb(data_source.HttpDataSource):
         'ymdb': 'http://ymdb.ca',
     }
     DOWNLOAD_FULL_DB_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/ymdb.json.zip'
-    DOWNLOAD_STRUCTURES_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/ymdb.sdf.zip'
     DOWNLOAD_COMPOUND_URL = ENDPOINT_DOMAINS['ymdb'] + '/compounds/{}.xml'
     DOWNLOAD_COMPOUND_STRUCTURE_URL = ENDPOINT_DOMAINS['ymdb'] + '/structures/compounds/{}.inchi'
-    DOWNLOAD_PROTEIN_SEQUENCE_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/protein_sequences.fasta.zip'
-    DOWNLOAD_GENE_SEQUENCE_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/gene_sequences.fasta.zip'
 
     def load_content(self):
         """ Download the content of YMDB and store it to a local sqlite database. """
@@ -264,7 +261,7 @@ class Ymdb(data_source.HttpDataSource):
                 response2.raise_for_status()
                 compound.structure = response2.text
 
-            compound.comment = entry.get('comment','default')
+            compound.comment = entry.get('comment','no_comment')
 
             compound.created = dateutil.parser.parse(self.get_node_text(entry_details['creation_date'])).replace(tzinfo=None)
             compound.updated = dateutil.parser.parse(self.get_node_text(entry_details['update_date'])).replace(tzinfo=None)
@@ -317,22 +314,14 @@ class Ymdb(data_source.HttpDataSource):
             parent_node = entry_details['concentrations']
             if 'concentration' in parent_node:
                 values = self.get_node_children(parent_node, 'concentration')
-                if 'error' in parent_node:  
-                    errors = self.get_node_children(parent_node, 'error')
-                if 'concentration_units' in parent_node:
-                    units = self.get_node_children(parent_node, 'concentration_units')
-                if 'strain' in parent_node: 
-                    strains = self.get_node_children(parent_node, 'strain')
-                if 'growth_status' in parent_node: 
-                    statuses = self.get_node_children(parent_node, 'growth_status')
-                if 'growth_media' in parent_node: 
-                    medias = self.get_node_children(parent_node, 'growth_media')
-                if 'temperature' in parent_node: 
-                    temperatures = self.get_node_children(parent_node, 'temperature')
-                if 'growth_system' in parent_node: 
-                    systems = self.get_node_children(parent_node, 'growth_system')
-                if 'reference' in parent_node: 
-                    references = self.get_node_children(parent_node, 'reference')
+                errors = self.get_node_children(parent_node, 'error')
+                units = self.get_node_children(parent_node, 'concentration_units')
+                strains = self.get_node_children(parent_node, 'strain')
+                statuses = self.get_node_children(parent_node, 'growth_status')
+                medias = self.get_node_children(parent_node, 'growth_media')
+                temperatures = self.get_node_children(parent_node, 'temperature')
+                systems = self.get_node_children(parent_node, 'growth_system')
+                references = self.get_node_children(parent_node, 'reference')
 
                 for i_conc in range(len(values)):
                     value = float(self.get_node_text(values[i_conc]))
@@ -445,8 +434,11 @@ class Ymdb(data_source.HttpDataSource):
         Returns:
             :obj:`list` of :obj:`XMLNode`: list of child nodes
         """
-
-        nodes = node[children_name]
+        if children_name != 'temperature':
+            default = 'No ' + children_name
+        else:
+            default = '0'
+        nodes = node.get(children_name, default)
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes
         return [nodes]
