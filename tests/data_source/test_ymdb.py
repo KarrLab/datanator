@@ -45,11 +45,11 @@ class TestYmdbFromRemote(unittest.TestCase):
         # check compound ids
         self.assertEqual(q.count(), src.max_entries)
         self.assertEqual([c.id for c in q.all()][0:5], [
-            'YMDB000001',
-            'YMDB000002',
-            'YMDB000003',
-            'YMDB000004',
-            'YMDB000005',
+            'YMDB00001',
+            'YMDB00002',
+            'YMDB00003',
+            'YMDB00004',
+            'YMDB00005',
         ])
 
         # check one compound in depth
@@ -85,16 +85,16 @@ class TestYmdbFromRemote(unittest.TestCase):
         self.assertLess((datetime.datetime.utcnow() - compound.downloaded).total_seconds(), 3000)
 
         # compound with multiple compartments
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB000002').first()
+        compound = session.query(ymdb.Compound).filter_by(id='YMDB00002').first()
         self.assertEqual([c.name for c in compound.compartments], ['extracellular', 'nucleus', 'vacuole', 'cytoplasm'])
 
         # compound with multiple concentrations
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB000022').first()
+        compound = session.query(ymdb.Compound).filter_by(id='YMDB00022').first()
         self.assertEqual(len(compound.concentrations), 2)
         self.assertEqual(compound.concentrations[0].value, 9080.0)
         self.assertEqual(compound.concentrations[0].error, 0.0)
         self.assertEqual(compound.concentrations[0].strain, '')
-        self.assertEqual(compound.concentrations[0].growth_status, 'Stationary phase cultures (overnight culture)')
+        self.assertEqual(compound.concentrations[0].concentration_units, '&#181;M')
         self.assertEqual(compound.concentrations[0].media.startswith('glucose~(140 g/L)'))
         self.assertEqual(len(compound.concentrations[0].references), 1)
         self.assertEqual(compound.concentrations[0].references[0].namespace, 'pubmed')
@@ -138,7 +138,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         n_compound = session.query(ymdb.Compound).count()
         n_concentration = session.query(ymdb.Concentration).count()
 
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB000010').first()
+        compound = session.query(ymdb.Compound).filter_by(id='YMDB00010').first()
         n_concentration_compound = len(compound.concentrations)
         compound.concentrations[0].compound = None
 
@@ -153,7 +153,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         n_compound = session.query(ymdb.Compound).count()
         n_concentration = session.query(ymdb.Concentration).count()
 
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB000010').first()
+        compound = session.query(ymdb.Compound).filter_by(id='YMDB00010').first()
         n_concentration_compound = len(compound.concentrations)
         concentration = compound.concentrations[0]
         concentration.compound = None

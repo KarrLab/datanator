@@ -317,20 +317,28 @@ class Ymdb(data_source.HttpDataSource):
             parent_node = entry_details['concentrations']
             if 'concentration' in parent_node:
                 values = self.get_node_children(parent_node, 'concentration')
+            if 'error' in parent_node:  
                 errors = self.get_node_children(parent_node, 'error')
+            if 'concentration_units' in parent_node:
                 units = self.get_node_children(parent_node, 'concentration_units')
+            if 'strain' in parent_node: 
                 strains = self.get_node_children(parent_node, 'strain')
+            if 'growth_status' in parent_node: 
                 statuses = self.get_node_children(parent_node, 'growth_status')
+            if 'growth_media' in parent_node: 
                 medias = self.get_node_children(parent_node, 'growth_media')
+            if 'temperature' in parent_node: 
                 temperatures = self.get_node_children(parent_node, 'temperature')
+            if 'growth_system' in parent_node: 
                 systems = self.get_node_children(parent_node, 'growth_system')
+            if 'reference' in parent_node: 
                 references = self.get_node_children(parent_node, 'reference')
 
                 for i_conc in range(len(values)):
                     value = float(self.get_node_text(values[i_conc]))
                     error = float(self.get_node_text(errors[i_conc]) or 'nan')
                     unit = self.get_node_text(units[i_conc])
-                    if unit == 'uM':
+                    if unit == 'uM' or unit == '&#181;M':
                         pass
                     else:
                         raise ValueError('Unsupport units: {}'.format(unit))
@@ -437,8 +445,8 @@ class Ymdb(data_source.HttpDataSource):
         Returns:
             :obj:`list` of :obj:`XMLNode`: list of child nodes
         """
-        default = 'default'
-        nodes = node.get(children_name, default)
+
+        nodes = node[children_name]
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes
         return [nodes]

@@ -321,7 +321,7 @@ class Ecmdb(data_source.HttpDataSource):
                     value = float(self.get_node_text(values[i_conc]))
                     error = float(self.get_node_text(errors[i_conc]) or 'nan')
                     unit = self.get_node_text(units[i_conc])
-                    if unit == 'uM':
+                    if unit == 'uM' or unit == '&#181;M':
                         pass
                     else:
                         raise ValueError('Unsupport units: {}'.format(unit))

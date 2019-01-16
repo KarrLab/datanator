@@ -179,59 +179,59 @@ class TestEcmdbFromRemote(unittest.TestCase):
         self.assertEqual(session.query(ecmdb.Concentration).count(), n_concentration - 1)
 
 
-class TestEcmdbFromBlank(unittest.TestCase):
+# class TestEcmdbFromBlank(unittest.TestCase):
 
-    def setUp(self):
-        self.cache_dirname = tempfile.mkdtemp()
+#     def setUp(self):
+#         self.cache_dirname = tempfile.mkdtemp()
 
-    def tearDown(self):
-        shutil.rmtree(self.cache_dirname)
+#     def tearDown(self):
+#         shutil.rmtree(self.cache_dirname)
 
-    def test_commit_intermediate_results(self):
-        src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backups=False, load_content=False, verbose=True, max_entries=5,
-                          commit_intermediate_results=True)
-        src.load_content()
+#     def test_commit_intermediate_results(self):
+#         src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname, download_backups=False, load_content=False, verbose=True, max_entries=5,
+#                           commit_intermediate_results=True)
+#         src.load_content()
 
-    @unittest.skip('Skip because this is a long test')
-    def test_download_all(self):
-        src = ecmdb.Ecmdb(download_backups=False, load_content=True, clear_content=True, clear_requests_cache=False, verbose=True)
-        src.upload_backups()
+#     @unittest.skip('Skip because this is a long test')
+#     def test_download_all(self):
+#         src = ecmdb.Ecmdb(download_backups=False, load_content=True, clear_content=True, clear_requests_cache=False, verbose=True)
+#         src.upload_backups()
 
-        session = src.session
-        self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
+#         session = src.session
+#         self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
 
-    def test_download_from_backup(self):
-        src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname)
-        session = src.session
+#     def test_download_from_backup(self):
+#         src = ecmdb.Ecmdb(cache_dirname=self.cache_dirname)
+#         session = src.session
 
-        self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
+#         self.assertGreater(session.query(ecmdb.Compound).count(), 3500)
 
-class TestEcmdbFromCache(unittest.TestCase):
-    """
-    Quick test to ensure Ecmdb on Karr Lab Server is correct
+# class TestEcmdbFromCache(unittest.TestCase):
+#     """
+#     Quick test to ensure Ecmdb on Karr Lab Server is correct
 
-    """
+#     """
 
-    @classmethod
-    def setUpClass(cls):
-        cls.cache_dirname = tempfile.mkdtemp()
-        cls.src = ecmdb.Ecmdb(cache_dirname=cls.cache_dirname, download_backups=True, load_content=False, verbose=True)
+#     @classmethod
+#     def setUpClass(cls):
+#         cls.cache_dirname = tempfile.mkdtemp()
+#         cls.src = ecmdb.Ecmdb(cache_dirname=cls.cache_dirname, download_backups=True, load_content=False, verbose=True)
 
-    @classmethod
-    def tearDownClass(cls):
-        shutil.rmtree(cls.cache_dirname)
+#     @classmethod
+#     def tearDownClass(cls):
+#         shutil.rmtree(cls.cache_dirname)
 
-    def test_proper_loading(self):
-        session = self.src.session
+#     def test_proper_loading(self):
+#         session = self.src.session
 
-        q = session.query(ecmdb.Compound).filter_by(id = 'M2MDB000090')
-        self.assertEqual(q.count(), 1)
+#         q = session.query(ecmdb.Compound).filter_by(id = 'M2MDB000090')
+#         self.assertEqual(q.count(), 1)
 
-        self.assertEqual(q.first().name, 'Orotidylic acid')
-        self.assertEqual(q.first().structure, 'InChI=1S/C10H13N2O11P/c13-5-1-3(9(16)17)12(10(18)11-5)8-7(15)6(14)4(23-8)2-22-24(19,20)21/h1,4,6-8,14-15H,2H2,(H,16,17)(H,11,13,18)(H2,19,20,21)/t4-,6-,7-,8-/m1/s1')
+#         self.assertEqual(q.first().name, 'Orotidylic acid')
+#         self.assertEqual(q.first().structure, 'InChI=1S/C10H13N2O11P/c13-5-1-3(9(16)17)12(10(18)11-5)8-7(15)6(14)4(23-8)2-22-24(19,20)21/h1,4,6-8,14-15H,2H2,(H,16,17)(H,11,13,18)(H2,19,20,21)/t4-,6-,7-,8-/m1/s1')
 
-        q = session.query(ecmdb.Concentration).get(123)
+#         q = session.query(ecmdb.Concentration).get(123)
 
-        self.assertEqual(q.value, 207.0)
-        self.assertEqual(q.error, 0.0)
-        self.assertEqual(q.growth_status, 'Stationary Phase, glucose limited')
+#         self.assertEqual(q.value, 207.0)
+#         self.assertEqual(q.error, 0.0)
+#         self.assertEqual(q.growth_status, 'Stationary Phase, glucose limited')
