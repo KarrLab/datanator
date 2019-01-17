@@ -25,6 +25,9 @@ import zipfile
 import sdf
 import numpy as np
 
+#for debugging purposes
+import pprint
+
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
 
@@ -120,16 +123,14 @@ class Resource(Base):
 
     Attributes:
         namespace (:obj:`str`): external namespace
-        id (:obj:`str`): external identifier
-        compounds (:obj:`list` of :obj:`Compound`): compounds
-        concentrations (:obj:`list` of :obj:`Concentration`): concentrations
+        r_id (:obj:`str`): external identifier
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
     namespace = sqlalchemy.Column(sqlalchemy.String())
-    id = sqlalchemy.Column(sqlalchemy.String())
+    r_id = sqlalchemy.Column(sqlalchemy.String())
 
-    sqlalchemy.schema.UniqueConstraint(namespace, id)
+    sqlalchemy.schema.UniqueConstraint(namespace, r_id)
 
     __tablename__ = 'resource'
 
@@ -139,7 +140,7 @@ class Compound(Base):
 	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5210545/
 	
     Attributes:
-        id (:obj:`str`): YMDB identifier
+        c_id (:obj:`str`): YMDB identifier
         name (:obj:`str`): name
         synonyms (:obj:`list` of :obj:`Synonym`): synonyms
         description (:obj:`str`): description
@@ -156,7 +157,7 @@ class Compound(Base):
     """
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 
-    id = sqlalchemy.Column(sqlalchemy.String())
+    c_id = sqlalchemy.Column(sqlalchemy.String())
     name = sqlalchemy.Column(sqlalchemy.String(), index=True)
     synonyms = sqlalchemy.orm.relationship('Synonym', secondary=compound_synonym, backref=sqlalchemy.orm.backref('compounds'))
     description = sqlalchemy.Column(sqlalchemy.Text())
@@ -181,14 +182,12 @@ class Ymdb(data_source.HttpDataSource):
 
     Attributes:
         DOWNLOAD_FULL_DB_URL (:obj:`str`): URL to download the full database of YMDB
-        DOWNLOAD_STRUCTURES_URL (:obj:`str`): URL pattern to download all metabolite structures of YMDB
-        DOWNLOAD_PROTEIN_SEQUENCE_URL (:obj:`str`): URL pattern to download all protein sequence of YMDB
-        DOWNLOAD_GENE_SEQUENCE_URL (:obj:`str`): URL pattern to download all genetic sequence of YMDB
+        DOWNLOAD_COMPOUNT_STRUCTURES_URL (:obj:`str`): URL pattern to download all metabolite structures of YMDB
+        DOWNLOAD_COMPOUND_URL (:obj:`str`): URL pattern to download all compound information of YMDB in the form of xml
     """
 
     base_model = Base
     ENDPOINT_DOMAINS = {
-        # 'ecmdb': 'http://ecmdb.ca',
         'ymdb': 'http://ymdb.ca',
     }
     DOWNLOAD_FULL_DB_URL = ENDPOINT_DOMAINS['ymdb'] + '/system/downloads/current/ymdb.json.zip'
@@ -236,8 +235,10 @@ class Ymdb(data_source.HttpDataSource):
         for i_entry, entry in enumerate(entries):
             if self.verbose and (i_entry % 10 == 0):
                 print('  Downloading compound {} of {}'.format(i_entry + 1, len(entries)))
+                # #debugging purpose
+                # pprint.pprint(entry['ymdb_id'])               
 
-            # get details
+            # get details from xml files
             response = req_session.get(self.DOWNLOAD_COMPOUND_URL.format(entry['ymdb_id']))
             try:
                 response.raise_for_status()
@@ -247,10 +248,13 @@ class Ymdb(data_source.HttpDataSource):
 
             entry_details = xml_parser(response.text)['compound']
 
-            compound = self.get_or_create_object(Compound, id=self.get_node_text(entry_details['ymdb_id']))
+            compound = self.get_or_create_object(Compound, c_id=self.get_node_text(entry_details['ymdb_id']))
 
             if 'name' in entry_details:
                 compound.name = self.get_node_text(entry_details['name'])
+                # #debugging
+                # print('compound.name')
+                # pprint.pprint(compound.name)
 
             if 'description' in entry_details:
                 compound.description = self.get_node_text(entry_details['description'])
@@ -312,6 +316,8 @@ class Ymdb(data_source.HttpDataSource):
             # concentrations
             compound.concentrations = []
             parent_node = entry_details['concentrations']
+            # #debugging
+            # pprint.pprint(parent_node)
             if 'concentration' in parent_node:
                 values = self.get_node_children(parent_node, 'concentration')
                 errors = self.get_node_children(parent_node, 'error')
@@ -323,7 +329,22 @@ class Ymdb(data_source.HttpDataSource):
                 systems = self.get_node_children(parent_node, 'growth_system')
                 references = self.get_node_children(parent_node, 'reference')
 
+                # #debugging
+                # print('values:')
+                # errors.prettyprint()
+                # print('temperatures:')
+                # pprint.pprint(temperatures)
+                # print('reference')
+                # pprint.pprint(references)
+                # #/
+
                 for i_conc in range(len(values)):
+                    # #debugging
+                    # print('i_conc')
+                    # print(i_conc)
+                    # print("")
+                    # #/
+
                     value = float(self.get_node_text(values[i_conc]))
                     error = float(self.get_node_text(errors[i_conc]) or 'nan')
                     unit = self.get_node_text(units[i_conc])
@@ -332,30 +353,88 @@ class Ymdb(data_source.HttpDataSource):
                     else:
                         raise ValueError('Unsupport units: {}'.format(unit))
 
-                    if temperatures[i_conc]:
-                        temperature, unit = self.get_node_text(temperatures[i_conc]).split(' ')
-                        temperature = float(temperature)
-                        if unit != 'oC':
-                            raise ValueError('Unsupport units: {}'.format(unit))
+                    if isinstance(temperatures, jxmlease.listnode.XMLListNode):
+                        if temperatures[i_conc]:
+                            temperature, unit = self.get_node_text(temperatures[i_conc]).split(' ')
+                            temperature = float(temperature)
+                            if unit != 'oC':
+                                raise ValueError('Unsupport units: {}'.format(unit))
                     else:
-                        temperature = None
+                        temperature = 0
 
+                    if isinstance(statuses, jxmlease.listnode.XMLListNode) == False:
+                        growth_status_o=None
+                    else:
+                        growth_status_o=self.get_node_text(statuses[i_conc])
+                    if not isinstance(strains, jxmlease.listnode.XMLListNode):
+                        strain_o = None
+                    else:
+                        strain_o = self.get_node_text(strains[i_conc])
+                    if not isinstance(medias, jxmlease.listnode.XMLListNode):
+                        media_o=None
+                    else:
+                        media_o=self.get_node_text(medias[i_conc]),
+                    if not isinstance(temperatures, jxmlease.listnode.XMLListNode):
+                        temperature_o=None
+                    else:
+                        temperature_o=self.get_node_text(temperatures[i_conc]),
+                    if not isinstance(systems, jxmlease.listnode.XMLListNode):
+                        growth_system_o=None
+                    else:
+                        growth_system_o=self.get_node_text(systems[i_conc])
                     concentration = Concentration(
                         value=value,
                         error=error,
-                        strain=self.get_node_text(strains[i_conc]) or None,
-                        growth_status=self.get_node_text(statuses[i_conc]) or None,
-                        media=self.get_node_text(medias[i_conc]) or None,
-                        temperature=temperature,
-                        growth_system=self.get_node_text(systems[i_conc]) or None,
+                        strain= strain_o,
+                        growth_status = growth_status_o,
+                        media = media_o,
+                        temperature = temperature_o,
+                        growth_system = growth_system_o,
                     )
+                    # #debugging
+                    # print(concentration.media)
+                    # #/
+
                     db_session.add(concentration)
 
+                    # #debugging
+                    # print('concentration.refereces')
+                    # print(concentration.references)
+                    # print('')
+                    # print('references')
+                    # references.prettyprint()
+                    # print("")
+                    # #/
+
+                    # if isinstance(references, jxmlease.listnode.XMLListNode):
                     if 'pubmed_id' in references[i_conc]:
+
+                        #debugging
+                        print('reference.count')
+                        print(references[i_conc])
+                        print('')
+                        #/
+                        
                         pmid_nodes = self.get_node_children(references[i_conc], 'pubmed_id')
+                        # #debugging
+                        # print('pmid_nodes')
+                        # pprint.pprint(pmid_nodes)
+                        # print('')
+                        # #/
                         for node in pmid_nodes:
-                            id = self.get_node_text(node)
-                            concentration.references.append(self.get_or_create_object(Resource, namespace='pubmed', id=id))
+                            node_id = self.get_node_text(node)
+
+                            # #debugging
+                            # print('node_id')
+                            # print(node_id)
+                            # print('')
+                            # #/
+
+                            ref = self.get_or_create_object(Resource, namespace='pubmed', r_id=node_id)
+                            print('ref')
+                            print(ref.r_id)
+                            print('')
+                            concentration.references.append(ref)
 
                     compound.concentrations.append(concentration)
 
@@ -364,47 +443,47 @@ class Ymdb(data_source.HttpDataSource):
 
             id = self.get_node_text(entry_details['biocyc_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='biocyc', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='biocyc', r_id=id))
 
             id = self.get_node_text(entry_details['cas_registry_number'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='cas', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='cas', r_id=id))
 
             id = self.get_node_text(entry_details['chebi_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='chebi', id='CHEBI:' + id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='chebi', r_id='CHEBI:' + id))
 
             id = self.get_node_text(entry_details['chemspider_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='chemspider', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='chemspider', r_id=id))
 
             id = self.get_node_text(entry_details['foodb_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='foodb.compound', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='foodb.compound', r_id=id))
 
             id = self.get_node_text(entry_details.get('het_id','default'))
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='ligandexpo', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='ligandexpo', r_id=id))
 
             id = self.get_node_text(entry_details['hmdb_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='hmdb', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='hmdb', r_id=id))
 
             id = self.get_node_text(entry_details['kegg_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='kegg.compound', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='kegg.compound', r_id=id))
 
             id = self.get_node_text(entry_details.get('msds_url','default'))
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='msds.url', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='msds.url', r_id=id))
 
             id = self.get_node_text(entry_details['pubchem_compound_id'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='pubchem.compound', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='pubchem.compound', r_id=id))
 
             id = self.get_node_text(entry_details['wikipidia'])
             if id:
-                compound.cross_references.append(self.get_or_create_object(Resource, namespace='wikipedia.en', id=id))
+                compound.cross_references.append(self.get_or_create_object(Resource, namespace='wikipedia.en', r_id=id))
 
             # add to session
             db_session.add(compound)
@@ -437,7 +516,7 @@ class Ymdb(data_source.HttpDataSource):
         if children_name != 'temperature':
             default = 'No ' + children_name
         else:
-            default = '0'
+            default = 0.0
         nodes = node.get(children_name, default)
         if isinstance(nodes, jxmlease.listnode.XMLListNode):
             return nodes
