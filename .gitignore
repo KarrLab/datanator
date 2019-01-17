@@ -69,6 +69,7 @@ instance/
 # Sphinx generated documentation
 docs/_build/
 docs/source/
+docs/.doctrees/
 
 # PyBuilder
 target/
@@ -118,7 +119,6 @@ datanator/builds/logs/
 # configuration
 datanator.cfg
 datanator/production_server.py
-
 
 # minerva
 minerva/*
