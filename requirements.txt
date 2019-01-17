@@ -23,7 +23,7 @@ openbabel
 openpyxl
 pandas
 pint
-git+https://github.com/KarrLab/git+https://github.com/KarrLab/pronto.git#egg=pronto-0.12.0a >= 0.12.0a.git#egg=git+https://github.com/KarrLab/pronto.git#egg=pronto-0.12.0a >= 0.12.0a-0.12.0a >= 0.12.0a
+git+https://github.com/KarrLab/pronto.git#egg=pronto-0.12.1 >= 0.12.1
 psycopg2
 pubchempy
 python_dateutil
