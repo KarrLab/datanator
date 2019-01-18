@@ -98,7 +98,7 @@ class Concentration(Base):
         strain (:obj:`str`): observed strain
         growth_status (:obj:`str`): observed growth status (e.g. exponential phase, log phase, etc.)
         media (:obj:`str`): observed media
-        temperaturer (:obj:`float`): temperature in C
+        temperature (:obj:`float`): temperature in C
         growth_system (:obj:`str`): observed growth system (e.g. chemostat, 384 well plate, etc.)
         references (:obj:`list` of :obj:`Resource`): list of references
     """
@@ -373,11 +373,11 @@ class Ymdb(data_source.HttpDataSource):
                     if not isinstance(medias, jxmlease.listnode.XMLListNode):
                         media_o=None
                     else:
-                        media_o=self.get_node_text(medias[i_conc]),
+                        media_o=self.get_node_text(medias[i_conc])
                     if not isinstance(temperatures, jxmlease.listnode.XMLListNode):
                         temperature_o=None
                     else:
-                        temperature_o=self.get_node_text(temperatures[i_conc]),
+                        temperature_o=self.get_node_text(temperatures[i_conc])
                     if not isinstance(systems, jxmlease.listnode.XMLListNode):
                         growth_system_o=None
                     else:
