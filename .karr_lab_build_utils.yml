@@ -1,8 +1,7 @@
 downstream_dependencies:
   # - datanator_frontend
   - h1_hesc
-  - wc
+  - wc_cli
 email_notifications:
   - jonrkarr@gmail.com
   - yosefdroth@gmail.com
-  - saahith116@gmail.com
