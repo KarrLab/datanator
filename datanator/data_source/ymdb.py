@@ -366,7 +366,7 @@ class Ymdb(data_source.HttpDataSource):
                             temperature, unit = self.get_node_text(temperatures[i_conc]).split(' ')
                             temperature = float(temperature)
                             if unit != 'oC':
-                                raise ValueError('Unsupport units: {}'.format(unit))
+                                warnings.warn('Unsupport units: {}'.format(unit))
                     else:
                         temperature = 0
 
