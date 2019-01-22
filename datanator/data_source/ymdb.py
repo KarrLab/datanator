@@ -18,17 +18,15 @@ import json
 import jxmlease
 import requests.exceptions
 import sqlalchemy
-import sqlalchemy.ext.declarative
+from sqlalchemy.ext.declarative import declarative_base
 import sqlalchemy.orm
 import warnings
 import zipfile
-import sdf
-import numpy as np
 
 #for debugging purposes
-import pprint
+# import pprint
 
-Base = sqlalchemy.ext.declarative.declarative_base()
+Base = declarative_base()
 # :obj:`Base`: base model for local sqlite database
 
 compound_compartment = sqlalchemy.Table(
@@ -233,6 +231,12 @@ class Ymdb(data_source.HttpDataSource):
 
         xml_parser = jxmlease.Parser()
         for i_entry, entry in enumerate(entries):
+            # #debugging
+            # print('i_entry')
+            # print(i_entry)
+            # print('')
+            # #/
+
             if self.verbose and (i_entry % 10 == 0):
                 print('  Downloading compound {} of {}'.format(i_entry + 1, len(entries)))
                 # #debugging purpose
@@ -255,6 +259,8 @@ class Ymdb(data_source.HttpDataSource):
                 # #debugging
                 # print('compound.name')
                 # pprint.pprint(compound.name)
+                # print('')
+                # #/
 
             if 'description' in entry_details:
                 compound.description = self.get_node_text(entry_details['description'])
@@ -336,6 +342,8 @@ class Ymdb(data_source.HttpDataSource):
                 # pprint.pprint(temperatures)
                 # print('reference')
                 # pprint.pprint(references)
+                # print('value length')
+                # print(len(values))
                 # #/
 
                 for i_conc in range(len(values)):
@@ -351,7 +359,7 @@ class Ymdb(data_source.HttpDataSource):
                     if unit == 'uM' or unit == '&#181;M':
                         pass
                     else:
-                        raise ValueError('Unsupport units: {}'.format(unit))
+                        warnings.warn('Unsupport units: {}'.format(unit))
 
                     if isinstance(temperatures, jxmlease.listnode.XMLListNode):
                         if temperatures[i_conc]:
@@ -362,6 +370,7 @@ class Ymdb(data_source.HttpDataSource):
                     else:
                         temperature = 0
 
+                    # x might not be present in the xml data
                     if isinstance(statuses, jxmlease.listnode.XMLListNode) == False:
                         growth_status_o=None
                     else:
@@ -406,35 +415,35 @@ class Ymdb(data_source.HttpDataSource):
                     # print("")
                     # #/
 
-                    # if isinstance(references, jxmlease.listnode.XMLListNode):
-                    if 'pubmed_id' in references[i_conc]:
+                    if isinstance(references, jxmlease.listnode.XMLListNode):
+                        if 'pubmed_id' in references[i_conc]:
 
-                        #debugging
-                        print('reference.count')
-                        print(references[i_conc])
-                        print('')
-                        #/
-                        
-                        pmid_nodes = self.get_node_children(references[i_conc], 'pubmed_id')
-                        # #debugging
-                        # print('pmid_nodes')
-                        # pprint.pprint(pmid_nodes)
-                        # print('')
-                        # #/
-                        for node in pmid_nodes:
-                            node_id = self.get_node_text(node)
-
+                            #debugging
+                            # print('reference.count')
+                            # print(references[i_conc])
+                            # print('')
+                            #/
+                            
+                            pmid_nodes = self.get_node_children(references[i_conc], 'pubmed_id')
                             # #debugging
-                            # print('node_id')
-                            # print(node_id)
+                            # print('pmid_nodes')
+                            # pprint.pprint(pmid_nodes)
                             # print('')
                             # #/
+                            for node in pmid_nodes:
+                                node_id = self.get_node_text(node)
 
-                            ref = self.get_or_create_object(Resource, namespace='pubmed', r_id=node_id)
-                            print('ref')
-                            print(ref.r_id)
-                            print('')
-                            concentration.references.append(ref)
+                                # #debugging
+                                # print('node_id')
+                                # print(node_id)
+                                # print('')
+                                # #/
+
+                                ref = self.get_or_create_object(Resource, namespace='pubmed', r_id=node_id)
+                                # print('ref')
+                                # print(ref.r_id)
+                                # print('')
+                                concentration.references.append(ref)
 
                     compound.concentrations.append(concentration)
 

@@ -44,7 +44,7 @@ class TestYmdbFromRemote(unittest.TestCase):
 
         # check compound ids
         self.assertEqual(q.count(), src.max_entries)
-        self.assertEqual([c.id for c in q.all()][0:5], [
+        self.assertEqual([c.c_id for c in q.all()][0:5], [
             'YMDB00001',
             'YMDB00002',
             'YMDB00003',
@@ -91,7 +91,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         # compound with multiple concentrations
         compound = session.query(ymdb.Compound).filter_by(id='YMDB00022').first()
         self.assertEqual(len(compound.concentrations), 2)
-        self.assertEqual(compound.concentrations[0].value, 9080.0)
+        self.assertEqual(compound.concentrations[0].value, 9080.0)  
         self.assertEqual(compound.concentrations[0].error, 0.0)
         self.assertEqual(compound.concentrations[0].strain, '')
         self.assertEqual(compound.concentrations[0].concentration_units, '&#181;M')
@@ -124,7 +124,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         n_compound = session.query(ymdb.Compound).count()
         n_concentration = session.query(ymdb.Concentration).count()
 
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB000010').first()
+        compound = session.query(ymdb.Compound).filter_by(c_id='YMDB000010').first()
         n_concentration_compound = len(compound.concentrations)
         session.delete(compound)
 
@@ -138,7 +138,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         n_compound = session.query(ymdb.Compound).count()
         n_concentration = session.query(ymdb.Concentration).count()
 
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB00010').first()
+        compound = session.query(ymdb.Compound).filter_by(c_id='YMDB00010').first()
         n_concentration_compound = len(compound.concentrations)
         compound.concentrations[0].compound = None
 
@@ -153,7 +153,7 @@ class TestYmdbFromRemote(unittest.TestCase):
         n_compound = session.query(ymdb.Compound).count()
         n_concentration = session.query(ymdb.Concentration).count()
 
-        compound = session.query(ymdb.Compound).filter_by(id='YMDB00010').first()
+        compound = session.query(ymdb.Compound).filter_by(c_id='YMDB00010').first()
         n_concentration_compound = len(compound.concentrations)
         concentration = compound.concentrations[0]
         concentration.compound = None
