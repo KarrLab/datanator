@@ -22,6 +22,8 @@ import sqlalchemy.orm
 import warnings
 import zipfile
 
+#debugging
+import pprint
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -321,7 +323,7 @@ class Ecmdb(data_source.HttpDataSource):
                     value = float(self.get_node_text(values[i_conc]))
                     error = float(self.get_node_text(errors[i_conc]) or 'nan')
                     unit = self.get_node_text(units[i_conc])
-                    if unit == 'uM':
+                    if unit == 'uM' or unit == '&#181;M':
                         pass
                     else:
                         raise ValueError('Unsupport units: {}'.format(unit))
@@ -344,14 +346,34 @@ class Ecmdb(data_source.HttpDataSource):
                         growth_system=self.get_node_text(systems[i_conc]) or None,
                     )
                     db_session.add(concentration)
+                    # #debugging
+                    # print('concentration.refereces')
+                    # print(concentration.references)
+                    # print('')
+                    # print('references')
+                    # references.prettyprint()
+                    # print("")
+                    # #/
 
                     if 'pubmed_id' in references[i_conc]:
+                        # #debugging
+                        # print('reference.count')
+                        # print(references[i_conc])
+                        # print('')
+                        # #/
+
                         pmid_nodes = self.get_node_children(references[i_conc], 'pubmed_id')
                         for node in pmid_nodes:
                             id = self.get_node_text(node)
-                            concentration.references.append(self.get_or_create_object(Resource, namespace='pubmed', id=id))
+                            ref = self.get_or_create_object(Resource, namespace='pubmed', id=id)
+                            concentration.references.append(ref)
 
                     compound.concentrations.append(concentration)
+                    #debugging
+                    print('compound.references')
+                    compound.concentrations.prettyprint()
+                    print('')
+                    #///
 
             # cross references
             compound.cross_references = []
