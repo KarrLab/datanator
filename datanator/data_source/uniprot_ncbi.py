@@ -26,7 +26,7 @@ def download_data(file_name, file_type, root_folder):
 	return response
 
 #load files into separate dataframes
-def load_data(file_name, file_tpye, root_folder):
+def load_data(file_name, file_type, root_folder):
 	# engine = create_engine('sqlite://', echo=False)
 	# for file in file_name:
 	pd_file = root_folder + file_name + file_type
