@@ -72,11 +72,13 @@ class TestEcmdbFromRemote(unittest.TestCase):
         self.assertEqual(set([(xr.namespace, xr.id) for xr in compound.cross_references]), set([
             ('biocyc', '2-OXOBUTANOATE'),
             ('cas', '600-18-0'),
-            ('chebi', 'CHEBI:18272'),
-            ('chemspider', '115687'),
-            ('hmdb', 'HMDB01308'),
-            ('kegg.compound', 'C04376'),
-            ('pubchem.compound', '151'),
+            ('hmdb', 'HMDB00005'),
+            ('chemspider', '57'),
+            ('ligandexpo', '2KT'),
+            ('wikipedia.en', 'Alpha-ketobutyric_acid'),
+            ('kegg.compound', 'C00109'),
+            ('chebi', 'CHEBI:16763'),
+            ('pubchem.compound', '58'),
         ]))
         self.assertEqual(compound.comment, None)
 
