@@ -22,8 +22,8 @@ import sqlalchemy.orm
 import warnings
 import zipfile
 
-#debugging
-import pprint
+# #debugging
+# import pprint
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 # :obj:`Base`: base model for local sqlite database
@@ -370,9 +370,9 @@ class Ecmdb(data_source.HttpDataSource):
 
                     compound.concentrations.append(concentration)
                     #debugging
-                    print('compound.references')
-                    compound.concentrations.prettyprint()
-                    print('')
+                    # print('compound.references')
+                    # compound.concentrations.prettyprint()
+                    # print('')
                     #///
 
             # cross references
