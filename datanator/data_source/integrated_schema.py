@@ -26,6 +26,7 @@ import warnings
 import wc_utils.util.list
 import wc_utils.workbook.core
 import wc_utils.workbook.io
+import pronto
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -119,12 +120,77 @@ class Protein(Compound):
 class InteractionParticipant(Entry):
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 	compound_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compound._id'), index=True)
-	compound = sqlalchemy.orm.relationship('Compound', backref=sqlalchemy.orm.backref('reaction_participants'), foreign_keys=[compound_id])
+	compound = sqlalchemy.orm.relationship('Compound', backref=sqlalchemy.orm.backref('interaction_participants'), foreign_keys=[compound_id])
 	compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
-	compartment = sqlalchemy.orm.relationship('Compartment', backref=sqlalchemy.orm.backref('reaction_participants'), foreign_keys=[compartment_id])
+	compartment = sqlalchemy.orm.relationship('Compartment', backref=sqlalchemy.orm.backref('interaction_participants'), foreign_keys=[compartment_id])
 	coefficient = sqlalchemy.Column(sqlalchemy.Float())
 	_type = sqlalchemy.Column(sqlalchemy.String())
+
+	__tablename__ = 'interation_participant'
 
 class Complex(Compound):
 	#20192020
 	structure = None
+
+class Enzyme(Entry):
+	"""
+	represents enzymes 
+	"""
+	_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
+	molecular_weight = sqlalchemy.Column(sqlalchemy.Float())
+	__tablename__ = 'enzyme'
+	__mapper_args__ = {'polymorphic_identity': 'enzyme'}
+
+class Reaction(Entry):
+	participants = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('interaction_participants'),
+                                            foreign_keys=[InteractionParticipant.compound_id],
+                                            cascade='all, delete-orphan')
+	#enzymes: things that affect the rate law but don't undergo permanent covalent transformations
+	modifiers = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('modifier_kinetic_law'),
+                                            foreign_keys=[InteractionParticipant.compound_id],
+                                            cascade='all, delete-orphan')
+
+wcm_ontology = pronto.Ontology('./WCM.obo') #biontology API to switch to http link
+'''
+[Term]
+id = quantitative_property
+descrition = ''
+
+[Term]
+id = descriptive_property
+descrition = ''
+'''
+
+class Observation(Base):
+	participants = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('interaction_participants'),
+                                            foreign_keys=[InteractionParticipant.compound_id],
+                                            cascade='all, delete-orphan')
+	_property = Ontology.Term(wcm_notoloy)
+	value = sqlalchemy.orm.relationship('BioPolymerForm', secondary=compound_compound_structure,
+                                             backref=sqlalchemy.orm.backref('compounds'))
+	# biological system observed 
+	taxon = sqlalchemy.Column(sqlalchemy.Integer(), nullable = True)
+	wildtype = sqlalchemy.Column(sqlalchemy.Boolean(), nullable = True)
+	genetic_variant = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+	tissue = sqlalchemy.Column(sqlalchemy.String())
+	physiological_state = sqlalchemy.Column(sqlalchemy.String())
+
+	# environmental conditions in which the measurement was made
+	temp = sqlalchemy.Column(sqlalchemy.Float(), nullable = True)
+	temp_units = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+	ph = sqlalchemy.Column(sqlalchemy.Float(), nullable = True)	
+	ph_units = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+	growth_media = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+	conditions = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+
+	# how observed value was measured and reduced
+	experiment_type = sqlalchemy.Column(sqlalchemy.String(), nullable = True) # Rna-seq ChIP-Seq
+	experiment_design = sqlalchemy.Column(sqlalchemy.String(), nullable = True) # additional info
+	experiment_method = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+	analysis_method = sqlalchemy.Column(sqlalchemy.String(), nullable = True)
+
+	# comments
+	comments = sqlalchemy.Column(sqlalchemy.UnicodeText(), nullable = True)
+
+	# provenance 
+	
