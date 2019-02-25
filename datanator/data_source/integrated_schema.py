@@ -27,6 +27,7 @@ import wc_utils.util.list
 import wc_utils.workbook.core
 import wc_utils.workbook.io
 import pronto
+import enum
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -83,13 +84,16 @@ class Entry(Base):
 	comments = sqlalchemy.Column(sqlalchemy.String())
 	db_refs = sqlalchemy.orm.relationship('Resource', secondary=external_reference, backref=sqlalchemy.orm.backref('external_references'))
 
+	__tablename__ = 'entry'
+	__mapper_args__ = {'polymorphic_on': _type}
+
 class Compartment(Entry):
 
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 	name = sqlalchemy.Column(sqlalchemy.String())
 
 	__tablename__ = 'compartment'
-	# __mapper_args__ = {'polymorphic_identity': 'compartment'}
+	__mapper_args__ = {'polymorphic_identity': 'compartment'}
 
 
 class Compound(Entry):
@@ -103,7 +107,8 @@ class Compound(Entry):
 	__mapper_args__ = {'polymorphic_identity': 'compound'}
 
 	def get_inchi_structures(self):
-		return [s.value for s in self.structures if s.format == 'inchi']		
+		return [s.value for s in self.structures if s.format == 'inchi']	
+
 
 class Metabolite(Compound):
 	structure = openbabel.OBMol()
@@ -124,9 +129,10 @@ class InteractionParticipant(Entry):
 	compartment_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('compartment._id'), index=True)
 	compartment = sqlalchemy.orm.relationship('Compartment', backref=sqlalchemy.orm.backref('interaction_participants'), foreign_keys=[compartment_id])
 	coefficient = sqlalchemy.Column(sqlalchemy.Float())
-	_type = sqlalchemy.Column(sqlalchemy.String())
+	type = sqlalchemy.Column(sqlalchemy.String())
 
 	__tablename__ = 'interation_participant'
+	__mapper_args__ = {'polymorphic_identity': 'interaction_participant'}
 
 class Complex(Compound):
 	#20192020
@@ -149,6 +155,8 @@ class Reaction(Entry):
 	modifiers = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('modifier_kinetic_law'),
                                             foreign_keys=[InteractionParticipant.compound_id],
                                             cascade='all, delete-orphan')
+	__tablename__ = 'reaction'
+	__mapper_args__ = {'polymorphic_identity': 'reaction'}
 
 wcm_ontology = pronto.Ontology('./WCM.obo') #biontology API to switch to http link
 '''
@@ -193,4 +201,64 @@ class Observation(Base):
 	comments = sqlalchemy.Column(sqlalchemy.UnicodeText(), nullable = True)
 
 	# provenance 
-	
+	source = sqlalchemy.Column(sqlalchemy.String()) # sabio, ecmdb, arrayexpress
+	source_version = sqlalchemy.Column(sqlalchemy.String()) # source version of the database
+	source_id = sqlalchemy.Column(sqlalchemy.String()) # identifier from the source
+	source_url = sqlalchemy.Column(sqlalchemy.String())
+	source_create = sqlalchemy.Column(sqlalchemy.DateTime,default=datetime.datetime.utcnow())
+	source_modified = sqlalchemy.Column(sqlalchemy.DateTime,onupdate=datetime.datetime.utcnow())
+
+	# time when data was retrieved from the source
+	retrieval_method = sqlalchemy.Column(sqlalchemy.String()) # scripts used in data_source to retrieve the data
+	retrieval_date = sqlalchemy.Column(sqlalchemy.DateTime,default=datetime.datetime.utcnow())
+
+	pubs = ...
+
+	__tablename__='observation'
+	__mapper_args__ = {'polymorphic_on': type}
+
+
+class QuantitativeObservation(Observation):
+	value = sqlalchemy.Column(Float())
+	error = sqlalchemy.Column(Float())
+	units = sqlalchemy.Column(String())
+
+
+
+class QualitativeObservation(Observation):
+	value = sqlalchemy.Column(String())
+
+class ExternalReference(Base):
+	namespace = sqlalchemy.Column(String()) # pubmed, pubchem, kegg.compound
+	_id = sqlalchemy.Column(String(), primary_key=True) # unique identifier within namespace
+	sqlalchemy.schema.UniqueConstraint(namespace, _id)
+	__tablename__ = 'external_references'
+
+external_reference_publication = sqlalchemy.Table(
+    'external_reference_publication', Base.metadata,
+    sqlalchemy.Column('external_reference__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('external_references._id'), index=True),
+    sqlalchemy.Column('publication__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('publications._id'), index=True),
+)
+
+class Publication(Base):
+	type = sqlalchemy.Column(sqlalchemy.Enum(self, article, book, thesis, website)) # ???
+	_id = sqlalchemy.Column(String(), primary_key=True)
+	title = sqlalchemy.Column(sqlalchemy.String())
+	author = sqlalchemy.Column(sqlalchemy.String())
+	editor = sqlalchemy.Column(sqlalchemy.String())
+	year = sqlalchemy.Column(sqlalchemy.Integer())
+	publication = sqlalchemy.Column(sqlalchemy.String())
+	publisher = sqlalchemy.Column(sqlalchemy.String())
+	volume = sqlalchemy.Column(sqlalchemy.Integer())
+	number = sqlalchemy.Column(sqlalchemy.Integer())
+	issue = sqlalchemy.Column(sqlalchemy.Integer())
+	edition = sqlalchemy.Column(sqlalchemy.Integer())
+	chapter = sqlalchemy.Column(sqlalchemy.Integer())
+	pages = sqlalchemy.Column(sqlalchemy.String())
+	db_refs = sqlalchemy.orm.relationship("ExternalReference", secondary = external_references_publication, backref='publications')
+	__tablename__ = 'publications'
+
+
+'''
+	TODO : BioPolymerForm()
+'''
