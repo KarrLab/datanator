@@ -458,8 +458,7 @@ class SabioRk(data_source.HttpDataSource):
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
                  commit_intermediate_results=False, download_backups=True, verbose=False,
                  clear_requests_cache=False, download_request_backup=False,
-                 webservice_batch_size=1, excel_batch_size=100,
-                 quilt_owner=None, quilt_package=None):
+                 webservice_batch_size=1, excel_batch_size=100,quilt_owner=None, quilt_package=None): #
         """
         Args:
             name (:obj:`str`, optional): name
@@ -487,7 +486,7 @@ class SabioRk(data_source.HttpDataSource):
                                       commit_intermediate_results=commit_intermediate_results,
                                       download_backups=download_backups, verbose=verbose,
                                       clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
-                                      quilt_owner=quilt_owner, quilt_package=quilt_package)
+                                      quilt_owner=quilt_owner, quilt_package=quilt_package) #
 
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a local sqlite database. """
