@@ -28,6 +28,8 @@ import wc_utils.workbook.core
 import wc_utils.workbook.io
 import pronto
 import enum
+import sqlite3
+from sqlite3 import Error
 
 Base = sqlalchemy.ext.declarative.declarative_base()
 
@@ -56,33 +58,16 @@ class Synonym(Base):
 	label = sqlalchemy.Column(sqlalchemy.String(), index=True)
 	__tablename__ = 'synonym'
 
-class BioPolymerForm(Base):
-	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
-	value = sqlalchemy.Column(sqlalchemy.Text())
-	_format = sqlalchemy.Column(sqlalchemy.String())
-	_value_inchi = sqlalchemy.Column(sqlalchemy.Text(), index=True)
-	_value_inchi_formula_connectivity = sqlalchemy.Column(sqlalchemy.Text(), index=True)
-	sqlalchemy.schema.UniqueConstraint(value, format)
-
-	__tablename__ = 'compound_structure'
-
-	def calc_inchi_formula_connectivity(self):
-		if self.format == 'inchi':
-			self._value_inchi = self.value
-		else:
-			try:
-				self._value_inchi = molecule_util.Molecule(structure=self.value).to_inchi() or None
-			except ValueError:
-				self._value_inchi = None
-		if self._value_inchi:
-			self._value_inchi_formula_connectivity = molecule_util.InchiMolecule(self._value_inchi).get_formula_and_connectivity()
-
 class Entry(Base):
+
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
 	name = sqlalchemy.Column(sqlalchemy.String())
 	synonyms = sqlalchemy.orm.relationship('Synonym', secondary=entry_synonym, backref=sqlalchemy.orm.backref('entries'))
 	comments = sqlalchemy.Column(sqlalchemy.String())
-	db_refs = sqlalchemy.orm.relationship('Resource', secondary=external_reference, backref=sqlalchemy.orm.backref('external_references'))
+	db_refs = sqlalchemy.orm.relationship('Resource', secondary=entry_resouce, backref=sqlalchemy.orm.backref('entries'))
+	_type = sqlalchemy.Column(sqlalchemy.String())
+
+	sqlalchemy.schema.UniqueConstraint(_id, _type)
 
 	__tablename__ = 'entry'
 	__mapper_args__ = {'polymorphic_on': _type}
@@ -95,32 +80,84 @@ class Compartment(Entry):
 	__tablename__ = 'compartment'
 	__mapper_args__ = {'polymorphic_identity': 'compartment'}
 
-
 class Compound(Entry):
-	#?????
+
+	_id = sqlalchemy.Column(sqlalchemy.Integer(), sqlalchemy.ForeignKey('entry._id'), primary_key=True)
 	structures = sqlalchemy.orm.relationship('BioPolymerForm', secondary=compound_compound_structure,
                                              backref=sqlalchemy.orm.backref('compounds'))
 	_emprical_formula = sqlalchemy.Column(sqlalchemy.String())
 	_mol_wt = sqlalchemy.Column(sqlalchemy.Float())
 	_charge = sqlalchemy.Column(sqlalchemy.Integer())
+
 	__tablename__ = 'compound'
 	__mapper_args__ = {'polymorphic_identity': 'compound'}
 
 	def get_inchi_structures(self):
-		return [s.value for s in self.structures if s.format == 'inchi']	
+		'''
+		Get INCHI-formatted structures
+		'''
+		return [s.value for s in self.structures if s.format == 'inchi']
 
+	def get_smiles_structures(self):
+        """ 
+        Get SMILES-formatted structures
+        """
+		return [s.value for s in self.structures if s.format == 'smiles']
+
+class CompoundStructure(Base):
+	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+	value = sqlalchemy.Column(sqlalchemy.Text())
+	_format = sqlalchemy.Column(sqlalchemy.String())
+	_value_inchi = sqlalchemy.Column(sqlalchemy.Text(), index=True)
+	_value_inchi_formula_connectivity = sqlalchemy.Column(sqlalchemy.Text(), index=True)
+	sqlalchemy.schema.UniqueConstraint(value, _format)
+
+	__tablename__ = 'compound_structure'
+
+	def calc_inchi_formula_connectivity(self):
+		if self.format == 'inchi':
+			self._value_inchi = self.value
+		else:
+			try:
+				self._value_inchi = molecule_util.Molecule(structure=self.value).to_inchi() or None
+			except ValueError:
+				self._value_inchi = None
+		if self._value_inchi:
+			self._value_inchi_formula_connectivity = molecule_util.InchiMolecule(self._value_inchi).get_formula_and_connectivity()	
+
+
+class BioPolymerForm:
+
+	def __init__(self, type, structure):
+		self.type = 'Dna'
+		self.structure = 'InChi=1sACGU[]CGACC'
+	
+	def dna_structure(self, type, structure):
+		if self.type.lower() == 'dna':
+			# annotated sequence
+			return structure
+	
+	def rna_structure(self, type, structure):
+		if self.type.lower() == 'rna':
+			# annotated sequence
+			return structure
+	
+	def protein(self, type, structure):
+		if self.type.lower() == 'protein':
+			return structure
 
 class Metabolite(Compound):
 	structure = openbabel.OBMol()
 
 class RNA(Compound):
-	structure = None
+	structure = BioPolymerForm('Rna')
 
 class DNA(Compound):
-	structure = None
+	structure = BioPolymerForm('Dna')
 
 class Protein(Compound):
-	structure = None
+	structure = BioPolymerForm('Protein')
+
 
 class InteractionParticipant(Entry):
 	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
@@ -135,7 +172,7 @@ class InteractionParticipant(Entry):
 	__mapper_args__ = {'polymorphic_identity': 'interaction_participant'}
 
 class Complex(Compound):
-	#20192020
+	#
 	structure = None
 
 class Enzyme(Entry):
@@ -228,11 +265,11 @@ class QuantitativeObservation(Observation):
 class QualitativeObservation(Observation):
 	value = sqlalchemy.Column(String())
 
-class ExternalReference(Base):
+class Resource(Base):
 	namespace = sqlalchemy.Column(String()) # pubmed, pubchem, kegg.compound
 	_id = sqlalchemy.Column(String(), primary_key=True) # unique identifier within namespace
 	sqlalchemy.schema.UniqueConstraint(namespace, _id)
-	__tablename__ = 'external_references'
+	__tablename__ = 'resource'
 
 external_reference_publication = sqlalchemy.Table(
     'external_reference_publication', Base.metadata,
@@ -259,6 +296,76 @@ class Publication(Base):
 	__tablename__ = 'publications'
 
 
-'''
-	TODO : BioPolymerForm()
-'''
+class SabirrayEC(data_source.HttpDataSource):
+
+	def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
+		commit_intermediate_results=False, download_backups=True, verbose=False,
+		clear_requests_cache=False, download_request_backup=False,
+		webservice_batch_size=1, excel_batch_size=100,quilt_owner=None, quilt_package=None):
+
+	    """
+        Args:
+            name (:obj:`str`, optional): name
+            cache_dirname (:obj:`str`, optional): directory to store the local copy of the data source and the HTTP requests cache
+            clear_content (:obj:`bool`, optional): if :obj:`True`, clear the content of the sqlite local copy of the data source
+            load_content (:obj:`bool`, optional): if :obj:`True`, load the content of the local sqlite database from the external source
+            max_entries (:obj:`float`, optional): maximum number of entries to save locally
+            commit_intermediate_results (:obj:`bool`, optional): if :obj:`True`, commit the changes throughout the loading
+                process. This is particularly helpful for restarting this method when webservices go offline.
+            download_backups (:obj:`bool`, optional): if :obj:`True`, load the local copy of the data source from the Karr Lab server
+            verbose (:obj:`bool`, optional): if :obj:`True`, print status information to the standard output
+            clear_requests_cache (:obj:`bool`, optional): if :obj:`True`, clear the HTTP requests cache
+            download_request_backup (:obj:`bool`, optional): if :obj:`True`, download the request backup
+            webservice_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO webservice
+            excel_batch_size (:obj:`int`, optional): default size of batches to download kinetic information from the SABIO
+                Excel download service
+            quilt_owner (:obj:`str`, optional): owner of Quilt package to save data
+            quilt_package (:obj:`str`, optional): identifier of Quilt package to save data
+        """
+
+		self.webservice_batch_size = webservice_batch_size
+		self.excel_batch_size = excel_batch_size
+
+		super(SabioRk, self).__init__(name=name, cache_dirname=cache_dirname, clear_content=clear_content,
+			load_content=load_content, max_entries=max_entries,
+			commit_intermediate_results=commit_intermediate_results,
+			download_backups=download_backups, verbose=verbose,
+			clear_requests_cache=clear_requests_cache, download_request_backup=download_request_backup,
+			quilt_owner=quilt_owner, quilt_package=quilt_package)
+
+	#load three sqlite files (ArrayExpress, SabioRK, ECMDB)
+# 	def load_content(self):
+
+	def create_connection(db_file):
+
+		""" create a database connection to the SQLite database
+		    specified by the db_file
+		:param db_file: database file
+		:return: Connection object or None
+		"""
+
+		try:
+			conn = sqlite3.connect(db_file)
+			return conn
+		except Error as e:
+			print(e)
+		
+		return None
+
+	def load_content(self):
+		# directory where the three databases are
+		array_express = './cache/ArrayExpress.sqlite'
+		ecmdb = './cache/Ecmdb.sqlite'
+		sabio_rk = './cache/SabioRk.sqlite'
+
+		conn_array = create_connection(array_express)
+		conn_ecmdb = create_connection(ecmdb)
+		conn_sabio = create_connection(sabio_rk)
+
+
+
+def main():
+
+
+if __name__ = '__main__':
+	main()
