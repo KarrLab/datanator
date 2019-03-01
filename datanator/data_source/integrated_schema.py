@@ -11,18 +11,11 @@ import openbabel
 import libsbml
 import math
 import os
-import pint
-import pubchempy
-import re
-import requests
-import requests_cache
 import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
-import sys
 import time
-import warnings
 import wc_utils.util.list
 import wc_utils.workbook.core
 import wc_utils.workbook.io
@@ -48,8 +41,26 @@ entry_resource = sqlalchemy.Table(
 
 compound_compound_structure = sqlalchemy.Table(
 	'compound_compound_structure', Base.metadata,
-	sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound_id'), index=True),
-	sqlalchemy.Column('compound_structure_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound_structure_id'), index=True),
+	sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
+	sqlalchemy.Column('compound_structure_id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound_structure._id'), index=True),
+)
+
+complex_interaction_participant = sqlalchemy.Table(
+	'complex_interaction_participant', Base.metadata,
+	sqlalchemy.Column('complex__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('complex._id'), index=True),
+	sqlalchemy.Column('interaction_participant__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('interaction_participant._id'), index=True),
+)
+
+reaction_interaction_participant = sqlalchemy.Table(
+	'reaction_interaction_participant', Base.metadata,
+	sqlalchemy.Column('reaction__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('reaction._id'), index=True),
+	sqlalchemy.Column('interaction_participant__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('interaction_participant._id'), index=True),
+)
+
+reaction_compound = sqlalchemy.Table(
+	'reaction_compound', Base.metadata,
+	sqlalchemy.Column('reaction__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('reaction._id'), index=True),
+	sqlalchemy.Column('compound__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('compound._id'), index=True),
 )
 
 class Synonym(Base):
@@ -171,9 +182,13 @@ class InteractionParticipant(Entry):
 	__tablename__ = 'interation_participant'
 	__mapper_args__ = {'polymorphic_identity': 'interaction_participant'}
 
+
 class Complex(Compound):
-	#
-	structure = None
+	
+	_id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
+	synonyms = sqlalchemy.orm.relationship('InteractionParticipant', secondary=complex_interaction_participant, backref=sqlalchemy.orm.backref('complexes'))
+
+	__tablename__ = 'complex'
 
 class Enzyme(Entry):
 	"""
@@ -185,26 +200,16 @@ class Enzyme(Entry):
 	__mapper_args__ = {'polymorphic_identity': 'enzyme'}
 
 class Reaction(Entry):
-	participants = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('interaction_participants'),
-                                            foreign_keys=[InteractionParticipant.compound_id],
-                                            cascade='all, delete-orphan')
+	_id = sqlalchemy.Column(sqlalchemy.Integer(),sqlalchemy.ForeignKey('entry._id'), primary_key=True)
+	participants = sqlalchemy.orm.relationship('InteractionParticipant', secondary=reaction_interaction_participant, backref=sqlalchemy.orm.backref('reaction_participants'))
 	#enzymes: things that affect the rate law but don't undergo permanent covalent transformations
-	modifiers = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('modifier_kinetic_law'),
-                                            foreign_keys=[InteractionParticipant.compound_id],
-                                            cascade='all, delete-orphan')
+	modifiers = sqlalchemy.orm.relationship('Compound', secondary=reaction_compound, backref=sqlalchemy.orm.backref('reaction_modifiers'))
 	__tablename__ = 'reaction'
 	__mapper_args__ = {'polymorphic_identity': 'reaction'}
 
+# terms
 wcm_ontology = pronto.Ontology('./WCM.obo') #biontology API to switch to http link
-'''
-[Term]
-id = quantitative_property
-descrition = ''
 
-[Term]
-id = descriptive_property
-descrition = ''
-'''
 
 class Observation(Base):
 	participants = sqlalchemy.orm.relationship('InteractionParticipant', backref=sqlalchemy.orm.backref('interaction_participants'),
