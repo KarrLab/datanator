@@ -28,19 +28,6 @@ ES_INDEX_TYPE = 'gene'
 DATA_SERVER_USERNAME = 'myUserAdmin'
 DATA_SERVER_PASSWORD = 'abc123'
 
-species_li = ['human', 'mouse', 'rat', 'fruitfly', 'nematode', 'zebrafish', 'thale-cress', 'frog', 'pig']
-
-taxid_d = {'human': 9606,
-           'mouse': 10090,
-           'rat': 10116,
-           'fruitfly': 7227,
-           'nematode': 6239,
-           'zebrafish': 7955,
-           'thale-cress': 3702,
-           'frog': 8364,
-           'pig': 9823,
-           }
-
 DATA_ARCHIVE_ROOT = '/home/zl/Documents'
 
 class Connection(MongoClient):

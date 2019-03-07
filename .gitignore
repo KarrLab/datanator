@@ -128,3 +128,9 @@ datanator/data_source/YMDB/
 >>>>>>> yang_dev
 # minerva
 minerva/*
+
+# ontology file
+*.OBO
+
+# invisible stuff
+.*
