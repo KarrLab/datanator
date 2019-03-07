@@ -1,4 +1,4 @@
-from uniprot_base import load_uniprot
+# from uniprot_base import load_uniprot
 
 __metadata__ = {
     '__collection__': 'uniprot',
@@ -6,9 +6,9 @@ __metadata__ = {
 }
 
 
-def load_genedoc(self=None):
-    genedoc_d = load_uniprot()
-    return genedoc_d
+# def load_genedoc(self=None):
+#     genedoc_d = load_uniprot()
+#     return genedoc_d
 
 
 def get_mapping(self=None):

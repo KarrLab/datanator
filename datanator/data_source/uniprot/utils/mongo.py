@@ -20,7 +20,6 @@ DATA_TARGET_PORT = 27017
 DATA_TARGET_DATABASE = 'genedoc'
 DATA_TARGET_MASTER_COLLECTION = 'db_master'
 
-LOG_FOLDER = '<path to log folder>'
 ES_HOST = 'localhost:9500'
 ES_INDEX_NAME = 'genedoc'
 ES_INDEX_TYPE = 'gene'
@@ -93,7 +92,6 @@ def get_target_master(conn=None):
 
 
 def doc_feeder0(collection, step=1000, s=None, e=None, inbatch=False):
-    '''A iterator for returning docs in a collection, with batch query.'''
     n = collection.count()
     s = s or 1
     e = e or n
@@ -153,7 +151,6 @@ def doc_feeder(collection, step=1000, s=None, e=None, inbatch=False, query=None,
                     t1 = time.time()
                     print("Processing %d-%d documents..." % (cnt + 1, min(cnt + step, e)), end='')
         if inbatch and doc_li:
-            #Important: need to yield the last batch here
             yield doc_li
 
         #print 'Done.[%s]' % timesofar(t1)
@@ -165,8 +162,8 @@ def doc_feeder(collection, step=1000, s=None, e=None, inbatch=False, query=None,
 
 
 def src_clean_archives(keep_last=1, src=None, verbose=True, noconfirm=False):
-    '''clean up archive collections in src db, only keep last <kepp_last>
-       number of archive.
+    '''
+    clean up archive collections in src db
     '''
     from utils.dataload import list2dict
     from utils.common import ask
@@ -179,7 +176,6 @@ def src_clean_archives(keep_last=1, src=None, verbose=True, noconfirm=False):
     coll_to_remove = []
     for k, v in archive_d.items():
         print(k, end='')
-        #check current collection exists
         if src[k].count() > 0:
             cnt = 0
             for coll in sorted(v)[:-keep_last]:
@@ -204,7 +200,6 @@ def src_clean_archives(keep_last=1, src=None, verbose=True, noconfirm=False):
 
 
 def target_clean_collections(keep_last=2, target=None, verbose=True, noconfirm=False):
-    '''clean up collections in target db, only keep last <keep_last> number of collections.'''
     import re
     from utils.common import ask
 
@@ -218,8 +213,8 @@ def target_clean_collections(keep_last=2, target=None, verbose=True, noconfirm=F
             mat = re.match(pat, coll_name)
             if mat:
                 _li.append((mat.group(1), coll_name))
-        _li.sort()   # older collection appears first
-        coll_to_remove = [x[1] for x in _li[:-keep_last]]   # keep last # of newer collections
+        _li.sort()   
+        coll_to_remove = [x[1] for x in _li[:-keep_last]]   
         if len(coll_to_remove) > 0:
             print('{} "{}*" collection(s) will be removed.'.format(len(coll_to_remove), prefix))
             if verbose:
