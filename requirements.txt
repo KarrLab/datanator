@@ -39,4 +39,3 @@ sqlalchemy_searchable
 sqlalchemy_utils
 git+git://github.com/KarrLab/wc_utils#egg=wc_utils-0.0.1a5
 pymongo
-ftplib
