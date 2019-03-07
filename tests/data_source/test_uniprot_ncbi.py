@@ -1,6 +1,4 @@
 from datanator.data_source import uniprot_ncbi
-import datetime
-import dateutil
 import os
 import shutil
 import tempfile
