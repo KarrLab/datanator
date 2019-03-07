@@ -130,7 +130,7 @@ datanator/data_source/YMDB/
 minerva/*
 
 # ontology file
-*.OBO
+*.obo
 
 # invisible stuff
 .*
