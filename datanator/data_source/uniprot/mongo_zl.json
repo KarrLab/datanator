@@ -1,0 +1,7 @@
+{
+  user: "zl",
+  pwd: "321654987fa",
+  roles: [
+    "dbAdmin"
+  ],
+}
