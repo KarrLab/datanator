@@ -23,7 +23,7 @@ openbabel
 openpyxl
 pandas
 pint >= 0.9
-git+https://github.com/KarrLab/pronto.git#egg=pronto-0.12.2 >= 0.12.2
+pronto
 psycopg2
 pubchempy
 python_dateutil
