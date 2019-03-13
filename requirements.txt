@@ -17,6 +17,7 @@ flask_script
 flask_sqlalchemy
 gunicorn
 jxmlease
+marshmallow_sqlalchemy
 numpy
 obj_model
 openbabel
