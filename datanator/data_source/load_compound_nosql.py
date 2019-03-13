@@ -25,8 +25,6 @@ if __name__ == '__main__':
 				file_data = json.load(f)
 				metabolite_collection.insert(file_data)
 
-	#collection.add_index({'name': 1, 'iupac_name', 1})
-
 	# aggregate ecmdb and ymdb based on keys
 	metabolite_collection.aggregate([
 	  {"$group":{"_id":'null', "keys":{"$mergeObjects":"$$ROOT"}}},
