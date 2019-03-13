@@ -1,3 +1,7 @@
+'''
+	merges ECMDB and YMDB NoSQL documents
+'''
+
 from pymongo import MongoClient
 import os
 import json

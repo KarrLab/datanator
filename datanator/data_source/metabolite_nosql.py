@@ -1,3 +1,8 @@
+'''
+	Generates metabolite (ECMDB, YMDB) documents for MongoDB
+'''
+
+
 import io
 import os
 import json
