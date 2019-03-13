@@ -1,0 +1,6 @@
+# third party
+git+https://github.com/KarrLab/log.git#egg=log
+
+# Karr Lab
+git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
+git+https://github.com/KarrLab/obj_model.git#egg=obj_model

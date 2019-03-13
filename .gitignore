@@ -120,12 +120,9 @@ datanator/builds/logs/
 datanator.cfg
 datanator/production_server.py
 
-<<<<<<< HEAD
-=======
 #data source files for YMDB
 datanator/data_source/YMDB/
 
->>>>>>> yang_dev
 # minerva
 minerva/*
 
