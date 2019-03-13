@@ -4,7 +4,7 @@ jobs:
     working_directory: /root/project
     docker:
       - image: karrlab/wc_env_dependencies:latest
-      - image: circleci/postgres:10.5-alpine-ram
+      - image: circleci/postgres:11.2-alpine-ram
         name: postgres_service
         environment:
           POSTGRES_USER: postgres
