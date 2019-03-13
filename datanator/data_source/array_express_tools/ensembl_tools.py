@@ -227,7 +227,7 @@ def get_ref_seq_url(org_symbol):
     text = text[text.find("ftp://ftp.ncbi.nlm.nih.gov/genomes/all"):]
     text = text[:text.find("""">""")]
     end = text[find_nth(text, "/", 9)+1:]
-    text = "{}/{}_genomic.gbff.gz".format(text, end)
+    text = "{}/{}_cds_from_genomic.fna.gz".format(text, end)
     return text
 
 def get_json_ends(tree):
