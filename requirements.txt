@@ -3,7 +3,6 @@ biopython
 bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
-enum34
 ete3
 flask
 flask_bcrypt
@@ -17,8 +16,9 @@ flask_script
 flask_sqlalchemy
 gunicorn
 jxmlease
+marshmallow_sqlalchemy
 numpy
-git+https://github.com/KarrLab/obj_model.git#egg=obj_model-0.0.5
+obj_model
 openbabel
 openpyxl
 pandas
@@ -37,6 +37,6 @@ six
 sqlalchemy
 sqlalchemy_searchable
 sqlalchemy_utils
-git+https://github.com/KarrLab/wc_utils#egg=wc_utils-0.0.1a5
+wc_utils
 pymongo
 xmltodict
