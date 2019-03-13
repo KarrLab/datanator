@@ -3,7 +3,6 @@ biopython
 bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
-enum34
 ete3
 flask
 flask_bcrypt
