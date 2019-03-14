@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 
-@unittest.skip('skip')
+#@unittest.skip('skip')
 class QuickTest(unittest.TestCase):
 
     def setUp(self):
@@ -420,3 +420,32 @@ class TestHTTPError(unittest.TestCase):
         ax = "E-MTAB-5530"
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         print("blue")
+
+
+@unittest.skip('skip')
+class TestMinervaProcessing(unittest.TestCase):
+
+    #def setUp(self):
+    #    self.cache_dirname = '{}/test_for_minerva'.format(os.path.dirname(os.path.realpath(__file__)))
+    #    self.output_directory= '{}/test_for_minerva/output_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+    #    self.temporary_directory= '{}/test_for_minerva/temporary_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+
+    def setUp(self):
+        #self.cache_dirname = tempfile.mkdtemp()
+        self.cache_dirname = '{}/test_for_minerva'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.output_directory= '{}/test_for_minerva/output_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.temporary_directory= '{}/test_for_minerva/temporary_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        pass
+        #os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
+
+    def test_minerva(self):
+        a = self.src
+        #a.load_content("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
+        session = a.session
+        print("beginning processing")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
+        samples = exp.samples
+        core.get_processed_data_samples(samples, self.output_directory, self.temporary_directory)

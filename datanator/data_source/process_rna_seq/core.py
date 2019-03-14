@@ -41,7 +41,6 @@ def download_cdna(ref_genome, strain_name, url, temp_directory):
     if not os.path.isfile(file_name):
         if ref_genome == "ensembl":
             if not os.path.isfile(file_name):
-                print(url)
                 file = urlretrieve(url, file_name)
             os.chdir(temp_directory)
         elif ref_genome == "genbank":
@@ -64,9 +63,12 @@ def download_cdna(ref_genome, strain_name, url, temp_directory):
 
 #def download_fastq(sample, temp_directory):
 def download_fastq(experiment_name,  sample_name, temp_directory, fastq_urls):
+    FASTQ_DIR = "{}/FASTQ_FILES".format(temp_directory)
+    if not os.path.isdir(FASTQ_DIR):
+        os.makedirs(FASTQ_DIR)
     for num, url in enumerate(fastq_urls.split(" ")):
         print("starting {}".format(num))
-        file_name = '{}/FASTQ_Files/{}__{}__{}.fastq.gz'.format(temp_directory, experiment_name, sample_name, num)
+        file_name = '{}/{}__{}__{}.fastq.gz'.format(FASTQ_DIR, experiment_name, sample_name, num)
         file_must_be_downloaded = False
         if os.path.isfile(file_name):
             try:
@@ -76,12 +78,13 @@ def download_fastq(experiment_name,  sample_name, temp_directory, fastq_urls):
             except:
                 file_must_be_downloaded = True
         else:
-            pass
+            file_must_be_downloaded = True
         if file_must_be_downloaded:
-            file = urllib.urlretrieve(url.url, file_name)  # there used to be a space after "gz". I removed it
+            file = urlretrieve(url, file_name)  # there used to be a space after "gz". I removed it
             urllib.urlcleanup()
         else:
             pass
+        print(file_must_be_downloaded)
         print("done with {}".format(num))
 
 def process_cdna(strain_name, output_directory, temp_directory):
