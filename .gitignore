@@ -131,3 +131,4 @@ minerva/*
 
 # invisible stuff
 .*
+tests/data_source/test_processing/
