@@ -5,7 +5,6 @@
 from pymongo import MongoClient
 import os
 import json
-import pprint
 from bson import ObjectId
 
 # handle ObjectID encoded by pymongo
