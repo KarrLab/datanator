@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 
-@unittest.skip('skip')
+#@unittest.skip('skip')
 class QuickTest(unittest.TestCase):
 
     def setUp(self):
@@ -268,7 +268,7 @@ class TestEnsemblTools(unittest.TestCase):
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
 
-@unittest.skip('skip')
+#@unittest.skip('skip')
 class TestProcessData(unittest.TestCase):
 
     def setUp(self):
@@ -279,7 +279,7 @@ class TestProcessData(unittest.TestCase):
         os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
         os.unlink('{}/E-MTAB-6099/Control_2/Control_2_abundances_binary'.format(self.cache_dirname))
         shutil.rmtree("{}/kallisto_index_files".format(self.cache_dirname))
-        shutil.copy("{}/backup_temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname), "{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname))
+        #shutil.copy("{}/backup_temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname), "{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname))
         shutil.copy("{}/backup_temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname), "{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname))
 
     def test_process_data(self):
@@ -292,10 +292,10 @@ class TestProcessData(unittest.TestCase):
         core.get_processed_data_samples([sample], self.cache_dirname, "{}/temporary_files".format(self.cache_dirname))
         self.assertTrue(os.path.isfile("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname)))
         data = pandas.read_pickle("{}/E-MTAB-6099/Control_2/Control_2_abundances_binary".format(self.cache_dirname))
-        self.assertEqual(data.loc["CAO00538", "est_counts"], 2)
-        self.assertEqual(data.loc["CAO00538", "tpm"], 361319)
+        self.assertEqual(data.loc["BCAL0002", "est_counts"], 0)
+        self.assertEqual(data.loc["BCAL0022", "tpm"], 0)
         self.assertFalse(os.path.isfile("{}/temporary_files/FASTQ_Files/E-MTAB-6099__Control_2__0.fastq.gz".format(self.cache_dirname)))
-        self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
+        #self.assertFalse(os.path.isfile("{}/temporary_files/CDNA_FILES/burkholderia_cenocepacia_j2315.cdna.all.fa.gz".format(self.cache_dirname)))
 
 
 @unittest.skip('skip for other tests')
@@ -420,3 +420,32 @@ class TestHTTPError(unittest.TestCase):
         ax = "E-MTAB-5530"
         src.load_content(test_url="https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/{}".format(ax))
         print("blue")
+
+
+@unittest.skip('skip')
+class TestMinervaProcessing(unittest.TestCase):
+
+    #def setUp(self):
+    #    self.cache_dirname = '{}/test_for_minerva'.format(os.path.dirname(os.path.realpath(__file__)))
+    #    self.output_directory= '{}/test_for_minerva/output_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+    #    self.temporary_directory= '{}/test_for_minerva/temporary_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+
+    def setUp(self):
+        #self.cache_dirname = tempfile.mkdtemp()
+        self.cache_dirname = '{}/test_for_minerva'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.output_directory= '{}/test_for_minerva/output_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.temporary_directory= '{}/test_for_minerva/temporary_directory'.format(os.path.dirname(os.path.realpath(__file__)))
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        pass
+        #os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
+
+    def test_minerva(self):
+        a = self.src
+        #a.load_content("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
+        session = a.session
+        print("beginning processing")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
+        samples = exp.samples
+        core.get_processed_data_samples(samples, self.output_directory, self.temporary_directory)

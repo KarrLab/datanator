@@ -24,7 +24,7 @@ openpyxl
 pandas
 pint >= 0.9
 pronto
-psycopg2
+psycopg2_binary
 pubchempy
 python_dateutil
 python_levenshtein

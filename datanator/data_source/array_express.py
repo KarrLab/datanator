@@ -151,6 +151,7 @@ class EnsemblInfo(Base):
     _id = sqlalchemy.Column(sqlalchemy.Integer(), primary_key=True)
     organism_strain = sqlalchemy.Column(sqlalchemy.String(), index=True)
     url = sqlalchemy.Column(sqlalchemy.String())
+    ref_genome = sqlalchemy.Column(sqlalchemy.String())
     sqlalchemy.schema.UniqueConstraint(url)
 
     __tablename__ = 'ensemblInfo'
@@ -621,7 +622,7 @@ class ArrayExpress(data_source.HttpDataSource):
                         ftp_url = None
                     if ftp_url != None:
                         sample.ensembl_info.append(
-                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url))
+                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=ftp_url, ref_genome = "ensembl"))
                         sample.full_strain_specificity = strain_info.full_strain_specificity
                         sample.ensembl_organism_strain = strain_info.organism_strain
                     else:
@@ -629,7 +630,7 @@ class ArrayExpress(data_source.HttpDataSource):
             
                 else:
                     sample.ensembl_info.append(
-                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=strain_info.download_url))
+                            EnsemblInfo(organism_strain=strain_info.organism_strain, url=strain_info.download_url,ref_genome = "genbank"))
                     sample.full_strain_specificity = strain_info.full_strain_specificity
                     sample.ensembl_organism_strain = strain_info.organism_strain
             

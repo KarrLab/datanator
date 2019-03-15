@@ -1,6 +1,6 @@
 #from . import download_cdna
 from datanator.util import rna_seq_util
-#from six.moves.urllib.request import urlretrieve
+from six.moves.urllib.request import urlretrieve
 import urllib
 #from six.moves import urllib 
 import numpy as np
@@ -10,13 +10,16 @@ import requests
 import shutil
 import ftplib
 import gzip
+from Bio import SeqIO
+
+
 
 
 
 def get_processed_data_samples(samples, output_directory, temp_directory):
     for sample in samples:
         if sample.ensembl_info and sample.fastq_urls:
-            download_cdna(sample.ensembl_info[0].organism_strain, sample.ensembl_info[0].url, temp_directory)
+            download_cdna(sample.ensembl_info[0].ref_genome, sample.ensembl_info[0].organism_strain, sample.ensembl_info[0].url, temp_directory)
             fastq_urls = ""
             for url in sample.fastq_urls:
                 fastq_urls = fastq_urls + url.url + " "
@@ -24,27 +27,48 @@ def get_processed_data_samples(samples, output_directory, temp_directory):
             download_fastq(sample.experiment_id, sample.name, temp_directory, fastq_urls)
             process_cdna(sample.ensembl_info[0].organism_strain, output_directory, temp_directory)
             process_fastq(sample.experiment_id, sample.name, sample.ensembl_info[0].organism_strain, len(sample.fastq_urls), sample.experiment.read_type, output_directory, temp_directory)
-            delete_cdna_files(sample.ensembl_info[0].organism_strain, temp_directory)
+            #delete_cdna_files(sample.ensembl_info[0].organism_strain, temp_directory)
             delete_fastq_files(sample.experiment_id, sample.name, temp_directory)
         else:
             print("No FASTQ or no Ensembl for {}_{}".format(sample.experiment_id, sample.name))
 
 
-def download_cdna(strain_name, url, temp_directory):
+def download_cdna(ref_genome, strain_name, url, temp_directory):
     CDNA_DIR = "{}/CDNA_FILES".format(temp_directory)
     if not os.path.isdir(CDNA_DIR):
         os.makedirs(CDNA_DIR)
     file_name = "{}/{}.cdna.all.fa.gz".format(CDNA_DIR, strain_name)
     if not os.path.isfile(file_name):
-        file = urlretrieve(url, file_name)
-    os.chdir(temp_directory)
+        if ref_genome == "ensembl":
+            if not os.path.isfile(file_name):
+                file = urlretrieve(url, file_name)
+            os.chdir(temp_directory)
+        elif ref_genome == "genbank":
+            new_cdna_file = gzip.open(file_name, 'wb')
+            temp_file_name = "{}/{}.temp.all.fa.gz".format(CDNA_DIR, strain_name)
+            file = urlretrieve(url, temp_file_name)
+            list_locus_tags = []
+            with gzip.open(temp_file_name, "rt") as handle:
+                for record in SeqIO.parse(handle, "fasta"):
+                    locus_tag = record.description[record.description.find("[locus_tag=")+11:record.description.find("]", record.description.find("[locus_tag="))]
+                    if locus_tag in list_locus_tags:
+                        locus_tag = "{}_variation".format(locus_tag)
+                    list_locus_tags.append(locus_tag)
+                    new_cdna_file.write(bytes(">{}\n".format(locus_tag), 'utf-8'))
+                    new_cdna_file.write(bytes("{}\n".format(record.seq), 'utf-8'))
+    #print(locus_tag)
+            os.remove(temp_file_name)
+
 
 
 #def download_fastq(sample, temp_directory):
 def download_fastq(experiment_name,  sample_name, temp_directory, fastq_urls):
+    FASTQ_DIR = "{}/FASTQ_FILES".format(temp_directory)
+    if not os.path.isdir(FASTQ_DIR):
+        os.makedirs(FASTQ_DIR)
     for num, url in enumerate(fastq_urls.split(" ")):
         print("starting {}".format(num))
-        file_name = '{}/FASTQ_Files/{}__{}__{}.fastq.gz'.format(temp_directory, experiment_name, sample_name, num)
+        file_name = '{}/{}__{}__{}.fastq.gz'.format(FASTQ_DIR, experiment_name, sample_name, num)
         file_must_be_downloaded = False
         if os.path.isfile(file_name):
             try:
@@ -54,12 +78,13 @@ def download_fastq(experiment_name,  sample_name, temp_directory, fastq_urls):
             except:
                 file_must_be_downloaded = True
         else:
-            pass
+            file_must_be_downloaded = True
         if file_must_be_downloaded:
-            file = urllib.urlretrieve(url.url, file_name)  # there used to be a space after "gz". I removed it
+            file = urlretrieve(url, file_name)  # there used to be a space after "gz". I removed it
             urllib.urlcleanup()
         else:
             pass
+        print(file_must_be_downloaded)
         print("done with {}".format(num))
 
 def process_cdna(strain_name, output_directory, temp_directory):
