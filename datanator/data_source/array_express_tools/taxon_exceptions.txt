@@ -44,5 +44,8 @@ Holcus lanatus L -- Holcus lanatus
 Eupolybothrus sp. PS-2013 -- Eupolybothrus
 Oryctolagus cuniculus domesticus -- Oryctolagus cuniculus
 Reaumuria soongorica -- Reaumuria
+Lactobacillus oligofermentans LMG 22743T + Lactococcus piscium MKFS47 -- Lactobacillus oligofermentans DSM 15707 = LMG 22743, Lactococcus piscium MKFS47
 Lactococcus lactis subsp. cremoris CNCM I-1631 -- Lactococcus lactis subsp. cremoris
+Mycobacterium smegmatis str. MC2 155 -- Mycolicibacterium smegmatis MC2 155
+Lactobacillus oligofermentans LMG 22743T -- Lactobacillus oligofermentans DSM 15707 = LMG 22743
 Frankia sp. CcI3 -- Frankia
