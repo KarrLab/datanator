@@ -2,5 +2,5 @@ References
 ==========
 
 .. bibliography:: references.bib
-    :encoding: latex+latin
+    :encoding: latin
     :style: unsrt
