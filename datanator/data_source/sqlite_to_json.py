@@ -41,18 +41,18 @@ class SQLToJSON():
         return (r if r else None) if one else r
 
 
-if __name__ == '__main__':
-    database = './cache/SabioRk.sqlite'
-    query = "select * from "
-    collection_dir = './cache/SabioRk/'
-    os.makedirs(os.path.dirname(collection_dir), exist_ok=True)
+# if __name__ == '__main__':
+#     database = './cache/SabioRk.sqlite'
+#     query = "select * from "
+#     collection_dir = './cache/SabioRk/'
+#     os.makedirs(os.path.dirname(collection_dir), exist_ok=True)
 
-    temp = SQLToJSON(database, query)
-    tables = temp.table()
+#     temp = SQLToJSON(database, query)
+#     tables = temp.table()
 
-    for table in tables:
-        file_name = os.path.join(collection_dir + table + '.json')
-        result = SQLToJSON(database, query).query_table(table)
-        with open(file_name, "w") as f:
-                f.write(json.dumps(result, indent=4))
+#     for table in tables:
+#         file_name = os.path.join(collection_dir + table + '.json')
+#         result = SQLToJSON(database, query).query_table(table)
+#         with open(file_name, "w") as f:
+#                 f.write(json.dumps(result, indent=4))
 
