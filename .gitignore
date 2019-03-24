@@ -40,6 +40,7 @@ pip-delete-this-directory.txt
 tests/reports/
 tests/output/
 
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -131,4 +132,6 @@ minerva/*
 
 # invisible stuff
 .*
+
+# test output
 tests/data_source/test_processing/
