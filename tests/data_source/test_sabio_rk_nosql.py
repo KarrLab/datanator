@@ -18,8 +18,9 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.file_directory = '../../datanator/data_source/cache/SabioRk/'
         cls.client = 'mongodb://localhost:27017/'
-        cls.db = 'test'
-        cls.src = sabio_rk_nosql.SabioRkNoSQL(cls.file_directory, cls.db, cls.client)
+        cls.db = 'test_sabio'
+        cls.src = sabio_rk_nosql.SabioRkNoSQL(
+            cls.file_directory, cls.db, cls.client, max_entries=12)
 
     @classmethod
     def tearDownClass(cls):
@@ -29,9 +30,11 @@ class TestSabioRkNoSQL(unittest.TestCase):
         (self.file_names, self.file_dict) = self.src.load_json()
         self.collection = self.src.con_db()
 
+    @unittest.skip("test_con_db")
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
 
+    @unittest.skip("test_load_json")
     def test_load_json(self):
         null = None
         self.assertTrue('compartment' in self.file_names)
@@ -60,11 +63,7 @@ class TestSabioRkNoSQL(unittest.TestCase):
             "media": "50 mM potassium phosphate, 4 % DMSO"
         })
 
-    def test_load_mongo(self):
-    	collection = self.collection
-    	file_dict = self.file_dict
-    	file_names = self.file_names
-    	pass
+    @unittest.skip("test_load_json")
+    def test_make_doc(self):
 
-    	
-
+        self.src.make_doc(self.file_names, self.file_dict)
