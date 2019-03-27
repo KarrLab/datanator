@@ -20,7 +20,7 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.client = 'mongodb://localhost:27017/'
         cls.db = 'test_sabio'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.file_directory, cls.db, cls.client, max_entries=12)
+            cls.file_directory, cls.db, cls.client)
 
     @classmethod
     def tearDownClass(cls):
@@ -63,7 +63,6 @@ class TestSabioRkNoSQL(unittest.TestCase):
             "media": "50 mM potassium phosphate, 4 % DMSO"
         })
 
-    @unittest.skip("test_load_json")
     def test_make_doc(self):
 
         self.src.make_doc(self.file_names, self.file_dict)

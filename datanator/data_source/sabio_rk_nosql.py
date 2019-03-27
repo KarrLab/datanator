@@ -90,9 +90,20 @@ class SabioRkNoSQL():
             sabio_doc['parameter'] = []
             sabio_doc['reaction_participant'] = [{'substrate': []}, {'product': []}, {'modifier': []}]
 
-            # every kinlaw entry has one and only one enzyme
+            # every kinlaw entry has no more than one enzyme
             enzyme_id = cur_kinlaw_dict['enzyme_id']
-            cur_enzyme_dict = next(item for item in enzyme_list if item['_id'] == enzyme_id )
+            if enzyme_id != null:
+                cur_enzyme_dict = next(item for item in enzyme_list if item['_id'] == enzyme_id )
+            else:
+                sabio_doc['enzymes'][0]['enzyme'].append({
+                'molecular_weight': None, 
+                'id': None,
+                'name': None,
+                'type': None,
+                'synonym': None,
+                'created': None,
+                'modified': None})   
+
             cur_enzyme_subunit_list = list(item for item in enzyme_subunit_list if item['enzyme_id'] == enzyme_id) # enzyme_id == entry_id
             enzyme_compartment_id = cur_kinlaw_dict['enzyme_compartment_id']
             cur_compartment_list = list(item for item in entry_list if item['_id'] == enzyme_compartment_id) # enzyme_compartment_id = compartment_id = entry_id
@@ -109,6 +120,7 @@ class SabioRkNoSQL():
             'molecular_weight': cur_enzyme_dict['molecular_weight'], 
             'id': cur_enzyme_entry_dict['id'],
             'name': cur_enzyme_entry_dict['name'],
+            'type': cur_kinlaw_dict['enzyme_type'],
             'synonym': enzyme_synonym,
             'created': cur_enzyme_entry_dict['created'],
             'modified': cur_enzyme_entry_dict['modified']})
@@ -414,7 +426,6 @@ class SabioRkNoSQL():
                         'observed_units': observed_units
                         })
 
-            sabio_doc['enzyme_type'] = cur_kinlaw_dict['enzyme_type']
             sabio_doc['tissue'] = cur_kinlaw_dict['tissue']
             sabio_doc['mechanism'] = cur_kinlaw_dict['mechanism']
             sabio_doc['equation'] = cur_kinlaw_dict['equation']
