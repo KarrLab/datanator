@@ -82,9 +82,9 @@ class SabioRkNoSQL():
         for i in range(min(len(kinetic_law_list), self.max_entries)):
             json_name = self.directory+'docs/'+'kinlaw_id_' + str(i+1) + '.json'
             cur_kinlaw_dict = kinetic_law_list[i]
-
+            kinlaw_id = next(item['id'] for item in entry_list if item['_id'] == cur_kinlaw_dict['_id'])
             sabio_doc = {}
-            sabio_doc['kinlaw_id'] = i + 1            
+            sabio_doc['kinlaw_id'] = kinlaw_id          
             sabio_doc['resource'] = [] 
             sabio_doc['enzymes'] = [{'enzyme': []},{'compartment': []},{'subunit': []}] 
             sabio_doc['parameter'] = []
@@ -94,6 +94,7 @@ class SabioRkNoSQL():
             enzyme_id = cur_kinlaw_dict['enzyme_id']
             if enzyme_id != null:
                 cur_enzyme_dict = next(item for item in enzyme_list if item['_id'] == enzyme_id )
+                cur_enzyme_entry_dict = next(item for item in entry_list if item['_id'] == enzyme_id )
             else:
                 sabio_doc['enzymes'][0]['enzyme'].append({
                 'molecular_weight': None, 
@@ -115,7 +116,6 @@ class SabioRkNoSQL():
                     enzyme_synonym.append(synonym_list[synonym_id - 1]['name']) 
                 
 
-            cur_enzyme_entry_dict = next(item for item in entry_list if item['_id'] == enzyme_id )
             sabio_doc['enzymes'][0]['enzyme'].append({
             'molecular_weight': cur_enzyme_dict['molecular_weight'], 
             'id': cur_enzyme_entry_dict['id'],
