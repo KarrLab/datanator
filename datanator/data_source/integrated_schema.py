@@ -33,10 +33,10 @@ entry_synonym = sqlalchemy.Table(
     sqlalchemy.Column('synonym__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('synonym._id'), index=True),
 )
 
-entry_resource = sqlalchemy.Table(
-    'entry_resource', Base.metadata,
+entry_identifier = sqlalchemy.Table(
+    'entry_identifier', Base.metadata,
     sqlalchemy.Column('entry__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('entry._id'), index=True),
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
+    sqlalchemy.Column('identifier__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('identifier._id'), index=True),
 )
 
 compound_compound_structure = sqlalchemy.Table(
@@ -75,7 +75,7 @@ class Entry(Base):
 	name = sqlalchemy.Column(sqlalchemy.String())
 	synonyms = sqlalchemy.orm.relationship('Synonym', secondary=entry_synonym, backref=sqlalchemy.orm.backref('entries'))
 	comments = sqlalchemy.Column(sqlalchemy.String())
-	db_refs = sqlalchemy.orm.relationship('Resource', secondary=entry_resouce, backref=sqlalchemy.orm.backref('entries'))
+	identifiers = sqlalchemy.orm.relationship('Identifier', secondary=entry_identifier, backref=sqlalchemy.orm.backref('entries'))
 	_type = sqlalchemy.Column(sqlalchemy.String())
 
 	sqlalchemy.schema.UniqueConstraint(_id, _type)
@@ -254,7 +254,7 @@ class Observation(Base):
 	retrieval_method = sqlalchemy.Column(sqlalchemy.String()) # scripts used in data_source to retrieve the data
 	retrieval_date = sqlalchemy.Column(sqlalchemy.DateTime,default=datetime.datetime.utcnow())
 
-	pubs = sqlalchemy.orm.relationship('Resource', secondary=resource_publication, backref=sqlalchemy.orm.backref('publications'))
+	pubs = sqlalchemy.orm.relationship('Publication', secondary=observation_publication, backref=sqlalchemy.orm.backref('publications'))
 
 	__tablename__='observation'
 	__mapper_args__ = {'polymorphic_on': type}
@@ -268,22 +268,22 @@ class QuantitativeObservation(Observation):
 class QualitativeObservation(Observation):
 	value = sqlalchemy.Column(String())
 
-class Resource(Base):
+class Identifier(Base):
 	namespace = sqlalchemy.Column(String()) # pubmed, pubchem, kegg.compound
 	_id = sqlalchemy.Column(String(), primary_key=True) # unique identifier within namespace
 	sqlalchemy.schema.UniqueConstraint(namespace, _id)
-	__tablename__ = 'resource'
+	__tablename__ = 'identifier'
 
 observation_publication = sqlalchemy.Table(
 	'observation_publication', Base.metadata,
-	sqlalchemy.Column('observation__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resource._id'), index=True),
+	sqlalchemy.Column('observation__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('identifier._id'), index=True),
 	sqlalchemy.Column('publication__id',sqlalchemy.Integer, sqlalchemy.ForeignKey('publication._id'), index=True),
 )
 
-resource_publication = sqlalchemy.Table(
-    'resource_publication', Base.metadata,
-    sqlalchemy.Column('resource__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('resources._id'), index=True),
-    sqlalchemy.Column('publication__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('publications._id'), index=True),
+identifier_publication = sqlalchemy.Table(
+    'identifier_publication', Base.metadata,
+    sqlalchemy.Column('identifier__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('identifier._id'), index=True),
+    sqlalchemy.Column('publication__id', sqlalchemy.Integer, sqlalchemy.ForeignKey('publication._id'), index=True),
 )
 
 class Publication(Base):
@@ -301,7 +301,7 @@ class Publication(Base):
 	edition = sqlalchemy.Column(sqlalchemy.Integer())
 	chapter = sqlalchemy.Column(sqlalchemy.Integer())
 	pages = sqlalchemy.Column(sqlalchemy.String())
-	db_refs = sqlalchemy.orm.relationship("Resource", secondary = resources_publication, backref='publication')
+	identifiers = sqlalchemy.orm.relationship("Identifier", secondary = identifier_publication, backref='publication')
 	__tablename__ = 'publication'
 
 
