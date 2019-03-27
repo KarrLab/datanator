@@ -208,7 +208,7 @@ class Reaction(Entry):
 	__mapper_args__ = {'polymorphic_identity': 'reaction'}
 
 # terms
-wcm_ontology = pronto.Ontology('./WCM.obo') #biontology API to switch to http link
+from wc_onto import onto
 
 
 class Observation(Base):
