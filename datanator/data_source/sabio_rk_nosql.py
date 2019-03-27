@@ -129,6 +129,7 @@ class SabioRkNoSQL():
                 sabio_doc['enzymes'][2]['subunit'].append({
                 'id': None,
                 'name': None,
+                'uniprot_id': None,
                 'coefficient': None,
                 'sequence': None,
                 'molecular_weight': None,
@@ -139,10 +140,14 @@ class SabioRkNoSQL():
                 for j in range(len(cur_enzyme_subunit_list)):
                     cur_enzyme_subunit_dict = cur_enzyme_subunit_list[j]
                     entry_id = cur_enzyme_subunit_dict['_id']
+                    resource_id = next(item['resource__id'] for item in entry_resource_list if item['entry__id'] == entry_id)
+                    uniprot_id = next(item['id'] for item in resource_list if item['_id'] == resource_id)
                     cur_entry_dict = next(item for item in entry_list if item['_id'] == entry_id )
+
                     sabio_doc['enzymes'][2]['subunit'].append({
                     'id': cur_entry_dict['id'],
                     'name': cur_entry_dict['name'],
+                    'uniprot_id': uniprot_id,
                     'coefficient': cur_enzyme_subunit_dict['coefficient'],
                     'sequence': cur_enzyme_subunit_dict['sequence'],
                     'molecular_weight': cur_enzyme_subunit_dict['molecular_weight'],
@@ -194,13 +199,20 @@ class SabioRkNoSQL():
                         'id': cur_resource_dict['id']
                         })
 
+            '''Handling reaction_participant document
+                substrate, product, modifier
+            '''
             cur_reaction_reactant_list = list(item for item in reaction_participant_list if item['reactant_kinetic_law_id'] == cur_kinlaw_dict['_id'])
             cur_reaction_product_list = list(item for item in reaction_participant_list if item['product_kinetic_law_id'] == cur_kinlaw_dict['_id'])
             cur_reaction_modifier_list = list(item for item in reaction_participant_list if item['modifier_kinetic_law_id'] == cur_kinlaw_dict['_id'])
 
+            # substrates
             for j in range(len(cur_reaction_reactant_list)):
                 cur_reactant_dict = cur_reaction_reactant_list[j]
                 cur_reactant_compound_entry_id = cur_reactant_dict['compound_id']
+
+                resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
+                resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -233,7 +245,7 @@ class SabioRkNoSQL():
                 cur_reactant_coefficient = cur_reactant_dict['coefficient']
                 cur_reactant_type = cur_reactant_dict['type']
                 cur_entry_dict = next(item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][0]['substrate'].append({
+                sabio_doc['reaction_participant'][0]['substrate'].append({ **{
                     'sabio_compound_id': cur_entry_dict['id'],
                     'name': cur_entry_dict['name'],
                     'synonym': reactant_synonyms,
@@ -243,11 +255,15 @@ class SabioRkNoSQL():
                     'type': cur_reactant_dict['type'],
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
-                    })
+                    }, **resources})
 
+            # product
             for j in range(len(cur_reaction_product_list)):
                 cur_reactant_dict = cur_reaction_product_list[j]
                 cur_reactant_compound_entry_id = cur_reactant_dict['compound_id']
+
+                resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
+                resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -280,7 +296,7 @@ class SabioRkNoSQL():
                 cur_reactant_coefficient = cur_reactant_dict['coefficient']
                 cur_reactant_type = cur_reactant_dict['type']
                 cur_entry_dict = next(item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][1]['product'].append({
+                sabio_doc['reaction_participant'][1]['product'].append({ **{
                     'sabio_compound_id': cur_entry_dict['id'],
                     'name': cur_entry_dict['name'],
                     'synonym': reactant_synonyms,
@@ -290,11 +306,15 @@ class SabioRkNoSQL():
                     'type': cur_reactant_dict['type'],                    
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
-                    })
+                    }, **resources})
 
+            # modifier
             for j in range(len(cur_reaction_modifier_list)):
                 cur_modifier_dict = cur_reaction_modifier_list[j]
                 cur_reactant_compound_entry_id = cur_modifier_dict['compound_id']
+
+                resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
+                resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -327,7 +347,7 @@ class SabioRkNoSQL():
                 cur_reactant_coefficient = cur_reactant_dict['coefficient']
                 cur_reactant_type = cur_reactant_dict['type']
                 cur_entry_dict = next(item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][2]['modifier'].append({
+                sabio_doc['reaction_participant'][2]['modifier'].append({ **{
                     'sabio_compound_id': cur_entry_dict['id'],
                     'name': cur_entry_dict['name'],
                     'synonym': reactant_synonyms,
@@ -337,8 +357,10 @@ class SabioRkNoSQL():
                     'type': cur_reactant_dict['type'],                    
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
-                    })               
+                    }, **resources})               
 
+            '''Handling parameter
+            '''
             cur_parameter_list = list(item for item in parameter_list if item['kinetic_law_id'] == cur_kinlaw_dict['_id'])
             if len(cur_parameter_list) != 0:
                 for j in range(len(cur_parameter_list)):
