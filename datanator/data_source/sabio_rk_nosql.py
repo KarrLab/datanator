@@ -11,7 +11,7 @@ import os
 
 class SabioRkNoSQL():
 
-    def __init__(self, directory, db, MongoDB, max_entries=float('inf')):
+    def __init__(self, directory, output_directory = '/tmp/' db, MongoDB, verbose = False, max_entries=float('inf')):
         '''
                 Attributes:
                         directory: temporary os directory
@@ -24,6 +24,7 @@ class SabioRkNoSQL():
         self.db = db
         self.collection = 'sabio_rk'
         self.max_entries = max_entries
+        self.verbose = verbose
 
     # make connections wth mongoDB
     def con_db(self):
@@ -50,6 +51,8 @@ class SabioRkNoSQL():
         return (file_names, file_dict)
 
     '''loads dictionaries as documents (1 kinetic_law per document)
+        save each document as a json file
+        insert each document into a mongodb
         Attributes:
 
             file_names: list of name of files
@@ -79,10 +82,15 @@ class SabioRkNoSQL():
         # list of entrie ids that have compound structure information
         has_structure = list(item['compound__id'] for item in compound_compound_structure_list)
 
-        for i in range(min(len(kinetic_law_list), self.max_entries)):
+        for i in range(14500, min(len(kinetic_law_list), self.max_entries)):
+
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(item['id'] for item in entry_list if item['_id'] == cur_kinlaw_dict['_id'])
             json_name = self.directory+'docs/'+'kinlaw_id_' + str(kinlaw_id) + '.json'
+
+            if self.verbose and (i % 100 == 0):
+                print('  Downloading kinlaw_id {} of {}'.format(kinlaw_id, min(len(kinetic_law_list), self.max_entries)))
+
             sabio_doc = {}
             sabio_doc['kinlaw_id'] = kinlaw_id          
             sabio_doc['resource'] = [] 
@@ -173,17 +181,12 @@ class SabioRkNoSQL():
                     })
 
             # kinetic_law_resource many-to-one
-            cur_kinlaw_resource_dict = next(item for item in kinetic_law_resource_list if item['kinetic_law__id'] == cur_kinlaw_dict['_id'])
+            cur_kinlaw_resource_list = list(item for item in kinetic_law_resource_list if item['kinetic_law__id'] == cur_kinlaw_dict['_id'])
             # entry_resource: same entry id can have multiple resource_id
             cur_entry_resource_list = list(item for item in entry_resource_list if item['entry__id'] == cur_kinlaw_dict['_id'])
 
-            if not cur_kinlaw_resource_dict:
-                sabio_doc['resource'].append({
-                'namespace': None,
-                'id': None
-                })
-            else:
-                resource_id = cur_kinlaw_resource_dict['resource__id']
+            if len(cur_kinlaw_resource_list) != 0:
+                resource_id = cur_kinlaw_resource_list[0]['resource__id']
                 cur_resource_dict = next(item for item in resource_list if item['_id'] == resource_id)
                 sabio_doc['resource'].append({
                 'namespace': cur_resource_dict['namespace'],
@@ -213,6 +216,11 @@ class SabioRkNoSQL():
 
                 resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+                
+                # standardize across collections
+                resources['kegg_id'] = resources.pop('kegg.compound', None)
+                resources['pubchem_substance_id'] = resources.pop('pubchem.substance', None)
+                resources['pubchem_compound_id'] = resources.pop('pubchem.compound', None)
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -264,6 +272,11 @@ class SabioRkNoSQL():
 
                 resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+
+                # standardize across collections
+                resources['kegg_id'] = resources.pop('kegg.compound', None)
+                resources['pubchem_compound_id'] = resources.pop('pubchem.substance', None)
+                resources['pubchem_compound_id'] = resources.pop('pubchem.compound', None)
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -315,6 +328,11 @@ class SabioRkNoSQL():
 
                 resource__id = list(item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 resources = {resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+
+                # standardize across collections
+                resources['kegg_id'] = resources.pop('kegg.compound', None)
+                resources['pubchem_compound_id'] = resources.pop('pubchem.substance', None)
+                resources['pubchem_compound_id'] = resources.pop('pubchem.compound', None)
                 # compound synonym if there is any
                 cur_reactant_synonym_id_list = list(item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
                 if len(cur_reactant_synonym_id_list) != 0:
@@ -427,8 +445,6 @@ class SabioRkNoSQL():
                     sabio_doc['parameter'].append({
                         #'id': cur_entry_dict['id'],
                         'name': cur_entry_dict['name'],
-                        'created': cur_entry_dict['created'],
-                        'modified': cur_entry_dict['modified'],
                         #'type': _type,
                         'sabio_compound_id': entry_compound_id,
                         'compound_name': compound_name,
@@ -460,4 +476,7 @@ class SabioRkNoSQL():
 
             with open(json_name, 'w') as f:
                 f.write(json.dumps(sabio_doc, indent=4))
+
+            collection = self.con_db()
+            collection.insert(sabio_doc)
 

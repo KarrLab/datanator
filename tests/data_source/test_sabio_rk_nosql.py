@@ -18,9 +18,9 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.file_directory = '../../datanator/data_source/cache/SabioRk/'
         cls.client = 'mongodb://localhost:27017/'
-        cls.db = 'test_sabio'
+        cls.db = 'test'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.file_directory, cls.db, cls.client)
+            cls.file_directory, cls.db, cls.client, verbose = True)
 
     @classmethod
     def tearDownClass(cls):
@@ -64,5 +64,4 @@ class TestSabioRkNoSQL(unittest.TestCase):
         })
 
     def test_make_doc(self):
-
-        self.src.make_doc(self.file_names, self.file_dict)
+        session = self.src.make_doc(self.file_names, self.file_dict)
