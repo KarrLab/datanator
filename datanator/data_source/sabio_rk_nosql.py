@@ -80,9 +80,9 @@ class SabioRkNoSQL():
         has_structure = list(item['compound__id'] for item in compound_compound_structure_list)
 
         for i in range(min(len(kinetic_law_list), self.max_entries)):
-            json_name = self.directory+'docs/'+'kinlaw_id_' + str(i+1) + '.json'
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(item['id'] for item in entry_list if item['_id'] == cur_kinlaw_dict['_id'])
+            json_name = self.directory+'docs/'+'kinlaw_id_' + str(kinlaw_id) + '.json'
             sabio_doc = {}
             sabio_doc['kinlaw_id'] = kinlaw_id          
             sabio_doc['resource'] = [] 
