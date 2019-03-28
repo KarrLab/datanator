@@ -4,9 +4,7 @@
 import unittest
 import shutil
 import tempfile
-from pymongo import MongoClient
 from datanator.data_source import sabio_rk_nosql
-import json
 from datanator.util import warning_util
 warning_util.disable_warnings()
 
@@ -20,7 +18,7 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.client = 'mongodb://localhost:27017/'
         cls.db = 'test'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.file_directory, cls.db, cls.client, verbose = True)
+            cls.file_directory, cls.db, cls.client, verbose = True, output_directory=cls.file_directory )
 
     @classmethod
     def tearDownClass(cls):

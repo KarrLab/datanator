@@ -11,10 +11,11 @@ import os
 
 class SabioRkNoSQL():
 
-    def __init__(self, directory, output_directory = '/tmp/' db, MongoDB, verbose = False, max_entries=float('inf')):
+    def __init__(self, directory, db, MongoDB, verbose = False, max_entries=float('inf'), output_directory = '/tmp/'):
         '''
                 Attributes:
-                        directory: temporary os directory
+                        directory: sqlite file directory
+                        output_directory: 
                         db: mongodb database name
                         MongoDB: MongoDB server address and login e.g. 'mongodb://localhost:27017/'
 
@@ -22,6 +23,7 @@ class SabioRkNoSQL():
         self.directory = directory
         self.MongoDB = MongoDB
         self.db = db
+        self.output_directory = output_directory
         self.collection = 'sabio_rk'
         self.max_entries = max_entries
         self.verbose = verbose
@@ -71,7 +73,7 @@ class SabioRkNoSQL():
         Start iteration with kinetic_law
 
         '''
-        os.makedirs(os.path.dirname(self.directory + 'docs/'), exist_ok=True)
+        os.makedirs(os.path.dirname(self.output_directory + 'docs/'), exist_ok=True)
         null = None
         for key, value in file_dict.items():
             # might not be a good idea
@@ -82,7 +84,7 @@ class SabioRkNoSQL():
         # list of entrie ids that have compound structure information
         has_structure = list(item['compound__id'] for item in compound_compound_structure_list)
 
-        for i in range(14500, min(len(kinetic_law_list), self.max_entries)):
+        for i in range(min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(item['id'] for item in entry_list if item['_id'] == cur_kinlaw_dict['_id'])
