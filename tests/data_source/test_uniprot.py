@@ -19,8 +19,7 @@ class TestServerDownloadUniprot(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.uni = uniprot.Uniprot(cache_dirname=cls.cache_dirname, download_backups=False, load_content=True,
-                                   max_entries=10)
+        cls.uni = uniprot.Uniprot(cache_dirname=cls.cache_dirname, download_backups=False, load_content=True, max_entries=10)
 
     @classmethod
     def tearDownClass(cls):

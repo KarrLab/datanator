@@ -14,11 +14,22 @@ from pymongo import MongoClient
 
 
 class UniprotNoSQL():
-    def __init__(self):
+    def __init__(self, MongoDB, db, max_entries = float('inf')):
         self.url = 'http://www.uniprot.org/uniprot/?fil=reviewed:yes'
-        self.client = MongoClient('mongodb://localhost:27017/')
-        self.db = self.client['compounds']
-        self.collection = self.db['uniprot']
+        self.MongoDB = MongoDB
+        self.db = db
+        self.max_entries = max_entries
+
+    # make connections wth mongoDB
+    def con_db(self):
+        try:
+            client = MongoClient(self.MongoDB, 400)  # 400ms max timeout
+            client.server_info()
+            db = client[self.db]
+            collection = db['uniprot']
+            return collection
+        except pymongo.errors.ConnectionFailure:
+            print('Server not available')
 
     # build dataframe for uniprot_swiss for loading into mongodb
     def get_uniprot(self):
@@ -26,6 +37,8 @@ class UniprotNoSQL():
             '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed'
         url += '&format=tab'
         url += '&compress=no'
+        if not math.isnan(self.max_entries):
+            url += '&limit={}'.format(self.max_entries)
 
         response = requests.get(url)
         response.raise_for_status()
@@ -41,12 +54,11 @@ class UniprotNoSQL():
         return data
 
     # load uniprot into MongoDB
-    def load_uniprot(self, df):
+    def load_uniprot(self):
+        df = self.get_uniprot()
         df_json = json.loads(df.to_json(orient='records'))
-        self.collection.insert(df_json)
+        collection = self.con_db()
+        collection.insert(df_json)
 
+        return collection
 
-if __name__ == '__main__':
-    a = UniprotNoSQL()
-    frame = a.get_uniprot()
-    a.load_uniprot(frame)
