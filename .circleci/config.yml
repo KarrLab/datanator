@@ -9,6 +9,8 @@ jobs:
         environment:
           POSTGRES_USER: postgres
           POSTGRES_DB: CommonSchema
+      - image: mongo
+        name: mongo
 
     steps:
       # Clone repository

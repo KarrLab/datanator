@@ -1,5 +1,11 @@
 '''Parse SabioRk json files into MongoDB documents
     (json files acquired by running sqlite_to_json.py)
+
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
+:Author: Jonathan <jonrkarr@gmail.com>
+:Date: 2019-04-02
+:Copyright: 2019, Karr Lab
+:License: MIT
 '''
 
 import json

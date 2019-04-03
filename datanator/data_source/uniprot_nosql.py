@@ -1,6 +1,12 @@
 '''
 	Generates uniprot_swiss (reviewed) NoSQL documents
 	load documents into MongoDB collections
+
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
+:Author: Jonathan <jonrkarr@gmail.com>
+:Date: 2019-04-02
+:Copyright: 2019, Karr Lab
+:License: MIT
 '''
 
 import io

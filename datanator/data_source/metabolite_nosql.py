@@ -1,6 +1,12 @@
 '''
 	Generates metabolite (ECMDB, YMDB) documents for MongoDB
     Stores documents in MongoDB and stores documents as JSON
+
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
+:Author: Jonathan <jonrkarr@gmail.com>
+:Date: 2019-04-02
+:Copyright: 2019, Karr Lab
+:License: MIT
 '''
 
 

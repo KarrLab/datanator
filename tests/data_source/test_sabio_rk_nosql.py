@@ -1,4 +1,10 @@
 '''Tests of sqlite_to_json
+
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
+:Author: Jonathan <jonrkarr@gmail.com>
+:Date: 2019-04-02
+:Copyright: 2019, Karr Lab
+:License: MIT
 '''
 
 import unittest
@@ -15,7 +21,7 @@ class TestSabioRkNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.file_directory = '../../datanator/data_source/cache/SabioRk/'
-        cls.client = 'mongodb://localhost:27017/'
+        cls.client = 'mongodb://mongo:27017/'
         cls.db = 'test'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
             cls.file_directory, cls.db, cls.client, verbose = True, output_directory=cls.file_directory )

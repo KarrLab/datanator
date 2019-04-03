@@ -1,5 +1,11 @@
 '''
 	merges ECMDB and YMDB NoSQL documents
+
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
+:Author: Jonathan <jonrkarr@gmail.com>
+:Date: 2019-04-02
+:Copyright: 2019, Karr Lab
+:License: MIT
 '''
 
 from pymongo import MongoClient
