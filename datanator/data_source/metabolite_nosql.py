@@ -59,7 +59,7 @@ class MetaboliteNoSQL():
             collection = db[self.source]
             return collection
         except pymongo.errors.ConnectionFailure:
-            print('Server not available')
+            return ('Server not available')
 
     '''Each compound's collection of imformation is written into a json file for mongodb
 

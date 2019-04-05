@@ -6,6 +6,10 @@ else:
     PROD_SERVER_URI = 'postgres://postgres@localhost/CommonSchema'
 
 
+ES_HOST = 'http://elasticsearch:9200'
+ES_INDEX_NAME = 'datanator'
+
+
 class BaseConfig(object):
     """Base configuration."""
     SECRET_KEY = 'my_precious'

@@ -23,7 +23,7 @@ class TestMetaboliteNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.source = 'ecmdb' # 'ymdb' or 'ecmdb'
-        cls.MongoDB = 'mongodb://localhost:27017/'
+        cls.MongoDB = 'mongodb://mongo:27017/'
         cls.db = 'tests'
         cls.output_directory = cls.cache_dirname # directory to store JSON files
         cls.src = metabolite_nosql.MetaboliteNoSQL(
