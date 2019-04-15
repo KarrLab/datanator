@@ -43,3 +43,4 @@ pymongo
 xmltodict
 capturer
 ftputil
+elasticsearch
