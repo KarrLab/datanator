@@ -9,15 +9,25 @@ import json
 import os
 import sqlite3
 import pprint
+import wc_utils.quilt
 
 class SQLToJSON():
 
-    def __init__(self, database, query):
-        self.database = database
+    def __init__(self, query, cache_dirname = None, quilt_package = None, system_path = None):
         self.query = query
+        self.cache_dirname = cache_dirname
+        self.quilt_package = quilt_package
+        self.system_path = system_path        
 
     def db(self):
-        return sqlite3.connect(self.database)
+        if self.cache_dirname == None:
+            database_dir = '../../datanator/data_source/cache/'
+            database = os.path.join(database_dir, self.system_path)
+        else:
+            manager = wc_utils.quilt.QuiltManager(self.cache_dirname, self.quilt_package)
+            downlaods = manager.download(system_path = self.system_path, sym_links=False)
+            database = os.path.join(self.cache_dirname, self.system_path)
+        return sqlite3.connect(database)
 
     # returns all the table names in a sqlite database
     def table(self):

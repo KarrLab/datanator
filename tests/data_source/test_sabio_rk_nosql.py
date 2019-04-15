@@ -34,11 +34,9 @@ class TestSabioRkNoSQL(unittest.TestCase):
         (self.file_names, self.file_dict) = self.src.load_json()
         self.collection = self.src.con_db()
 
-    @unittest.skip("test_con_db")
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
 
-    @unittest.skip("test_load_json")
     def test_load_json(self):
         null = None
         self.assertTrue('compartment' in self.file_names)
@@ -67,5 +65,6 @@ class TestSabioRkNoSQL(unittest.TestCase):
             "media": "50 mM potassium phosphate, 4 % DMSO"
         })
 
+    @unittest.skip("test_load_json")
     def test_make_doc(self):
         session = self.src.make_doc(self.file_names, self.file_dict)

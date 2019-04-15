@@ -13,9 +13,11 @@ class TestSQLToJSON(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.database = '../../datanator/data_source/cache/SabioRk.sqlite'
         cls.query = "select * from "
-        cls.src = sqlite_to_json.SQLToJSON(cls.database, cls.query)
+        cls.quilt_package = 'datanator'
+        cls.system_path = 'SabioRk.sqlite'
+        cls.src = sqlite_to_json.SQLToJSON(
+            cls.query, cls.cache_dirname, cls.quilt_package, cls.system_path)
 
     @classmethod
     def tearDownClass(cls):
