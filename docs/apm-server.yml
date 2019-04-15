@@ -1,0 +1,6 @@
+apm-server:
+  # Defines the host and port the server is listening on.  use "unix:/path/to.sock" to listen on a unix domain socket.
+  host: "apm-server:8200"
+
+output.elasticsearch:
+    hosts: ["elasticsearch:9200"]
