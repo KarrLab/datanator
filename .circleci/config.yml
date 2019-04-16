@@ -11,6 +11,8 @@ jobs:
           POSTGRES_DB: CommonSchema
       - image: mongo
         name: mongo
+      - image: elasticsearch:6.7.0
+        name: elasticsearch
 
     steps:
       # Clone repository

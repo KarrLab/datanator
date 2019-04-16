@@ -30,9 +30,10 @@ class TestMapMongo(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip("test_elasticsearch")
+    @unittest.skip("in working progress")
     def test_elasticsearch(self):
         self.assertEqual(self.src.elastic_con().status_code, 200)
 
+    @unittest.skip("in working progress")
     def test_mapto(self):
         self.src.map_to()

@@ -20,19 +20,18 @@ class TestSabioRkNoSQL(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.file_directory = '../../datanator/data_source/cache/SabioRk/'
-        cls.client = 'mongodb://mongo:27017/'
         cls.db = 'test'
+        cls.MongoDB = 'mongodb://mongo:27017/'
+        cls.quilt_package = 'sabiork_nosql'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.file_directory, cls.db, cls.client, verbose = True, output_directory=cls.file_directory )
+            cls.db, cls.MongoDB, cls.cache_dirname,cls.quilt_package, verbose = True, max_entries = 20)
+        (cls.file_names, cls.file_dict) = cls.src.load_json()
+        cls.collection = cls.src.con_db()
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-
-    def setUp(self):
-        (self.file_names, self.file_dict) = self.src.load_json()
-        self.collection = self.src.con_db()
+        cls.collection.drop()
 
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
@@ -65,6 +64,6 @@ class TestSabioRkNoSQL(unittest.TestCase):
             "media": "50 mM potassium phosphate, 4 % DMSO"
         })
 
-    @unittest.skip("test_load_json")
-    def test_make_doc(self):
-        session = self.src.make_doc(self.file_names, self.file_dict)
+    # @unittest.skip("test_make_doc")
+    # def test_make_doc(self):
+    #     session = self.src.make_doc(self.file_names, self.file_dict)
