@@ -1,33 +1,60 @@
 import csv
 import ete3
 import os
-import warnings
 import zipfile
 from six import BytesIO
-
+import json
+import pymongo
+import requests
 
 class CorumNoSQL():
-    def __init__():
-        ENDPOINT_DOMAINS = {
-	        'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
-	    }
+    def __init__(self,cache_dirname, MongoDB, db, verbose=False, max_entries=float('inf')):
+        self.ENDPOINT_DOMAINS = {
+            'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
+        }
+        self.cache_dirname = cache_dirname
+        self.MongoDB = MongoDB
+        self.db = db
+        self.verbose = verbose
+        self.max_entries = max_entries
+        self.collection = 'corum'
+
+    def con_db(self):
+        try:
+            client = pymongo.MongoClient(self.MongoDB, 400)  # 400ms max timeout
+            client.server_info()
+            db = client[self.db]
+            collection = db[self.collection]
+            return collection
+        except pymongo.errors.ConnectionFailure:
+            return ('Server not available')
 
     def load_content(self):
-        """ Collect and parse all data from CORUM website and add to SQLite database """
+        """ Collect and parse all data from CORUM website into JSON files and add to NoSQL database """
         database_url = self.ENDPOINT_DOMAINS['corum']
-        req = self.requests_session
-        session = self.session
+        os.makedirs(os.path.join(
+            self.cache_dirname, 'corum'), exist_ok=True)
 
+        if self.verbose:
+            print('Download list of all compounds: ...')
+
+        response = requests.get(database_url)
+        response.raise_for_status()
         # Extract All Files and save to current directory
-        response = req.get(database_url)
+
+        if self.verbose:
+            print('... Done!')
+        if self.verbose:
+            print('Unzipping and parsing compound list ...')
+
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
-        self.cwd = os.path.join(self.cache_dirname, 'allComplexes.txt')
+        cwd = os.path.join(self.cache_dirname, 'allComplexes.txt')
 
         # create object to find NCBI taxonomy IDs
         ncbi_taxa = ete3.NCBITaxa()
 
-        with open(self.cwd, 'r') as file:
+        with open(cwd, 'r') as file:
             i_entry = 0
             for entry in csv.DictReader(file, delimiter='\t'):
                 # entry/line number in file
@@ -44,30 +71,38 @@ class CorumNoSQL():
 
                 # extract attributes
                 complex_id = int(entry['ComplexID'])
+                entry['ComplexID'] = complex_id #replace string value with int value
                 complex_name = entry['ComplexName']
                 cell_line = entry['Cell line']
-                su_uniprot = entry['subunits(UniProt IDs)']  # SETS OF STRING IDS SEPARATED BY ;\
-                su_entrez = entry['subunits(Entrez IDs)']  # SETS OF INT IDS SEPARATED BY ;
                 pur_method = entry['Protein complex purification method']
-                go_id = entry['GO ID']  # SETS OF INT IDS SEPARATED BY ; eg. GO:0005634
+                # SETS OF INT IDS SEPARATED BY ; eg. GO:0005634
+                go_id = entry['GO ID']
                 go_dsc = entry['GO description']
                 funcat_id = entry['FunCat ID']
                 funcat_dsc = entry['FunCat description']
                 pubmed_id = int(entry['PubMed ID'])
-                protein_name = entry['subunits(Protein name)']
+                entry['PubMed ID'] = pubmed_id
                 gene_name = entry['subunits(Gene name)']
                 gene_syn = entry['Synonyms']
                 disease_cmt = entry['Disease comment']
                 su_cmt = entry['Subunits comment']
                 complex_cmt = entry['Complex comment']
+
+                su_uniprot = entry['subunits(UniProt IDs)']  # SETS OF STRING IDS SEPARATED BY ;\
+                su_entrez = entry['subunits(Entrez IDs)']  # SETS OF INT IDS SEPARATED BY ;
+                protein_name = entry['subunits(Protein name)']
                 swissprot_id = entry['SWISSPROT organism']
 
                 """ ----------------- Apply field level corrections-----------------"""
                 # Split the semicolon-separated lists of subunits into protein components,
                 # ignoring semicolons inside square brackets
                 su_uniprot_list = parse_list(su_uniprot)
+                entry['subunits(UniProt IDs)'] = su_uniprot_list
                 su_entrez_list = parse_list(su_entrez)
-                protein_name_list = parse_list(correct_protein_name_list(protein_name))
+                entry['subunits(Entrez IDs)'] = su_entrez_list
+                protein_name_list = parse_list(
+                    correct_protein_name_list(protein_name))
+               	entry['subunits(Protein name)'] = protein_name_list
 
                 # check list lengths match
                 if len(protein_name_list) != len(su_entrez_list):
@@ -88,7 +123,20 @@ class CorumNoSQL():
                     ncbi_id = result[ncbi_name][0]
                 else:
                     ncbi_id = None
+                entry['SWISSPROT organism (NCBI IDs)'] = ncbi_id
+                del entry['SWISSPROT organism']
 
+                file_name = 'corum_' + str(entry['ComplexID']) + '.json'
+                full_path = os.path.join(
+                    self.cache_dirname, 'corum', file_name)
+
+                with open(full_path, 'w') as f:
+                    f.write(json.dumps(entry, indent=4))
+
+                collection = self.con_db()
+                collection.insert(entry)
+
+        return collection
 
 
 
