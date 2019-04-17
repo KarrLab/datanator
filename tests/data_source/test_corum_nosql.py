@@ -45,7 +45,7 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertEqual(cursor[2]['subunits(Protein name)'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
         collection.drop()
         
-    #@unittest.skip("will not work on circle ci due to file directory setting")
+    @unittest.skip("will not work on circle ci due to file directory setting")
     def test_load_all_content(self):
         db = 'datanator'
         cache_dirname = '../../datanator/data_source/cache'
