@@ -103,6 +103,7 @@ ENV/
 
 # scratch
 scratch/
+datanator/data/
 
 # passwords
 tests/fixtures/secret/
