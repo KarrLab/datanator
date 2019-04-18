@@ -2,8 +2,6 @@ import unittest
 from datanator.data_source import pax_nosql
 import tempfile
 import shutil
-import pymongo
-
 
 class TestCorumNoSQL(unittest.TestCase):
 
