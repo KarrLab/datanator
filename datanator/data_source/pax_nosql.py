@@ -1,6 +1,5 @@
 import os
 import zipfile
-from operator import itemgetter
 from six import BytesIO
 import shutil
 import pandas as pd

@@ -34,6 +34,7 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertNotEqual(collection, 'Server not available')
         collection.drop()
 
+    #@unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(
             self.cache_dirname, self.MongoDB, self.db, verbose = True, max_entries = 20)

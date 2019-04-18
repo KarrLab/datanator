@@ -83,7 +83,8 @@ class CorumNoSQL():
                 pubmed_id = int(entry['PubMed ID'])
                 entry['PubMed ID'] = pubmed_id
                 gene_name = entry['subunits(Gene name)']
-                gene_syn = entry['Synonyms']
+                gene_syn = entry['subunits(Gene name syn)']
+                complex_syn = entry['Synonyms']
                 disease_cmt = entry['Disease comment']
                 su_cmt = entry['Subunits comment']
                 complex_cmt = entry['Complex comment']
@@ -98,8 +99,28 @@ class CorumNoSQL():
                 # ignoring semicolons inside square brackets
                 su_uniprot_list = parse_list(su_uniprot)
                 entry['subunits(UniProt IDs)'] = su_uniprot_list
+                
                 su_entrez_list = parse_list(su_entrez)
                 entry['subunits(Entrez IDs)'] = su_entrez_list
+                
+                go_id_list = parse_list(go_id)
+                entry['GO ID'] = go_id_list
+                
+                go_dsc_list = parse_list(go_dsc)
+                entry['GO description'] = go_dsc_list
+
+                funcat_id_list = parse_list(funcat_id)
+                entry['FunCat ID'] = funcat_id_list
+
+                funcat_dsc_list = parse_list(funcat_dsc)
+                entry['FunCat description'] = funcat_dsc_list
+
+                gene_name_list = parse_list(gene_name)
+                entry['subunits(Gene name)'] = gene_name_list
+
+                gene_syn_list = parse_list(gene_syn)
+                entry['subunits(Gene name syn)'] = gene_syn_list
+
                 protein_name_list = parse_list(
                     correct_protein_name_list(protein_name))
                	entry['subunits(Protein name)'] = protein_name_list
