@@ -11,19 +11,21 @@ import pymongo
 class PaxNoSQL():
 
     def __init__(self, cache_dirname, MongoDB, db, verbose=False, max_entries=float('inf')):
-    	self.cache_dirname = cache_dirname
-    	self.MongoDB = MongoDB
-    	self.db = db
-    	self.verbose = verbose
-    	self.max_entries = max_entries
+        self.cache_dirname = cache_dirname
+        self.MongoDB = MongoDB
+        self.db = db
+        self.verbose = verbose
+        self.max_entries = max_entries
         self.ENDPOINT_DOMAINS = {
             'pax': 'https://pax-db.org/downloads/4.1/datasets/paxdb-abundance-files-v4.1.zip',
             'pax_protein': 'http://pax-db.org/downloads/latest/paxdb-uniprot-links-v4.1.zip'
         }
+        self.collection = 'pax'
 
     def con_db(self):
         try:
-            client = pymongo.MongoClient(self.MongoDB, 400)  # 400ms max timeout
+            client = pymongo.MongoClient(
+                self.MongoDB, 400)  # 400ms max timeout
             client.server_info()
             db = client[self.db]
             collection = db[self.collection]
@@ -38,7 +40,6 @@ class PaxNoSQL():
         collection = self.con_db()
         database_url = self.ENDPOINT_DOMAINS['pax']
         protein_conversion_url = self.ENDPOINT_DOMAINS['pax_protein']
-        
 
         # Extract All Main Files and Save to Cache Directory
         response = requests.get(database_url)
@@ -63,26 +64,27 @@ class PaxNoSQL():
         self.report.write('Errors found:\n')
 
         self.uniprot_pd = pd.read_csv(self.cwd_prot+'/paxdb-uniprot-links-v4.1.tsv',
-                                      delimiter='\t', names=['string_id', 'uniprot_id'], index_col=0)
+                                      delimiter='\t', header=None, names=['string_id', 'uniprot_id'], index_col=0)
 
         # Find data and parse individual files
-        for self.file_id in range(int(self.max_entries)):
+        file_count = 0
+        for _,_,files in (os.walk(self.cache_dirname)):
+        	file_count += len(files)
+        total = min(file_count, self.max_entries)
+        for self.file_id in range(total):
             if self.verbose:
-                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(int(self.max_entries)) +
-                      '; '+str(round(100*self.file_id/self.max_entries, 2))+'%'+' already done)')
+                print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(total) +
+                      '; '+str(round(100*self.file_id/total, 2))+'%'+' already done)')
             entry = self.parse_paxDB_files()
             collection.insert(entry)
 
+        return collection
+
     def parse_paxDB_files(self):
-        """ This function parses pax DB files and adds them to the SQL database
-        Attributes:
-            session     (:obj:)     : SQLalchemy object
-            file_id     (:obj:`str`): internal ID of the file
-            data_files  (:obj:`str`): list of the files to be processed
-            data_folder (:obj:`str`): root folder of the database
+        """ This function parses pax DB files and adds them to the NoSQL database
         """
         file_path = self.data_files[self.file_id]
-        self.entry = {}
+        entry = {}
         if self.verbose:
             print(file_path)
 
@@ -112,7 +114,8 @@ class PaxNoSQL():
                 entry['species_name'] = species_name
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #name field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write(
+                    'Warning: invalid #name field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
                 entry['species_name'] = None
                 return
 
@@ -125,7 +128,8 @@ class PaxNoSQL():
                 entry['score'] = score
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #score field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write(
+                    'Warning: invalid #score field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
                 entry['score'] = None
                 return
 
@@ -171,7 +175,8 @@ class PaxNoSQL():
                 entry['organ'] = organ
             else:
                 print('Error found, see reports.txt')
-                self.report.write('Warning: invalid #organ field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
+                self.report.write(
+                    'Warning: invalid #organ field, excluding file form DB (file_id='+str(self.file_id)+'; '+file_name+')\n')
                 entry['organ'] = None
                 return
 
@@ -205,20 +210,23 @@ class PaxNoSQL():
 
             """ --- Parse individual measurements and add them to DB ----------- """
             observation = []
-            for i in range(11, len(lines)):
+            for i in range(12, len(lines)):
                 split_line = lines[i].split()
                 protein_id = split_line[0]
                 string_id = split_line[1]
                 abundance = split_line[2]
-
+                protein_info = None #default
                 if string_id in self.uniprot_pd.index.values:
-                	protein_id = [protein_id, str(self.uniprot_pd.loc[string_id])]
+                    protein_info = {'string_id': string_id, 'uniprot_id':str(
+                        self.uniprot_pd.loc[string_id]['uniprot_id'])}
                 else:
-                	pass
+                    pass
 
-                observation.append({'protein_id': protein_id, 'string_id': string_id, 'abundance': abundance})
-
+                observation.append(
+                    {'protein_id': protein_info, 'string_id': string_id, 'abundance': abundance})
+            entry['observation'] = observation
         return entry
+
 
 '''Helper functions
 '''
