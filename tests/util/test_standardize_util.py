@@ -22,6 +22,7 @@ class TestMongoUtil(unittest.TestCase):
     @unittest.skip('done')
     def test_standardize_util(self):
         self.src.standardize_sabio()
-
+    
+    @unittest.skip('done')
     def test_standardize_util(self):
         self.src.standardize_metabolite()

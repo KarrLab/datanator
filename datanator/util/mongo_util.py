@@ -1,7 +1,6 @@
 import pymongo
 import time
 
-
 class MongoUtil():
 
     def __init__(self, cache_dirname=None, MongoDB=None, db=None,
