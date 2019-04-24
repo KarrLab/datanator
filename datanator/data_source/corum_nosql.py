@@ -71,7 +71,7 @@ class CorumNoSQL():
 
                 # extract attributes
                 complex_id = int(entry['ComplexID'])
-                entry['ComplexID'] = complex_id #replace string value with int value
+                entry['complex_id'] = complex_id #replace string value with int value
                 complex_name = entry['ComplexName']
                 cell_line = entry['Cell line']
                 pur_method = entry['Protein complex purification method']
@@ -81,7 +81,7 @@ class CorumNoSQL():
                 funcat_id = entry['FunCat ID']
                 funcat_dsc = entry['FunCat description']
                 pubmed_id = int(entry['PubMed ID'])
-                entry['PubMed ID'] = pubmed_id
+                entry['pubmed_id'] = pubmed_id
                 gene_name = entry['subunits(Gene name)']
                 gene_syn = entry['subunits(Gene name syn)']
                 complex_syn = entry['Synonyms']
@@ -98,32 +98,32 @@ class CorumNoSQL():
                 # Split the semicolon-separated lists of subunits into protein components,
                 # ignoring semicolons inside square brackets
                 su_uniprot_list = parse_list(su_uniprot)
-                entry['subunits(UniProt IDs)'] = su_uniprot_list
+                entry['subunits_uniprot_id'] = su_uniprot_list
                 
                 su_entrez_list = parse_list(su_entrez)
-                entry['subunits(Entrez IDs)'] = su_entrez_list
+                entry['subunits_entrez_id'] = su_entrez_list
                 
                 go_id_list = parse_list(go_id)
-                entry['GO ID'] = go_id_list
+                entry['go_id'] = go_id_list
                 
                 go_dsc_list = parse_list(go_dsc)
-                entry['GO description'] = go_dsc_list
+                entry['go_description'] = go_dsc_list
 
                 funcat_id_list = parse_list(funcat_id)
-                entry['FunCat ID'] = funcat_id_list
+                entry['funcat_id'] = funcat_id_list
 
                 funcat_dsc_list = parse_list(funcat_dsc)
-                entry['FunCat description'] = funcat_dsc_list
+                entry['funcat_description'] = funcat_dsc_list
 
                 gene_name_list = parse_list(gene_name)
-                entry['subunits(Gene name)'] = gene_name_list
+                entry['subunits_gene_name'] = gene_name_list
 
                 gene_syn_list = parse_list(gene_syn)
-                entry['subunits(Gene name syn)'] = gene_syn_list
+                entry['subunits_gene_name_synonym'] = gene_syn_list
 
                 protein_name_list = parse_list(
                     correct_protein_name_list(protein_name))
-               	entry['subunits(Protein name)'] = protein_name_list
+               	entry['subunits_protein_name'] = protein_name_list
 
                 # check list lengths match
                 if len(protein_name_list) != len(su_entrez_list):
@@ -144,10 +144,10 @@ class CorumNoSQL():
                     ncbi_id = result[ncbi_name][0]
                 else:
                     ncbi_id = None
-                entry['SWISSPROT organism (NCBI IDs)'] = ncbi_id
+                entry['SWISSPROT_organism_NCBI_ID'] = ncbi_id
                 del entry['SWISSPROT organism']
 
-                file_name = 'corum_' + str(entry['ComplexID']) + '.json'
+                file_name = 'corum_' + str(entry['complex_id']) + '.json'
                 full_path = os.path.join(
                     self.cache_dirname, 'corum', file_name)
 

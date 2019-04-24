@@ -121,10 +121,10 @@ class SabioRkNoSQL():
             else:
                 sabio_doc['enzymes'][0]['enzyme'].append({
                     'molecular_weight': None,
-                    'id': None,
-                    'name': None,
-                    'type': None,
-                    'synonym': None,
+                    'enzyme_id': None,
+                    'enzyme_name': None,
+                    'enzyme_type': None,
+                    'enzyme_synonym': None,
                     'created': None,
                     'modified': None})
 
@@ -144,20 +144,20 @@ class SabioRkNoSQL():
 
             sabio_doc['enzymes'][0]['enzyme'].append({
                 'molecular_weight': cur_enzyme_dict['molecular_weight'],
-                'id': cur_enzyme_entry_dict['id'],
-                'name': cur_enzyme_entry_dict['name'],
-                'type': cur_kinlaw_dict['enzyme_type'],
-                'synonym': enzyme_synonym,
+                'enzyme_id': cur_enzyme_entry_dict['id'],
+                'enzyme_name': cur_enzyme_entry_dict['name'],
+                'enzyme_type': cur_kinlaw_dict['enzyme_type'],
+                'enzyme_synonym': enzyme_synonym,
                 'created': cur_enzyme_entry_dict['created'],
                 'modified': cur_enzyme_entry_dict['modified']})
 
             if len(cur_enzyme_subunit_list) == 0:
                 sabio_doc['enzymes'][2]['subunit'].append({
-                    'id': None,
-                    'name': None,
+                    'subunit_id': None,
+                    'subunit_name': None,
                     'uniprot_id': None,
-                    'coefficient': None,
-                    'sequence': None,
+                    'subunit_coefficient': None,
+                    'canonical_sequence': None,
                     'molecular_weight': None,
                     'created': None,
                     'modified': None
@@ -174,11 +174,11 @@ class SabioRkNoSQL():
                         item for item in entry_list if item['_id'] == entry_id)
 
                     sabio_doc['enzymes'][2]['subunit'].append({
-                        'id': cur_entry_dict['id'],
-                        'name': cur_entry_dict['name'],
+                        'subunit_id': cur_entry_dict['id'],
+                        'subunit_name': cur_entry_dict['name'],
                         'uniprot_id': uniprot_id,
-                        'coefficient': cur_enzyme_subunit_dict['coefficient'],
-                        'sequence': cur_enzyme_subunit_dict['sequence'],
+                        'subunit_coefficient': cur_enzyme_subunit_dict['coefficient'],
+                        'canonical_sequence': cur_enzyme_subunit_dict['sequence'],
                         'molecular_weight': cur_enzyme_subunit_dict['molecular_weight'],
                         'created': cur_entry_dict['created'],
                         'modified': cur_entry_dict['modified']
@@ -186,8 +186,8 @@ class SabioRkNoSQL():
 
             if len(cur_compartment_list) == 0:
                 sabio_doc['enzymes'][1]['compartment'].append({
-                    'id': None,
-                    'name': None,
+                    'compartment_id': None,
+                    'compartment_name': None,
                     'created': None,
                     'modified': None
                 })
@@ -195,8 +195,8 @@ class SabioRkNoSQL():
                 for j in range(len(cur_compartment_list)):
                     cur_compartment_dict = cur_compartment_list[j]
                     sabio_doc['enzymes'][1]['compartment'].append({
-                        'id': cur_compartment_dict['id'],
-                        'name': cur_compartment_dict['name'],
+                        'compartment_id': cur_compartment_dict['id'],
+                        'compartment_name': cur_compartment_dict['name'],
                         'created': cur_compartment_dict['created'],
                         'modified': cur_compartment_dict['modified']
                     })
@@ -270,7 +270,7 @@ class SabioRkNoSQL():
                     for structure_id in structure_id_list:
                         cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
                                                        'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi': compound_structure_list[structure_id - 1]['_value_inchi'],
+                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
                                                        'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
 
                 cur_reactant_compartment_id = cur_reactant_dict.get(
@@ -281,7 +281,7 @@ class SabioRkNoSQL():
                     compartment_name = cur_entry_dict['name']
                     compartment_created = cur_entry_dict['created']
                     compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'name': compartment_name,
+                    reactant_compartment = {'compartment_name': compartment_name,
                                             'created': compartment_created,
                                             'modified': compartment_modified}
                 else:
@@ -293,12 +293,12 @@ class SabioRkNoSQL():
                     item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
                 sabio_doc['reaction_participant'][0]['substrate'].append({**{
                     'sabio_compound_id': cur_entry_dict['id'],
-                    'name': cur_entry_dict['name'],
-                    'synonym': reactant_synonyms,
-                    'structure': cur_compound_structure,
-                    'compartment': reactant_compartment,
-                    'coefficient': cur_reactant_dict['coefficient'],
-                    'type': cur_reactant_dict['type'],
+                    'substrate_name': cur_entry_dict['name'],
+                    'substrate_synonym': reactant_synonyms,
+                    'substrate_structure': cur_compound_structure,
+                    'substrate_compartment': reactant_compartment,
+                    'substrate_coefficient': cur_reactant_dict['coefficient'],
+                    'substrate_type': cur_reactant_dict['type'],
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
                 }, **resources})
@@ -336,7 +336,7 @@ class SabioRkNoSQL():
                     for structure_id in structure_id_list:
                         cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
                                                        'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi': compound_structure_list[structure_id - 1]['_value_inchi'],
+                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
                                                        'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
 
                 cur_reactant_compartment_id = cur_reactant_dict.get(
@@ -347,7 +347,7 @@ class SabioRkNoSQL():
                     compartment_name = cur_entry_dict['name']
                     compartment_created = cur_entry_dict['created']
                     compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'name': compartment_name,
+                    reactant_compartment = {'compartment_name': compartment_name,
                                             'created': compartment_created,
                                             'modified': compartment_modified}
                 else:
@@ -359,12 +359,12 @@ class SabioRkNoSQL():
                     item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
                 sabio_doc['reaction_participant'][1]['product'].append({**{
                     'sabio_compound_id': cur_entry_dict['id'],
-                    'name': cur_entry_dict['name'],
-                    'synonym': reactant_synonyms,
-                    'structure': cur_compound_structure,
-                    'compartment': reactant_compartment,
-                    'coefficient': cur_reactant_dict['coefficient'],
-                    'type': cur_reactant_dict['type'],
+                    'product_name': cur_entry_dict['name'],
+                    'product_synonym': reactant_synonyms,
+                    'product_structure': cur_compound_structure,
+                    'product_compartment': reactant_compartment,
+                    'product_coefficient': cur_reactant_dict['coefficient'],
+                    'product_type': cur_reactant_dict['type'],
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
                 }, **resources})
@@ -402,7 +402,7 @@ class SabioRkNoSQL():
                     compartment_name = cur_entry_dict['name']
                     compartment_created = cur_entry_dict['created']
                     compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'name': compartment_name,
+                    reactant_compartment = {'compartment_name': compartment_name,
                                             'created': compartment_created,
                                             'modified': compartment_modified}
                 else:
@@ -416,7 +416,7 @@ class SabioRkNoSQL():
                     for structure_id in structure_id_list:
                         cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
                                                        'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi': compound_structure_list[structure_id - 1]['_value_inchi'],
+                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
                                                        'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
 
                 cur_reactant_coefficient = cur_reactant_dict['coefficient']
@@ -425,12 +425,12 @@ class SabioRkNoSQL():
                     item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
                 sabio_doc['reaction_participant'][2]['modifier'].append({**{
                     'sabio_compound_id': cur_entry_dict['id'],
-                    'name': cur_entry_dict['name'],
-                    'synonym': reactant_synonyms,
-                    'structure': cur_compound_structure,
-                    'compartment': reactant_compartment,
-                    'coefficient': cur_reactant_dict['coefficient'],
-                    'type': cur_reactant_dict['type'],
+                    'modifier_name': cur_entry_dict['name'],
+                    'modifier_synonym': reactant_synonyms,
+                    'modifier_structure': cur_compound_structure,
+                    'modifier_compartment': reactant_compartment,
+                    'modifier_coefficient': cur_reactant_dict['coefficient'],
+                    'modifier_type': cur_reactant_dict['type'],
                     'created': cur_entry_dict['created'],
                     'modified': cur_entry_dict['modified']
                 }, **resources})
@@ -466,7 +466,7 @@ class SabioRkNoSQL():
                             compound_structure.append({
                                 'structure': cur_compound_structure_dict['value'],
                                 'format': cur_compound_structure_dict['format'],
-                                'inchi': cur_compound_structure_dict['_value_inchi'],
+                                'inchi_structure': cur_compound_structure_dict['_value_inchi'],
                                 'inchi_connectivity': cur_compound_structure_dict['_value_inchi_formula_connectivity']})
 
                     synonyms = []
@@ -534,7 +534,7 @@ class SabioRkNoSQL():
             sabio_doc['tissue'] = cur_kinlaw_dict['tissue']
             sabio_doc['mechanism'] = cur_kinlaw_dict['mechanism']
             sabio_doc['equation'] = cur_kinlaw_dict['equation']
-            sabio_doc['taxon'] = cur_kinlaw_dict['taxon']
+            sabio_doc['taxon_id'] = cur_kinlaw_dict['taxon']
             sabio_doc['taxon_wildtype'] = cur_kinlaw_dict['taxon_wildtype']
             sabio_doc['taxon_variant'] = cur_kinlaw_dict['taxon_variant']
             sabio_doc['temperature'] = cur_kinlaw_dict['temperature']

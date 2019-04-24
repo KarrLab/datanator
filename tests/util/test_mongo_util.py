@@ -14,7 +14,7 @@ class TestMongoUtil(unittest.TestCase):
         cls.collection = 'ecmdb'
         cls.src = mongo_util.MongoUtil(
             cls.cache_dirname, cls.MongoDB, cls.db, cls.collection, verbose=True, max_entries=20)
-        cls.client, cls.db, cls.collection_obj = cls.src.con_db()
+        cls.client, cls.db, cls.collection_obj = cls.src.con_db(cls.collection)
 
     @classmethod
     def tearDownClass(cls):

@@ -5,21 +5,20 @@ import time
 class MongoUtil():
 
     def __init__(self, cache_dirname=None, MongoDB=None, db=None,
-                 collection=None, verbose=False, max_entries=float('inf')):
+                verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
-        self.collection = collection
         self.verbose = verbose
         self.max_entries = max_entries
 
-    def con_db(self):
+    def con_db(self, collection):
         try:
             client = pymongo.MongoClient(
                 self.MongoDB, 400)  # 400ms max timeout
             client.server_info()
             db = client[self.db]
-            collection = db[self.collection]
+            collection = db[collection]
             return (client, db, collection)
         except pymongo.errors.ConnectionFailure:
             return ('Server not available')

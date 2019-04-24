@@ -35,7 +35,7 @@ db = SQLAlchemy(app)
 ma = Marshmallow(app)
 cors = CORS(app)
 migrate = Migrate(app, db)
-register_blueprints(app)
+# register_blueprints(app)
 
 # # flask login
 # from app.server.model import User
