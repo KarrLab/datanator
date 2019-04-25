@@ -18,7 +18,8 @@ class MongoUtil():
         try:
             client = pymongo.MongoClient(
                 self.MongoDB, replicaSet=self.replicaSet)  # 400ms max timeout
-            client.server_info()
+            if self.verbose:
+                print (client.server_info())
             db = client[self.db]
             collection = db[collection_str]
             return (client, db, collection)
