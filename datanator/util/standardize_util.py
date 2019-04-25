@@ -6,14 +6,14 @@ from bson.objectid import ObjectId
 
 class StandardizeUtil(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname=None, MongoDB=None, db=None,
-                 collection=None, verbose=False, max_entries=float('inf')):
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        super(StandardizeUtil, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, db=db,
+        super(StandardizeUtil, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,replicaSet=replicaSet, db=db,
                                               verbose=verbose, max_entries=max_entries)
 
     '''Process sabio_rk documents

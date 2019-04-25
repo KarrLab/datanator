@@ -10,13 +10,14 @@ class MongoUtil():
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
+        self.replicaSet = replicaSet
         self.verbose = verbose
         self.max_entries = max_entries
 
     def con_db(self, collection_str):
         try:
             client = pymongo.MongoClient(
-                self.MongoDB, 400)  # 400ms max timeout
+                self.MongoDB, replicaSet=self.replicaSet)  # 400ms max timeout
             client.server_info()
             db = client[self.db]
             collection = db[collection_str]

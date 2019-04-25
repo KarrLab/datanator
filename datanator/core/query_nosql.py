@@ -3,10 +3,10 @@ import time
 
 class DataQuery(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname=None, MongoDB=None, db=None,
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
                 verbose=False, max_entries=float('inf')):
 
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, db=db,
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                     verbose=verbose, max_entries=max_entries)
 
     def doc_feeder(self,collection_str, sym_link = False, step=1000, s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):

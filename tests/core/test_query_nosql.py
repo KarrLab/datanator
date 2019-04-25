@@ -10,9 +10,9 @@ class TestQueryNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
-        cls.MongoDB = 'mongodb://mongo_secondary:27017/'
+        cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = query_nosql.DataQuery(
-            cls.cache_dirname, cls.MongoDB, cls.db, verbose=True, max_entries=20)
+            cls.cache_dirname, cls.MongoDB, 'rs0', cls.db, verbose=True, max_entries=20)
         cls.collection_str = 'ecmdb'
         cls.client, cls.db, cls.collection_obj = cls.src.con_db(
             cls.collection_str)
