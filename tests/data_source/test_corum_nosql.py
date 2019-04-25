@@ -29,17 +29,17 @@ class TestCorumNoSQL(unittest.TestCase):
 
     def test_con_db(self):
         src = corum_nosql.CorumNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, verbose = True, max_entries = 20)
-        collection = src.con_db()
+            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
+        collection = src.con_db('corum')
         self.assertNotEqual(collection, 'Server not available')
         collection.close()
 
     #@unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, verbose = True, max_entries = 20)
+            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
         collection = src.load_content()
-        self.assertEqual(collection.count(), 20)
+        self.assertEqual(collection.find().count(), 20)
         cursor = collection.find({'subunits(UniProt IDs)': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
         self.assertEqual(cursor[1]['ComplexName'], 'BCL6-HDAC5 complex')

@@ -6,9 +6,10 @@ from six import BytesIO
 import json
 import pymongo
 import requests
+from datanator.util import mongo_util
 
-class CorumNoSQL():
-    def __init__(self,cache_dirname, MongoDB, db, verbose=False, max_entries=float('inf')):
+class CorumNoSQL(mongo_util.MongoUtil):
+    def __init__(self,cache_dirname, MongoDB, db, replicaSet=None, verbose=False, max_entries=float('inf')):
         self.ENDPOINT_DOMAINS = {
             'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
         }
@@ -18,22 +19,15 @@ class CorumNoSQL():
         self.verbose = verbose
         self.max_entries = max_entries
         self.collection = 'corum'
-
-    def con_db(self):
-        try:
-            client = pymongo.MongoClient(self.MongoDB, 400)  # 400ms max timeout
-            client.server_info()
-            db = client[self.db]
-            collection = db[self.collection]
-            return collection
-        except pymongo.errors.ConnectionFailure:
-            return ('Server not available')
+        super(CorumNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
+                    verbose=verbose, max_entries=max_entries)
 
     def load_content(self):
         """ Collect and parse all data from CORUM website into JSON files and add to NoSQL database """
         database_url = self.ENDPOINT_DOMAINS['corum']
+        collection = self.con_db(self.collection)
         os.makedirs(os.path.join(
-            self.cache_dirname, 'corum'), exist_ok=True)
+            self.cache_dirname, self.collection), exist_ok=True)
 
         if self.verbose:
             print('Download list of all compounds: ...')
@@ -149,12 +143,12 @@ class CorumNoSQL():
 
                 file_name = 'corum_' + str(entry['complex_id']) + '.json'
                 full_path = os.path.join(
-                    self.cache_dirname, 'corum', file_name)
+                    self.cache_dirname, self.collection, file_name)
 
                 with open(full_path, 'w') as f:
                     f.write(json.dumps(entry, indent=4))
 
-                collection = self.con_db()
+                
                 collection.insert(entry)
 
         return collection
