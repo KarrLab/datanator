@@ -1,5 +1,7 @@
 import pymongo
 import time
+import wc_utils.quilt
+from bson import decode_all
 
 class MongoUtil():
 
@@ -11,24 +13,48 @@ class MongoUtil():
         self.verbose = verbose
         self.max_entries = max_entries
 
-    def con_db(self, collection):
+    def con_db(self, collection_str):
         try:
             client = pymongo.MongoClient(
                 self.MongoDB, 400)  # 400ms max timeout
             client.server_info()
             db = client[self.db]
-            collection = db[collection]
+            collection = db[collection_str]
             return (client, db, collection)
         except pymongo.errors.ConnectionFailure:
             return ('Server not available')
 
-    def doc_feeder(self,collection, step=1000, s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
+    def fill_db(self, collection_str, sym_link=False):
+        '''Check if collection is already in MongoDB 
+            if already in:
+                do nothing
+            else:
+                load data into db from quiltdata (karrlab/datanator_nosql)
+
+            Attributes:
+                collection_str: name of collection (e.g. 'ecmdb', 'pax', etc)
+                sym_link: whether download should be a sym link
+        '''
+        _, _, collection = self.con_db(collection_str)
+        if collection.find({}).count() != 0:
+            return collection
+        else:
+            manager = wc_utils.quilt.QuiltManager(self.cache_dirname, 'datanator_nosql')
+            file = collection_str+'.bson' 
+            manager.download(file, sym_link)
+            with open((self.cache_dirname+ '/'+file), 'rb') as f:
+                collection.insert(decode_all(f.read()))
+            return collection
+
+
+    def doc_feeder(self,collection_str, sym_link = False, step=1000, s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
         '''A iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
-           doc_feeder(collection, query={'taxid': {'$in': [9606, 10090, 10116]}})
+           doc_feeder(collection_str, query={'taxid': {'$in': [9606, 10090, 10116]}})
            batch_callback is a callback function as fn(cnt, t), called after every batch
            fields is optional parameter passed to find to restrict fields to return.
         '''
+        collection = self.fill_db(collection_str, sym_link)
         cur = collection.find(query, no_cursor_timeout=False, projection=projection)
         n = cur.count()
         s = s or 0
