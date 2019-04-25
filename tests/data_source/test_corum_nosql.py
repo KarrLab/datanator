@@ -38,7 +38,7 @@ class TestCorumNoSQL(unittest.TestCase):
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(
             self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
-        client, _, collection = src.load_content()
+        collection = src.load_content()
         self.assertEqual(collection.find().count(), 20)
         cursor = collection.find({'subunits(UniProt IDs)': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
@@ -52,7 +52,7 @@ class TestCorumNoSQL(unittest.TestCase):
         cache_dirname = '../../datanator/data_source/cache'
         src = corum_nosql.CorumNoSQL(
             cache_dirname, self.MongoDB, db, verbose = True)
-        client, _, collection = src.load_content()
+        collection = src.load_content()
 
         c = collection.find_one({'ComplexID':80})
         self.assertEqual(c['ComplexName'], 'Ubiquitin E3 ligase (SKP1A, SKP2, CUL1, RBX1)')
