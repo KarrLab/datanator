@@ -30,15 +30,15 @@ class TestCorumNoSQL(unittest.TestCase):
     def test_con_db(self):
         src = corum_nosql.CorumNoSQL(
             self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
-        collection = src.con_db('corum')
+        client, db, collection = src.con_db('corum')
         self.assertNotEqual(collection, 'Server not available')
-        collection.close()
+        client.close()
 
     #@unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(
             self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
-        collection = src.load_content()
+        client, _, collection = src.load_content()
         self.assertEqual(collection.find().count(), 20)
         cursor = collection.find({'subunits(UniProt IDs)': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
@@ -52,13 +52,15 @@ class TestCorumNoSQL(unittest.TestCase):
         cache_dirname = '../../datanator/data_source/cache'
         src = corum_nosql.CorumNoSQL(
             cache_dirname, self.MongoDB, db, verbose = True)
-        collection = src.load_content()
+        client, _, collection = src.load_content()
 
         c = collection.find_one({'ComplexID':80})
         self.assertEqual(c['ComplexName'], 'Ubiquitin E3 ligase (SKP1A, SKP2, CUL1, RBX1)')
 
         s = collection.find_one({'subunits(UniProt IDs)':'Q9UQL6'})
         self.assertEqual(s['subunits(Protein name)'][1], 'Histone deacetylase 5')
+        collection.drop()
+        client.close()
 
         # t = session.query(corum.Taxon).filter(corum.Taxon.ncbi_id == 9606).first()
         # self.assertEqual(t.swissprot_id, 'Homo sapiens (Human)')

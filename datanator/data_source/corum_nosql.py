@@ -25,7 +25,7 @@ class CorumNoSQL(mongo_util.MongoUtil):
     def load_content(self):
         """ Collect and parse all data from CORUM website into JSON files and add to NoSQL database """
         database_url = self.ENDPOINT_DOMAINS['corum']
-        collection = self.con_db(self.collection)
+        _, _, collection = self.con_db(self.collection)
         os.makedirs(os.path.join(
             self.cache_dirname, self.collection), exist_ok=True)
 
