@@ -5,7 +5,7 @@ from bson import decode_all
 
 class MongoUtil():
 
-    def __init__(self, cache_dirname=None, MongoDB=None, db=None,
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                 verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
