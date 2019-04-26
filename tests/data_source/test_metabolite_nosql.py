@@ -24,10 +24,10 @@ class TestMetaboliteNoSQL(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.source = 'ecmdb' # 'ymdb' or 'ecmdb'
         cls.MongoDB = 'mongodb://mongo:27017/'
-        cls.db = 'tests'
+        cls.db = 'test'
         cls.output_directory = cls.cache_dirname # directory to store JSON files
-        cls.src = metabolite_nosql.MetaboliteNoSQL(
-            cls.source, cls.MongoDB, cls.db, verbose = True, output_directory=cls.output_directory, max_entries=20)
+        cls.src = metabolite_nosql.MetaboliteNoSQL(cls.output_directory,
+            cls.source, cls.MongoDB, cls.db, verbose = True, max_entries=20)
 
     @classmethod
     def tearDownClass(cls):
@@ -36,8 +36,8 @@ class TestMetaboliteNoSQL(unittest.TestCase):
     def setUp(self):
         self.collection = self.src.con_db()
 
-    def tearDown(self):
-        self.collection.drop()
+    # def tearDown(self):
+    #     self.collection.drop()
 
     #@unittest.skip("test_con_db")
     def test_con_db(self):

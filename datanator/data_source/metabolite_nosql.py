@@ -29,7 +29,7 @@ class MetaboliteNoSQL():
             max_entries: maximum number of documents to be processed
             output_direcotory: directory in which JSON files will be stored.
     '''
-    def __init__(self, source, MongoDB, db, verbose=True, max_entries = float('inf'), output_directory = '/tmp/'):
+    def __init__(self,output_directory, source, MongoDB, db, verbose=True, max_entries = float('inf')):
         self.verbose = verbose
         self.source = source
         self.db = db
@@ -138,5 +138,17 @@ class MetaboliteNoSQL():
                 f.write(json.dumps(new_doc, indent=4))
 
             collection = self.con_db()
-            collection.insert(new_doc)
+            if self.source == 'ecmdb':
+                collection.replace_one(
+                    {'m2m_id': new_doc['m2m_id']},
+                    new_doc,
+                    upsert=True
+                )
+            else:
+                collection.replace_one(
+                    {'ymdb_id': new_doc['ymdb_id']},
+                    new_doc,
+                    upsert=True
+                )              
+                
 
