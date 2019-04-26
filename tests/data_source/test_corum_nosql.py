@@ -42,7 +42,7 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertEqual(collection.find().count(), 20)
         cursor = collection.find({'subunits_uniprot_id': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
-        self.assertEqual(cursor[1]['complex_id'], 'BCL6-HDAC5 complex')
+        self.assertEqual(cursor[1]['complex_id'], 2)
         self.assertEqual(cursor[2]['subunits_protein_name'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
         collection.drop()
         
