@@ -31,4 +31,4 @@ class TestUniprotNoSQL(unittest.TestCase):
         uni = self.src.load_uniprot()
         count = uni.count()
         self.assertEqual(count, 10)
-        uni.drop()
+        self.assertEqual(count[0]['uniprot_id'], 'Q2KA61')

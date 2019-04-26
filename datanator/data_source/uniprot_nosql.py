@@ -64,6 +64,7 @@ class UniprotNoSQL():
         df = self.get_uniprot()
         df_json = json.loads(df.to_json(orient='records'))
         collection = self.con_db()
+        collection.delete_many({})
         collection.insert(df_json)
 
         return collection

@@ -71,6 +71,7 @@ class MetaboliteNoSQL():
 
         response = requests.get(self.compound_index)
         response.raise_for_status()
+        collection = self.con_db()
 
         if self.verbose:
             print('... Done!')
@@ -137,7 +138,7 @@ class MetaboliteNoSQL():
             with open(file_name, "w") as f:
                 f.write(json.dumps(new_doc, indent=4))
 
-            collection = self.con_db()
+            
             if self.source == 'ecmdb':
                 collection.replace_one(
                     {'m2m_id': new_doc['m2m_id']},

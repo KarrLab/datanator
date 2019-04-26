@@ -89,7 +89,7 @@ class SabioRkNoSQL():
         # list of entrie ids that have compound structure information
         has_structure = list(item['compound__id']
                              for item in compound_compound_structure_list)
-
+        collection = self.con_db()
         for i in range(min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
@@ -543,6 +543,10 @@ class SabioRkNoSQL():
 
             with open(json_name, 'w') as f:
                 f.write(json.dumps(sabio_doc, indent=4))
-
-            collection = self.con_db()
-            collection.insert(sabio_doc)
+            
+            collection.replace_one(
+                {'kinlaw_id': sabio_doc['kinlaw_id']},
+                sabio_doc,
+                upsert=True
+                )
+                

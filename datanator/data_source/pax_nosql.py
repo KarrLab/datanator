@@ -75,7 +75,7 @@ class PaxNoSQL():
                 print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(total) +
                       '; '+str(round(100*self.file_id/total, 2))+'%'+' already done)')
             entry = self.parse_paxDB_files()
-            collection.insert(entry)
+            collection.replace_one({'file_name':entry['file_name']},entry,upsert=True)
 
         return collection
 
