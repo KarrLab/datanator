@@ -48,5 +48,7 @@ class MongoUtil():
                 collection.insert(decode_all(f.read()))
             return collection
 
-    def index_corum(self):
+    # def index_corum(self):
+    #     '''Index fields in corum collection
+    #     '''
         
