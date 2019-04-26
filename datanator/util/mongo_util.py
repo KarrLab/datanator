@@ -47,3 +47,6 @@ class MongoUtil():
             with open((self.cache_dirname+ '/'+file), 'rb') as f:
                 collection.insert(decode_all(f.read()))
             return collection
+
+    def index_corum(self):
+        
