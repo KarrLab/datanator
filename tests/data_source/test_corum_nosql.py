@@ -40,10 +40,10 @@ class TestCorumNoSQL(unittest.TestCase):
             self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
         collection = src.load_content()
         self.assertEqual(collection.find().count(), 20)
-        cursor = collection.find({'subunits(UniProt IDs)': 'P41182'}).limit(3)
+        cursor = collection.find({'subunits_uniprot_id': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
-        self.assertEqual(cursor[1]['ComplexName'], 'BCL6-HDAC5 complex')
-        self.assertEqual(cursor[2]['subunits(Protein name)'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
+        self.assertEqual(cursor[1]['complex_id'], 'BCL6-HDAC5 complex')
+        self.assertEqual(cursor[2]['subunits_protein_name'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
         collection.drop()
         
     @unittest.skip("will not work on circle ci due to file directory setting")
