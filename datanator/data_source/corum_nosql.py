@@ -94,31 +94,42 @@ class CorumNoSQL(mongo_util.MongoUtil):
                 # ignoring semicolons inside square brackets
                 su_uniprot_list = parse_list(su_uniprot)
                 entry['subunits_uniprot_id'] = su_uniprot_list
+                del entry['subunits(UniProt IDs)']
                 
                 su_entrez_list = parse_list(su_entrez)
                 entry['subunits_entrez_id'] = su_entrez_list
+                del entry['subunits(Entrez IDs)']
                 
                 go_id_list = parse_list(go_id)
                 entry['go_id'] = go_id_list
+                del entry['GO ID']
                 
                 go_dsc_list = parse_list(go_dsc)
                 entry['go_description'] = go_dsc_list
+                del entry['GO description']
 
                 funcat_id_list = parse_list(funcat_id)
                 entry['funcat_id'] = funcat_id_list
+                del entry['FunCat ID']
 
                 funcat_dsc_list = parse_list(funcat_dsc)
                 entry['funcat_description'] = funcat_dsc_list
+                del entry['FunCat description']
+
 
                 gene_name_list = parse_list(gene_name)
                 entry['subunits_gene_name'] = gene_name_list
+                del entry['subunits(Gene name)']
 
                 gene_syn_list = parse_list(gene_syn)
                 entry['subunits_gene_name_synonym'] = gene_syn_list
+                del entry['subunits(Gene name syn)']
 
                 protein_name_list = parse_list(
                     correct_protein_name_list(protein_name))
                	entry['subunits_protein_name'] = protein_name_list
+                del entry['subunits(Protein name)']
+
 
                 # check list lengths match
                 if len(protein_name_list) != len(su_entrez_list):
@@ -150,7 +161,11 @@ class CorumNoSQL(mongo_util.MongoUtil):
                     f.write(json.dumps(entry, indent=4))
 
                 
-                collection.insert(entry)
+                collection.replace_one({'ComplexID': entry['ComplexID']},
+                    entry,
+                    upsert=True
+                    )
+                    
 
         return collection
 

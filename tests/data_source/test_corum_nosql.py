@@ -44,7 +44,7 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertEqual(cursor.count(), 3)
         self.assertEqual(cursor[1]['complex_id'], 2)
         self.assertEqual(cursor[2]['subunits_protein_name'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
-        collection.drop()
+        # collection.drop()
         
     @unittest.skip("will not work on circle ci due to file directory setting")
     def test_load_all_content(self):

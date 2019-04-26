@@ -13,13 +13,13 @@ class IntActNoSQL(mongo_util.MongoUtil):
     """ A local MongoDB copy of the IntAct database """
 
     def __init__(self, cache_dirname=None, MongoDB=None, db=None,
-                 verbose=False, max_entries=float('inf')):
+                 replicaSet=None, verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        super(IntActNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, db=db,
+        super(IntActNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                                               verbose=verbose, max_entries=max_entries)
         self.client_interaction, self.db_interaction, self.collection_interaction = self.con_db('intact_interaction')
         self.client_complex, self.db_complex, self.collection_complex = self.con_db('intact_complex')
@@ -80,12 +80,14 @@ class IntActNoSQL(mongo_util.MongoUtil):
             raw_data = pandas.read_csv(filename, delimiter='\t', encoding='utf-8')
             relabeled_data = raw_data.loc[:, raw_columns]
             relabeled_data.columns = relabeled_columns
-            relabeled_data = relabeled_data.set_index('identifier')
+            # relabeled_data = relabeled_data.set_index('identifier')
 
             relabeled_data_json = json.loads(relabeled_data.to_json(orient = 'records'))
-            self.collection_complex.insert(relabeled_data_json)
+            self.collection_complex.replace_one({'identifier': relabeled_data_json[0]['identifier']},
+                    relabeled_data_json[0],
+                    upsert=True
+                    )
             i += 1
-        self.client_complex.close()
 
     def add_interactions(self):
         """ Parse interactions from data and add interactions to SQLite database """
@@ -98,6 +100,7 @@ class IntActNoSQL(mongo_util.MongoUtil):
                 print ('Inserting {} of {} intercation document'.format(index+1, min(self.max_entries,len(data.index) ) ))
 
             interaction = {} # one document
+            interaction['_id'] = index
             interaction['protein_a'], interaction['gene_a'] = self.find_protein_gene(row['#ID(s) interactor A'], row['Alias(es) interactor A'])
             interaction['protein_b'], interaction['gene_b'] = self.find_protein_gene(row['ID(s) interactor B'], row['Alias(es) interactor B'])
             interaction['interaction_type'] = self.find_between_psi_mi_parentheses(row['Interaction type(s)'])
@@ -115,9 +118,10 @@ class IntActNoSQL(mongo_util.MongoUtil):
             interaction['publication_author'] = row['Publication 1st author(s)']
             interaction['confidence'] = row['Confidence value(s)']
 
-            self.collection_interaction.insert(interaction)
-
-        self.client_interaction.close()
+            self.collection_interaction.replace_one({'_id': interaction['_id']},
+                    interaction,
+                    upsert=True
+                    )
 
     def find_protein_gene(self, interactor, alias):
         """ Parse the protein and gene identifiers from key-value pairs of interactors and their aliases
