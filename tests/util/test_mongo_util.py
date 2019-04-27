@@ -34,6 +34,6 @@ class TestMongoUtil(unittest.TestCase):
         collection_obj = self.src.fill_db(self.collection_str)
         self.assertNotEqual(collection_obj.find().count(), 0)
 
-    def test_index_corum(self):
-        self.src.index_corum('corum')
+    # def test_index_corum(self):
+    #     self.src.index_corum('corum')
 
