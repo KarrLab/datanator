@@ -9,7 +9,7 @@ services:
     stdin_open: true
     tty: true
     volumes: 
-      - "/home/zl/karr_lab:/root/host/karr_lab"
+      - "../:/root/host/karr_lab"
 
   postgres_service:
     image: circleci/postgres:11.2-alpine-ram
@@ -18,81 +18,29 @@ services:
       POSTGRES_DB: CommonSchema
     restart: always
     volumes: 
-      - "/home/zl/karr_lab:/root/host/karr_lab"
+      - "../:/root/host/karr_lab"
 
   mongo:
     image: mongo:4.1
     restart: always
     volumes:
     - ./db_volumes/mongo:/data/db
-    - ./db_volumes/mongod.conf:/etc/mongod.conf
-    - /home/zl/karr_lab:/root/host/karr_lab
+    - ./docs/mongod.conf:/etc/mongod.conf
+    - ../:/root/host/karr_lab
     ports:
     - "30001:27017"
-    command: ["mongod", "--config", "/etc/mongod.conf"]
+    command: ["/usr/bin/mongod", "--config", "/etc/mongod.conf"]
  
   mongo_secondary:
     image: mongo:4.1
     restart: always
     volumes:
     - ./db_volumes/mongo_secondary:/data/db
-    - ./db_volumes/mongod.conf:/etc/mongod.conf
-    - /home/zl/karr_lab:/root/host/karr_lab
+    - ./docs/mongod.conf:/etc/mongod.conf
+    - ../:/root/host/karr_lab
     ports:
     - "30002:27017"
-    command: ["mongod", "--config", "/etc/mongod.conf"]
-
-  elasticsearch:
-    image: elasticsearch:6.7.0
-    restart: always
-    environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    ports:
-      - 9200:9200
-      - 9300:9300
-
-  kibana:
-    image: kibana:6.7.0
-    restart: always
-    ports:
-      - "5601:5601"
-    links:
-      - elasticsearch:elasticsearch
-    depends_on:
-      - elasticsearch
-  
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:6.7.0
-    restart: always
-    volumes:
-        - /home/zl/karr_lab/datanator/docs/filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
-        - /var/lib/docker/containers:/var/lib/docker/containers:ro
-        - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: filebeat -e -strict.perms=false
-
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:6.7.0
-    restart: always
-    volumes:
-      - /home/zl/karr_lab/datanator/docs/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
-
-  metricbeat:
-    image: docker.elastic.co/beats/metricbeat:6.7.0
-    restart: always
-    volumes:
-        - /home/zl/karr_lab/datanator/docs/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
-        - /var/run/docker.sock:/var/run/docker.sock:ro
-        - /var/lib/docker/containers:/var/lib/docker/containers:ro
-        - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-        - /proc:/hostfs/proc:ro
-        - /:/hostfs:ro
-    command: metricbeat -e -strict.perms=false
+    command: ["/usr/bin/mongod", "--config", "/etc/mongod.conf"]
 
   mongoexpress:
       image: mongo-express:0.49.0
