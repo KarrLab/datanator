@@ -64,6 +64,9 @@ local_settings.py
 instance/
 .webassets-cache
 
+# MongoDB stuff:
+./db_volumes
+
 # Scrapy stuff:
 .scrapy
 
