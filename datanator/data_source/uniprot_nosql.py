@@ -30,7 +30,6 @@ class UniprotNoSQL():
     def con_db(self):
         try:
             client = MongoClient(self.MongoDB, 400)  # 400ms max timeout
-            client.server_info()
             db = client[self.db]
             collection = db['uniprot']
             return collection

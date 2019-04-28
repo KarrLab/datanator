@@ -10,7 +10,7 @@ class TestUniprotNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.MongoDB = 'mongodb://mongo:27017/'
-        cls.db = 'tests'
+        cls.db = 'test'
         cls.output_directory = cls.cache_dirname # directory to store JSON files
         cls.src = uniprot_nosql.UniprotNoSQL(cls.MongoDB, cls.db, max_entries=10)
 
@@ -31,4 +31,4 @@ class TestUniprotNoSQL(unittest.TestCase):
         uni = self.src.load_uniprot()
         count = uni.count()
         self.assertEqual(count, 10)
-        self.assertEqual(uni.find_one({'uniprot_id': 'Q2KA61'}).count(), 1)
+        self.assertEqual(uni.find_one({'uniprot_id': 'Q4R5L1'})['gene_name'], 'GOT1')
