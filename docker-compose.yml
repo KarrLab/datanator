@@ -9,7 +9,7 @@ services:
     stdin_open: true
     tty: true
     volumes: 
-      - "../karr_lab:/root/host/karr_lab"
+      - "../:/root/host/karr_lab"
 
   postgres_service:
     image: circleci/postgres:11.2-alpine-ram
@@ -18,7 +18,7 @@ services:
       POSTGRES_DB: CommonSchema
     restart: always
     volumes: 
-      - "../karr_lab:/root/host/karr_lab"
+      - "../:/root/host/karr_lab"
 
   mongo:
     image: 'bitnami/mongodb:4.1'
@@ -27,7 +27,7 @@ services:
       - MONGODB_REPLICA_SET_NAME=datanator
     volumes:
       - ./datanator/data_source/cache/mongo:/data/db
-      - ../karr_lab:/home/host/karr_lab
+      - ../:/home/host/karr_lab
 
   mongo-secondary:
     image: 'bitnami/mongodb:4.1'
