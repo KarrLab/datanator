@@ -3,44 +3,21 @@ jobs:
   build:
     working_directory: /root/project
     docker:
-      - image: circleci/node:7.10
       - image: karrlab/wc_env_dependencies:latest
       - image: circleci/postgres:11.2-alpine-ram
         name: postgres_service
         environment:
           POSTGRES_USER: postgres
           POSTGRES_DB: CommonSchema
-      - image: mongo
-        name: mongo
       - image: circleci/node:7.10
 
     steps:
       # Clone repository
       - checkout
-      - setup_remote_docker
-
       # Load packages from cache
       - restore_cache:
           keys:
             - v4-{{ arch }}-{{ .Branch }}-{{ checksum "/etc/docker-image-tag" }}-{{ checksum "requirements.txt" }}
-
-      - run:
-          name: Install Docker Compose
-          command: |
-            sudo chown -R $(whoami) /usr/local/bin
-            set -x
-            curl -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-`uname -s`-`uname -m` -o /root/docker-compose
-            chmod +x /root/docker-compose
-            sudo mv /root/docker-compose /usr/local/bin/docker-compose
-
-      - run:
-          name: Start container and verify it's working
-          command: |
-            set -x
-            docker-compose -f .circleci/docker-compose.yml up -d
-            docker-compose -f .circleci/docker-compose.yml logs
-
-      - run: npm install
 
       # Python 3 installation tasks
       - run:
@@ -129,9 +106,22 @@ jobs:
           path: /root/project/docs/_build/html
           destination: docs
 
-# workflows:
-#   version: 2
-#   build:
-#     jobs:
-#       - build:
-#           context: karr_lab
+      - setup_remote_docker
+
+      - run:
+          name: Install Docker Compose
+          command: |
+            sudo chown -R $(whoami) /usr/local/bin
+            set -x
+            curl -L https://github.com/docker/compose/releases/download/1.24.0/docker-compose-`uname -s`-`uname -m` -o /root/docker-compose
+            chmod +x /root/docker-compose
+            sudo mv /root/docker-compose /usr/local/bin/docker-compose
+
+      - run:
+          name: Start container and verify it's working
+          command: |
+            set -x
+            docker-compose -f .circleci/docker-compose.yml up -d
+            docker-compose -f .circleci/docker-compose.yml logs
+
+      - run: npm install

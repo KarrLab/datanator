@@ -24,11 +24,10 @@ services:
   mongo-datanator-1:
     image: 'mongo-start'
     build: ./mongo-datanator-1
-    volumes:
-    - ../datanator/data_source/cache/db_volumes/mongo-datanator-1:/data/db
-    - ../../:/root/host/karr_lab
     ports:
-    - "27017:27017" 
+      - "27017:27017" 
+    volumes:
+      - ./mongo-datanator-1/data:/data/db
     depends_on:
       - 'mongo-datanator-2'
       - 'mongo-datanator-3'
@@ -36,25 +35,30 @@ services:
   mongo-datanator-2:
     image: 'mongo'
     restart: always
-    volumes:
-    - ../datanator/data_source/cache/db_volumes/mongo-datanator-2:/data/db
-    - ./mongo-datanator-2/conf:/conf
-    - ../../:/root/host/karr_lab
+    command: --replSet datanator
+    command: --config ./conf/mongo.conf
     ports:
-    - "27018:27018"
+      - "27018:27018"
+    volumes:
+      - ./mongo-datanator-2/data:/data/db
+      - ./mongo-datanator-2/conf:/conf
+
 
   mongo-datanator-3:
     image: 'mongo'
+    command: --replSet datanator
+    command: --config ./conf/mongo.conf
     ports:
       - '27019:27019'
     volumes:
-    - ../datanator/data_source/cache/db_volumes/mongo-datanator-3:/data/db
-    - ./mongo-datanator-3/conf:/conf
-    - ../../:/root/host/karr_lab
-    restart: always      
+      - ./mongo-datanator-3/data:/data/db
+      - ./mongo-datanator-3/conf:/conf
+    restart: always    
+    depends_on:
+      - mongo-datanator-2  
 
   setup-rs:
-    image: 'setup-datanator'
+    image: 'setup-rs'
     build: ./setup
     depends_on:
       - 'mongo-datanator-1'
@@ -68,9 +72,7 @@ services:
       environment:
           - WEB_USER='user'
           - WEB_PASS='pass'
+      depends_on:
+        - 'mongo-datanator-1'
+        - 'setup-rs'
       command: sh -c 'sleep 10 && tini -- node app'
-
-volumes:
-  mongo-datanator-1:
-  mongo-datanator-2:
-  mongo-datanator-3:
