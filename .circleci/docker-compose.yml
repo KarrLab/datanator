@@ -1,0 +1,76 @@
+version: '3'
+
+
+services:
+
+  wc_env:
+    image: karrlab/wc_env:latest
+    restart: always
+    entrypoint: bash
+    stdin_open: true
+    tty: true
+    volumes: 
+      - "../../:/root/host/karr_lab"
+
+  postgres_service:
+    image: circleci/postgres:11.2-alpine-ram
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: CommonSchema
+    restart: always
+    volumes: 
+      - "../../:/root/host/karr_lab"
+
+  mongo-datanator-1:
+    image: 'mongo-start'
+    build: ./mongo-datanator-1
+    volumes:
+    - ../datanator/data_source/cache/db_volumes/mongo-datanator-1:/data/db
+    - ../../:/root/host/karr_lab
+    ports:
+    - "27017:27017" 
+    depends_on:
+      - 'mongo-datanator-2'
+      - 'mongo-datanator-3'
+ 
+  mongo-datanator-2:
+    image: 'mongo'
+    restart: always
+    volumes:
+    - ../datanator/data_source/cache/db_volumes/mongo-datanator-2:/data/db
+    - ./mongo-datanator-2/conf:/conf
+    - ../../:/root/host/karr_lab
+    ports:
+    - "27018:27018"
+
+  mongo-datanator-3:
+    image: 'mongo'
+    ports:
+      - '27019:27019'
+    volumes:
+    - ../datanator/data_source/cache/db_volumes/mongo-datanator-3:/data/db
+    - ./mongo-datanator-3/conf:/conf
+    - ../../:/root/host/karr_lab
+    restart: always      
+
+  setup-rs:
+    image: 'setup-datanator'
+    build: ./setup
+    depends_on:
+      - 'mongo-datanator-1'
+
+  mongoexpress:
+      image: mongo-express:0.49.0
+      restart: always
+      ports:
+          - "8081:8081"
+      restart: always
+      environment:
+          - WEB_USER='user'
+          - WEB_PASS='pass'
+      command: sh -c 'sleep 10 && tini -- node app'
+
+volumes:
+  mongo-datanator-1:
+  mongo-datanator-2:
+  mongo-datanator-3:

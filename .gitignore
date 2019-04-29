@@ -132,6 +132,6 @@ minerva/*
 *.obo
 
 # invisible stuff
-.*
+
 # test output
 tests/data_source/test_processing/

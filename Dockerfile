@@ -1,9 +1,9 @@
-FROM karrlab/wc_env_dependencies:latest
+FROM node:8-alpine
 
-ADD . /home
-WORKDIR /home
+WORKDIR /app
 
-RUN pip3 install -U -e /home/[all]
+RUN npm i npm@latest -g
 
+COPY . /app
 
-CMD gunicorn -w 4 -b 0.0.0.0:${PORT} --timeout 120 manage:app
+EXPOSE 3001

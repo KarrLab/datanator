@@ -37,7 +37,6 @@ six
 sqlalchemy
 sqlalchemy_searchable
 sqlalchemy_utils
-wc_onto
 wc_utils
 pymongo
 xmltodict
