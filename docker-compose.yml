@@ -26,7 +26,7 @@ services:
       - MONGODB_REPLICA_SET_MODE=primary
       - MONGODB_REPLICA_SET_NAME=datanator
     volumes:
-      - ./datanator/data_source/cache/mongo:/data/db
+      - ./datanator/data_source/cache/mongo:/bitnami/mongodb
       - ../:/home/host/karr_lab
 
   mongo-secondary:
@@ -39,7 +39,7 @@ services:
       - MONGODB_PRIMARY_PORT_NUMBER=27017
       - MONGODB_REPLICA_SET_NAME=datanator
     volumes:
-      - ./datanator/data_source/cache/mongo_secondary:/data/db
+      - ./datanator/data_source/cache/mongo_secondary:/bitnami/mongodb
 
   mongo-arbiter:
     image: 'bitnami/mongodb:4.1'
