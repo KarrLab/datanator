@@ -21,35 +21,26 @@ services:
       - "../:/root/host/karr_lab"
 
   mongo:
-    image: 'bitnami/mongodb:4.1'
-    environment:
-      - MONGODB_REPLICA_SET_MODE=primary
-      - MONGODB_REPLICA_SET_NAME=datanator
+    image: mongo:4.1
+    restart: always
     volumes:
-      - ./datanator/data_source/cache/mongo:/bitnami/mongodb
-      - ../:/home/host/karr_lab
-
-  mongo-secondary:
-    image: 'bitnami/mongodb:4.1'
-    depends_on:
-      - mongo
-    environment:
-      - MONGODB_REPLICA_SET_MODE=secondary
-      - MONGODB_PRIMARY_HOST=mongo
-      - MONGODB_PRIMARY_PORT_NUMBER=27017
-      - MONGODB_REPLICA_SET_NAME=datanator
+      - ./datanator/data_source/cache/mongo:/data/db
+      - ./docs/mongod.conf:/etc/mongod.conf
+      - ../karr_lab:/root/host/karr_lab
+    ports:
+      - "30001:27017"
+    command: ["mongod", "--config", "/etc/mongod.conf"]
+ 
+  mongo_secondary:
+    image: mongo:4.1
+    restart: always
     volumes:
-      - ./datanator/data_source/cache/mongo_secondary:/bitnami/mongodb
-
-  mongo-arbiter:
-    image: 'bitnami/mongodb:4.1'
-    depends_on:
-      - mongo
-    environment:
-      - MONGODB_REPLICA_SET_MODE=arbiter
-      - MONGODB_PRIMARY_HOST=mongo
-      - MONGODB_PRIMARY_PORT_NUMBER=27017
-      - MONGODB_REPLICA_SET_NAME=datanator
+      - ./datanator/data_source/cache/mongo_secondary:/data/db
+      - ./docs/mongod.conf:/etc/mongod.conf
+      - ../karr_lab:/root/host/karr_lab
+    ports:
+      - "30002:27017"
+    command: ["mongod", "--config", "/etc/mongod.conf"]
 
   mongoexpress:
     image: mongo-express:0.49.0
