@@ -268,7 +268,7 @@ class TestEnsemblTools(unittest.TestCase):
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
 
-@unittest.skip('skip')
+@unittest.skip('handling of files not compatible with circleci')
 class TestProcessData(unittest.TestCase):
 
     def setUp(self):

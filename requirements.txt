@@ -24,7 +24,7 @@ openpyxl
 pandas
 pint >= 0.9
 pronto
-psycopg2
+psycopg2_binary
 pubchempy
 python_dateutil
 python_levenshtein
@@ -37,6 +37,10 @@ six
 sqlalchemy
 sqlalchemy_searchable
 sqlalchemy_utils
+wc_onto
 wc_utils
 pymongo
 xmltodict
+capturer
+ftputil
+elasticsearch

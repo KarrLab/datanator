@@ -1,0 +1,20 @@
+{
+  "mainAddress": "mongo:27017",
+  "verbosity": 3,
+  "docManagers": [
+    {
+      "docManager": "elastic2_doc_manager",
+      "targetURL": "elasticsearch:9200",
+      "autoCommitInterval": 0,
+      "args": {
+        "clientOptions": {"timeout": 30}
+      }
+    }
+  ],
+  "namespaces": {
+    "datanator.ecmdb": "datanator.ecmdb",
+    "datanator.ymdb": "datanator.ymdb",
+    "datanator.uniprot": "datanator.uniprot",
+    "datanator.sabio_rk": false
+  }
+}
