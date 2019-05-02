@@ -268,7 +268,7 @@ class TestEnsemblTools(unittest.TestCase):
         sample = exp.samples[0]
         self.assertEqual(sample.ensembl_info, [])
 
-#@unittest.skip('skip')
+@unittest.skip('skip')
 class TestProcessData(unittest.TestCase):
 
     def setUp(self):
@@ -449,3 +449,84 @@ class TestMinervaProcessing(unittest.TestCase):
         exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
         samples = exp.samples
         core.get_processed_data_samples(samples, self.output_directory, self.temporary_directory)
+
+
+    def test_minerva_full(self):
+        #the following is the first command. When this is finished, it should trigger the rest
+
+        a = self.src
+        a.load_content() #pick a good directory to put this in. probably in my local directory, so that I can see it
+        #then get all the other cdna
+        a = self.src
+        a.load_content()
+        session = a.session
+        temporary_directory = self.temporary_directory
+        output_directory = self.output_directory
+        for ensembl_info in session.query(array_express.EnsemblInfo).all():
+            download_cdna(ensembl_info.ref_genome, ensembl_info.organism_strain, ensembl_info.url, temporary_directory)
+            process_cdna(ensembl_info.organism_strain, output_directory, temp_directory)
+            delete_cdna_files(ensembl_info.organism_strain, temp_directory)
+        #Then issue all the commands:
+        #for every sample in samples: 
+        #   download_fastq(sample.experiment_id, sample.name, temp_directory, fastq_urls)
+        #   process_fastq(sample.experiment_id, sample.name, sample.ensembl_info[0].organism_strain, len(sample.fastq_urls), sample.experiment.read_type, output_directory, temp_directory)
+        #   delete_fastq_files(sample.experiment_id, sample.name, temp_directory)
+        #   the only thing left to do is find out how to 
+        print("beginning processing")
+        exp = session.query(array_express.Experiment).filter_by(id="E-MTAB-6099").first()
+        samples = exp.samples
+        core.get_processed_data_samples(samples, self.output_directory, self.temporary_directory)
+
+
+
+@unittest.skip('skip')
+class TestFixPaired(unittest.TestCase):
+
+    def setUp(self):
+        #self.cache_dirname = tempfile.mkdtemp()
+        self.cache_dirname = '/home/yosef/Desktop/new_datanator/datanator/data/cache'
+        #self.cache_dirname = '{}/test_for_minerva'.format(os.path.dirname(os.path.realpath(__file__)))
+
+        self.src = array_express.ArrayExpress(cache_dirname=self.cache_dirname, download_backups=False, load_content=False)
+
+    def tearDown(self):
+        pass
+        #os.unlink('{}/ArrayExpress.sqlite'.format(self.cache_dirname))
+
+    def test_fix(self):
+        a = self.src
+        session = a.session
+        #a.load_content("https://www.ebi.ac.uk/arrayexpress/json/v3/experiments/E-MTAB-6099")
+
+        #experiments = [session.query(array_express.Experiment).filter_by(id='E-MTAB-7432').first()]   
+        experiments = session.query(array_express.Experiment).all()
+        total = 0
+        for experiment in experiments:
+            if experiment.samples:
+                if experiment.samples[0].fastq_urls:
+                    all_even = True
+                    for sample in experiment.samples:
+                        if len(sample.fastq_urls) % 2 != 0:
+                            all_even = False
+
+                    if (all_even) and (experiment.samples[0].read_type == "single"):
+                        says_paired = False
+                        for protocol in experiment.protocols:
+                            if protocol.text:
+                                if "paired" in protocol.text:
+                                    says_paired = True
+                                    print(experiment.id)
+                                    #print(protocol.text)
+                                    for url in experiment.samples[0].fastq_urls:
+                                        print(url.url)
+                                    print("\n\n")
+
+                        if says_paired:
+                            total=total+1
+                            for sample in experiment.samples:
+                                sample.read_type = "paired"
+
+                                    
+        session.commit()
+        print(total)
+
