@@ -2,7 +2,7 @@ import unittest
 from datanator.core import query_nosql
 import tempfile
 import shutil
-
+import pprint
 
 class TestQueryNoSQL(unittest.TestCase):
 
@@ -20,9 +20,10 @@ class TestQueryNoSQL(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.client.drop_database(cls.db)
+        # cls.client.drop_database(cls.db)
         cls.client.close()
 
+    @unittest.skip('skip to testing for h1_hesc')
     def test_doc_feeder(self):
         query = {'m2m_id': {
             '$in': ["M2MDB000004", "M2MDB000005", "M2MDB000006"]}}
@@ -50,3 +51,13 @@ class TestQueryNoSQL(unittest.TestCase):
         with self.assertRaises(KeyError):
             next(collection)['reaction_participant']
 
+
+    '''Testing queries in h1_hesc
+    '''
+    def test_doc_feeder(self):
+        target = 'C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6'
+        query = {'$or': [ {'reaction_participant.substrate.structure.inchi_connectivity': target }, 
+                          {'reaction_participant.product.structure.inchi_connectivity': target }  ] }
+        projection = {'reaction_participant.substrate.sabio_compound_id': 1,
+                     'reaction_participant.product.sabio_compound_id': 1 }
+        collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
