@@ -216,8 +216,3 @@ class IntActNoSQL(mongo_util.MongoUtil):
         """
         return string.split('|')
 
-
-if __name__ == '__main__':
-
-    IntActNoSQL('./cache/intact_test', 'mongodb://mongo_secondary:27017/', 'datanator',
-                 True).load_content()
