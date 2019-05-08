@@ -1,5 +1,4 @@
 import pymongo
-import time
 import wc_utils.quilt
 from bson import decode_all
 
@@ -45,16 +44,3 @@ class MongoUtil():
             with open((self.cache_dirname+ '/'+file), 'rb') as f:
                 collection.insert(decode_all(f.read()))
             return collection
-
-    def index_corum(self, collection_str):
-        '''Index fields in corum collection
-        '''
-        collection = self.fill_db(collection_str)
-        index1 = pymongo.IndexModel( [("$**", pymongo.TEXT)] , background=False, sparse=True) #index all text fields
-        index2 = pymongo.IndexModel( [("PubMed ID", pymongo.ASCENDING)] , background=False, sparse=True)
-        index3 = pymongo.IndexModel( [("SWISSPROT organism (NCBI IDs)", pymongo.ASCENDING)] , background=False, sparse=True)
-        collection.create_indexes([index1, index2])
-
-    # def index_ecmdb(self, collection_str):
-
-

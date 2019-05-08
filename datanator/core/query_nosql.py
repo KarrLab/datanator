@@ -9,7 +9,8 @@ class DataQuery(mongo_util.MongoUtil):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                     verbose=verbose, max_entries=max_entries)
 
-    def doc_feeder(self,collection_str, sym_link = False, step=1000, s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
+    def doc_feeder(self,collection_str, sym_link = False, step=1000, 
+        s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
         '''A iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
            doc_feeder(collection_str, query={'taxid': {'$in': [9606, 10090, 10116]}})
