@@ -64,6 +64,7 @@ services:
     volumes:
       - ./docs:/scripts
     entrypoint: [ "bash", "/scripts/mongosetup.sh" ]
+    restart: on-failure
     depends_on:
       - mongo
       - mongo_secondary

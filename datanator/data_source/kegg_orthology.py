@@ -3,7 +3,7 @@ import requests
 from datanator.util import mongo_util
 
 
-class KeggOrthology(mongo_util.MongoUtil)
+class KeggOrthology(mongo_util.MongoUtil):
 
     def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, verbose=False, max_entries=float('inf')):
 
@@ -41,4 +41,4 @@ class KeggOrthology(mongo_util.MongoUtil)
             response.raise_for_status()
 
     def parse_ko_txt(self):
-        
+        pass
