@@ -4,17 +4,20 @@ import tempfile
 import shutil
 import pymongo
 import json
+import os
+import sys
 
 class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'test'
+        # cls.cache_dirname = tempfile.mkdtemp()
+        cls.cache_dirname = './datanator/data_source/cache/'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         cls.data = {
             "name":"ko00001",
@@ -62,12 +65,13 @@ class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.cache_dirname)
+        # shutil.rmtree(cls.cache_dirname)
         cls.client.close()
 
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
 
+    @unittest.skip('passed')
     def test_extract_values(self):
         data = json.dumps(self.data)
         loaded_data = json.loads(data)
@@ -75,6 +79,26 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(name_list[0], 'ko00001')
         self.assertEqual(name_list[-1][:6], 'K15231')
     
+    @unittest.skip('passed')
     def test_parse_ko_txt(self):
-        pass
+        path = os.path.realpath('./tests/data_source/docs/K03014.txt')
+        doc = self.src.parse_ko_txt(path)
+        self.assertEqual(doc['kegg_orthology_id'], 'K03014')
+        self.assertEqual(doc['gene_ortholog'][0], {'organism': 'HSA', 'gene_id': '5435(POLR2F)'})
+        self.assertEqual(doc['gene_ortholog'][-1], {'organism': 'VG', 'gene_id': ['22220299(C147L)', '9887894(crov491)']})
+        self.assertEqual(doc['reference'][0], {'namespace': 'PMID', 'id': '19896367'})
 
+        path2 = os.path.realpath('./tests/data_source/docs/K03014')
+        doc2 = self.src.parse_ko_txt(path2)
+        self.assertEqual(doc2, 'Please make sure file type is txt')
+
+        path3 = os.path.realpath('./tests/data_source/docs/K01810.txt')
+        doc3 = self.src.parse_ko_txt(path3)
+        self.assertEqual(doc3['kegg_orthology_id'], 'K01810')
+        self.assertEqual(doc3['gene_ortholog'][0], {'organism': 'HSA', 'gene_id': '2821(GPI)'})
+        self.assertEqual(doc3['gene_ortholog'][-1], {'organism': 'LOKI', 'gene_id': ['Lokiarch_08040(pgi_1)', 'Lokiarch_21890(pgi_2)']})
+        self.assertEqual(doc3['reference'][0], {'namespace': 'PMID', 'id': '2387591'})
+
+    # @unittest.skip('hold up a min')
+    def test_load_content(self):
+        col = self.src.load_content()
