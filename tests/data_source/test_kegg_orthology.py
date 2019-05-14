@@ -17,7 +17,7 @@ class TestKeggOrthology(unittest.TestCase):
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True, max_entries=20)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         cls.data = {
             "name":"ko00001",
