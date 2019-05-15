@@ -10,13 +10,13 @@ class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # cls.cache_dirname = tempfile.mkdtemp()
-        cls.cache_dirname = './datanator/data_source/cache/'
+        cls.cache_dirname = tempfile.mkdtemp()
+        # cls.cache_dirname = './datanator/data_source/cache/'
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)
         os.makedirs(path, exist_ok=True)
@@ -66,7 +66,7 @@ class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # shutil.rmtree(cls.cache_dirname)
+        shutil.rmtree(cls.cache_dirname)
         cls.client.close()
 
     def test_con_db(self):
