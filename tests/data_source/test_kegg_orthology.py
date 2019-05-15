@@ -10,13 +10,13 @@ class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cache_dirname = tempfile.mkdtemp()
-        # cls.cache_dirname = './datanator/data_source/cache/'
-        cls.db = 'test'
+        # cls.cache_dirname = tempfile.mkdtemp()
+        cls.cache_dirname = './datanator/data_source/cache/'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)
         os.makedirs(path, exist_ok=True)
@@ -66,13 +66,13 @@ class TestKeggOrthology(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.cache_dirname)
+        # shutil.rmtree(cls.cache_dirname)
         cls.client.close()
 
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_extract_values(self):
         data = json.dumps(self.data)
         loaded_data = json.loads(data)
@@ -80,13 +80,14 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(name_list[0], 'ko00001')
         self.assertEqual(name_list[-1][:6], 'K15231')
     
+    @unittest.skip('passed')
     def test_download_ko(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')
         path_to_file = os.path.join(self.cache_dirname, self.collection_str)
         self.assertTrue(os.path.exists(path_to_file+'/'+file_name+'.txt'))
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_parse_ko_txt(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')
@@ -104,6 +105,6 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(doc3['gene_ortholog'][-1], {'organism': 'LOKI', 'gene_id': ['Lokiarch_08040(pgi_1)', 'Lokiarch_21890(pgi_2)']})
         self.assertEqual(doc3['reference'][0], {'namespace': 'PMID', 'id': '2387591'})
 
-    @unittest.skip('hold up a min')
+    # @unittest.skip('hold up a min')
     def test_load_content(self):
         col = self.src.load_content()

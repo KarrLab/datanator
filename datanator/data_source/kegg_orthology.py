@@ -38,6 +38,8 @@ class KeggOrthology(mongo_util.MongoUtil):
 
         names = self.extract_values(data, 'name')
         names = [name.split()[0] for name in names if name[0] == 'K']
+        names = list(set(names)) # remove duplicate name
+
         iterations = min(len(names), self.max_entries)
 
         file_format = '.txt'
@@ -51,8 +53,9 @@ class KeggOrthology(mongo_util.MongoUtil):
                     i, iterations, name))
             self.download_ko(name+file_format)
             doc = self.parse_ko_txt(name+file_format)
-            collection.replace_one(
-                {'kegg_orthology_id': doc['kegg_orthology_id']}, doc, upsert=True)
+            if doc is not None:
+                collection.replace_one(
+                    {'kegg_orthology_id': doc['kegg_orthology_id']}, doc, upsert=True)
 
             i += 1
 
@@ -62,89 +65,105 @@ class KeggOrthology(mongo_util.MongoUtil):
         '''Parse kegg_ortho txt file into dictionary object
         '''
         file_path = os.path.join(self.path, filename)
-        with open(file_path, 'r') as f:
-            doc = {}
-            lines = f.readlines()
+        try: 
+            with open(file_path, 'r') as f:
+                doc = {}
+                lines = f.readlines()
 
-            # get entry ID
-            doc['kegg_orthology_id'] = lines[0].split()[1]
-            # get list of gene name
-            doc['gene_name'] = [name.replace(
-                ',', '') for name in lines[1].split()[:1]]
-            # get definition
-            doc['definition'] = lines[2].split(' ', 1)[1]
+                # get entry ID
+                doc['kegg_orthology_id'] = lines[0].split()[1]
+                # get list of gene name
+                doc['gene_name'] = [name.replace(
+                    ',', '') for name in lines[1].split()[:1]]
+                # get definition
+                doc['definition'] = lines[2].split(' ', 1)[1]
 
-            # get first word of all the lines
-            first_word = [line.split()[0] for line in lines]
+                # get first word of all the lines
+                first_word = [line.split()[0] for line in lines]
 
-            # find line number of certain first words of interest
-            WOI_nonrepeating = ['MODULE', 'BRITE', 'GENES']
-            reference = 'REFERENCE'
+                # find line number of certain first words of interest
+                WOI_nonrepeating = ['MODULE', 'BRITE', 'GENES']
+                reference = 'REFERENCE'
 
-            index_nonrepeating = [first_word.index(
-                word) if word in first_word else -1 for word in WOI_nonrepeating]
-            index_reference = [i for i, v in enumerate(
-                first_word) if v == reference]
+                index_nonrepeating = [first_word.index(
+                    word) if word in first_word else -1 for word in WOI_nonrepeating]
+                index_reference = [i for i, v in enumerate(
+                    first_word) if v == reference]
 
-            module_begin = index_nonrepeating[0]
-            module_end = index_nonrepeating[1]
-            gene_begin = index_nonrepeating[2]
-            if len(index_reference) == 0:
-                gene_end = len(lines) - 1
-            else:
-                gene_end = index_reference[0]
+                module_begin = index_nonrepeating[0]
+                module_end = index_nonrepeating[1]
+                gene_begin = index_nonrepeating[2]
+                if len(index_reference) == 0:
+                    gene_end = len(lines) - 1
+                else:
+                    gene_end = index_reference[0]
 
-            # get module's key,value pairs
-            if module_begin == -1:
-                doc['kegg_module_id'] = None
-            elif (module_end - module_begin) == 1:  # only 1 module
-                doc['kegg_module_id'] = lines[module_begin].split()[1]
-            else:
-                module_list = []
-                module_list.append(lines[module_begin].split()[1])
-                module_list += [line.split()[0]
-                                for line in lines[module_begin+1:module_end]]
-                doc['kegg_module_id'] = module_list
+                # get module's key,value pairs
+                if module_begin == -1:
+                    doc['kegg_module_id'] = None
+                elif (module_end - module_begin) == 1:  # only 1 module
+                    doc['kegg_module_id'] = lines[module_begin].split()[1]
+                else:
+                    module_list = []
+                    module_list.append(lines[module_begin].split()[1])
+                    module_list += [line.split()[0]
+                                    for line in lines[module_begin+1:module_end]]
+                    doc['kegg_module_id'] = module_list
 
-            # get gene_id's key,value pairs
-            if (gene_end - gene_begin) == 1:  # only one ortholog
-                doc['gene_ortholog'] = {'organism': lines[gene_begin].split()[1].replace(':', ''),
-                                        'gene_id': lines[gene_begin].split()[2]}
-            else:
-                ortholog_list = []
-                ortholog_list.append({'organism': lines[gene_begin].split()[1].replace(':', ''),
-                                      'gene_id': lines[gene_begin].split()[2]})
-                organisms = [line.split()[0].replace(':', '')
-                             for line in lines[gene_begin+1:gene_end]]
-                gene_ids = [line.split()[1:]
-                            for line in lines[gene_begin+1:gene_end]]
-                for organism, gene_id in zip(organisms, gene_ids):
-                    ortholog_list += [{
-                        'organism': organism, 'gene_id': gene_id}]
-                doc['gene_ortholog'] = ortholog_list
+                # get gene_id's key,value pairs
+                if (gene_end - gene_begin) == 1:  # only one ortholog
+                    doc['gene_ortholog'] = {'organism': lines[gene_begin].split()[1].replace(':', ''),
+                                            'gene_id': lines[gene_begin].split()[2]}
+                else:
+                    ortholog_list = []
+                    ortholog_list.append({'organism': lines[gene_begin].split()[1].replace(':', ''),
+                                          'gene_id': lines[gene_begin].split()[2]})
+                    organisms = [line.split()[0].replace(':', '')
+                                 for line in lines[gene_begin+1:gene_end]]
+                    gene_ids = [line.split()[1:]
+                                for line in lines[gene_begin+1:gene_end]]
+                    for organism, gene_id in zip(organisms, gene_ids):
+                        ortholog_list += [{
+                            'organism': organism, 'gene_id': gene_id}]
+                    doc['gene_ortholog'] = ortholog_list
 
-            # get reference's namespace:value pairs
-            ref_list = []
-            reference_line = [lines[i] for i in index_reference]
-            try:
-                reference_info = [line.split()[1] for line in reference_line]
-                for info in reference_info:
-                    ref_list.append({'namespace': info.split(':')[0],
-                                     'id': info.split(':')[1]})
-            except IndexError:
-                pass    
+                # get reference's namespace:value pairs
+                ref_list = []
+                reference_line = [lines[i] for i in index_reference]
+                try:
+                    reference_info = [line.split()[1] for line in reference_line]
+                    for info in reference_info:
+                        ref_list.append({'namespace': info.split(':')[0],
+                                         'id': info.split(':')[1]})
+                except IndexError:
+                    pass    
 
-            doc['reference'] = ref_list
+                doc['reference'] = ref_list
+                return doc
 
-            return doc
+        except FileNotFoundError as e:
+            log_file = os.path.join(self.path, 'kegg_orthology_log.txt')
+            with open(log_file, 'a') as f:
+                f.write(str(e)+'\n')
+            pass
+
+            
 
     def download_ko(self, name):
         address = name.split('.')[0]
-        info = requests.get("http://rest.kegg.jp/get/ko:{}".format(address))
-        info.raise_for_status()
-        file_name = os.path.join(self.path, name)
-        with open(file_name, 'w') as f:
-            f.write(info.text)
+        try:
+            info = requests.get("http://rest.kegg.jp/get/ko:{}".format(address))
+            info.raise_for_status()
+            file_name = os.path.join(self.path, name)
+            with open(file_name, 'w') as f:
+                f.write(info.text)
+        except requests.exceptions.HTTPError as e:
+            log_file = os.path.join(self.path, 'kegg_orthology_log.txt')
+            with open(log_file, 'a') as f:
+                f.write(str(e) + '\n')
+            pass
+
+
 
     def extract_values(self, obj, key):
         """Pull all values of specified key from nested JSON."""
