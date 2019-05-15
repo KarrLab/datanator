@@ -44,4 +44,3 @@ xmltodict
 capturer
 ftputil
 elasticsearch
-requests-cache
