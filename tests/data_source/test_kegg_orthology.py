@@ -5,7 +5,6 @@ import shutil
 import pymongo
 import json
 import os
-import sys
 
 class TestKeggOrthology(unittest.TestCase):
 
@@ -13,12 +12,14 @@ class TestKeggOrthology(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         # cls.cache_dirname = './datanator/data_source/cache/'
-        cls.db = 'datanator'
+        cls.db = 'test'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
             cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
+        path = os.path.join(cls.cache_dirname, cls.collection_str)
+        os.makedirs(path, exist_ok=True)
         cls.data = {
             "name":"ko00001",
             "children":[
@@ -79,21 +80,25 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(name_list[0], 'ko00001')
         self.assertEqual(name_list[-1][:6], 'K15231')
     
+    def test_download_ko(self):
+        file_name = 'K03014'
+        self.src.download_ko(file_name + '.txt')
+        path_to_file = os.path.join(self.cache_dirname, self.collection_str)
+        self.assertTrue(os.path.exists(path_to_file+'/'+file_name+'.txt'))
+
     # @unittest.skip('passed')
     def test_parse_ko_txt(self):
-        path = os.path.realpath('./tests/data_source/docs/K03014.txt')
-        doc = self.src.parse_ko_txt(path)
+        file_name = 'K03014'
+        self.src.download_ko(file_name + '.txt')
+        doc = self.src.parse_ko_txt(file_name + '.txt')
         self.assertEqual(doc['kegg_orthology_id'], 'K03014')
         self.assertEqual(doc['gene_ortholog'][0], {'organism': 'HSA', 'gene_id': '5435(POLR2F)'})
         self.assertEqual(doc['gene_ortholog'][-1], {'organism': 'VG', 'gene_id': ['22220299(C147L)', '9887894(crov491)']})
         self.assertEqual(doc['reference'][0], {'namespace': 'PMID', 'id': '19896367'})
 
-        path2 = os.path.realpath('./tests/data_source/docs/K03014')
-        doc2 = self.src.parse_ko_txt(path2)
-        self.assertEqual(doc2, 'Please make sure file type is txt')
-
-        path3 = os.path.realpath('./tests/data_source/docs/K01810.txt')
-        doc3 = self.src.parse_ko_txt(path3)
+        file_name3 = 'K01810'
+        self.src.download_ko(file_name3 + '.txt')
+        doc3 = self.src.parse_ko_txt(file_name3+'.txt')
         self.assertEqual(doc3['kegg_orthology_id'], 'K01810')
         self.assertEqual(doc3['gene_ortholog'][0], {'organism': 'HSA', 'gene_id': '2821(GPI)'})
         self.assertEqual(doc3['gene_ortholog'][-1], {'organism': 'LOKI', 'gene_id': ['Lokiarch_08040(pgi_1)', 'Lokiarch_21890(pgi_2)']})
