@@ -83,6 +83,24 @@ class IntActNoSQL(mongo_util.MongoUtil):
             # relabeled_data = relabeled_data.set_index('identifier')
 
             relabeled_data_json = json.loads(relabeled_data.to_json(orient = 'records'))
+            # separate string of subunits
+            subunit_info = []
+            subunit_list_with_count = relabeled_data_json[0]['subunits'].split('|')
+            subunit_list = [item[:6] for item in subunit_list_with_count] 
+            count_list = [item[7] for item in subunit_list_with_count]
+            for unit, count in zip(subunit_list, count_list):
+                subunit_info.append( {'uniprot_id': unit, 'count': count} )
+            relabeled_data_json[0]['subunits'] = subunit_info
+
+            # separate string of go_annotation
+            annotation_list = []
+            go_anno_after_split = relabeled_data_json[0]['go_annotation'].split('|')
+            go_id = [item[3:10] for item in go_anno_after_split]
+            go_term = [item[11:-1] for item in go_anno_after_split]
+            for _id, term in zip(go_id, go_term):
+                annotation_list.append( {'go_id': _id, 'go_term': term} )
+            relabeled_data_json[0]['go_annotation'] = annotation_list
+
             self.collection_complex.replace_one({'identifier': relabeled_data_json[0]['identifier']},
                     relabeled_data_json[0],
                     upsert=True

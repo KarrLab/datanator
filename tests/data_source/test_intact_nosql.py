@@ -26,8 +26,9 @@ class TestCorumNoSQL(unittest.TestCase):
         cursor = int_complex.find({'identifier': 'CPX-1928'})
         self.assertEqual(cursor.count(), 1)
         self.assertEqual(cursor[0]['ncbi_id'], 83333)
-        self.assertEqual(cursor[0]['subunits'], 'P0AGE0(4)')
+        self.assertEqual(cursor[0]['subunits'], [{'uniprot_id': 'P0AGE0', 'count': '4'}])
 
+    # @unittest.skip('loaded')
     def test_load_interaction(self):
         int_int = self.src.collection_interaction
         self.assertEqual(int_int.count(), 20)
