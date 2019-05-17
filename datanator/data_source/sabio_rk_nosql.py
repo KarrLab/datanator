@@ -24,7 +24,7 @@ class SabioRkNoSQL():
                 Attributes:
                         cache_directory: JSON file (converted from sqlite) directory
                         db: mongodb database name
-                        MongoDB: MongoDB server address and login e.g. 'mongodb://localhost:27017/'
+                        MongoDB: MongoDB server address and login e.g. 'mongodb://mongo:27017/'
                         quilt_package: quilt package name (e.g. datanator)
                         system_path: subdir of quilt package
 

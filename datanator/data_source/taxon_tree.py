@@ -47,7 +47,11 @@ class TaxonTree(mongo_util.MongoUtil):
         '''Parses lines in file fullnamelineage.dmp and return elements in a list
         '''
         a =  [item.replace('\t', '') for item in line.split('|')[:-1]]
-        return [item.split(';') for item in a] 
+        tax_id = a[0]
+        tax_name = a[1]
+        something =  [item.split(';') for item in a] 
+        ancestor_name = [elem.lstrip() for elem in something[2][:-1]]
+        return [tax_id, tax_name, ancestor_name]
     
     def parse_taxid_line(self, line):
         '''Parses lines in file taxidlineage.dmp and return elements in a list
@@ -85,7 +89,7 @@ class TaxonTree(mongo_util.MongoUtil):
                 elem_id = self.parse_taxid_line(line_id)
                 lineage_dict['tax_id'] = elem_name[0]
                 lineage_dict['tax_name'] = elem_name[1]
-                lineage_dict['anc_name'] = [elem.lstrip() for elem in elem_name[2][:-1]]
+                lineage_dict['anc_name'] = elem_name[2]
                 lineage_dict['anc_id'] = elem_id
 
                 self.collection.update_one( {'tax_id': lineage_dict['tax_id']},

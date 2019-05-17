@@ -11,9 +11,6 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import sabio_rk_nosql
-from datanator.util import warning_util
-warning_util.disable_warnings()
-
 
 class TestSabioRkNoSQL(unittest.TestCase):
 

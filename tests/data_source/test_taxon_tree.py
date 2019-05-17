@@ -23,7 +23,7 @@ class TestTaxonTree(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_download_dump(self):
     	noi = 'division.dmp'
     	my_file = os.path.join(self.path, noi)
@@ -32,22 +32,22 @@ class TestTaxonTree(unittest.TestCase):
 
     @unittest.skip('passed')
     def test_parse_fullname_line(self):
-    	line1 = '1431752	|	Anaxipha thomasi	|	allotype	|	SWRC Ae_151	|'
-    	line2 = '1969370	|	131567 2157 1935183 1706441 	|'
-    	line3 = '2026747	|	Candidatus Heimdallarchaeota archaeon	|		|		|		|		|		|	Candidatus Heimdallarchaeota	|		|	Archaea	|'
+    	line1 = '1936272	|	Candidatus Heimdallarchaeota	|	cellular organisms; Archaea; Asgard group; 	|'
+    	line2 = '2012493	|	Candidatus Heimdallarchaeota archaeon B3_Heim	|	cellular organisms; Archaea; Asgard group; Candidatus Heimdallarchaeota; 	|'
+    	line3 = '1935183	|	Asgard group	|	cellular organisms; Archaea; 	|'
 
-    	self.assertEqual(self.src.parse_fullname_line(line1), ['1431752', 'Anaxipha thomasi', 'allotype', 'SWRC Ae_151'])
-    	self.assertEqual(self.src.parse_fullname_line(line2), ['1969370', '131567 2157 1935183 1706441 '])
-    	self.assertEqual(self.src.parse_fullname_line(line3)[1], 'Candidatus Heimdallarchaeota archaeon' )
-    	self.assertEqual(self.src.parse_fullname_line(line3)[2], '' )
-    	self.assertEqual(self.src.parse_fullname_line(line3)[-1], 'Archaea' )
+    	self.assertEqual(self.src.parse_fullname_line(line1), ['1936272', 'Candidatus Heimdallarchaeota', ['cellular organisms', 'Archaea', 'Asgard group']])
+    	self.assertEqual(self.src.parse_fullname_line(line2)[:2], ['2012493', 'Candidatus Heimdallarchaeota archaeon B3_Heim'])
+    	self.assertEqual(self.src.parse_fullname_line(line3)[1], 'Asgard group' )
+    	self.assertEqual(self.src.parse_fullname_line(line3)[2], ['cellular organisms', 'Archaea'] )
+
 
     @unittest.skip('passed')
     def test_parse_taxid_line(self):
     	line1 = '1841598	|	131567 2157 1935183 1936272 	|'
     	self.assertEqual(self.src.parse_taxid_line(line1), ['131567', '2157', '1935183', '1936272'])
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_parse_fullname_taxid(self):
     	self.src.parse_fullname_taxid()
     	doc = self.src.collection.find_one( {'tax_id': '1935183'})
