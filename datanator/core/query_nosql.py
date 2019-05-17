@@ -4,12 +4,17 @@ import time
 class DataQuery(mongo_util.MongoUtil):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                verbose=False, max_entries=float('inf')):
-
+                collection_str=None, verbose=False, max_entries=float('inf')):
+        self.collection_str = collection_str
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                     verbose=verbose, max_entries=max_entries)
+        self.client, self.db, self.collection = self.con_db(self.collection_str)
 
-    def doc_feeder(self,collection_str, sym_link = False, step=1000, 
+    '''TODO: Make query language more user friendly
+    '''
+
+
+    def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
         '''A iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
@@ -17,14 +22,14 @@ class DataQuery(mongo_util.MongoUtil):
            batch_callback is a callback function as fn(cnt, t), called after every batch
            fields is optional parameter passed to find to restrict fields to return.
         '''
-        collection = self.fill_db(collection_str, sym_link)
-        cur = collection.find(query, no_cursor_timeout=False, projection=projection)
+        # collection = self.fill_db(self.collection_str, sym_link)
+        cur = self.collection.find(query, no_cursor_timeout=False, projection=projection)
         n = cur.count()
         s = s or 0
         e = e or n
         if self.verbose:
             print('Retrieving %d documents from collection "%s".' %
-                  (n, collection.name))
+                  (n, self.collection_str))
         t0 = time.time()
         if inbatch:
             doc_li = []

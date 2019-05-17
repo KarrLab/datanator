@@ -12,7 +12,7 @@ class TestKeggOrthology(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         # cls.cache_dirname = './datanator/data_source/cache/'
-        cls.db = 'datanator'
+        cls.db = 'test'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
@@ -105,6 +105,6 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(doc3['gene_ortholog'][-1], {'organism': 'LOKI', 'gene_id': ['Lokiarch_08040(pgi_1)', 'Lokiarch_21890(pgi_2)']})
         self.assertEqual(doc3['reference'][0], {'namespace': 'PMID', 'id': '2387591'})
 
-    # @unittest.skip('hold up a min')
+    @unittest.skip('hold up a min')
     def test_load_content(self):
         col = self.src.load_content()

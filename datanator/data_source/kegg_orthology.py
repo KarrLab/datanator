@@ -74,9 +74,11 @@ class KeggOrthology(mongo_util.MongoUtil):
                 doc['kegg_orthology_id'] = lines[0].split()[1]
                 # get list of gene name
                 doc['gene_name'] = [name.replace(
-                    ',', '') for name in lines[1].split()[:1]]
+                    ',', '') for name in lines[1].split()[1:]]
                 # get definition
-                doc['definition'] = lines[2].split(' ', 1)[1]
+                ec = lines[2].split(' ', 1)[1].replace('\n','').split(' ')[2][4:-1]
+                enzyme_name = lines[2].split(' ', 1)[1].replace('\n','').split(' ')[1]    
+                doc['definition'] = {'name': enzyme_name, 'ec_code': ec}
 
                 # get first word of all the lines
                 first_word = [line.split()[0] for line in lines]
