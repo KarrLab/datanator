@@ -21,6 +21,18 @@ class TaxonTree(mongo_util.MongoUtil):
         super(TaxonTree, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                                             verbose=verbose, max_entries=max_entries)
         self.client, self.db, self.collection = self.con_db(self.collection_str)
+        self.repetition = 1000 # how often verbose messages show
+
+    def load_content(self):
+        '''Load contents of several .dmp files into MongoDB
+        '''
+        self.download_dump()
+        self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
+        self.parse_nodes() # nodes.dmp
+        self.parse_division() # division.dmp
+        self.parse_names() # names.dmp
+        self.parse_gencode() # gencode.dmp
+
 
     def download_dump(self):
 
@@ -47,14 +59,17 @@ class TaxonTree(mongo_util.MongoUtil):
         '''Parses lines in file fullnamelineage.dmp and return elements in a list
         '''
         a =  [item.replace('\t', '') for item in line.split('|')[:-1]]
-        tax_id = a[0]
-        tax_name = a[1]
+        tax_id = a[0].strip()
+        tax_name = a[1].strip()
         something =  [item.split(';') for item in a] 
         ancestor_name = [elem.lstrip() for elem in something[2][:-1]]
         return [tax_id, tax_name, ancestor_name]
     
     def parse_taxid_line(self, line):
         '''Parses lines in file taxidlineage.dmp and return elements in a list
+        delimited by "\t|\n"
+        (tab, vertical bar, and newline) characters. Each record consists of one 
+        or more fields delimited by "\t|\t" (tab, vertical bar, and tab) characters.
         '''
         a =  [item.replace('\t', '') for item in line.split('|')[:-1]]
         return a[1].split(' ')[:-1]      
@@ -69,7 +84,7 @@ class TaxonTree(mongo_util.MongoUtil):
 
 
     def parse_fullname_taxid(self):
-        '''Parse fullnamelineage.dmp, store in MongoDB
+        '''Parse fullnamelineage.dmp and taxidlineage.dmp store in MongoDB
         '''
         full_name = os.path.join(self.path, 'fullnamelineage.dmp')
         tax_id = os.path.join(self.path, 'taxidlineage.dmp')
@@ -79,7 +94,7 @@ class TaxonTree(mongo_util.MongoUtil):
             for line_name, line_id in zip(f1, f2):
                 if i == self.max_entries:
                     break
-                if self.verbose and i % 100 == 0:
+                if self.verbose and i % self.repetition == 0:
                     print ('Parsing lineage line {} of {}...'.format(i+1, count))
 
                 lineage_dict = {}
@@ -103,6 +118,8 @@ class TaxonTree(mongo_util.MongoUtil):
         return [item.replace('\t', '') for item in line.split('|')[:-1]]
 
     def parse_nodes(self):
+        '''nodes.dmp
+        '''
         file_name = os.path.join(self.path, 'nodes.dmp')
         i = 0
         count = min(self.max_entries, self.count_line(file_name))
@@ -110,11 +127,11 @@ class TaxonTree(mongo_util.MongoUtil):
             for line in f:
                 if i == self.max_entries:
                     break
-                if self.verbose and i%10==0:
+                if self.verbose and i%self.repetition==0:
                     print ('Parsing nodes line {} of {} ...'.format(i+1, count))
                 node_dict = {}
                 elem = self.parse_nodes_line(line)
-                node_dict['tax_id'] = elem[0]
+                tax_id = elem[0]
                 node_dict['rank'] = elem[2]
                 node_dict['locus_name_prefix'] = elem[3]
                 node_dict['division_id'] = elem[4]
@@ -123,13 +140,15 @@ class TaxonTree(mongo_util.MongoUtil):
                 node_dict['plastid_gene_code'] = elem[-5]
                 node_dict['hydrogenosome_gene_id'] = elem[-2]
 
-                self.collection.update_one( {'tax_id': node_dict['tax_id']},
+                self.collection.update_one( {'tax_id': tax_id},
                                             {'$set': node_dict},
                                             upsert = True
                                             )
                 i += 1
 
     def parse_division(self):
+        '''division.dmp
+        '''
         file_name = os.path.join(self.path, 'division.dmp')
         i = 0
         count = min(self.max_entries, self.count_line(file_name))
@@ -137,7 +156,7 @@ class TaxonTree(mongo_util.MongoUtil):
             for line in f:
                 if i == self.max_entries:
                     break
-                if self.verbose and i % 10 == 0:
+                if self.verbose and i % self.repetition == 0:
                     print ('Parsing division line {} of {} ...'.format(i+1, count))
                 name_dict = {}
                 elem = self.parse_nodes_line(line)
@@ -146,13 +165,20 @@ class TaxonTree(mongo_util.MongoUtil):
                 name_dict['division_name'] = elem[2]
                 name_dict['division_comments'] = elem[3]
 
-                self.collection.update_one( {'division_id': name_dict['division_id']},
+                self.collection.update_many( {'division_id': name_dict['division_id']},
                                             {'$set': name_dict},
                                             upsert = True
                                             )
                 i += 1
 
     def parse_names(self):
+        '''names.dmp
+        1   |   all |       |   synonym |
+        1   |   root    |       |   scientific name |
+        2   |   bacteria    |   bacteria <blast2>   |   blast name  |
+        2   |   Bacteria    |   Bacteria <prokaryotes>  |   scientific name |
+        2   |   eubacteria  |       |   genbank common name 
+        '''
         file_name = os.path.join(self.path, 'names.dmp')
         i = 0
         count = min(self.max_entries, self.count_line(file_name))
@@ -160,22 +186,24 @@ class TaxonTree(mongo_util.MongoUtil):
             for line in f:
                 if i == self.max_entries:
                     break
-                if self.verbose and i % 10 == 0:
+                if self.verbose and i % self.repetition == 0:
                     print ('Parsing names line {} of {} ...'.format(i+1, count))
                 name_dict = {}
                 elem = self.parse_nodes_line(line)
-                name_dict['tax_id'] = elem[0]
+                tax_id = elem[0]
                 name_dict['name_txt'] = elem[1]
                 name_dict['unique_variant_name'] = elem[2]
                 name_dict['name_class'] = elem[3]
 
-                self.collection.update_one( {'tax_id': name_dict['tax_id']},
-                                            {'$set': name_dict},
+                self.collection.update_one( {'tax_id': tax_id},
+                                            {'$addToSet': name_dict},
                                             upsert = True
                                             )
                 i += 1
 
     def parse_gencode(self):
+        '''gencode.dmp
+        '''
         file_name = os.path.join(self.path, 'gencode.dmp')
         i = 0
         count = min(self.max_entries, self.count_line(file_name))
@@ -183,17 +211,17 @@ class TaxonTree(mongo_util.MongoUtil):
             for line in f:
                 if i == self.max_entries:
                     break
-                if self.verbose and i % 10 == 0:
+                if self.verbose and i % self.repetition == 0:
                     print ('Parsing gencode line {} of {} ...'.format(i+1, count))
                 gencode_dict = {}
                 elem = self.parse_nodes_line(line)
-                gencode_dict['gene_code'] = elem[0]
+                gene_code = elem[0]
                 gencode_dict['abbreviation'] = elem[1]
                 gencode_dict['gene_code_name'] = elem[2]
                 gencode_dict['gene_code_cde'] = elem[3]
                 gencode_dict['gene_code_starts'] = elem[4]
 
-                self.collection.update_one( {'gene_code': gencode_dict['gene_code']},
+                self.collection.update_one( {'gene_code': gene_code},
                                             {'$set': gencode_dict},
                                             upsert = True
                                             )
