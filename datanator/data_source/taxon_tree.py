@@ -69,9 +69,7 @@ class TaxonTree(mongo_util.MongoUtil):
 
 
     def parse_fullname_taxid(self):
-
         '''Parse fullnamelineage.dmp, store in MongoDB
-            always runs ahead of other file parsing modules
         '''
         full_name = os.path.join(self.path, 'fullnamelineage.dmp')
         tax_id = os.path.join(self.path, 'taxidlineage.dmp')
@@ -81,7 +79,7 @@ class TaxonTree(mongo_util.MongoUtil):
             for line_name, line_id in zip(f1, f2):
                 if i == self.max_entries:
                     break
-                if self.verbose and i % 10 == 0:
+                if self.verbose and i % 100 == 0:
                     print ('Parsing lineage line {} of {}...'.format(i+1, count))
 
                 lineage_dict = {}

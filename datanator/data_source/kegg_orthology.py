@@ -39,6 +39,7 @@ class KeggOrthology(mongo_util.MongoUtil):
         names = self.extract_values(data, 'name')
         names = [name.split()[0] for name in names if name[0] == 'K']
         names = list(set(names)) # remove duplicate name
+        names.sort()
 
         iterations = min(len(names), self.max_entries)
 
@@ -46,7 +47,7 @@ class KeggOrthology(mongo_util.MongoUtil):
 
         i = 0
         for name in names:
-            if i > self.max_entries:
+            if i == self.max_entries:
                 break
             if self.verbose and i % 100 == 0:
                 print('Downloading {} of {} kegg orthology file {}...'.format(
@@ -59,7 +60,30 @@ class KeggOrthology(mongo_util.MongoUtil):
 
             i += 1
 
-        return collection
+    def parse_definition(self, line):
+        '''Definition line could be something as follows:
+         " fructose-bisphosphate aldolase / 6-deoxy-5-ketofructose 1-phosphate synthase [NADP...] [EC:4.1.2.13 2.2.1.11]\n"
+         EC code can be optional
+        '''
+        if len(line) != 0:
+            head_tail_clean = line.strip().replace('\n', '')
+            head_tail_clean = head_tail_clean[11:]
+            sep_name = head_tail_clean.split('/')  # list
+
+            name_sans_last = sep_name[:-1]  # list
+            last_name = sep_name[-1].split('[')[0].strip()  # string
+            name_list = [item.strip() for item in name_sans_last] + [last_name]
+
+            if len(sep_name[-1].split('[EC')) > 1: # EC code exists
+                ec_codes = sep_name[-1].split('[EC')[1]  # string: 'EC:1.1.1.1 2.2.2.2]'
+                strip_ec = ec_codes.split(':')[-1]
+                ec_list = strip_ec.replace(']', '').split(' ')
+            else:
+                ec_list = []
+
+            return (name_list, ec_list)
+        else:
+            pass
 
     def parse_ko_txt(self, filename):
         '''Parse kegg_ortho txt file into dictionary object
@@ -76,8 +100,7 @@ class KeggOrthology(mongo_util.MongoUtil):
                 doc['gene_name'] = [name.replace(
                     ',', '') for name in lines[1].split()[1:]]
                 # get definition
-                ec = lines[2].split(' ', 1)[1].replace('\n','').split(' ')[2][4:-1]
-                enzyme_name = lines[2].split(' ', 1)[1].replace('\n','').split(' ')[1]    
+                enzyme_name, ec = self.parse_definition(lines[2])    
                 doc['definition'] = {'name': enzyme_name, 'ec_code': ec}
 
                 # get first word of all the lines

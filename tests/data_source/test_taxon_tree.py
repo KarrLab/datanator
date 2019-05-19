@@ -11,11 +11,11 @@ class TestTaxonTree(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         # cls.cache_dirname = './datanator/data_source/cache/'
-        cls.db = 'test'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'taxon_tree'
         cls.src = taxon_tree.TaxonTree(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet='rs0', verbose=True, max_entries=200000)
         cls.path = os.path.join(cls.cache_dirname, cls.collection_str)
 
     @classmethod
