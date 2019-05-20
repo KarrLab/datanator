@@ -86,6 +86,8 @@ class TaxonTree(mongo_util.MongoUtil):
 
     def parse_fullname_taxid(self):
         '''Parse fullnamelineage.dmp and taxidlineage.dmp store in MongoDB
+           Always run first before loading anything else
+           (insert_one)
         '''
         full_name = os.path.join(self.path, 'fullnamelineage.dmp')
         tax_id = os.path.join(self.path, 'taxidlineage.dmp')
@@ -106,9 +108,7 @@ class TaxonTree(mongo_util.MongoUtil):
                 lineage_dict['anc_name'] = elem_name[2]
                 lineage_dict['anc_id'] = elem_id
 
-                self.collection.update_one( {'tax_id': lineage_dict['tax_id']},
-                                            {'$set': lineage_dict},
-                                            upsert = True
+                self.collection.insert_one( lineage_dict
                                             )
 
                 i += 1
@@ -228,5 +228,14 @@ class TaxonTree(mongo_util.MongoUtil):
                                             )
                 i += 1
 
+def main():
+    mongodb = 'mongodb://mongo:27017'
+    cache_dirname = '/root/host/karr_lab/datanator/datanator/data_source/cache/taxon_tree'
+    manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=mongodb, replicaSet='rs0', 
+                    db='datanator', verbose=True)
+    manager.load_content()
 
+
+if __name__ == '__main__':
+    main()
 
