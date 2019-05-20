@@ -4,6 +4,7 @@ import os
 from six import BytesIO
 from datanator.util import mongo_util
 import zipfile
+import pymongo
 
 class TaxonTree(mongo_util.MongoUtil):
 
@@ -28,8 +29,15 @@ class TaxonTree(mongo_util.MongoUtil):
         '''
         self.download_dump()
         # self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
-        self.collection.create_index( [("$**", pymongo.TEXT)] , background=False, sparse=True)
-        self.parse_nodes() # nodes.dmp
+        # if self.verbose:
+        #     print('Indexing tax_id ... \n')
+        # self.collection.create_index( [("tax_id", pymongo.ASCENDING)] , background=False, sparse=True)
+        # self.parse_nodes() # nodes.dmp
+        if self.verbose:
+            print('Indexing division_id and gene_code ... \n')
+        index1 = pymongo.IndexModel( [("division_id", pymongo.ASCENDING)] , background=False, sparse=True)
+        index2 = pymongo.IndexModel([("gene_code", pymongo.ASCENDING)] , background=False, sparse=True)
+        self.collection.create_indexes([index1, index2])
         self.parse_division() # division.dmp
         self.parse_names() # names.dmp
         self.parse_gencode() # gencode.dmp
@@ -103,10 +111,10 @@ class TaxonTree(mongo_util.MongoUtil):
                 lineage_dict = {}
                 elem_name = self.parse_fullname_line(line_name)
                 elem_id = self.parse_taxid_line(line_id)
-                lineage_dict['tax_id'] = elem_name[0]
+                lineage_dict['tax_id'] = int(elem_name[0])
                 lineage_dict['tax_name'] = elem_name[1]
                 lineage_dict['anc_name'] = elem_name[2]
-                lineage_dict['anc_id'] = elem_id
+                lineage_dict['anc_id'] = [int(item) for item in elem_id]
 
                 self.collection.insert_one( lineage_dict
                                             )
@@ -132,11 +140,11 @@ class TaxonTree(mongo_util.MongoUtil):
                     print ('Parsing nodes line {} of {} ...'.format(i+1, count))
                 node_dict = {}
                 elem = self.parse_nodes_line(line)
-                tax_id = elem[0]
+                tax_id = int(elem[0])
                 node_dict['rank'] = elem[2]
                 node_dict['locus_name_prefix'] = elem[3]
-                node_dict['division_id'] = elem[4]
-                node_dict['gene_code'] = elem[6]
+                node_dict['division_id'] = int(elem[4])
+                node_dict['gene_code'] = int(elem[6])
                 node_dict['comments'] = elem[-6]
                 node_dict['plastid_gene_code'] = elem[-5]
                 node_dict['hydrogenosome_gene_id'] = elem[-2]
@@ -161,12 +169,12 @@ class TaxonTree(mongo_util.MongoUtil):
                     print ('Parsing division line {} of {} ...'.format(i+1, count))
                 name_dict = {}
                 elem = self.parse_nodes_line(line)
-                name_dict['division_id'] = elem[0]
+                division_id = int(elem[0])
                 name_dict['division_cde'] = elem[1]
                 name_dict['division_name'] = elem[2]
                 name_dict['division_comments'] = elem[3]
 
-                self.collection.update_many( {'division_id': name_dict['division_id']},
+                self.collection.update_many( {'division_id': division_id},
                                             {'$set': name_dict},
                                             upsert = True
                                             )
@@ -191,7 +199,7 @@ class TaxonTree(mongo_util.MongoUtil):
                     print ('Parsing names line {} of {} ...'.format(i+1, count))
                 name_dict = {}
                 elem = self.parse_nodes_line(line)
-                tax_id = elem[0]
+                tax_id = int(elem[0])
                 name_dict['name_txt'] = elem[1]
                 name_dict['unique_variant_name'] = elem[2]
                 name_dict['name_class'] = elem[3]
@@ -216,7 +224,7 @@ class TaxonTree(mongo_util.MongoUtil):
                     print ('Parsing gencode line {} of {} ...'.format(i+1, count))
                 gencode_dict = {}
                 elem = self.parse_nodes_line(line)
-                gene_code = elem[0]
+                gene_code = int(elem[0])
                 gencode_dict['abbreviation'] = elem[1]
                 gencode_dict['gene_code_name'] = elem[2]
                 gencode_dict['gene_code_cde'] = elem[3]

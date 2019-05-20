@@ -15,29 +15,6 @@ class DataQuery(mongo_util.MongoUtil):
     '''
 
 
-    def extract_values(self, obj, key):
-        """Pull all values of specified key from nested JSON.
-        """
-        arr = []
-
-        def extract(obj, arr, key):
-            """Recursively search for values of key in JSON tree."""
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if isinstance(v, (dict, list)):
-                        extract(v, arr, key)
-                    elif k == key:
-                        arr.append(v)
-            elif isinstance(obj, list):
-                for item in obj:
-                    extract(item, arr, key)
-            return arr
-
-        results = extract(obj, arr, key)
-
-        return results
-
-
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
         '''A iterator for returning docs in a collection, with batch query.

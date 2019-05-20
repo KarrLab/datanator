@@ -55,15 +55,15 @@ class TestTaxonTree(unittest.TestCase):
     # @unittest.skip('passed')
     def test_parse_fullname_taxid(self):
         self.src.parse_fullname_taxid()
-        doc = self.src.collection.find_one({'tax_id': '1935183'})
+        doc = self.src.collection.find_one({'tax_id': 1935183})
         self.assertEqual(doc['anc_id'], ['131567', '2157'])
 
     # @unittest.skip('passed')
     def test_parse_nodes(self):
         self.src.parse_nodes()
-        doc = self.src.collection.find_one({'tax_id': '1'})
+        doc = self.src.collection.find_one({'tax_id': 1})
         self.assertEqual(doc['tax_name'], 'root')
-        self.assertEqual(doc['division_id'], '8')
+        self.assertEqual(doc['division_id'], 8)
 
     # @unittest.skip('passed')
     def test_parse_division(self):

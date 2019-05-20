@@ -54,6 +54,7 @@ class TestQueryNoSQL(unittest.TestCase):
 
     '''Testing queries in h1_hesc
     '''
+    @unittest.skip('skip to testing for h1_hesc')
     def test_doc_feeder(self):
         target = 'C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6'
         query = {'$or': [ {'reaction_participant.substrate.structure.inchi_connectivity': target }, 
