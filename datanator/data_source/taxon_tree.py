@@ -27,7 +27,8 @@ class TaxonTree(mongo_util.MongoUtil):
         '''Load contents of several .dmp files into MongoDB
         '''
         self.download_dump()
-        self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
+        # self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
+        self.collection.create_index( [("$**", pymongo.TEXT)] , background=False, sparse=True)
         self.parse_nodes() # nodes.dmp
         self.parse_division() # division.dmp
         self.parse_names() # names.dmp
