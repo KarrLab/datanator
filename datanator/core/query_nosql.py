@@ -14,6 +14,14 @@ class DataQuery(mongo_util.MongoUtil):
             2. Full text search for all key:value pairs
     '''
 
+    def find_text(self, v):
+        ''' Find documents containing string v
+            v cannot be part of a word (e.g. 'wor' of 'word')
+            v needs to be in a previously indexed field
+            Args:
+                v: value to be matched
+        '''
+        return self.collection.find_many({'$text': {'$search': v}})
 
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):

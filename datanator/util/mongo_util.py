@@ -1,11 +1,13 @@
 import pymongo
 import wc_utils.quilt
+import json
 from bson import decode_all
+from genson import SchemaBuilder
 
 class MongoUtil():
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                verbose=False, max_entries=float('inf')):
+                 verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
@@ -47,10 +49,11 @@ class MongoUtil():
         if collection.find({}).count() != 0:
             return collection
         else:
-            manager = wc_utils.quilt.QuiltManager(self.cache_dirname, 'datanator_nosql')
-            file = collection_str+'.bson' 
+            manager = wc_utils.quilt.QuiltManager(
+                self.cache_dirname, 'datanator_nosql')
+            file = collection_str+'.bson'
             manager.download(file, sym_link)
-            with open((self.cache_dirname+ '/'+file), 'rb') as f:
+            with open((self.cache_dirname + '/'+file), 'rb') as f:
                 collection.insert(decode_all(f.read()))
             return collection
 
@@ -78,17 +81,70 @@ class MongoUtil():
 
     def print_schema(self, collection_str):
         '''Print out schema of a collection
+           removed '_id' from collection due to its object type
+           and universality 
         '''
         _, _, collection = self.con_db(collection_str)
-        doc = collection.find_one( {} )
-        self.print_dict(doc)
+        doc = collection.find_one({})
+        builder = SchemaBuilder()
+        del doc['_id']
+        builder.add_object(doc)
+        return builder.to_schema()
 
-    def print_dict(self, dictionary, ident = '', braces=1):
-        """ Recursively prints nested dictionaries."""
+    def flatten_json(self, nested_json):
+        '''
+            Flatten json object with nested keys into a single level.
+            e.g. 
+            {a: b,                      {a: b,  
+             c: [                        d: e,
+                {d: e},    =>            f: g }
+                {f: g}]}
+            Args:
+                nested_json: A nested json object.
+            Returns:
+                The flattened json object if successful, None otherwise.
+        '''
+        out = {}
 
-        for key, value in dictionary.items():
-            if isinstance(value, dict):
-                print ('%s%s%s%s' %(ident,braces*'[',key,braces*']')) 
-                self.print_dict(value, ident+'  ', braces+1)
+        def flatten(x, name=''):
+            if type(x) is dict:
+                for a in x:
+                    flatten(x[a], name + a + '_')
+            elif type(x) is list:
+                i = 0
+                for a in x:
+                    flatten(a, name + str(i) + '_')
+                    i += 1
             else:
-                print (ident+'%s = %s' %(key, type(value).__name__))
+                out[name[:-1]] = x
+
+        flatten(nested_json)
+        return out
+
+    def flatten_collection(self, collection_str):
+        '''Flatten a collection
+
+            c is ommitted because it does not have a non-object 
+            value associated with it
+        '''
+        _, _, collection = self.con_db(collection_str)
+        # pipeline = [
+        #     {
+        #         "$replaceRoot":{
+        #             "newRoot":{
+        #                 "$mergeObjects":[
+        #                     {
+        #                         "a":"$a"
+        #                     },
+        #                     "$subdoc"
+        #                 ]
+        #             }
+        #         }
+        #     }
+        # ]
+        pipeline = [
+            { "$addFields": { "subdoc.a": "$a" } },
+            { "$replaceRoot": { "newRoot": "$subdoc" }  }
+        ]
+        flat_col = collection.aggregate(pipeline)
+        return flat_col

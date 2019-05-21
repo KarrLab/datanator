@@ -33,13 +33,13 @@ class TaxonTree(mongo_util.MongoUtil):
         #     print('Indexing tax_id ... \n')
         # self.collection.create_index( [("tax_id", pymongo.ASCENDING)] , background=False, sparse=True)
         # self.parse_nodes() # nodes.dmp
-        if self.verbose:
-            print('Indexing division_id and gene_code ... \n')
-        index1 = pymongo.IndexModel( [("division_id", pymongo.ASCENDING)] , background=False, sparse=True)
-        index2 = pymongo.IndexModel([("gene_code", pymongo.ASCENDING)] , background=False, sparse=True)
-        self.collection.create_indexes([index1, index2])
-        self.parse_division() # division.dmp
-        self.parse_names() # names.dmp
+        # if self.verbose:
+        #     print('Indexing division_id and gene_code ... \n')
+        # index1 = pymongo.IndexModel( [("division_id", pymongo.ASCENDING)] , background=False, sparse=True)
+        # index2 = pymongo.IndexModel([("gene_code", pymongo.ASCENDING)] , background=False, sparse=True)
+        # self.collection.create_indexes([index1, index2])
+        # self.parse_division() # division.dmp
+        # self.parse_names() # names.dmp
         self.parse_gencode() # gencode.dmp
 
 
@@ -230,7 +230,7 @@ class TaxonTree(mongo_util.MongoUtil):
                 gencode_dict['gene_code_cde'] = elem[3]
                 gencode_dict['gene_code_starts'] = elem[4]
 
-                self.collection.update_one( {'gene_code': gene_code},
+                self.collection.update_many( {'gene_code': gene_code},
                                             {'$set': gencode_dict},
                                             upsert = True
                                             )

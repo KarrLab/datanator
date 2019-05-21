@@ -8,7 +8,7 @@ TIMESTAMP=`date +%F-%H%M`
 MONGODUMP_PATH="/usr/bin/mongodump"
 BACKUPS_DIR="/root/host/karr_lab/datanator/datanator/data_source/cache"
 mkdir -p $BACKUPS_DIR
-BACKUP_NAME="/root/host/karr_lab/datanator/datanator/data_source/cache/$APP_NAME-$TIMESTAMP"
+BACKUP_NAME="/root/host/karr_lab/datanator/datanator/data_source/cache/$APP_NAME"
  
 $MONGODUMP_PATH -d $MONGO_DATABASE --host $MONGO_HOST -o $BACKUP_NAME
 

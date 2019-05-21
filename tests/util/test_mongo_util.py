@@ -40,16 +40,22 @@ class TestMongoUtil(unittest.TestCase):
         self.assertNotEqual(collection_obj.find().count(), 0)
 
     @unittest.skip('passed')
-    def test_print_dict(self):
-        example_dict = { 'key1' : 'value1',
-                         'key2' : 'value2',
-                         'key3' : { 'key3a': 'value3a' },
-                         'key4' : { 'key4a': { 'key4aa': 'value4aa',
-                                               'key4ab': 'value4ab',
-                                               'key4ac': 'value4ac'},
-                                    'key4b': 'value4b'}
-                       }
-        self.src.print_dict(example_dict)
-
     def test_print_schema(self):
-        self.src.print_dict('ecmdb')
+        a = self.src.print_schema('ecmdb')
+        self.assertEqual(a['properties']['creation_date'], {'type': 'string'})
+        self.assertEqual(a['properties']['synonyms'],  {'type': 'object', 'properties': {'synonym': {'type': 'array', 
+            'items': {'type': 'string'}}}, 'required': ['synonym']})
+
+    @unittest.skip('passed')
+    def test_flatten_json(self):
+        dic = {
+            "a": 1,
+            "b": 2,
+            "c": [{"d": [2, 3, 4], "e": [{"f": 1, "g": 2}]}],
+            'h': [1, 2, 3]
+        }
+        flat = self.src.flatten_json(dic)
+        self.assertEqual(flat['c_0_d_0'], 2)
+        self.assertEqual(flat['c_0_e_0_f'], 1)
+        self.assertEqual(flat['h_0'], 1)
+

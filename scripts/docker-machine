@@ -1,0 +1,1 @@
+docker-machine create --driver amazonec2 --amazonec2-instance-type m5d.large --amazonec2-open-port 27017 --amazonec2-monitoring datanator-ec2
