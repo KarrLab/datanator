@@ -14,23 +14,23 @@ class TestMongoUtil(unittest.TestCase):
         cls.src = mongo_util.MongoUtil(
             cls.cache_dirname, cls.MongoDB, 'rs0', cls.db, verbose=True, max_entries=20)
         cls.collection_str = 'ecmdb'
-        cls.client, cls.db, cls.collection_obj = cls.src.con_db(
-            cls.collection_str)
+        # cls.client, cls.db, cls.collection_obj = cls.src.con_db(
+        #     cls.collection_str)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         # cls.client.drop_database(cls.db)
-        cls.client.close()
+        # cls.client.close()
 
     @unittest.skip('passed')
     def test_list_all_collections(self):
         self.assertTrue('ecmdb' in self.src.list_all_collections())
 
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_con_db(self):
-        self.assertNotEqual(self.db, 'Server not available')
+        self.assertNotEqual(self.src.con_db(self.db), 'Server not available')
 
     @unittest.skip('passed')
     def test_fill_db(self):

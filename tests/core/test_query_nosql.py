@@ -2,26 +2,24 @@ import unittest
 from datanator.core import query_nosql
 import tempfile
 import shutil
-import pprint
 
 class TestQueryNoSQL(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'test'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
-        cls.src = query_nosql.DataQuery(
-            cls.cache_dirname, cls.MongoDB, None, cls.db, verbose=True, max_entries=20)
         cls.collection_str = 'ecmdb'
-        cls.client, cls.db, cls.collection_obj = cls.src.con_db(
-            cls.collection_str)
+        cls.src = query_nosql.DataQuery(
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+                collection_str=cls.collection_str, verbose=True, max_entries=20)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         # cls.client.drop_database(cls.db)
-        cls.client.close()
+        cls.src.client_obj.close()
 
     @unittest.skip('skip to testing for h1_hesc')
     def test_doc_feeder(self):
@@ -62,3 +60,8 @@ class TestQueryNoSQL(unittest.TestCase):
         projection = {'reaction_participant.substrate.sabio_compound_id': 1,
                      'reaction_participant.product.sabio_compound_id': 1 }
         collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
+
+    def test_find_reaction_participants(self):
+        s, p = self.src.find_reaction_participants(62619)
+        self.assertEqual(s, ['Prostacyclin receptor', 'Iloprost'])
+        self.assertEqual(p, ['Receptor-ligand complex'])

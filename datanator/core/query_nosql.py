@@ -6,22 +6,58 @@ class DataQuery(mongo_util.MongoUtil):
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
                 collection_str=None, verbose=False, max_entries=float('inf')):
         self.collection_str = collection_str
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                    verbose=verbose, max_entries=max_entries)
-        self.client, self.db, self.collection = self.con_db(self.collection_str)
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
+                                    db=db, verbose=verbose, max_entries=max_entries)
+        self.client_obj, self.db_obj, self.collection_obj = self.con_db(self.collection_str)
 
     '''TODO:1. Make query language more user friendly
             2. Full text search for all key:value pairs
     '''
 
-    def find_text(self, v):
+
+    def find_reaction_participants(self, kinlaw_id):
+        ''' Find the reaction participants defined in sabio_rk using kinetic law id
+            Args:
+                kinlaw_id: integer type
+            Return:
+                substrates: list of substrates
+                products: list of products
+        '''
+        _, _, collection = self.con_db('sabio_rk')
+        query = {'kinlaw_id': kinlaw_id}
+        doc = collection.find_one(query)
+        doc.pop('_id', None)
+        doc_flat = self.flatten_json(doc)
+
+        substrates = []
+        products = []
+        substrate_identifier = ['reaction_participant', 'substrate', 'name']
+        product_identifier = ['reaction_participant', 'product', 'name']
+
+        for k, v in doc_flat.items():
+            if all(x in k for x in substrate_identifier) and 'compartment' not in k:
+                substrates.append(v)
+            elif all(x in k for x in product_identifier) and 'compartment' not in k:
+                products.append(v)
+            else:
+                continue
+
+        return (substrates, products)
+
+    def find_text(self, v, collection=None):
         ''' Find documents containing string v
             v cannot be part of a word (e.g. 'wor' of 'word')
             v needs to be in a previously indexed field
             Args:
                 v: value to be matched
         '''
-        return self.collection.find_many({'$text': {'$search': v}})
+        if collection == None:
+            return self.collection.find({'$text': {'$search': v}},
+                                        { score: { $meta: "textScore" } }).sort( { score: { $meta: "textScore" } } )
+        else:
+            col_obj = self.con_db(collection)
+            return col_obj.find({'$text': {'$search': v}},
+                                { score: { $meta: "textScore" } }).sort( { score: { $meta: "textScore" } } )
 
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
@@ -31,8 +67,8 @@ class DataQuery(mongo_util.MongoUtil):
            batch_callback is a callback function as fn(cnt, t), called after every batch
            fields is optional parameter passed to find to restrict fields to return.
         '''
-        # collection = self.fill_db(self.collection_str, sym_link)
-        cur = self.collection.find(query, no_cursor_timeout=False, projection=projection)
+        collection = self.fill_db(collection_str, sym_link=sym_link)
+        cur = collection.find(query, no_cursor_timeout=False, projection=projection)
         n = cur.count()
         s = s or 0
         e = e or n
