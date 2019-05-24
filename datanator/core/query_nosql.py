@@ -20,8 +20,8 @@ class DataQuery(mongo_util.MongoUtil):
             Args:
                 kinlaw_id: list of kinlaw_id to search for
             Return:
-                substrates: list of substrates
-                products: list of products
+                rxns: list of dictionaries containing names of reaction participants
+                [{'substrates': [], 'products': [] }, ... {} ]
         '''
         query = {'kinlaw_id': {'$in': kinlaw_id} }
         docs = self.doc_feeder(collection_str = 'sabio_rk', query=query)

@@ -43,5 +43,7 @@ class TestMongoUtil(unittest.TestCase):
         		'No key named "inchi" in given document')
 
     def test_find_rxn_id(self):
-    	inchi = 'InChI=1S/C9H13N3O4/c10-7-1-2-12(9(15)11-7)8-3-5(14)6(4-13)16-8'
-    	self.src.find_rxn_id(inchi)
+        inchi = 'InChI=1S/C8H7ClO3/c9-6-3-1-5(2-4-6)7(10)8(11)12'
+        _id = self.src.find_rxn_id(inchi)
+        print(_id)
+        self.assertTrue(34 in _id)

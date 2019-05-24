@@ -1,5 +1,6 @@
 from datanator.core import query_nosql
-
+import re
+import bson
 
 class MetabolitesMeta(query_nosql.DataQuery):
 
@@ -20,14 +21,27 @@ class MetabolitesMeta(query_nosql.DataQuery):
         pass
 
     def find_rxn_id(self, inchi=None):
-    	'''Find reactions' kinlaw_id in sabio_rk given inchi structures 
-    	'''
-    	substrate = 'reaction_participant.substrate.structure.inchi'
-    	product = 'reaction_participant.product.structure.inchi'
-    	c = 'sabio_rk'
-    	query = {'$or': [{substrate : {'$regex' : ".*"+inchi+".*"}},
-    					 {product: {'$regex' : ".*"+inchi+".*"}} ]}
-    	docs = self.doc_feeder( collection_str=c, query=query )
+        '''Find reactions' kinlaw_id in sabio_rk given inchi structures 
+        '''
+        substrate = 'reaction_participant.substrate.structure.inchi'
+        product = 'reaction_participant.product.structure.inchi'
+        c = 'sabio_rk'
+        inchi = inchi.replace('(', '\(') # regular expressions are weird
+        inchi = inchi.replace(')', '\)')
+        regex = re.compile(inchi)
+        query = {'$or': [{substrate : regex},
+    					 {product : regex} ]}
+        docs = self.doc_feeder( collection_str=c, query=query )
+        kinlaw_id = []
+        i = 0
+        for doc in docs:
+            if i == self.max_entries:
+                break
+            _id = doc['kinlaw_id']
+            kinlaw_id.append(_id)
+            i += 1
+
+        return kinlaw_id
 
     def find_metabolite_inchi(self, doc):
         '''Find inchi structure information of metabolites in ecmdb or ymdb
