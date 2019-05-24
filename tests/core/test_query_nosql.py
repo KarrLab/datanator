@@ -62,6 +62,11 @@ class TestQueryNoSQL(unittest.TestCase):
         collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
 
     def test_find_reaction_participants(self):
-        s, p = self.src.find_reaction_participants(62619)
-        self.assertEqual(s, ['Prostacyclin receptor', 'Iloprost'])
-        self.assertEqual(p, ['Receptor-ligand complex'])
+        _id = [31, 32, 33, 34]
+        rxns = self.src.find_reaction_participants(_id)
+        self.assertEqual(rxns[0], {'substrates': ["2-Hydroxybutyrate", "Riboflavin-5-phosphate"], 
+                        'products': ['2-Oxobutyrate', 'Reduced FMN']})
+
+        self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
+                                    'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
+        

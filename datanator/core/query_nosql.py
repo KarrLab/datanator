@@ -18,31 +18,40 @@ class DataQuery(mongo_util.MongoUtil):
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
             Args:
-                kinlaw_id: integer type
+                kinlaw_id: list of kinlaw_id to search for
             Return:
                 substrates: list of substrates
                 products: list of products
         '''
-        _, _, collection = self.con_db('sabio_rk')
-        query = {'kinlaw_id': kinlaw_id}
-        doc = collection.find_one(query)
-        doc.pop('_id', None)
-        doc_flat = self.flatten_json(doc)
+        query = {'kinlaw_id': {'$in': kinlaw_id} }
+        docs = self.doc_feeder(collection_str = 'sabio_rk', query=query)
+        rxns = []
+        i = 0
+        for doc in docs:
+            if i == self.max_entries:
+                break 
+            doc.pop('_id', None)
+            doc_flat = self.flatten_json(doc)
 
-        substrates = []
-        products = []
-        substrate_identifier = ['reaction_participant', 'substrate', 'name']
-        product_identifier = ['reaction_participant', 'product', 'name']
+            substrates = []
+            products = []
+            substrate_identifier = ['reaction_participant', 'substrate', 'name']
+            product_identifier = ['reaction_participant', 'product', 'name']
 
-        for k, v in doc_flat.items():
-            if all(x in k for x in substrate_identifier) and 'compartment' not in k:
-                substrates.append(v)
-            elif all(x in k for x in product_identifier) and 'compartment' not in k:
-                products.append(v)
-            else:
-                continue
+            for k, v in doc_flat.items():
+                if all(x in k for x in substrate_identifier) and 'compartment' not in k:
+                    substrates.append(v)
+                elif all(x in k for x in product_identifier) and 'compartment' not in k:
+                    products.append(v)
+                else:
+                    continue
+            rxn = {'substrates': substrates, 'products': products}
 
-        return (substrates, products)
+            rxns.append(rxn)
+            i += 1 
+
+
+        return rxns
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -74,7 +83,7 @@ class DataQuery(mongo_util.MongoUtil):
         e = e or n
         if self.verbose:
             print('Retrieving %d documents from collection "%s".' %
-                  (n, self.collection_str))
+                  (n, collection_str))
         t0 = time.time()
         if inbatch:
             doc_li = []
