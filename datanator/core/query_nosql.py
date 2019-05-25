@@ -126,7 +126,7 @@ class DataQuery(mongo_util.MongoUtil):
 
             # print 'Done.[%s]' % timesofar(t1)
             if self.verbose:
-                print('Done.[%.1f%%,%s]' % (cnt * 100. / n, self.timesofar(t1)))
+                print('Done.[%.1f%%,%s]' % (cnt * 100. / (n+1), self.timesofar(t1)))
                 print("=" * 20)
                 print('Finished.[total time: %s]' % self.timesofar(t0))
         finally:

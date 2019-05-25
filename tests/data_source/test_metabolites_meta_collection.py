@@ -14,7 +14,7 @@ class TestMongoUtil(unittest.TestCase):
         cls.collection_str = 'ecmdb'
         cls.src = metabolites_meta_collection.MetabolitesMeta(cache_dirname=cls.cache_dirname,
                                                               MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
-                                                              collection_str=cls.collection_str, verbose=True, max_entries=float('inf'))
+                                                              collection_str=cls.collection_str, verbose=True, max_entries=20)
         # cls.client, cls.db, cls.collection_obj = cls.src.con_db(
         #     cls.collection_str)
 
@@ -35,15 +35,25 @@ class TestMongoUtil(unittest.TestCase):
 
     @unittest.skip('passed')
     def test_find_metabollite_inchi(self):
-        doc = self.src.collection_obj.find_one({'name': 'Ureidopropionic acid'})
+        doc = self.src.collection_obj.find_one(
+            {'name': 'Ureidopropionic acid'})
         inchi = self.src.find_metabolite_inchi(doc)
         self.assertEqual(inchi, 'InChI=1S/C4H8N2O3/c5-4(9)6-2-1-3(7)8')
         doc1 = {}
-        self.assertEqual(self.src.find_metabolite_inchi(doc1), 
-        		'No key named "inchi" in given document')
+        self.assertEqual(self.src.find_metabolite_inchi(doc1),
+                         'No key named "inchi" in given document')
 
+    @unittest.skip('passed')
     def test_find_rxn_id(self):
         inchi = 'InChI=1S/C8H7ClO3/c9-6-3-1-5(2-4-6)7(10)8(11)12'
         _id = self.src.find_rxn_id(inchi)
         print(_id)
         self.assertTrue(34 in _id)
+
+    def test_get_metabolite_fields(self):
+        dict_list = self.src.get_metabolite_fields(
+        	fields = ['m2m_id', 'inchi'], collection_str = 'ecmdb')
+        self.assertEqual(
+            dict_list[0]['inchi'], 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7')
+        
+        
