@@ -11,10 +11,9 @@ class TestMongoUtil(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
-        cls.collection_str = 'ecmdb'
         cls.src = metabolites_meta_collection.MetabolitesMeta(cache_dirname=cls.cache_dirname,
                                                               MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
-                                                              collection_str=cls.collection_str, verbose=True, max_entries=20)
+                                                              verbose=True, max_entries=20)
         # cls.client, cls.db, cls.collection_obj = cls.src.con_db(
         #     cls.collection_str)
 

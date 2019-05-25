@@ -1,22 +1,19 @@
 from datanator.core import query_nosql
 import re
-import bson
 
-
-class MetabolitesMeta(query_nosql.DataQuery):
+class MetabolitesMeta(query_nosql.QuerySabio):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 collection_str=None, verbose=False, max_entries=float('inf')):
+                 verbose=False, max_entries=float('inf')):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.replicaSet = replicaSet
         self.db = db
-        self.collection_str = collection_str
         self.verbose = verbose
         self.max_entries = max_entries
 
         super(MetabolitesMeta, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
-                                              db=db, collection_str=collection_str, verbose=verbose, max_entries=max_entries)
+                                              db=db, verbose=verbose, max_entries=max_entries)
         self.frequency = 100
 
     def load_content(self):
@@ -131,10 +128,10 @@ def main():
     MongoDB = 'mongodb://mongo:27017'
     replicaSet = 'rs0'
     db = 'datanator'
-    manager_ecmdb = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                                    collection_str='ecmdb', verbose=True, max_entries=float('inf'))
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
+                                    verbose=True, max_entries=float('inf'))
 
-    manager_ecmdb.load_content()
+    manager.load_content()
 
 
 if __name__ == '__main__':

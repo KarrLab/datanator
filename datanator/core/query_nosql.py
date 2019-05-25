@@ -3,55 +3,17 @@ import time
 
 class DataQuery(mongo_util.MongoUtil):
 
+    '''Collection agnostic queries
+    '''
+
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                collection_str=None, verbose=False, max_entries=float('inf')):
-        self.collection_str = collection_str
+                verbose=False, max_entries=float('inf')):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries)
-        self.client_obj, self.db_obj, self.collection_obj = self.con_db(self.collection_str)
 
     '''TODO:1. Make query language more user friendly
             2. Full text search for all key:value pairs
     '''
-
-
-    def find_reaction_participants(self, kinlaw_id):
-        ''' Find the reaction participants defined in sabio_rk using kinetic law id
-            Args:
-                kinlaw_id: list of kinlaw_id to search for
-            Return:
-                rxns: list of dictionaries containing names of reaction participants
-                [{'substrates': [], 'products': [] }, ... {} ]
-        '''
-        query = {'kinlaw_id': {'$in': kinlaw_id} }
-        docs = self.doc_feeder(collection_str = 'sabio_rk', query=query)
-        rxns = []
-        i = 0
-        for doc in docs:
-            if i == self.max_entries:
-                break 
-            doc.pop('_id', None)
-            doc_flat = self.flatten_json(doc)
-
-            substrates = []
-            products = []
-            substrate_identifier = ['reaction_participant', 'substrate', 'name']
-            product_identifier = ['reaction_participant', 'product', 'name']
-
-            for k, v in doc_flat.items():
-                if all(x in k for x in substrate_identifier) and 'compartment' not in k:
-                    substrates.append(v)
-                elif all(x in k for x in product_identifier) and 'compartment' not in k:
-                    products.append(v)
-                else:
-                    continue
-            rxn = {'substrates': substrates, 'products': products}
-
-            rxns.append(rxn)
-            i += 1 
-
-
-        return rxns
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -61,16 +23,15 @@ class DataQuery(mongo_util.MongoUtil):
                 v: value to be matched
         '''
         if collection == None:
-            return self.collection.find({'$text': {'$search': v}},
-                                        { 'score': { '$meta': "textScore" } }).sort( { 'score': { '$meta': "textScore" } } )
+            return None
         else:
-            col_obj = self.con_db(collection)
+            _, _, col_obj = self.con_db(collection)
             return col_obj.find({'$text': {'$search': v}},
                                 { 'score': { '$meta': "textScore" } }).sort( { 'score': { '$meta': "textScore" } } )
 
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
-        '''A iterator for returning docs in a collection, with batch query.
+        '''An iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
            doc_feeder(collection_str, query={'taxid': {'$in': [9606, 10090, 10116]}})
            batch_callback is a callback function as fn(cnt, t), called after every batch
@@ -160,29 +121,50 @@ class DataQuery(mongo_util.MongoUtil):
         return t_str
 
 
-    def ask(self, prompt, options='YN'):
-        '''Prompt Yes or No,return the upper case 'Y' or 'N'.
-        '''
-        options = options.upper()
-        while 1:
-            s = input(prompt+'[%s]' % '|'.join(list(options))).strip().upper()
-            if s in options:
-                break
-        return s
+class QuerySabio(DataQuery):
+    '''Queries specific to sabio_rk collection
+    '''
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
+                collection_str='sabio_rk', verbose=False, max_entries=float('inf')):
+        self.collection_str = collection_str
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
+                replicaSet= replicaSet, db=db,
+                verbose=verbose, max_entries=max_entries)
 
-    def timesofar(self, t0, clock=0, t1=None):
-        '''return the string(eg.'4m5.32s') for the passed real time/CPU time so far
-           from given t0 (clock 0 for cpu time 1 for realtime).
+    def find_reaction_participants(self, kinlaw_id):
+        ''' Find the reaction participants defined in sabio_rk using kinetic law id
+            Args:
+                kinlaw_id: list of kinlaw_id to search for
+            Return:
+                rxns: list of dictionaries containing names of reaction participants
+                [{'substrates': [], 'products': [] }, ... {} ]
         '''
-        t1 = t1 or time.clock() if clock else time.time()
-        t = t1 - t0
-        h = int(t / 3600)
-        m = int((t % 3600) / 60)
-        s = round((t % 3600) % 60, 2)
-        t_str = ''
-        if h != 0:
-            t_str += '%sh' % h
-        if m != 0:
-            t_str += '%sm' % m
-        t_str += '%ss' % s
-        return t_str
+        query = {'kinlaw_id': {'$in': kinlaw_id} }
+        docs = self.doc_feeder(collection_str = self.collection_str, query=query)
+        rxns = []
+        i = 0
+        for doc in docs:
+            if i == self.max_entries:
+                break 
+            doc.pop('_id', None)
+            doc_flat = self.flatten_json(doc)
+
+            substrates = []
+            products = []
+            substrate_identifier = ['reaction_participant', 'substrate', 'name']
+            product_identifier = ['reaction_participant', 'product', 'name']
+
+            for k, v in doc_flat.items():
+                if all(x in k for x in substrate_identifier) and 'compartment' not in k:
+                    substrates.append(v)
+                elif all(x in k for x in product_identifier) and 'compartment' not in k:
+                    products.append(v)
+                else:
+                    continue
+            rxn = {'substrates': substrates, 'products': products}
+
+            rxns.append(rxn)
+            i += 1 
+
+
+        return rxns
