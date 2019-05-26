@@ -30,7 +30,8 @@ class DataQuery(mongo_util.MongoUtil):
                                 { 'score': { '$meta': "textScore" } }).sort( { 'score': { '$meta': "textScore" } } )
 
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
-        s=None, e=None, inbatch=False, query=None, batch_callback=None, projection=None):
+        s=None, e=None, inbatch=False, query=None, 
+        batch_callback=None, projection=None, verbose=False):
         '''An iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
            doc_feeder(collection_str, query={'taxid': {'$in': [9606, 10090, 10116]}})
@@ -38,11 +39,11 @@ class DataQuery(mongo_util.MongoUtil):
            fields is optional parameter passed to find to restrict fields to return.
         '''
         collection = self.fill_db(collection_str, sym_link=sym_link)
-        cur = collection.find(query, no_cursor_timeout=False, projection=projection)
+        cur = collection.find(query, no_cursor_timeout=True, projection=projection)
         n = cur.count()
         s = s or 0
         e = e or n
-        if self.verbose:
+        if verbose:
             print('Retrieving %d documents from collection "%s".' %
                   (n, collection_str))
         t0 = time.time()
@@ -54,12 +55,12 @@ class DataQuery(mongo_util.MongoUtil):
             if s:
                 cur.skip(s)
                 cnt = s
-                if self.verbose:
+                if verbose:
                     print("Skipping %d documents." % s)
             if e:
                 cur.limit(e - (s or 0))
             cur.batch_size(step)
-            if self.verbose:
+            if verbose:
                 print("Processing %d-%d documents..." %
                   (cnt + 1, min(cnt + step, e)), end='')
             for doc in cur:
@@ -72,13 +73,13 @@ class DataQuery(mongo_util.MongoUtil):
                     if inbatch:
                         yield doc_li
                         doc_li = []
-                    if self.verbose:
+                    if verbose:
                         print('Done.[%.1f%%,%s]' % (cnt * 100. / n, self.timesofar(t1)))
                     if batch_callback:
                         batch_callback(cnt, time.time()-t1)
                     if cnt < e:
                         t1 = time.time()
-                        if self.verbose:
+                        if verbose:
                             print("Processing %d-%d documents..." %
                                   (cnt + 1, min(cnt + step, e)), end='')
             if inbatch and doc_li:
@@ -86,7 +87,7 @@ class DataQuery(mongo_util.MongoUtil):
                 yield doc_li
 
             # print 'Done.[%s]' % timesofar(t1)
-            if self.verbose:
+            if verbose:
                 print('Done.[%.1f%%,%s]' % (cnt * 100. / (n+1), self.timesofar(t1)))
                 print("=" * 20)
                 print('Finished.[total time: %s]' % self.timesofar(t0))
@@ -139,13 +140,18 @@ class QuerySabio(DataQuery):
                 rxns: list of dictionaries containing names of reaction participants
                 [{'substrates': [], 'products': [] }, ... {} ]
         '''
-        query = {'kinlaw_id': {'$in': kinlaw_id} }
+        if isinstance(kinlaw_id, list):
+            query = {'kinlaw_id': {'$in': kinlaw_id} }
+        else:
+            query = {'kinlaw_id': kinlaw_id}
         docs = self.doc_feeder(collection_str = self.collection_str, query=query)
         rxns = []
         i = 0
         for doc in docs:
             if i == self.max_entries:
                 break 
+            if i % 10 == 0:
+                print ('Finding reaction participants for kinlaw_id {} ...'.format(doc['kinlaw_id']))
             doc.pop('_id', None)
             doc_flat = self.flatten_json(doc)
 

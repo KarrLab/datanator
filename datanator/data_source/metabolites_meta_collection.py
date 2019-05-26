@@ -28,18 +28,18 @@ class MetabolitesMeta(query_nosql.QuerySabio):
         collection_name = 'metabolites_meta'
         client, _, collection = self.con_db(collection_name)
 
-        for doc in ecmdb_list:
-            collection.update_one({'inchi': doc['inchi']},
-                                  { '$set': doc},
-                                  upsert=True)
+        # for doc in ecmdb_list:
+        #     collection.update_one({'inchi': doc['inchi']},
+        #                           { '$set': doc},
+        #                           upsert=True)
 
-        for doc in ymdb_list:
-            collection.update_one({'inchi': doc['inchi']},
-                                  { '$set': doc},
-                                  upsert=True)
+        # for doc in ymdb_list:
+        #     collection.update_one({'inchi': doc['inchi']},
+        #                           { '$set': doc},
+        #                           upsert=True)
 
         for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
-            kinlaw_id = self.find_rxn_id(doc['inchi'])
+            kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
             rxn_participants = self.find_reaction_participants(kinlaw_id)
             collection.update_one({'inchi': doc['inchi']},
                                   {'$set': {'kinlaw_id': kinlaw_id,
@@ -84,7 +84,10 @@ class MetabolitesMeta(query_nosql.QuerySabio):
         product = 'reaction_participant.product.structure.inchi'
         c = 'sabio_rk'
         # regular expressions are weird
-        inchi = inchi.replace('(', '\(').replace(')', '\)')
+        try:
+            inchi = inchi.replace('(', '\(').replace(')', '\)')
+        except AttributeError:
+            return -1
         regex = re.compile(inchi)
         query = {'$or': [{substrate: regex},
                          {product: regex}]}
