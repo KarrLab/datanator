@@ -1,0 +1,71 @@
+Configure MongoDB Shard (1 shard/replicaset) $0.113 per Hour
+	Make an instance
+		aws ec2 run-instances --image-id ami-0a313d6098716f372 --count 1 --instance-type r5a.large --key-name datanator --security-groups database
+
+	for x in {1..4}; do aws ec2 create-volume --size 5 --region us-east-1 --availability-zone us-east-1a; done > ~/Documents/vols.txt
+
+	attach additional drives
+		GUI
+
+	make file system on attached volumes, then mount
+		sudo mkfs
+
+	Create RAID 10
+
+		sudo mdadm --verbose --create /dev/md0 --level=10 --chunk=256 --raid-devices=4 /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1 /dev/nvme4n1
+
+		echo "DEVICE /dev/nvme1n1 /dev/nvme2n1 /dev/nvme3n1 /dev/nvme4n1" | sudo tee -a /etc/mdadm.conf
+
+
+		sudo mdadm --detail -scan | sudo tee -a /etc/mdadm.conf
+
+	Perfomance tuning by setting read-ahead
+		sudo blockdev --setra 128 /dev/md0
+		sudo blockdev --setra 128 /dev/nvme1n1
+		...
+		...
+
+	Create logical volumes for the data, log files and journal for MongoDB. The purpose of using lvm is to (1) safely partition different objects from each other and (2) provide a mechanism that we can use to grow our storage sizes later.
+		
+		zeroing out our RAID, creating a physical device designation and finally a volume group for that device
+		
+			sudo dd if=/dev/zero of=/dev/md0 bs=512 count=1
+			sudo pvcreate /dev/md0
+			sudo vgcreate vg0 /dev/md0
+
+		create logical volumes for the data, logs and journal
+			sudo lvcreate -l 90%vg -n data vg0
+			sudo lvcreate -l 5%vg -n log vg0
+			sudo lvcreate -l 5%vg -n journal vg0
+
+		 three volumes to configure
+		 	sudo mke2fs -t xfs -F /dev/datanator_0/data
+		 	sudo mke2fs -t xfs -F /dev/datanator_0/log
+		 	sudo mke2fs -t xfs -F /dev/datanator_0/journal
+
+		 	sudo mkdir /log
+
+		 	echo '/dev/datanator_0/data /data ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+		 	echo '/dev/datanator_0/log /log ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+		 	echo '/dev/datanator_0/journal /journal ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+
+		 mount storage
+		 	sudo mount /data
+		 	..
+		 	..
+
+		set the MongoDB journal files to be written to our new journal device
+			sudo ln -s /journal /data/journal
+
+	Install MongoDB
+
+	Change ownership
+		sudo chown mongod:mongod /data 
+
+	Configuration file
+		/etc/mongod.conf
+			replication:
+	   			replSetName: "datanator"
+
+	   		sharding:
+	  			clusterRole: "shardsvr"
