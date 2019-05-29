@@ -40,7 +40,7 @@ class DataQuery(mongo_util.MongoUtil):
            batch_callback is a callback function as fn(cnt, t), called after every batch
            fields is optional parameter passed to find to restrict fields to return.
         '''
-        collection = self.con_db(collection_str)
+        _, _, collection = self.con_db(collection_str)
         cur = collection.find(query, no_cursor_timeout=True, projection=projection)
         n = cur.count()
         s = s or 0
