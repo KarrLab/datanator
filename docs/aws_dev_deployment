@@ -2,13 +2,13 @@ Configure MongoDB Shard (1 shard/replicaset) $0.113 per Hour
 	Make an instance
 		aws ec2 run-instances --image-id ami-0a313d6098716f372 --count 1 --instance-type r5a.large --key-name datanator --security-groups database
 
-	for x in {1..4}; do aws ec2 create-volume --size 5 --region us-east-1 --availability-zone us-east-1a; done > ~/Documents/vols.txt
+	for x in {1..4}; do aws ec2 create-volume --size 5 --region us-east-1 --encrypted --availability-zone us-east-1b --volume-type gp2; done > ./docs/vols.txt 
 
 	attach additional drives
-		GUI
+		aws ec2 attach-volume --device /dev/sdb --instance-id i-080ed73be9e0ffcc8 --volume-id vol-0f06e41062b6c589d
 
-	make file system on attached volumes, then mount
-		sudo mkfs
+	make file system on attached volumes
+		sudo mkfs -t xfs /dev/nvme1n1
 
 	Create RAID 10
 
@@ -31,23 +31,25 @@ Configure MongoDB Shard (1 shard/replicaset) $0.113 per Hour
 		
 			sudo dd if=/dev/zero of=/dev/md0 bs=512 count=1
 			sudo pvcreate /dev/md0
-			sudo vgcreate vg0 /dev/md0
+			sudo vgcreate datanator0 /dev/md0
 
 		create logical volumes for the data, logs and journal
-			sudo lvcreate -l 90%vg -n data vg0
-			sudo lvcreate -l 5%vg -n log vg0
-			sudo lvcreate -l 5%vg -n journal vg0
+			sudo lvcreate -l 90%vg -n data datanator0
+			sudo lvcreate -l 5%vg -n log datanator0
+			sudo lvcreate -l 5%vg -n journal datanator0
 
 		 three volumes to configure
-		 	sudo mke2fs -t xfs -F /dev/datanator_0/data
-		 	sudo mke2fs -t xfs -F /dev/datanator_0/log
-		 	sudo mke2fs -t xfs -F /dev/datanator_0/journal
+		 	sudo mke2fs -t xfs -F /dev/datanator0/data
+		 	sudo mke2fs -t xfs -F /dev/datanator0/log
+		 	sudo mke2fs -t xfs -F /dev/datanator0/journal
 
+		 	sudo mkdir /data
 		 	sudo mkdir /log
+		 	sudo mkdir /journal
 
-		 	echo '/dev/datanator_0/data /data ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
-		 	echo '/dev/datanator_0/log /log ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
-		 	echo '/dev/datanator_0/journal /journal ext2 defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+		 	echo '/dev/datanator0/data /data xfs defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+		 	echo '/dev/datanator0/log /log xfs defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
+		 	echo '/dev/datanator0/journal /journal xfs defaults,auto,noatime,noexec 0 0' | sudo tee -a /etc/fstab
 
 		 mount storage
 		 	sudo mount /data
@@ -60,12 +62,102 @@ Configure MongoDB Shard (1 shard/replicaset) $0.113 per Hour
 	Install MongoDB
 
 	Change ownership
-		sudo chown mongod:mongod /data 
+		sudo chown mongodb:mongodb /data 
+		..
+		..
 
 	Configuration file
-		/etc/mongod.conf
-			replication:
-	   			replSetName: "datanator"
 
-	   		sharding:
-	  			clusterRole: "shardsvr"
+	shard_server
+
+		# mongod.conf
+
+		# for documentation of all options, see:
+		#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+		# Where and how to store data.
+		storage:
+		  dbPath: /data
+		  journal:
+		    enabled: true
+		#  engine:
+		#  mmapv1:
+		#  wiredTiger:
+
+		# where to write logging data.
+		systemLog:
+		  destination: file
+		  logAppend: true
+		  path: /log/mongod.log
+
+		# network interfaces
+		net:
+		  port: 27018
+		  bindIp: 127.0.0.1
+
+
+		# how the process runs
+		processManagement:
+		  timeZoneInfo: /usr/share/zoneinfo
+
+		#security:
+
+		#operationProfiling:
+
+		replication:
+		  replSetName: "datanator"
+
+		sharding:
+		  clusterRole: "shardsvr"
+
+    config_server
+
+		# mongod.conf
+
+		# for documentation of all options, see:
+		#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+		# Where and how to store data.
+		storage:
+		  dbPath: /data
+		  journal:
+		    enabled: true
+		#  engine:
+		#  mmapv1:
+		#  wiredTiger:
+
+		# where to write logging data.
+		systemLog:
+		  destination: file
+		  logAppend: true
+		  path: /log/mongod.log
+
+		# network interfaces
+		net:
+		  port: 27019
+		  bindIp: 127.0.0.1
+
+
+		# how the process runs
+		processManagement:
+		  timeZoneInfo: /usr/share/zoneinfo
+
+		#security:
+
+		#operationProfiling:
+
+		replication:
+		  replSetName: "datanator"
+
+		sharding:
+		  clusterRole: "configsvr"
+
+	mongos
+
+
+
+
+References:
+
+	https://www.linode.com/docs/databases/mongodb/build-database-clusters-with-mongodb/
+	https://www.howtoforge.com/tutorial/deploying-mongodb-sharded-cluster-on-centos-7/

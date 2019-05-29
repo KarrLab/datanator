@@ -24,15 +24,19 @@ class MongoUtil():
         expression = {"name": {"$regex": r"^(?!system\.)"}}
         return db.list_collection_names()
 
-    def con_db(self, collection_str):
+    def con_db(self, collection_str, username = None, password = None, authSource = self.db):
         try:
             client = pymongo.MongoClient(
-                self.MongoDB, replicaSet=self.replicaSet)  # 400ms max timeout
+                self.MongoDB, replicaSet=self.replicaSet, 
+                username = username, password = password,
+                authSource = authSource)  # 400ms max timeout
             db = client[self.db]
             collection = db[collection_str]
             return (client, db, collection)
         except pymongo.errors.ConnectionFailure:
             return ('Server not available')
+        except ServerSelectionTimeoutError:
+            return ('Server timeout')
 
     def fill_db(self, collection_str, sym_link=False):
         '''Check if collection is already in MongoDB 
