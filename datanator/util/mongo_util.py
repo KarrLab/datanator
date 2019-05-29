@@ -7,13 +7,20 @@ from genson import SchemaBuilder
 class MongoUtil():
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf')):
+                 verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = None):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
         self.replicaSet = replicaSet
         self.verbose = verbose
         self.max_entries = max_entries
+        self.client = pymongo.MongoClient(
+            self.MongoDB, replicaSet=self.replicaSet, 
+            username = username, password = password,
+            authSource = authSource)  # 400ms max timeout
+        self.db = self.client[self.db]
+
 
     def list_all_collections(self):
         '''List all non-system collections within database
@@ -24,15 +31,10 @@ class MongoUtil():
         expression = {"name": {"$regex": r"^(?!system\.)"}}
         return db.list_collection_names()
 
-    def con_db(self, collection_str, username = None, password = None, authSource = self.db):
+    def con_db(self, collection_str):
         try:
-            client = pymongo.MongoClient(
-                self.MongoDB, replicaSet=self.replicaSet, 
-                username = username, password = password,
-                authSource = authSource)  # 400ms max timeout
-            db = client[self.db]
-            collection = db[collection_str]
-            return (client, db, collection)
+            collection = self.db[collection_str]
+            return (self.client, self.db, collection)
         except pymongo.errors.ConnectionFailure:
             return ('Server not available')
         except ServerSelectionTimeoutError:
@@ -132,20 +134,7 @@ class MongoUtil():
             value associated with it
         '''
         _, _, collection = self.con_db(collection_str)
-        # pipeline = [
-        #     {
-        #         "$replaceRoot":{
-        #             "newRoot":{
-        #                 "$mergeObjects":[
-        #                     {
-        #                         "a":"$a"
-        #                     },
-        #                     "$subdoc"
-        #                 ]
-        #             }
-        #         }
-        #     }
-        # ]
+
         pipeline = [
             { "$addFields": { "subdoc.a": "$a" } },
             { "$replaceRoot": { "newRoot": "$subdoc" }  }
