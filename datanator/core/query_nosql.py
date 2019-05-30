@@ -8,7 +8,7 @@ class DataQuery(mongo_util.MongoUtil):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
                 verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = None):
+                 password = None, authSource = 'admin'):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
@@ -184,14 +184,3 @@ class QuerySabio(DataQuery):
 '''
 
 
-    def find_rxn_by_participant(self):
-        '''Finding reactions by inputting substrates' and products' names
-            Args:
-                substrates
-                products
-
-                pH range
-                temp range
-                organism
-        '''
-        pass

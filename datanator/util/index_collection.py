@@ -8,13 +8,17 @@ import pymongo
 class IndexCollection(mongo_util.MongoUtil):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf')):
+                 verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = None):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
         self.replicaSet = replicaSet
         self.verbose = verbose
         self.max_entries = max_entries
+        super(IndexCollection, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
+                                    db=db, verbose=verbose, max_entries=max_entries, username = username, 
+                                    password = password, authSource = authSource)
 
     def index_corum(self, collection_str):
         '''Index fields in corum collection
@@ -121,7 +125,7 @@ class IndexCollection(mongo_util.MongoUtil):
 def main():
     MongoDB = 'mongodb://mongo:27017'
     db = 'datanator'
-    manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, replicaSet='rs0', db=db,
+    manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, replicaSet=None, db=db,
                               verbose=True, max_entries=float('inf'))
 
     manager.index_sabio()
