@@ -178,12 +178,12 @@ class QuerySabio(DataQuery):
         return rxns
 
 
-'''Metabolites: Find reactions by name of metabolite
-    query range of certain fields, i.e. pH, temp
-
-'''
-
-
+    '''
+    Metabolites: Find reactions by name of metabolite
+        query range of certain fields, i.e. pH, temp
+    
+    '''
+    
     def find_rxn_by_participant(self):
         '''Finding reactions by inputting substrates' and products' names
             Args:
