@@ -176,11 +176,3 @@ class QuerySabio(DataQuery):
 
 
         return rxns
-
-
-'''Metabolites: Find reactions by name of metabolite
-    query range of certain fields, i.e. pH, temp
-
-'''
-
-
