@@ -1,5 +1,5 @@
 import unittest
-from datanator.data_source import kegg_reaction
+from datanator.data_source import kegg_reaction_class
 from datanator.core import query_nosql
 import tempfile
 import shutil
