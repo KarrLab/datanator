@@ -128,11 +128,13 @@ class QuerySabio(DataQuery):
     '''Queries specific to sabio_rk collection
     '''
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                collection_str='sabio_rk', verbose=False, max_entries=float('inf')):
+                collection_str='sabio_rk', verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = 'admin'):
         self.collection_str = collection_str
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries)
+                verbose=verbose, max_entries=max_entries, username = None, 
+                 password = None, authSource = 'admin')
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id

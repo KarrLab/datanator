@@ -64,8 +64,7 @@ class KeggReaction(mongo_util.MongoUtil):
             self.download_rxn_cls(name+file_format)
             doc = self.parse_rxn_cls_txt(name+file_format)
             if doc is not None:
-                collection.replace_one(
-                    {'rclass_id': doc['rclass_id']}, doc, upsert=True)
+                collection.insert_one(doc)
 
             i += 1
 
@@ -126,21 +125,24 @@ class KeggReaction(mongo_util.MongoUtil):
                 lines = f.readlines()
                 # get first word of all the lines
                 first_word = [line.split()[0] for line in lines]
-                index_definition = first_word.index('DEFINITION') 
-                index_rpair = first_word.index('RPAIR')
-                index_reaction = first_word.index('REACTION')    # get line number of reaction
-                index_enzyme = first_word.index('ENZYME')
-                index_orthology = first_word.index('ORTHOLOGY')
-                index_pathway = first_word.index('PATHWAY')
+                index_definition = first_word.index('DEFINITION') if 'DEFINITION' in first_word else None
+                index_rpair = first_word.index('RPAIR') if 'RPAIR' in first_word else None
+                index_reaction = first_word.index('REACTION') if 'REACTION' in first_word else None
+                index_enzyme = first_word.index('ENZYME') if 'ENZYME' in first_word else None
+                index_orthology = first_word.index('ORTHOLOGY') if 'ORTHOLOGY' in first_word else None
+                index_pathway = first_word.index('PATHWAY') if 'PATHWAY' in first_word else None
 
                 doc['rclass_id'] = lines[0].split()[1]
                 doc['definition'] = self.parse_rc_multiline(lines[index_definition:index_rpair])
                 doc['reaction_id'] = self.parse_rc_multiline(lines[index_reaction:index_enzyme])
                 doc['enzyme'] = self.parse_rc_multiline(lines[index_enzyme:index_pathway])
-                ko_id, names = self.parse_rc_orthology(lines[index_orthology:-1])
-                doc['orthology_id'] = []
-                for _id, name in zip(ko_id, names):
-                    doc['orthology_id'].append({'ko_id': _id, 'enzyme_name': name})
+                if index_orthology != None:
+                    ko_id, names = self.parse_rc_orthology(lines[index_orthology:-1])
+                    doc['orthology_id'] = []
+                    for _id, name in zip(ko_id, names):
+                        doc['orthology_id'].append({'ko_id': _id, 'enzyme_name': name})
+                else: 
+                    doc['orthology_id'] = None
 
                 return doc
 
@@ -179,3 +181,17 @@ class KeggReaction(mongo_util.MongoUtil):
             with open(log_file, 'a') as f:
                 f.write(str(e) + '\n')
             pass
+
+
+def main():
+    cache_dirname = './datanator/data_source/cache/'
+    MongoDB = '35.173.159.185:27017'
+    db = 'test'
+    replicaSet = None
+    manager = KeggReaction(cache_dirname, MongoDB, db, replicaSet=replicaSet, 
+                verbose=True, max_entries=float('inf'))
+    manager.load_content()
+
+
+if __name__ == '__main__':
+    main()

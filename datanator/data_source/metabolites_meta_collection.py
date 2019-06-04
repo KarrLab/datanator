@@ -1,10 +1,11 @@
 from datanator.core import query_nosql
 import re
 
-class MetabolitesMeta(query_nosql.QuerySabio):
+class MetabolitesMeta(query_nosql.DataQuery):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf')):
+                 verbose=False, max_entries=float('inf'), username = None, password = None,
+                 authSource = 'admin'):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.replicaSet = replicaSet
@@ -13,39 +14,43 @@ class MetabolitesMeta(query_nosql.QuerySabio):
         self.max_entries = max_entries
 
         super(MetabolitesMeta, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
-                                              db=db, verbose=verbose, max_entries=max_entries)
+                                              db=db, verbose=verbose, max_entries=max_entries, username = username,
+                                              password = password, authSource = 'admin')
         self.frequency = 100
 
     def load_content(self):
-        ecmdb_fields = ['m2m_id', 'inchi']
+        ecmdb_fields = ['m2m_id', 'inchi', 'synonyms.synonym']
         ecmdb_list = self.get_metabolite_fields(
             fields=ecmdb_fields, collection_str='ecmdb')
 
-        ymdb_fields = ['ymdb_id', 'inchi']
+        ymdb_fields = ['ymdb_id', 'inchi', 'synonyms.synonym']
         ymdb_list = self.get_metabolite_fields(
             fields=ymdb_fields, collection_str='ymdb')
 
         collection_name = 'metabolites_meta'
         client, _, collection = self.con_db(collection_name)
 
-        # for doc in ecmdb_list:
-        #     collection.update_one({'inchi': doc['inchi']},
-        #                           { '$set': doc},
-        #                           upsert=True)
-
-        # for doc in ymdb_list:
-        #     collection.update_one({'inchi': doc['inchi']},
-        #                           { '$set': doc},
-        #                           upsert=True)
-
-        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
-            kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
-            rxn_participants = self.find_reaction_participants(kinlaw_id)
+        for doc in ecmdb_list:
             collection.update_one({'inchi': doc['inchi']},
-                                  {'$set': {'kinlaw_id': kinlaw_id,
-                                   'reaction_participants': rxn_participants}},
-                                  upsert=False)
+                                  { '$set': doc},
+                                  upsert=True)
+
+        for doc in ymdb_list:
+            collection.update_one({'inchi': doc['inchi']},
+                                  { '$set': doc},
+                                  upsert=True)
+
+        # for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
+        #     kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
+        #     rxn_participants = self.find_reaction_participants(kinlaw_id)
+        #     collection.update_one({'inchi': doc['inchi']},
+        #                           {'$set': {'kinlaw_id': kinlaw_id,
+        #                            'reaction_participants': rxn_participants}},
+        #                           upsert=False)
+        
+
         client.close()
+
 
     def get_metabolite_fields(self, fields=None, collection_str=None):
         '''Get fields of interest from metabolite collection: ecmdb or ymdb
@@ -128,11 +133,13 @@ class MetabolitesMeta(query_nosql.QuerySabio):
 
 
 def main():
-    MongoDB = 'mongodb://mongo:27017'
-    replicaSet = 'rs0'
+    MongoDB = '35.173.159.185:27017'
     db = 'datanator'
-    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                                    verbose=True, max_entries=float('inf'))
+    username = None
+    password = None
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet = None, db=db, 
+                                verbose=True, max_entries=float('inf'), 
+                                username = username, password = password)
 
     manager.load_content()
 
