@@ -16,7 +16,6 @@ flask_script
 flask_sqlalchemy
 gunicorn
 jxmlease
-marshmallow_sqlalchemy
 numpy
 obj_model
 openbabel
@@ -34,10 +33,6 @@ requests_cache
 scipy
 setuptools
 six
-sqlalchemy
-sqlalchemy_searchable
-sqlalchemy_utils
-wc_onto
 wc_utils
 pymongo
 xmltodict
