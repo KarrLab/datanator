@@ -13,10 +13,6 @@ class DataQuery(mongo_util.MongoUtil):
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
 
-    '''TODO:1. Make query language more user friendly
-            2. Full text search for all key:value pairs
-    '''
-
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
             v cannot be part of a word (e.g. 'wor' of 'word')
@@ -131,6 +127,7 @@ class QueryMetabolitesMeta(DataQuery):
                 collection_str='metabolites_meta', verbose=False, max_entries=float('inf'), username = None, 
                  password = None, authSource = 'admin'):
         self.collection_str = collection_str
+        self.verbose = verbose
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = None, 
@@ -141,33 +138,69 @@ class QueryMetabolitesMeta(DataQuery):
             Args:
                 compound: name(s) of the compound e.g. "ATP", ["ATP", "Oxygen", ...]
             Returns:
-                synonyms: list of synonyms of the compounds
+                synonyms: dictionary of synonyms of the compounds
                         {'ATP': [], 'Oxygen': [], ...}
+                rxns: dictionary of rxns in which each compound is found
+                    {'ATP': [12345,45678,...], 'Oxygen': [...], ...}
         '''
         synonyms = {}
+        rxns = {}
         _, _, col = self.con_db(self.collection_str)
 
         def find_synonyms_of_str(c):
-            query = {'synonyms.synonym': c}
-            projection = {'synonyms.synonym': 1, '_id': -1}
-            collation = {'locale': 'en', 'strength': 2}
-            doc = col.find_one(filter = query, projection = projection, collation = collation)
-            synonyms = {}
-            try:
-                synonyms[c] = doc['synonyms']['synonym']
-            except TypeError as e:
-                synonyms[c] = ('Type error: {}'.format(e))
-                print(synonyms[c])
-            return synonyms
+            if len(c) != 0:
+                query = {'synonyms.synonym': c}
+                projection = {'synonyms.synonym': 1, '_id': -1, 'kinlaw_id': 1}
+                collation = {'locale': 'en', 'strength': 2}
+                doc = col.find_one(filter = query, projection = projection, collation = collation)
+                synonym = {}
+                rxn = {}
+                try:
+                    synonym[c] = doc['synonyms']['synonym']
+                    rxn[c] = doc['kinlaw_id']
+                except TypeError as e:
+                    synonym[c] = (c + ' does not exist in '+ self.collection_str)
+                    rxn[c] = (c + ' does not exist in '+ self.collection_str)
+                return rxn, synonym
+            else:
+                return ({'reactions': None}, {'synonyms': None})
 
-        if isinstance(compounds, str):
-            syn = find_synonyms_of_str(compounds)
+        if len(compounds) == 0:
+            return ({'reactions': None}, {'synonyms': None})
+        elif isinstance(compounds, str):
+            rxn, syn = find_synonyms_of_str(compounds)
             synonyms.update(syn)
+            rxns.update(rxn)            
         else:
             for c in compounds:
-                syn = find_synonyms_of_str(c)
+                rxn, syn = find_synonyms_of_str(c)
                 synonyms.update(syn)
-        return synonyms
+                rxns.update(rxn)
+        return rxns, synonyms
+
+    def find_rxn_by_participant(self, substrates, products):
+        '''Find reactions by substrates' or products' names
+            Args:
+                substrates: list of substrates in the reaction
+                            [ATP, NADH, ...]
+                products: list of products in the reaction
+                            [ADP, NADH+, ...]
+            Returns:
+                list of kinetic law ids from SabioRK [12345, 23456, ...]
+        '''
+        rxns = []
+        _, _, col = self.con_db(self.collection_str)
+
+        sub_kinlaw_id, sub_syn = self.find_synonyms(substrates)
+        pro_kinlaw_id, pro_syn = self.find_synonyms(products)
+
+        list_sub = list(sub_kinlaw_id.values())
+        list_sub_flat = [y for x in list_sub for y in x]
+        list_pro = list(pro_kinlaw_id.values())
+        list_pro_flat = [y for x in list_pro for y in x]
+        overlap = set(list_sub_flat).intersection(list_pro_flat)
+        print(overlap)
+        return overlap
 
 
 class QuerySabio(DataQuery):
@@ -225,15 +258,5 @@ class QuerySabio(DataQuery):
 
         return rxns
 
-    def find_rxn_by_participant(self, substrates, products):
-        '''Find reactions by substrates' or products' names
-            Args:
-                substrates: list of substrates in the reaction
-                            [ATP, NADH, ...]
-                products: list of products in the reaction
-                            [ADP, NADH+, ...]
-            Returns:
-                list of kinetic law ids from SabioRK [12345, 23456, ...]
-        '''
-        pass
+
 

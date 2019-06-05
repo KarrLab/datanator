@@ -78,14 +78,25 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     @unittest.skip('passed')
     def test_find_synonyms(self):
         c = "ATP"
-        compounds = ["ATP", "Oxygen"]
+        compounds = ["ATP", "Oxygen", '']
         ran = 'something'
-        syn = self.src.find_synonyms(c)
-        syn_ran = self.src.find_synonyms(ran)
-        syns = self.src.find_synonyms(compounds)
+        rxn, syn = self.src.find_synonyms(c)
+        rxn_ran, syn_ran = self.src.find_synonyms(ran)
+        rxns, syns = self.src.find_synonyms(compounds)
         self.assertTrue("5'-ATP" in syn[c])
         self.assertTrue("Oxygen molecule" in syns['Oxygen'])
-        self.assertTrue('Type error: ' in syn_ran[ran])
+        self.assertEqual(None, syns['synonyms'])
+        self.assertTrue('does not exist' in syn_ran[ran])
+
+        empty = ''
+        rxn, syn = self.src.find_synonyms(empty)
+        self.assertEqual(syn, {'synonyms': None})
+
+    def test_find_rxn_by_participant(self):
+        substrates = ["Undecanal", 'H2O', 'NADP+']
+        products = ['Undecanoate', "NADPH", 'H+']
+        ids = self.src.find_rxn_by_participant(substrates, products)
+        self.assertTrue(28926 in ids)
 
 
 class TestQuerySabio(unittest.TestCase):
