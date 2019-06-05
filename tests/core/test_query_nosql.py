@@ -59,7 +59,36 @@ class TestQueryNoSQL(unittest.TestCase):
                      'reaction_participant.product.sabio_compound_id': 1 }
         collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
 
-class TestQueryNoSQL(unittest.TestCase):
+
+class TestQueryMetabolitesMeta(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cache_dirname = tempfile.mkdtemp()
+        cls.db = 'datanator'
+        cls.MongoDB = 'mongodb://mongo:27017/'
+        cls.src = query_nosql.QueryMetabolitesMeta(
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+                 verbose=True, max_entries=20)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.cache_dirname)
+
+    @unittest.skip('passed')
+    def test_find_synonyms(self):
+        c = "ATP"
+        compounds = ["ATP", "Oxygen"]
+        ran = 'something'
+        syn = self.src.find_synonyms(c)
+        syn_ran = self.src.find_synonyms(ran)
+        syns = self.src.find_synonyms(compounds)
+        self.assertTrue("5'-ATP" in syn[c])
+        self.assertTrue("Oxygen molecule" in syns['Oxygen'])
+        self.assertTrue('Type error: ' in syn_ran[ran])
+
+
+class TestQuerySabio(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -74,6 +103,7 @@ class TestQueryNoSQL(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
+    @unittest.skip('passed')
     def test_find_reaction_participants(self):
         _id = [31, 32, 33, 34]
         rxns = self.src.find_reaction_participants(_id)

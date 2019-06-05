@@ -124,6 +124,52 @@ class DataQuery(mongo_util.MongoUtil):
         return t_str
 
 
+class QueryMetabolitesMeta(DataQuery):
+    '''Queries specific to metabolites_meta collection
+    '''
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
+                collection_str='metabolites_meta', verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = 'admin'):
+        self.collection_str = collection_str
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
+                replicaSet= replicaSet, db=db,
+                verbose=verbose, max_entries=max_entries, username = None, 
+                 password = None, authSource = 'admin')
+
+    def find_synonyms(self, compounds):
+        ''' Find synonyms of a compound
+            Args:
+                compound: name(s) of the compound e.g. "ATP", ["ATP", "Oxygen", ...]
+            Returns:
+                synonyms: list of synonyms of the compounds
+                        {'ATP': [], 'Oxygen': [], ...}
+        '''
+        synonyms = {}
+        _, _, col = self.con_db(self.collection_str)
+
+        def find_synonyms_of_str(c):
+            query = {'synonyms.synonym': c}
+            projection = {'synonyms.synonym': 1, '_id': -1}
+            collation = {'locale': 'en', 'strength': 2}
+            doc = col.find_one(filter = query, projection = projection, collation = collation)
+            synonyms = {}
+            try:
+                synonyms[c] = doc['synonyms']['synonym']
+            except TypeError as e:
+                synonyms[c] = ('Type error: {}'.format(e))
+                print(synonyms[c])
+            return synonyms
+
+        if isinstance(compounds, str):
+            syn = find_synonyms_of_str(compounds)
+            synonyms.update(syn)
+        else:
+            for c in compounds:
+                syn = find_synonyms_of_str(c)
+                synonyms.update(syn)
+        return synonyms
+
+
 class QuerySabio(DataQuery):
     '''Queries specific to sabio_rk collection
     '''
@@ -178,3 +224,16 @@ class QuerySabio(DataQuery):
 
 
         return rxns
+
+    def find_rxn_by_participant(self, substrates, products):
+        '''Find reactions by substrates' or products' names
+            Args:
+                substrates: list of substrates in the reaction
+                            [ATP, NADH, ...]
+                products: list of products in the reaction
+                            [ADP, NADH+, ...]
+            Returns:
+                list of kinetic law ids from SabioRK [12345, 23456, ...]
+        '''
+        pass
+
