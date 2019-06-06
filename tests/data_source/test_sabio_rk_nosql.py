@@ -30,9 +30,11 @@ class TestSabioRkNoSQL(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.collection.drop()
 
+    @unittest.skip("passed")
     def test_con_db(self):
         self.assertNotEqual(self.collection, 'Server not available')
 
+    @unittest.skip("passed")
     def test_load_json(self):
         null = None
         self.assertTrue('compartment' in self.file_names)
