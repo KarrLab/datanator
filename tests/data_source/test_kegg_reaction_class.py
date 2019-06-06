@@ -7,7 +7,7 @@ import pymongo
 import json
 import os
 
-class TestKeggOrthology(unittest.TestCase):
+class TestKeggReaction(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -16,7 +16,7 @@ class TestKeggOrthology(unittest.TestCase):
         cls.db = 'test'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'kegg_reaction_class'
-        cls.src = kegg_reaction.KeggReaction(
+        cls.src = kegg_reaction_class.KeggReaction(
             cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)

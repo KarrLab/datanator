@@ -12,7 +12,7 @@ class TestQueryNoSQL(unittest.TestCase):
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'ecmdb'
         cls.src = query_nosql.DataQuery(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                  verbose=True, max_entries=20)
 
     @classmethod
@@ -68,7 +68,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = query_nosql.QueryMetabolitesMeta(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                  verbose=True, max_entries=20)
 
     @classmethod
@@ -107,7 +107,7 @@ class TestQuerySabio(unittest.TestCase):
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = query_nosql.QuerySabio(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                  verbose=True, max_entries=20)
 
     @classmethod

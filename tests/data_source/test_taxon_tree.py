@@ -56,7 +56,7 @@ class TestTaxonTree(unittest.TestCase):
     def test_parse_fullname_taxid(self):
         self.src.parse_fullname_taxid()
         doc = self.src.collection.find_one({'tax_id': 1935183})
-        self.assertEqual(doc['anc_id'], ['131567', '2157'])
+        self.assertEqual(doc['anc_id'], [131567, 2157])
 
     # @unittest.skip('passed')
     def test_parse_nodes(self):

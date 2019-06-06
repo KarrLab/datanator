@@ -4,7 +4,7 @@ import tempfile
 import shutil
 
 
-class TestMongoUtil(unittest.TestCase):
+class TestIndexCollection(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

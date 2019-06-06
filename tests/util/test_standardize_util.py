@@ -5,7 +5,7 @@ import shutil
 from bson.objectid import ObjectId
 
 
-class TestMongoUtil(unittest.TestCase):
+class TestStandardizeUtil(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

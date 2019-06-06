@@ -12,7 +12,7 @@ class TestMongoUtil(unittest.TestCase):
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = metabolites_meta_collection.MetabolitesMeta(cache_dirname=cls.cache_dirname,
-                                                              MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+                                                              MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                                                               verbose=True, max_entries=20)
         # cls.client, cls.db, cls.collection_obj = cls.src.con_db(
         #     cls.collection_str)
