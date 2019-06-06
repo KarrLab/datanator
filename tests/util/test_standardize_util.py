@@ -13,7 +13,8 @@ class TestStandardizeUtil(unittest.TestCase):
         cls.db = 'test'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = standardize_util.StandardizeUtil(
-            cls.cache_dirname, cls.MongoDB, cls.db, verbose=True, max_entries=20)
+            cache_dirname= cls.cache_dirname, MongoDB = cls.MongoDB, 
+            db = cls.db, verbose=True, max_entries=20)
 
     @classmethod
     def tearDownClass(cls):
