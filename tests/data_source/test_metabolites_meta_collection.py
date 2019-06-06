@@ -4,7 +4,7 @@ import tempfile
 import shutil
 
 
-class TestMongoUtil(unittest.TestCase):
+class TestMetabolitesMeta(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -14,14 +14,10 @@ class TestMongoUtil(unittest.TestCase):
         cls.src = metabolites_meta_collection.MetabolitesMeta(cache_dirname=cls.cache_dirname,
                                                               MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                                                               verbose=True, max_entries=20)
-        # cls.client, cls.db, cls.collection_obj = cls.src.con_db(
-        #     cls.collection_str)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        # cls.client.drop_database(cls.db)
-        cls.src.client_obj.close()
 
     @unittest.skip('passed')
     def test_parse_inchi(self):
