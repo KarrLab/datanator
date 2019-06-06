@@ -7,13 +7,10 @@
 """
 
 from datanator.util import molecule_util
-from datanator.util import warning_util
 from wc_utils.util.types import assert_value_equal
 import numpy
 import pybel
 import unittest
-
-warning_util.disable_warnings()
 
 
 class TestMolecule(unittest.TestCase):

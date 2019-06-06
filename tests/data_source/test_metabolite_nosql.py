@@ -11,11 +11,8 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import metabolite_nosql
-from datanator.util import warning_util
 import os
 import json
-warning_util.disable_warnings()
-
 
 class TestMetaboliteNoSQL(unittest.TestCase):
 
