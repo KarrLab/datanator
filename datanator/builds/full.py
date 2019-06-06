@@ -1,4 +1,3 @@
-from datanator.core import common_schema
 import datetime
 import pkg_resources
 import sys

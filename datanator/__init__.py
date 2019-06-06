@@ -78,5 +78,4 @@ from . import config
 from . import core
 from . import datanator
 from . import data_source
-from . import io
 from . import util

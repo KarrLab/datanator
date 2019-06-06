@@ -44,16 +44,14 @@ setuptools.setup(
             'VERSION',
             'config/core.schema.cfg',
             'config/core.default.cfg',
-            'data_source/*.txt',
-            'data/*.txt',
-            'data/*.xlsx',
+            'data_source/*.txt'
         ],
     },
-    entry_points={
-        'console_scripts': [
-            'datanator = datanator.__main__:main',
-        ],
-    },
+    # entry_points={
+    #     'console_scripts': [
+    #         'datanator = datanator.__main__:main',
+    #     ],
+    # },
 
     install_requires=md.install_requires,
     extras_require=md.extras_require,
