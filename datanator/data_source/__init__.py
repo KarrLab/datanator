@@ -1,6 +1,4 @@
-from . import bio_portal
-from . import jaspar
-from . import sabio_rk
+# from . import sabio_rk
 from . import intact_nosql
 from . import metabolite_nosql
 from . import sabio_rk_nosql
