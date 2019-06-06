@@ -45,6 +45,7 @@ class TestMetabolitesMeta(unittest.TestCase):
         print(_id)
         self.assertTrue(34 in _id)
 
+    @unittest.skip('passed')
     def test_get_metabolite_fields(self):
         dict_list = self.src.get_metabolite_fields(
         	fields = ['m2m_id', 'inchi'], collection_str = 'ecmdb')

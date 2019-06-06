@@ -75,7 +75,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_find_synonyms(self):
         c = "ATP"
         compounds = ["ATP", "Oxygen", '']
@@ -92,6 +92,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         rxn, syn = self.src.find_synonyms(empty)
         self.assertEqual(syn, {'synonyms': None})
 
+    @unittest.skip('passed')
     def test_find_rxn_by_participant(self):
         substrates = ["Undecanal", 'H2O', 'NADP+']
         products = ['Undecanoate', "NADPH", 'H+']
@@ -114,7 +115,7 @@ class TestQuerySabio(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_find_reaction_participants(self):
         _id = [31, 32, 33, 34]
         rxns = self.src.find_reaction_participants(_id)
