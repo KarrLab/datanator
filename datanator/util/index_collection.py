@@ -34,14 +34,16 @@ class IndexCollection(mongo_util.MongoUtil):
             [("SWISSPROT organism (NCBI IDs)", pymongo.ASCENDING)], background=False, sparse=True)
         collection.create_indexes([index1, index2, index3])
 
-    def index_sabio(self, collection_str='sabio_rk'):
+    def index_sabio(self, collection_str='sabio_rk', collation = {}):
         '''Index relevant fields in sabio_rk collection
         '''
         if self.verbose:
             print('Indexing Sabio RK ... ')
         collection = self.fill_db(collection_str)
         index1 = pymongo.IndexModel(
-            [("$**", pymongo.TEXT)], background=False, sparse=True)  # index all text fields
+            [("reaction_participant.substrate.structure.inchi," pymongo.TEXT),
+            ("reaction_participant.product.structure.inchi", pymongo.TEXT)],
+             background=False, sparse=True)  # index inchi fields
         index2 = pymongo.IndexModel(
             [('kinlaw_id', pymongo.ASCENDING)], background=False, sparse=True)
         index3 = pymongo.IndexModel(
@@ -49,13 +51,12 @@ class IndexCollection(mongo_util.MongoUtil):
         index4 = pymongo.IndexModel([('parameter.sabio_compound_id', pymongo.ASCENDING),
                                      ('parameter.value', pymongo.ASCENDING),
                                      ('parameter.error', pymongo.ASCENDING),
-                                     ('parameter.sbo_type', pymongo.ASCENDING),
-                                     ('parameter.observed_value', pymongo.ASCENDING),
-                                     ('parameter.observed_error', pymongo.ASCENDING)], background=False, sparse=True)
-        index5 = pymongo.IndexModel([('reaction_participant.substrate.sabio_compound_id', pymongo.ASCENDING)],
-                                    background=False, sparse=False)
+                                     ('parameter.sbo_type', pymongo.ASCENDING)], background=False, sparse=True)
         index6 = pymongo.IndexModel([('reaction_participant.product.sabio_compound_id', pymongo.ASCENDING)],
-                                    background=False, sparse=False)
+                                    background=False, sparse=True)
+        index5 = pymongo.IndexModel([('reaction_participant.substrate.sabio_compound_id', pymongo.ASCENDING)],
+                                    background=False, sparse=True)
+
         index7 = pymongo.IndexModel(
             [('taxon', pymongo.ASCENDING)], background=False, sparse=False)
         index8 = pymongo.IndexModel(
@@ -123,14 +124,17 @@ class IndexCollection(mongo_util.MongoUtil):
 
 
 def main():
-    MongoDB = 'mongodb://mongo:27017'
+    MongoDB = '35.173.159.185:27017'
+    username = 'default'
+    password = 'default'
     db = 'datanator'
-    manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, replicaSet=None, db=db,
-                              verbose=True, max_entries=float('inf'))
+    manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, db=db,
+                              verbose=True, max_entries=float('inf'), username = username,
+                              password = password)
 
     manager.index_sabio()
-    manager.index_strdb('ecmdb')
-    manager.index_strdb('ymdb')
+    # manager.index_strdb('ecmdb')
+    # manager.index_strdb('ymdb')
 
 
 if __name__ == '__main__':

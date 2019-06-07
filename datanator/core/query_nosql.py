@@ -178,6 +178,8 @@ class QueryMetabolitesMeta(DataQuery):
                 rxns.update(rxn)
         return rxns, synonyms
 
+    '''TODO: fix find_rxn_by_participant
+    '''
     def find_rxn_by_participant(self, substrates, products):
         '''Find reactions by substrates' or products' names
             Args:
