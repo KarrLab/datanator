@@ -41,7 +41,7 @@ class IndexCollection(mongo_util.MongoUtil):
             print('Indexing Sabio RK ... ')
         collection = self.fill_db(collection_str)
         index1 = pymongo.IndexModel(
-            [("reaction_participant.substrate.structure.inchi," pymongo.TEXT),
+            [("reaction_participant.substrate.structure.inchi", pymongo.TEXT),
             ("reaction_participant.product.structure.inchi", pymongo.TEXT)],
              background=False, sparse=True)  # index inchi fields
         index2 = pymongo.IndexModel(
@@ -125,8 +125,8 @@ class IndexCollection(mongo_util.MongoUtil):
 
 def main():
     MongoDB = '35.173.159.185:27017'
-    username = 'default'
-    password = 'default'
+    username = 'mongo-admin'
+    password = '586389Lzymon'
     db = 'datanator'
     manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, db=db,
                               verbose=True, max_entries=float('inf'), username = username,
