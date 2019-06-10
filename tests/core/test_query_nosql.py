@@ -106,10 +106,12 @@ class TestQuerySabio(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        cls.MongoDB = '35.173.159.185:27017'
+        cls.username = 'default'
+        cls.password = 'default'
         cls.src = query_nosql.QuerySabio(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
-                 verbose=True, max_entries=20)
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, db=cls.db,
+                 verbose=True, max_entries=20, username = cls.username, password = cls.password)
 
     @classmethod
     def tearDownClass(cls):
@@ -124,3 +126,9 @@ class TestQuerySabio(unittest.TestCase):
 
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
+
+    def test_get_kinlawid_by_inchi(self):
+        inchi = ['InChI=1S/C8H16O3/c1-2-3-4-5-6-7(9)8(10)11/h7,9H,2-6H2,1H3,(H,10,11)']
+        kinlaw_id = self.src.get_kinlawid_by_inchi(inchi)
+        print(kinlaw_id)
+        self.assertTrue(28 in kinlaw_id)

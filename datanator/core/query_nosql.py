@@ -130,8 +130,8 @@ class QueryMetabolitesMeta(DataQuery):
         self.verbose = verbose
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries, username = None, 
-                 password = None, authSource = 'admin')
+                verbose=verbose, max_entries=max_entries, username = username, 
+                 password = password, authSource = 'admin')
 
     def find_synonyms(self, compounds):
         ''' Find synonyms of a compound
@@ -178,7 +178,8 @@ class QueryMetabolitesMeta(DataQuery):
                 rxns.update(rxn)
         return rxns, synonyms
 
-    '''TODO: fix find_rxn_by_participant
+    '''TODO: fix find_rxn_by_participant\
+    WARNING: THIS FUNCTION IS NO FINISHED YET
     '''
     def find_rxn_by_participant(self, substrates, products):
         '''Find reactions by substrates' or products' names
@@ -214,8 +215,8 @@ class QuerySabio(DataQuery):
         self.collection_str = collection_str
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries, username = None, 
-                 password = None, authSource = 'admin')
+                verbose=verbose, max_entries=max_entries, username = username, 
+                 password = password, authSource = 'admin')
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
@@ -260,5 +261,30 @@ class QuerySabio(DataQuery):
 
         return rxns
 
+    def get_kinlawid_by_inchi(self, inchi):
+        ''' Find the kinlaw_id defined in sabio_rk using 
+            rxn participants' inchi string
+            Args:
+                sub_inchi: list of inchi, all in one rxn
+            Return:
+                rxns: list of kinlaw_ids that satisfy the condition
+                [id0, id1, id2,...,  ]
+        '''
+        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        # inchi_exp = ['\\"' + s + '\\"' for s in short_inchi]
+        inchi_str = ''
+        # for s in inchi_exp:
+        #     inchi_str = inchi_str + s + ' '
+        for s in short_inchi:
+            inchi_str = inchi_str + s + ' '
+        condition = { '$text': {'$search': inchi_str} }
+        projection = {'kinlaw_id': 1, '_id': 0}
+        col = self.db_obj[self.collection_str]
+        if self.verbose:
+            print("\nQuerying text {} in collection {} ...".format(inchi_str, self.collection_str))
+        cursor = col.find(filter = condition, projection = projection)
+        _id = []
+        for doc in cursor:
+            _id.append(doc['kinlaw_id'])
 
-
+        return _id

@@ -125,8 +125,8 @@ class IndexCollection(mongo_util.MongoUtil):
 
 def main():
     MongoDB = '35.173.159.185:27017'
-    username = 'mongo-admin'
-    password = '586389Lzymon'
+    username = 'default'
+    password = 'default'
     db = 'datanator'
     manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, db=db,
                               verbose=True, max_entries=float('inf'), username = username,
