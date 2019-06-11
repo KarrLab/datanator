@@ -2,6 +2,7 @@ import unittest
 from datanator.core import query_nosql
 import tempfile
 import shutil
+from datanator.util import server_util
 
 class TestQueryNoSQL(unittest.TestCase):
 
@@ -12,7 +13,7 @@ class TestQueryNoSQL(unittest.TestCase):
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.collection_str = 'ecmdb'
         cls.src = query_nosql.DataQuery(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                  verbose=True, max_entries=20)
 
     @classmethod
@@ -68,7 +69,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.src = query_nosql.QueryMetabolitesMeta(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
                  verbose=True, max_entries=20)
 
     @classmethod
@@ -92,6 +93,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         rxn, syn = self.src.find_synonyms(empty)
         self.assertEqual(syn, {'synonyms': None})
 
+    @unittest.skip('passed')
     def test_find_rxn_by_participant(self):
         substrates = ["Undecanal", 'H2O', 'NADP+']
         products = ['Undecanoate', "NADPH", 'H+']
@@ -105,10 +107,14 @@ class TestQuerySabio(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_admin_config()
+        cls.MongoDB = server
+        cls.username = username
+        cls.password = password
         cls.src = query_nosql.QuerySabio(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet='rs0', db=cls.db,
-                 verbose=True, max_entries=20)
+            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, db=cls.db,
+                 verbose=True, max_entries=20, username = cls.username, password = cls.password)
 
     @classmethod
     def tearDownClass(cls):
@@ -123,3 +129,9 @@ class TestQuerySabio(unittest.TestCase):
 
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
+
+    def test_get_kinlawid_by_inchi(self):
+        inchi = ['InChI=1S/C8H16O3/c1-2-3-4-5-6-7(9)8(10)11/h7,9H,2-6H2,1H3,(H,10,11)',
+        'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21']
+        kinlaw_id = self.src.get_kinlawid_by_inchi(inchi)
+        self.assertTrue(28 in kinlaw_id)
