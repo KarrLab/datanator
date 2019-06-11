@@ -11,15 +11,20 @@
 import json
 import pymongo
 from pymongo import MongoClient
+from datanator.util import mongo_util
+from datanator.util import server_util
 from pathlib import Path
 import re
 import os
 import wc_utils.quilt
+import hashlib
 
 
-class SabioRkNoSQL():
+class SabioRkNoSQL(mongo_util.MongoUtil):
 
-    def __init__(self, db, MongoDB, cache_directory=None, quilt_package=None, verbose=False, max_entries=float('inf')):
+    def __init__(self, db = None, MongoDB = None, cache_directory=None, quilt_package=None, 
+                verbose=False, max_entries=float('inf'), replicaSet = None,
+                username = None, password = None, authSource = 'admin'):
         '''
                 Attributes:
                         cache_directory: JSON file (converted from sqlite) directory
@@ -35,18 +40,12 @@ class SabioRkNoSQL():
         self.quilt_package = quilt_package
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection = 'sabio_rk'
+        self.collection_str = 'sabio_rk'
+        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_directory, MongoDB=MongoDB, replicaSet=replicaSet, 
+                                    db=db, verbose=verbose, max_entries=max_entries, username = username, 
+                                    password = password, authSource = authSource)
 
-    # make connections wth mongoDB
-    def con_db(self):
-        try:
-            client = MongoClient(self.MongoDB, 400)  # 400ms max timeout
-            client.server_info()
-            db = client[self.db]
-            collection = db[self.collection]
-            return collection
-        except pymongo.errors.ConnectionFailure:
-            return ('Server not available')
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
     # load json files
     def load_json(self):
@@ -89,7 +88,7 @@ class SabioRkNoSQL():
         # list of entrie ids that have compound structure information
         has_structure = list(item['compound__id']
                              for item in compound_compound_structure_list)
-        collection = self.con_db()
+        
         for i in range(min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
@@ -544,9 +543,66 @@ class SabioRkNoSQL():
             with open(json_name, 'w') as f:
                 f.write(json.dumps(sabio_doc, indent=4))
             
-            collection.replace_one(
+            self.collection.replace_one(
                 {'kinlaw_id': sabio_doc['kinlaw_id']},
                 sabio_doc,
                 upsert=True
                 )
-                
+
+    def add_deprot_inchi(self):
+        query = {}
+        projection = {'reaction_participant': 1, 'kinlaw_id': 1}
+        cursor = self.collection.find({}, projection = projection)
+
+        def get_inchi_structure(chem):
+            '''Given subsrate or product subdocument from sabio_rk
+               find the corresponding inchi
+            '''
+            try:
+                return chem['structure'][0]['inchi']
+            except IndexError:
+                return 'inchi=null'
+
+        def iter_rxnp_subdoc(rxnp):
+            '''Given a subsrate or product array from sabio_rk
+                append fields of deprotonated inchi
+            '''
+            for i in range(len(rxnp)):
+                substrate_inchi = get_inchi_structure(rxnp[i])
+                inchi_deprot = self.simplify_inchi(inchi = substrate_inchi)
+                rxnp[i]['inchi_deprot'] = inchi_deprot
+                try:
+                    hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()
+                    rxnp[i]['hashed_inchi'] = hashed_inchi
+                except AttributeError:
+                    rxnp[i]['hashed_inchi'] = None
+            return rxnp
+
+        j = 0
+        for doc in cursor:
+            if j > self.max_entries:
+                break
+            if self.verbose == True and j % 100 == 0:
+                print(j)
+            substrates = doc['reaction_participant'][0]['substrate']
+            products = doc['reaction_participant'][1]['product']
+            new_subsrates = iter_rxnp_subdoc(substrates)
+            new_products = iter_rxnp_subdoc(products)
+
+            doc['reaction_participant'][0]['substrate'] = new_subsrates
+            doc['reaction_participant'][1]['product'] = new_products
+
+            self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
+                            {'$set': {'reaction_participant': doc['reaction_participant']}})
+            j += 1
+
+
+def main():
+    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+    username, password, MongoDB, port = server_util.ServerUtil(config_file = config_file).get_user_config()
+    manager = SabioRkNoSQL(username = username, password = password, 
+                        db = 'datanator', MongoDB = MongoDB)
+    manager.add_deprot_inchi()
+
+if __name__ == '__main__':
+    main()

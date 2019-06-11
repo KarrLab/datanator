@@ -17,22 +17,20 @@ class TestSabioRkNoSQL(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'test'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.quilt_package = 'sabiork_nosql'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.db, cls.MongoDB, cls.cache_dirname,cls.quilt_package, verbose = True, max_entries = 20)
-        (cls.file_names, cls.file_dict) = cls.src.load_json()
-        cls.collection = cls.src.con_db()
+            db = cls.db, MongoDB = cls.MongoDB, cache_directory = cls.cache_dirname,
+            quilt_package = cls.quilt_package, verbose = True)
+        cls.client, cls.db_obj, cls.collection = cls.src.con_db('sabio_rk')
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.collection.drop()
+        cls.client.close()
 
-    def test_con_db(self):
-        self.assertNotEqual(self.collection, 'Server not available')
-
+    @unittest.skip("passed")
     def test_load_json(self):
         null = None
         self.assertTrue('compartment' in self.file_names)
@@ -64,3 +62,10 @@ class TestSabioRkNoSQL(unittest.TestCase):
     # @unittest.skip("test_make_doc")
     # def test_make_doc(self):
     #     session = self.src.make_doc(self.file_names, self.file_dict)
+
+    def test_add_deprot_inchi(self):
+        self.src.add_deprot_inchi()
+        cursor = self.collection.find_one({'kinlaw_id': 2})
+        self.assertEqual(cursor['reaction_participant'][0]['substrate'][0]['inchi_deprot'], "InChI=1S/H2O")
+        self.assertEqual(cursor['reaction_participant'][0]['substrate'][0]['hashed_inchi'], 
+            'ae41b33d263ff93c034384992c84ed94a4d73cb0d200e1ebfed3871c')
