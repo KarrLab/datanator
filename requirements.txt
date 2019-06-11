@@ -40,3 +40,4 @@ capturer
 ftputil
 elasticsearch
 genson
+configparser

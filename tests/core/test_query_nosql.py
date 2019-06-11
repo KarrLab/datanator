@@ -2,6 +2,7 @@ import unittest
 from datanator.core import query_nosql
 import tempfile
 import shutil
+from datanator.util import server_util
 
 class TestQueryNoSQL(unittest.TestCase):
 
@@ -106,9 +107,11 @@ class TestQuerySabio(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        cls.MongoDB = '35.173.159.185:27017'
-        cls.username = 'mongo-admin'
-        cls.password = '586389Lzymon'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_admin_config()
+        cls.MongoDB = server
+        cls.username = username
+        cls.password = password
         cls.src = query_nosql.QuerySabio(
             cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, db=cls.db,
                  verbose=True, max_entries=20, username = cls.username, password = cls.password)

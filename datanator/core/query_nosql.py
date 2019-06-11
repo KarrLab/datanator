@@ -275,8 +275,6 @@ class QuerySabio(DataQuery):
         inchi_str = ''
         for s in inchi_exp:
             inchi_str = inchi_str + s + ' '
-        # for s in short_inchi:
-        #     inchi_str = inchi_str + s + ' '
         condition = { '$text': {'$search': inchi_str} }
         projection = {'kinlaw_id': 1, '_id': 0}
         col = self.db_obj[self.collection_str]
