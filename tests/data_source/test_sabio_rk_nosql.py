@@ -17,13 +17,12 @@ class TestSabioRkNoSQL(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'test'
+        cls.db = 'datanator'
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.quilt_package = 'sabiork_nosql'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
             db = cls.db, MongoDB = cls.MongoDB, cache_directory = cls.cache_dirname,
             quilt_package = cls.quilt_package, verbose = True, max_entries = 20)
-        (cls.file_names, cls.file_dict) = cls.src.load_json()
         cls.collection = cls.src.con_db('sabio_rk')
 
     @classmethod
@@ -66,6 +65,5 @@ class TestSabioRkNoSQL(unittest.TestCase):
 
     def test_add_deprot_inchi(self):
         self.src.add_deprot_inchi()
-        cursor = self.collection.find({'kinlaw_id': 2})
-        doc = cursor[0]
-        self.assertEqual(doc['reaction_participant'][0]['substrate'][0]['inchi_deprot'], "InChI=1S/H2O")
+        cursor = self.collection.find_one({'kinlaw_id': 2})
+        self.assertEqual(cursor['reaction_participant'][0]['substrate'][0]['inchi_deprot'], "InChI=1S/H2O")

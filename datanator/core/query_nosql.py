@@ -131,7 +131,7 @@ class QueryMetabolitesMeta(DataQuery):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
-                 password = password, authSource = 'admin')
+                 password = password, authSource = authSource)
 
     def find_synonyms(self, compounds):
         ''' Find synonyms of a compound
@@ -236,7 +236,7 @@ class QuerySabio(DataQuery):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
-                 password = password, authSource = 'admin')
+                 password = password, authSource = authSource)
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
