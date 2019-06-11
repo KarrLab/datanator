@@ -18,13 +18,14 @@ class ServerUtil():
         self.config = configparser.ConfigParser()
         self.config.read(config_file)
 
-    def get_admin_config(self):
+    def get_user_config(self, username = 'admin'):
         if self.verbose:
             print(self.config.sections())
-        admin = self.config['admin']
+        admin = self.config[username]
         username = admin.get('User', self.username)
         password = admin.get('Password', self.password)
         server = admin.get('Server', self.server)
         port = admin.get('Port', self.port)
 
         return (username, password, server, port)
+
