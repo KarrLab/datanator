@@ -271,12 +271,12 @@ class QuerySabio(DataQuery):
                 [id0, id1, id2,...,  ]
         '''
         short_inchi = [self.simplify_inchi(s) for s in inchi]
-        # inchi_exp = ['\\"' + s + '\\"' for s in short_inchi]
+        inchi_exp = ['\"' + s + '\"' for s in short_inchi]
         inchi_str = ''
-        # for s in inchi_exp:
-        #     inchi_str = inchi_str + s + ' '
-        for s in short_inchi:
+        for s in inchi_exp:
             inchi_str = inchi_str + s + ' '
+        # for s in short_inchi:
+        #     inchi_str = inchi_str + s + ' '
         condition = { '$text': {'$search': inchi_str} }
         projection = {'kinlaw_id': 1, '_id': 0}
         col = self.db_obj[self.collection_str]
