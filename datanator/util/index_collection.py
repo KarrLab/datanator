@@ -3,7 +3,7 @@
 '''
 from datanator.util import mongo_util
 import pymongo
-
+from datanator.util import server_config
 
 class IndexCollection(mongo_util.MongoUtil):
 
@@ -124,10 +124,11 @@ class IndexCollection(mongo_util.MongoUtil):
 
 
 def main():
-    MongoDB = '35.173.159.185:27017'
-    username = 'default'
-    password = 'default'
+    config_file = '/root/host/karr_lab/datanator/.config/config_test.ini'
     db = 'datanator'
+    username, MongoDB, password, port = server_util.ServerUtil(
+            config_file=config_file, username = username, password = password,
+                port = port)
     manager = IndexCollection(cache_dirname=None, MongoDB=MongoDB, db=db,
                               verbose=True, max_entries=float('inf'), username = username,
                               password = password)
