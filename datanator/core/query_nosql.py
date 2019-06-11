@@ -1,5 +1,6 @@
 from datanator.util import mongo_util
 import time
+import hashlib
 
 class DataQuery(mongo_util.MongoUtil):
 
@@ -306,3 +307,15 @@ class QuerySabio(DataQuery):
             _id.append(doc['kinlaw_id'])
 
         return _id
+
+    def get_kinlawid_by_inchi_fast(self, inchi):
+        ''' Find the kinlaw_id defined in sabio_rk using 
+            rxn participants' inchi string
+            Args:
+                sub_inchi: list of inchi, all in one rxn
+            Return:
+                rxns: list of kinlaw_ids that satisfy the condition
+                [id0, id1, id2,...,  ]
+        '''
+        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]

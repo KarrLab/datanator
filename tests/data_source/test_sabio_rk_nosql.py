@@ -22,13 +22,13 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.quilt_package = 'sabiork_nosql'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
             db = cls.db, MongoDB = cls.MongoDB, cache_directory = cls.cache_dirname,
-            quilt_package = cls.quilt_package, verbose = True, max_entries = 20)
-        cls.collection = cls.src.con_db('sabio_rk')
+            quilt_package = cls.quilt_package, verbose = True)
+        cls.client, cls.db_obj, cls.collection = cls.src.con_db('sabio_rk')
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        # cls.collection.drop()
+        cls.client.close()
 
     @unittest.skip("passed")
     def test_load_json(self):
@@ -67,3 +67,5 @@ class TestSabioRkNoSQL(unittest.TestCase):
         self.src.add_deprot_inchi()
         cursor = self.collection.find_one({'kinlaw_id': 2})
         self.assertEqual(cursor['reaction_participant'][0]['substrate'][0]['inchi_deprot'], "InChI=1S/H2O")
+        self.assertEqual(cursor['reaction_participant'][0]['substrate'][0]['hashed_inchi'], 
+            'ae41b33d263ff93c034384992c84ed94a4d73cb0d200e1ebfed3871c')

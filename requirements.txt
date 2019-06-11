@@ -41,3 +41,4 @@ ftputil
 elasticsearch
 genson
 configparser
+hashlib

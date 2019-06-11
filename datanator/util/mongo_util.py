@@ -106,7 +106,7 @@ class MongoUtil():
             inchi_neutral = inchi.split('/h')[0]
             return inchi_neutral
         except AttributeError:
-            return None
+            return 'InChI=None'
 
     def flatten_json(self, nested_json):
         '''
