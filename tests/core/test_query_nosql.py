@@ -100,6 +100,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         ids = self.src.find_rxn_by_participant(substrates, products)
         self.assertTrue(28926 in ids)
 
+    @unittest.skip('passed')
     def test_get_metabolite_inchi(self):
         compounds = ['ATP']
         inchi = self.src.get_metabolite_inchi(compounds)
@@ -135,8 +136,21 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
+    # @unittest.skip('passed')
+    def test_get_kinlawid_by_inchi_slow(self):
+        inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
+                'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
+                'InChI=1S/C8H6O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5H,(H,10,11)/p-1']
+        kinlaw_id = self.src.get_kinlawid_by_inchi_slow(inchi)
+        print(kinlaw_id)
+        self.assertTrue(9 in kinlaw_id)
+
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi(self):
-        inchi = ['InChI=1S/C8H16O3/c1-2-3-4-5-6-7(9)8(10)11/h7,9H,2-6H2,1H3,(H,10,11)',
-        'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21']
-        kinlaw_id = self.src.get_kinlawid_by_inchi(inchi)
-        self.assertTrue(28 in kinlaw_id)
+        inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
+                'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
+                'InChI=1S/C8H6O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5H,(H,10,11)/p-1']
+        rxn = self.src.get_kinlawid_by_inchi(inchi)
+        print(rxn)
+        self.assertTrue(9 in rxn)
+        self.assertTrue(21016 in rxn)

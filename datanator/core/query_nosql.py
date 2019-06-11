@@ -282,7 +282,7 @@ class QuerySabio(DataQuery):
 
         return rxns
 
-    def get_kinlawid_by_inchi(self, inchi):
+    def get_kinlawid_by_inchi_slow(self, inchi):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
@@ -308,7 +308,7 @@ class QuerySabio(DataQuery):
 
         return _id
 
-    def get_kinlawid_by_inchi_fast(self, inchi):
+    def get_kinlawid_by_inchi(self, inchi):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
@@ -317,5 +317,20 @@ class QuerySabio(DataQuery):
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
+        _, _, col_obj = self.con_db(self.collection_str)
         short_inchi = [self.simplify_inchi(s) for s in inchi]
         hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
+        substrate = 'reaction_participant.substrate.hashed_inchi'
+        product = 'reaction_participant.product.hashed_inchi'
+        projection = {'kinlaw_id': 1}
+        
+        id_tally = []
+        for inchi in hashed_inchi:
+            ids = []
+            query = {'$or': [ {substrate: inchi}, {product: inchi} ] }
+            cursor = col_obj.find(filter = query, projection = projection)
+            for doc in cursor:
+                ids.append(doc['kinlaw_id'])
+            id_tally.append(ids)
+
+        return list(set(id_tally[0]).intersection(*id_tally))
