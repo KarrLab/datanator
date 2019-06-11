@@ -4,6 +4,12 @@ import configparser
 class ServerUtil():
     '''Utility function to read authentication files
     for connection with MongoDB servers on AWS
+
+    [user]
+    User = some-user
+    Password = some-password
+    Server = server-address
+    Port = port-number
     '''
 
     def __init__(self, config_file=None, username=None, password=None,
