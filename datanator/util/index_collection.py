@@ -3,7 +3,7 @@
 '''
 from datanator.util import mongo_util
 import pymongo
-from datanator.util import server_config
+from datanator.util import server_util
 
 class IndexCollection(mongo_util.MongoUtil):
 

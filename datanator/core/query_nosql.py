@@ -178,6 +178,26 @@ class QueryMetabolitesMeta(DataQuery):
                 rxns.update(rxn)
         return rxns, synonyms
 
+    def get_metabolite_inchi(self, compounds):
+        '''Given a list of compound name(s)
+            Return the corrensponding inchi string
+            Args:
+                compounds: list of compounds
+                ['ATP', '2-Ketobutanoate']
+            Return:
+                ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7']
+        '''
+        inchi = []
+        _, _, col = self.con_db(self.collection_str)
+        projection = {'_id': 0, 'inchi': 1}
+        for compound in compounds:
+            cursor = col.find_one({'synonyms.synonym': compound},
+                                projection = projection)
+            inchi.append(cursor['inchi'])
+        return inchi
+
+
+
     '''TODO: fix find_rxn_by_participant\
     WARNING: THIS FUNCTION IS NO FINISHED YET
     '''

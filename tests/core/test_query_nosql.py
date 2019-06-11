@@ -100,6 +100,11 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         ids = self.src.find_rxn_by_participant(substrates, products)
         self.assertTrue(28926 in ids)
 
+    def test_get_metabolite_inchi(self):
+        compounds = ['ATP']
+        inchi = self.src.get_metabolite_inchi(compounds)
+        self.assertEqual(inchi[0], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
+
 
 class TestQuerySabio(unittest.TestCase):
 
@@ -108,7 +113,7 @@ class TestQuerySabio(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
         config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_admin_config()
+        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_user_config()
         cls.MongoDB = server
         cls.username = username
         cls.password = password

@@ -21,18 +21,15 @@ class TestSabioRkNoSQL(unittest.TestCase):
         cls.MongoDB = 'mongodb://mongo:27017/'
         cls.quilt_package = 'sabiork_nosql'
         cls.src = sabio_rk_nosql.SabioRkNoSQL(
-            cls.db, cls.MongoDB, cls.cache_dirname,cls.quilt_package, verbose = True, max_entries = 20)
+            db = cls.db, MongoDB = cls.MongoDB, cache_directory = cls.cache_dirname,
+            quilt_package = cls.quilt_package, verbose = True, max_entries = 20)
         (cls.file_names, cls.file_dict) = cls.src.load_json()
-        cls.collection = cls.src.con_db()
+        cls.collection = cls.src.con_db('sabio_rk')
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.collection.drop()
-
-    @unittest.skip("passed")
-    def test_con_db(self):
-        self.assertNotEqual(self.collection, 'Server not available')
+        # cls.collection.drop()
 
     @unittest.skip("passed")
     def test_load_json(self):
@@ -66,3 +63,9 @@ class TestSabioRkNoSQL(unittest.TestCase):
     # @unittest.skip("test_make_doc")
     # def test_make_doc(self):
     #     session = self.src.make_doc(self.file_names, self.file_dict)
+
+    def test_add_deprot_inchi(self):
+        self.src.add_deprot_inchi()
+        cursor = self.collection.find({'kinlaw_id': 2})
+        doc = cursor[0]
+        self.assertEqual(doc['reaction_participant'][0]['substrate'][0]['inchi_deprot'], "InChI=1S/H2O")
