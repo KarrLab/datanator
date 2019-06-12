@@ -190,9 +190,10 @@ class QueryMetabolitesMeta(DataQuery):
         '''
         inchi = []
         projection = {'_id': 0, 'inchi': 1}
+        collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
             cursor = self.collection.find_one({'synonyms.synonym': compound},
-                                projection = projection)
+                                projection = projection, collation = collation)
             inchi.append(cursor['inchi'])
         return inchi
 
