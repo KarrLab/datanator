@@ -19,7 +19,7 @@ class MongoUtil():
             self.MongoDB, replicaSet=self.replicaSet, 
             username = username, password = password,
             authSource = authSource)  # 400ms max timeout
-        self.db = self.client[self.db]
+        self.db_obj = self.client[db]
 
     def list_all_collections(self):
         '''List all non-system collections within database
@@ -32,8 +32,8 @@ class MongoUtil():
 
     def con_db(self, collection_str):
         try:
-            collection = self.db[collection_str]
-            return (self.client, self.db, collection)
+            collection = self.db_obj[collection_str]
+            return (self.client, self.db_obj, collection)
         except pymongo.errors.ConnectionFailure:
             return ('Server not available')
         except ServerSelectionTimeoutError:
@@ -95,6 +95,18 @@ class MongoUtil():
         del doc['_id']
         builder.add_object(doc)
         return builder.to_schema()
+
+    def simplify_inchi(self, inchi=None):
+        '''Remove molecules's protonation state
+        "InChI=1S/H2O/h1H2" = > "InChI=1S/H2O"
+        '''
+        # if self.verbose:
+        #     print('Parsing inchi by taking out protonation state')
+        try:
+            inchi_neutral = inchi.split('/h')[0]
+            return inchi_neutral
+        except AttributeError:
+            return 'InChI=None'
 
     def flatten_json(self, nested_json):
         '''

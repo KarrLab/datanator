@@ -77,28 +77,21 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     @unittest.skip('passed')
-    def test_find_synonyms(self):
+    def test_get_metabolite_synonyms(self):
         c = "ATP"
         compounds = ["ATP", "Oxygen", '']
         ran = 'something'
-        rxn, syn = self.src.find_synonyms(c)
-        rxn_ran, syn_ran = self.src.find_synonyms(ran)
-        rxns, syns = self.src.find_synonyms(compounds)
+        rxn, syn = self.src.get_metabolite_synonyms(c)
+        rxn_ran, syn_ran = self.src.get_metabolite_synonyms(ran)
+        rxns, syns = self.src.get_metabolite_synonyms(compounds)
         self.assertTrue("5'-ATP" in syn[c])
         self.assertTrue("Oxygen molecule" in syns['Oxygen'])
         self.assertEqual(None, syns['synonyms'])
         self.assertTrue('does not exist' in syn_ran[ran])
 
         empty = ''
-        rxn, syn = self.src.find_synonyms(empty)
+        rxn, syn = self.src.get_metabolite_synonyms(empty)
         self.assertEqual(syn, {'synonyms': None})
-
-    @unittest.skip('passed')
-    def test_find_rxn_by_participant(self):
-        substrates = ["Undecanal", 'H2O', 'NADP+']
-        products = ['Undecanoate', "NADPH", 'H+']
-        ids = self.src.find_rxn_by_participant(substrates, products)
-        self.assertTrue(28926 in ids)
 
     @unittest.skip('passed')
     def test_get_metabolite_inchi(self):
@@ -136,7 +129,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_kinlawid_by_inchi_slow(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -151,6 +144,12 @@ class TestQuerySabio(unittest.TestCase):
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
                 'InChI=1S/C8H6O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5H,(H,10,11)/p-1']
         rxn = self.src.get_kinlawid_by_inchi(inchi)
-        print(rxn)
         self.assertTrue(9 in rxn)
         self.assertTrue(21016 in rxn)
+
+    def test_get_kinlawid_by_rxn(self):
+        substrates = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
+                    'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1']
+        products = ['InChI=1S/C8H6O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5H,(H,10,11)/p-1']
+        _id = self.src.get_kinlawid_by_rxn(substrates,products)
+        self.assertTrue(21016 in _id)

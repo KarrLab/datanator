@@ -1,7 +1,7 @@
 from datanator.core import query_nosql
 import re
 
-class MetabolitesMeta(query_nosql.DataQuery):
+class MetabolitesMeta(query_nosql.QuerySabio):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                  verbose=False, max_entries=float('inf'), username = None, password = None,
@@ -40,13 +40,13 @@ class MetabolitesMeta(query_nosql.DataQuery):
                                   { '$set': doc},
                                   upsert=True)
 
-        # for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
-        #     kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
-        #     rxn_participants = self.find_reaction_participants(kinlaw_id)
-        #     collection.update_one({'inchi': doc['inchi']},
-        #                           {'$set': {'kinlaw_id': kinlaw_id,
-        #                            'reaction_participants': rxn_participants}},
-        #                           upsert=False)
+        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
+            kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
+            rxn_participants = self.find_reaction_participants(kinlaw_id)
+            collection.update_one({'inchi': doc['inchi']},
+                                  {'$set': {'kinlaw_id': kinlaw_id,
+                                   'reaction_participants': rxn_participants}},
+                                  upsert=False)
         
 
         client.close()

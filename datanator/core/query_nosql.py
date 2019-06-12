@@ -133,8 +133,9 @@ class QueryMetabolitesMeta(DataQuery):
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
-    def find_synonyms(self, compounds):
+    def get_metabolite_synonyms(self, compounds):
         ''' Find synonyms of a compound
             Args:
                 compound: name(s) of the compound e.g. "ATP", ["ATP", "Oxygen", ...]
@@ -146,14 +147,13 @@ class QueryMetabolitesMeta(DataQuery):
         '''
         synonyms = {}
         rxns = {}
-        _, _, col = self.con_db(self.collection_str)
 
         def find_synonyms_of_str(c):
             if len(c) != 0:
                 query = {'synonyms.synonym': c}
                 projection = {'synonyms.synonym': 1, '_id': -1, 'kinlaw_id': 1}
                 collation = {'locale': 'en', 'strength': 2}
-                doc = col.find_one(filter = query, projection = projection, collation = collation)
+                doc = self.collection.find_one(filter = query, projection = projection, collation = collation)
                 synonym = {}
                 rxn = {}
                 try:
@@ -189,42 +189,12 @@ class QueryMetabolitesMeta(DataQuery):
                 ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7']
         '''
         inchi = []
-        _, _, col = self.con_db(self.collection_str)
         projection = {'_id': 0, 'inchi': 1}
         for compound in compounds:
-            cursor = col.find_one({'synonyms.synonym': compound},
+            cursor = self.collection.find_one({'synonyms.synonym': compound},
                                 projection = projection)
             inchi.append(cursor['inchi'])
         return inchi
-
-
-
-    '''TODO: fix find_rxn_by_participant\
-    WARNING: THIS FUNCTION IS NO FINISHED YET
-    '''
-    def find_rxn_by_participant(self, substrates, products):
-        '''Find reactions by substrates' or products' names
-            Args:
-                substrates: list of substrates in the reaction
-                            [ATP, NADH, ...]
-                products: list of products in the reaction
-                            [ADP, NADH+, ...]
-            Returns:
-                list of kinetic law ids from SabioRK [12345, 23456, ...]
-        '''
-        rxns = []
-        _, _, col = self.con_db(self.collection_str)
-
-        sub_kinlaw_id, sub_syn = self.find_synonyms(substrates)
-        pro_kinlaw_id, pro_syn = self.find_synonyms(products)
-
-        list_sub = list(sub_kinlaw_id.values())
-        list_sub_flat = [y for x in list_sub for y in x]
-        list_pro = list(pro_kinlaw_id.values())
-        list_pro_flat = [y for x in list_pro for y in x]
-        overlap = set(list_sub_flat).intersection(list_pro_flat)
-        print(overlap)
-        return overlap
 
 
 class QuerySabio(DataQuery):
@@ -238,6 +208,7 @@ class QuerySabio(DataQuery):
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
@@ -312,12 +283,11 @@ class QuerySabio(DataQuery):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
-                sub_inchi: list of inchi, all in one rxn
+                inchi: list of inchi, all in one rxn
             Return:
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        _, _, col_obj = self.con_db(self.collection_str)
         short_inchi = [self.simplify_inchi(s) for s in inchi]
         hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
         substrate = 'reaction_participant.substrate.hashed_inchi'
@@ -328,9 +298,65 @@ class QuerySabio(DataQuery):
         for inchi in hashed_inchi:
             ids = []
             query = {'$or': [ {substrate: inchi}, {product: inchi} ] }
-            cursor = col_obj.find(filter = query, projection = projection)
+            cursor = self.collection.find(filter = query, projection = projection)
             for doc in cursor:
                 ids.append(doc['kinlaw_id'])
             id_tally.append(ids)
 
         return list(set(id_tally[0]).intersection(*id_tally))
+
+    def get_kinlawid_by_rxn(self, substrates, products):
+        ''' Find the kinlaw_id defined in sabio_rk using 
+            rxn participants' inchi string
+            Args:
+                substrates: list of substrates inchi
+                products: list of products inchi
+            Return:
+                rxns: list of kinlaw_ids that satisfy the condition
+                [id0, id1, id2,...,  ]
+        '''
+
+        def get_kinlawid(inchi, side = 'substrate'):
+            ''' Find the kinlaw_id defined in sabio_rk using 
+                rxn participants' inchi string
+                Args:
+                    inchi: list of inchi, all in one rxn, on one side
+                Return:
+                    rxns: list of kinlaw_ids that satisfy the condition
+                    [id0, id1, id2,...,  ]
+            '''
+            short_inchi = [self.simplify_inchi(s) for s in inchi]
+            hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
+
+            substrate = 'reaction_participant.substrate.hashed_inchi'
+            product = 'reaction_participant.product.hashed_inchi'
+            projection = {'kinlaw_id': 1, '_id': 0}
+            
+            id_tally = []
+            if side == 'substrate':
+                for inchi in hashed_inchi:
+                    ids = []
+                    query = {substrate: inchi}
+                    cursor = self.collection.find(filter = query, projection = projection)
+                    for doc in cursor:
+                        ids.append(doc['kinlaw_id'])
+                    id_tally.append(ids)
+
+                return list(set(id_tally[0]).intersection(*id_tally))
+            else:
+
+                for inchi in hashed_inchi:
+                    ids = []
+                    query = {product: inchi}
+                    cursor = self.collection.find(filter = query, projection = projection)
+                    for doc in cursor:
+                        ids.append(doc['kinlaw_id'])
+                    id_tally.append(ids)
+
+                return list(set(id_tally[0]).intersection(*id_tally))
+
+        sub_id = get_kinlawid(substrates, side = 'substrate')
+        pro_id = get_kinlawid(products, side = 'product')
+        result = list(set(sub_id) & set(pro_id))
+
+        return result
