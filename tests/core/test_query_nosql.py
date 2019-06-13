@@ -93,9 +93,9 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         rxn, syn = self.src.get_metabolite_synonyms(empty)
         self.assertEqual(syn, {'synonyms': None})
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_inchi(self):
-        compounds = ['ATP']
+        compounds = ['atp']
         inchi = self.src.get_metabolite_inchi(compounds)
         self.assertEqual(inchi[0], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
 
@@ -138,7 +138,7 @@ class TestQuerySabio(unittest.TestCase):
         print(kinlaw_id)
         self.assertTrue(9 in kinlaw_id)
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_kinlawid_by_inchi(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -147,6 +147,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertTrue(9 in rxn)
         self.assertTrue(21016 in rxn)
 
+    @unittest.skip('passed')
     def test_get_kinlawid_by_rxn(self):
         substrates = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                     'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1']
