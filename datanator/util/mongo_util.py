@@ -4,7 +4,7 @@ import json
 from bson import decode_all
 from genson import SchemaBuilder
 
-class MongoUtil():
+class MongoUtil:
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                  verbose=False, max_entries=float('inf'), username = None, 
