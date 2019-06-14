@@ -137,10 +137,10 @@ def main():
     config_file = '/root/host/karr_lab/datanator/.config/config.ini'
     username, password, server, port = server_util.ServerUtil(
         config_file=config_file).get_user_config()
-    manager = calc_tanimoto.CalcTanimoto(
+    manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username)
-
+    manager.many_to_many()
 
 if __name__ == '__main__':
     main()
