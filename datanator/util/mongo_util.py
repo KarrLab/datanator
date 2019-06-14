@@ -3,10 +3,12 @@ import wc_utils.quilt
 import json
 from bson import decode_all
 from genson import SchemaBuilder
+import hashlib
+
 
 class MongoUtil:
 
-    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db='test',
                  verbose=False, max_entries=float('inf'), username = None, 
                  password = None, authSource = 'admin'):
         self.cache_dirname = cache_dirname
@@ -96,7 +98,7 @@ class MongoUtil:
         builder.add_object(doc)
         return builder.to_schema()
 
-    def simplify_inchi(self, inchi=None):
+    def simplify_inchi(self, inchi= 'InChI = None'):
         '''Remove molecules's protonation state
         "InChI=1S/H2O/h1H2" = > "InChI=1S/H2O"
         '''
@@ -106,7 +108,17 @@ class MongoUtil:
             inchi_neutral = inchi.split('/h')[0]
             return inchi_neutral
         except AttributeError:
-            return 'InChI=None'
+            return 'InChI = None'
+
+    def hash_inchi(self, inchi = 'InChI = None'):
+        ''' Hash inchi string using sha224
+        '''
+        try:
+            hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()
+            return hash_inchi
+        except AttributeError:
+            return 'InChI = None'
+
 
     def flatten_json(self, nested_json):
         '''

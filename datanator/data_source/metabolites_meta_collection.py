@@ -1,4 +1,6 @@
 from datanator.core import query_nosql
+from datanator.util import chem_util
+from datanator.util import server_util
 import re
 
 class MetabolitesMeta(query_nosql.QuerySabio):
@@ -31,11 +33,15 @@ class MetabolitesMeta(query_nosql.QuerySabio):
         client, _, collection = self.con_db(collection_name)
 
         for doc in ecmdb_list:
+            doc['inchi_deprot'] = chem_util.ChemUtil().simplify_inchi(inchi = doc['inchi'])
+            doc['inchi_hashed'] = chem_util.ChemUtil().hash_inchi(inchi = doc['inchi_deprot'])
             collection.update_one({'inchi': doc['inchi']},
                                   { '$set': doc},
                                   upsert=True)
 
         for doc in ymdb_list:
+            doc['inchi_deprot'] = chem_util.ChemUtil().simplify_inchi(inchi = doc['inchi'])
+            doc['inchi_hashed'] = chem_util.ChemUtil().hash_inchi(inchi = doc['inchi_deprot'])
             collection.update_one({'inchi': doc['inchi']},
                                   { '$set': doc},
                                   upsert=True)
@@ -133,11 +139,11 @@ class MetabolitesMeta(query_nosql.QuerySabio):
 
 
 def main():
-    MongoDB = '35.173.159.185:27017'
     db = 'datanator'
-    username = None
-    password = None
-    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet = None, db=db, 
+    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+    username, password, server, port = server_util.ServerUtil(
+        config_file=config_file).get_user_config()
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=server, replicaSet = None, db=db, 
                                 verbose=True, max_entries=float('inf'), 
                                 username = username, password = password)
 
