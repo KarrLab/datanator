@@ -1,4 +1,6 @@
 from datanator.util import mongo_util
+from datanator.util import chem_util
+from datanator.util import file_util
 import time
 import hashlib
 
@@ -13,6 +15,8 @@ class DataQuery(mongo_util.MongoUtil):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
+        self.chem_manager = chem_util.ChemUtil()
+        self.file_manager = file_util.FileUtil()
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -232,7 +236,7 @@ class QuerySabio(DataQuery):
             if i % 10 == 0:
                 print ('Finding reaction participants for kinlaw_id {} ...'.format(doc['kinlaw_id']))
             doc.pop('_id', None)
-            doc_flat = self.flatten_json(doc)
+            doc_flat = self.file_manager.flatten_json(doc)
 
             substrates = []
             products = []
@@ -263,7 +267,7 @@ class QuerySabio(DataQuery):
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
         inchi_exp = ['\"' + s + '\"' for s in short_inchi]
         inchi_str = ''
         for s in inchi_exp:
@@ -289,7 +293,7 @@ class QuerySabio(DataQuery):
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
         hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
         substrate = 'reaction_participant.substrate.hashed_inchi'
         product = 'reaction_participant.product.hashed_inchi'
@@ -326,7 +330,7 @@ class QuerySabio(DataQuery):
                     rxns: list of kinlaw_ids that satisfy the condition
                     [id0, id1, id2,...,  ]
             '''
-            short_inchi = [self.simplify_inchi(s) for s in inchi]
+            short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
             hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
 
             substrate = 'reaction_participant.substrate.hashed_inchi'
