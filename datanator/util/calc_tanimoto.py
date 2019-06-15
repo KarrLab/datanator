@@ -97,7 +97,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
     def many_to_many(self, collection_str1='metabolites_meta',
                      collection_str2='metabolites_meta', field1='inchi_deprot',
                      field2='inchi_deprot', lookup1 = 'inchi_hashed', 
-                     lookup2 ='inchi_hashed', num = 100):
+                     lookup2 ='inchi_hashed', batch_size = 10, num = 100):
         ''' Go through collection_str and assign each
                 compound top 'num' amount of most similar 
                 compounds
@@ -107,10 +107,11 @@ class CalcTanimoto(mongo_util.MongoUtil):
                         field1: field of interest in collection_str1
                         field2: filed of interest in collection_str2
                         num: number of most similar compound
+                        batch_size: batch_size for each server round trip
         '''
         _, _, col = self.con_db(collection_str1)
         projection = {field1: 1, lookup1: 1, '_id': 0}
-        cursor = col.find({}, projection=projection)
+        cursor = col.find({}, projection=projection, batch_size = batch_size)
         count = col.count_documents({})
 
         i = 0
