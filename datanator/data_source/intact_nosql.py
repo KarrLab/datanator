@@ -13,14 +13,16 @@ class IntActNoSQL(mongo_util.MongoUtil):
     """ A local MongoDB copy of the IntAct database """
 
     def __init__(self, cache_dirname=None, MongoDB=None, db=None,
-                 replicaSet=None, verbose=False, max_entries=float('inf')):
+                 replicaSet=None, verbose=False, max_entries=float('inf'),
+                 username = None, password = None, authSource = 'admin'):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
         super(IntActNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                                              verbose=verbose, max_entries=max_entries)
+                                              verbose=verbose, max_entries=max_entries, username = username,
+                                              password = password, authSource = authSource)
         self.client_interaction, self.db_interaction, self.collection_interaction = self.con_db('intact_interaction')
         self.client_complex, self.db_complex, self.collection_complex = self.con_db('intact_complex')
 

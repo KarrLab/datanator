@@ -15,8 +15,7 @@ class DataQuery(mongo_util.MongoUtil):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
-        self.chem_manager = chem_util.ChemUtil()
-        self.file_manager = file_util.FileUtil()
+
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -213,6 +212,8 @@ class QuerySabio(DataQuery):
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
+        self.chem_manager = chem_util.ChemUtil()
+        self.file_manager = file_util.FileUtil()
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
     def find_reaction_participants(self, kinlaw_id):
@@ -262,7 +263,7 @@ class QuerySabio(DataQuery):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
-                sub_inchi: list of inchi, all in one rxn
+                inchi: list of inchi, all in one rxn
             Return:
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
@@ -314,8 +315,8 @@ class QuerySabio(DataQuery):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
-                substrates: list of substrates inchi
-                products: list of products inchi
+                substrates: list of substrates' inchi
+                products: list of products' inchi
             Return:
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]

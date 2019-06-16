@@ -12,6 +12,7 @@
 
 import unittest
 from datanator.data_source import corum_nosql
+from datanator.util import server_util
 import tempfile
 import shutil
 import pymongo
@@ -22,22 +23,18 @@ class TestCorumNoSQL(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.db = 'test'
-        self.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        self.username, self.password, self.MongoDB, self.port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    def test_con_db(self):
-        src = corum_nosql.CorumNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
-        client, db, collection = src.con_db('corum')
-        self.assertNotEqual(collection, 'Server not available')
-        client.close()
-
     #@unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, verbose = True, max_entries = 20)
+            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, 
+            verbose = True, max_entries = 20, username = self.username, password = self.password)
         collection = src.load_content()
         self.assertEqual(collection.find().count(), 20)
         cursor = collection.find({'subunits_uniprot_id': 'P41182'}).limit(3)

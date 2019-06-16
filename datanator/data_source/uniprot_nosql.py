@@ -16,25 +16,18 @@ import json
 import pandas
 import requests
 import requests.exceptions
-from pymongo import MongoClient
+from datanator.util import mongo_util
 
-
-class UniprotNoSQL():
-    def __init__(self, MongoDB, db, max_entries = float('inf')):
+class UniprotNoSQL(mongo_util.MongoUtil):
+    def __init__(self, MongoDB = None, db = None, max_entries = float('inf'), verbose = False,
+        username = None, password = None, authSource = 'admin', replicaSet = None):
         self.url = 'http://www.uniprot.org/uniprot/?fil=reviewed:yes'
         self.MongoDB = MongoDB
         self.db = db
         self.max_entries = max_entries
-
-    # make connections wth mongoDB
-    def con_db(self):
-        try:
-            client = MongoClient(self.MongoDB, 400)  # 400ms max timeout
-            db = client[self.db]
-            collection = db['uniprot']
-            return collection
-        except pymongo.errors.ConnectionFailure:
-            print('Server not available')
+        super(UniprotNoSQL, self).__init__(MongoDB = MongoDB, db = db, username = username,
+                                password = password, authSource = authSource, replicaSet = replicaSet,
+                                verbose = verbose)
 
     # build dataframe for uniprot_swiss for loading into mongodb
     def get_uniprot(self):
@@ -49,7 +42,7 @@ class UniprotNoSQL():
         response.raise_for_status()
 
         data = pandas.read_csv(io.BytesIO(response.content),
-                               delimiter='\t', encoding='utf-8')
+                               delimiter='\t', encoding='utf-8', nrows = self.max_entries)
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status',
@@ -62,7 +55,7 @@ class UniprotNoSQL():
     def load_uniprot(self):
         df = self.get_uniprot()
         df_json = json.loads(df.to_json(orient='records'))
-        collection = self.con_db()
+        client, db_obj, collection = self.con_db('uniprot')
         collection.delete_many({})
         collection.insert(df_json)
 

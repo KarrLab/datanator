@@ -11,10 +11,9 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import metabolite_nosql
-from datanator.util import warning_util
+from datanator.util import server_util
 import os
 import json
-warning_util.disable_warnings()
 
 
 class TestMetaboliteNoSQL(unittest.TestCase):
@@ -23,25 +22,20 @@ class TestMetaboliteNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.source = 'ecmdb' # 'ymdb' or 'ecmdb'
-        cls.MongoDB = 'mongodb://mongo:27017/'
         cls.db = 'test'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.output_directory = cls.cache_dirname # directory to store JSON files
         cls.src = metabolite_nosql.MetaboliteNoSQL(cls.output_directory,
-            cls.source, cls.MongoDB, cls.db, verbose = True, max_entries=20)
+            cls.source, MongoDB, cls.db, verbose = True, max_entries=20,
+            username = username, password = password)
+        cls.client, cls.db_obj, cls.collection = cls.src.con_db(cls.source)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-
-    def setUp(self):
-        self.collection = self.src.con_db()
-
-    # def tearDown(self):
-    #     self.collection.drop()
-
-    #@unittest.skip("test_con_db")
-    def test_con_db(self):
-        self.assertNotEqual(self.collection, 'Server not available')
+        cls.client.close()
 
     def test_write_to_json(self):
         session = self.src.write_to_json()

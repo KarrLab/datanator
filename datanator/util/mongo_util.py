@@ -26,11 +26,9 @@ class MongoUtil:
     def list_all_collections(self):
         '''List all non-system collections within database
         '''
-        client = pymongo.MongoClient(
-            self.MongoDB, replicaSet=self.replicaSet)  # 400ms max timeout
-        db = client[self.db]
+
         expression = {"name": {"$regex": r"^(?!system\.)"}}
-        return db.list_collection_names()
+        return self.db_obj.list_collection_names()
 
     def con_db(self, collection_str):
         try:
@@ -64,28 +62,6 @@ class MongoUtil:
                 collection.insert(decode_all(f.read()))
             return collection
 
-    def extract_values(self, obj, key):
-        """Pull all values of specified key from nested JSON.
-        """
-        arr = []
-
-        def extract(obj, arr, key):
-            """Recursively search for values of key in JSON tree."""
-            if isinstance(obj, dict):
-                for k, v in obj.items():
-                    if isinstance(v, (dict, list)):
-                        extract(v, arr, key)
-                    elif k == key:
-                        arr.append(v)
-            elif isinstance(obj, list):
-                for item in obj:
-                    extract(item, arr, key)
-            return arr
-
-        results = extract(obj, arr, key)
-
-        return results
-
     def print_schema(self, collection_str):
         '''Print out schema of a collection
            removed '_id' from collection due to its object type
@@ -97,58 +73,6 @@ class MongoUtil:
         del doc['_id']
         builder.add_object(doc)
         return builder.to_schema()
-
-    def simplify_inchi(self, inchi= 'InChI = None'):
-        '''Remove molecules's protonation state
-        "InChI=1S/H2O/h1H2" = > "InChI=1S/H2O"
-        '''
-        # if self.verbose:
-        #     print('Parsing inchi by taking out protonation state')
-        try:
-            inchi_neutral = inchi.split('/h')[0]
-            return inchi_neutral
-        except AttributeError:
-            return 'InChI = None'
-
-    def hash_inchi(self, inchi = 'InChI = None'):
-        ''' Hash inchi string using sha224
-        '''
-        try:
-            hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()
-            return hash_inchi
-        except AttributeError:
-            return 'InChI = None'
-
-
-    def flatten_json(self, nested_json):
-        '''
-            Flatten json object with nested keys into a single level.
-            e.g. 
-            {a: b,                      {a: b,  
-             c: [                        d: e,
-                {d: e},    =>            f: g }
-                {f: g}]}
-            Args:
-                nested_json: A nested json object.
-            Returns:
-                The flattened json object if successful, None otherwise.
-        '''
-        out = {}
-
-        def flatten(x, name=''):
-            if type(x) is dict:
-                for a in x:
-                    flatten(x[a], name + a + '_')
-            elif type(x) is list:
-                i = 0
-                for a in x:
-                    flatten(a, name + str(i) + '_')
-                    i += 1
-            else:
-                out[name[:-1]] = x
-
-        flatten(nested_json)
-        return out
 
     def flatten_collection(self, collection_str):
         '''Flatten a collection

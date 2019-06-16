@@ -1,6 +1,7 @@
 import pybel
 from datanator.util import mongo_util
 from datanator.util import server_util
+import pymongo
 import numpy as np
 
 
@@ -11,8 +12,14 @@ class CalcTanimoto(mongo_util.MongoUtil):
     '''
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf'), username=None,
+                 verbose=False, max_entries=float('inf'), username=None, result_db = None,
                  password=None, authSource='admin'):
+        self.authSource = authSource
+        self.username = username
+        self.password = password
+        self.replicaSet = replicaSet
+        self.db = db
+        self.MongoDB = MongoDB
         super(CalcTanimoto, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
                                            db=db, verbose=verbose, max_entries=max_entries, username=username,
                                            password=password, authSource=authSource)
@@ -109,17 +116,25 @@ class CalcTanimoto(mongo_util.MongoUtil):
                         num: number of most similar compound
                         batch_size: batch_size for each server round trip
         '''
-        _, _, col = self.con_db(collection_str1)
+        client = pymongo.MongoClient(
+                    self.MongoDB, replicaSet=self.replicaSet, 
+                    username = self.username, password = self.password,
+                    authSource = self.authSource)
+        db_obj = client[self.db]
+        final = db_obj[collection_str1]
+
         projection = {field1: 1, lookup1: 1, '_id': 0}
+        _, _, col = self.con_db(collection_str1)
         cursor = col.find({}, projection=projection, batch_size = batch_size)
         count = col.count_documents({})
-
+        total = min(count, self.max_entries)
+        
         i = 0
         for doc in cursor:
             if i > self.max_entries:
                 break
-            if self.verbose and i % 10 == 0:
-                print('Going through document {} out of {} in collection {}'.format(i, count, collection_str1))
+            if self.verbose and i % 1 == 0:
+                print('Going through document {} out of {} in collection {}'.format(i, total, collection_str1))
             compound = doc[field1]
             coeff, inchi_hashed = self.one_to_many(compound, lookup = lookup2,
                                              collection_str=collection_str2, field=field2, num=num)
@@ -127,7 +142,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             for a, b in zip(coeff, inchi_hashed):
                 dic[b] = a
 
-            col.update_one( {lookup1: doc[lookup1]},
+            final.update_one( {lookup1: doc[lookup1]},
                             {'$set': {'similar_compounds': dic} },
                             upsert = False)
             i += 1
@@ -140,7 +155,8 @@ def main():
         config_file=config_file).get_user_config()
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
-        verbose=True, password=password, username=username)
+        verbose=True, password=password, username=username,
+        result_db = 'datanator')
     manager.many_to_many()
 
 

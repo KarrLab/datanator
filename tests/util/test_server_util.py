@@ -18,8 +18,8 @@ class TestServerUtil(unittest.TestCase):
     #     shutil.rmtree(cls.cache_dirname)
 
     def test_get_admin_config(self):
-    	username, password, server, port = self.src.get_admin_config()
-    	self.assertEqual(username, 'some-admin')
+    	username, password, server, port = self.src.get_user_config()
+    	self.assertEqual(username, 'some-user')
     	self.assertEqual(password, 'some-password')
     	self.assertEqual(server, '35.173.159.185')
     	self.assertEqual(port, '27017')

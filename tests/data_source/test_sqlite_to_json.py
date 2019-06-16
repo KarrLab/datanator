@@ -23,11 +23,13 @@ class TestSQLToJSON(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
+    @unittest.skip('quilt authentication issue')
     def test_table(self):
         table_names = self.src.table()
         self.assertEqual(table_names, ['synonym', 'resource', 'entry', 'compound_structure', 'entry_synonym', 'entry_resource', 'compound', 'enzyme',
                                        'compartment', 'compound_compound_structure', 'kinetic_law', 'enzyme_subunit', 'kinetic_law_resource', 'reaction_participant', 'parameter'])
 
+    @unittest.skip('quilt authentication issue')
     def test_query_table(self):
         tables = ['kinetic_law', 'resource']
         data = {}

@@ -10,17 +10,19 @@ class TestQueryNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.collection_str = 'ecmdb'
         cls.src = query_nosql.DataQuery(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
-                 verbose=True, max_entries=20)
+            cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=None, db=cls.db,
+                 verbose=True, max_entries=20, username = username, password = password)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('skip to testing for h1_hesc')
+    # @unittest.skip('skip to testing for h1_hesc')
     def test_doc_feeder(self):
         query = {'m2m_id': {
             '$in': ["M2MDB000004", "M2MDB000005", "M2MDB000006"]}}
@@ -31,34 +33,34 @@ class TestQueryNoSQL(unittest.TestCase):
             elif doc['accession'] == "ECMDB00019":
                 self.assertEqual(doc['m2m_id'], "M2MDB000004")
 
-        taxon_range = list(range(100, 20000))
-        null = None
-        query = {'taxon': {'$in': taxon_range}, 
-                 'taxon_wildtype': {'$eq': 1}, 
-                 'temperature': {'$lte':45, '$gte': 20},
-                 'ph': {'$lte': 8, '$gte': 6},
-                 'parameter.value': {'$ne': null },
-                 'parameter.sbo_type': {'$in': [25,27] } }
+        # taxon_range = list(range(100, 20000))
+        # null = None
+        # query = {'taxon': {'$in': taxon_range}, 
+        #          'taxon_wildtype': {'$eq': 1}, 
+        #          'temperature': {'$lte':45, '$gte': 20},
+        #          'ph': {'$lte': 8, '$gte': 6},
+        #          'parameter.value': {'$ne': null },
+        #          'parameter.sbo_type': {'$in': [25,27] } }
 
-        # only return these fileds in projection
-        projection = {'kinlaw_id':1, 'resource': 1, 'enzymes.enzyme': 1, 
-                    'enzymes.subunit': 1, 'parameter': 1}
+        # # only return these fileds in projection
+        # projection = {'kinlaw_id':1, 'resource': 1, 'enzymes.enzyme': 1, 
+        #             'enzymes.subunit': 1, 'parameter': 1}
 
-        collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
-        with self.assertRaises(KeyError):
-            next(collection)['reaction_participant']
+        # collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
+        # with self.assertRaises(KeyError):
+        #     next(collection)['reaction_participant']
 
 
-    '''Testing queries in h1_hesc
-    '''
-    @unittest.skip('skip to testing for h1_hesc')
-    def test_doc_feeder(self):
-        target = 'C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6'
-        query = {'$or': [ {'reaction_participant.substrate.structure.inchi_connectivity': target }, 
-                          {'reaction_participant.product.structure.inchi_connectivity': target }  ] }
-        projection = {'reaction_participant.substrate.sabio_compound_id': 1,
-                     'reaction_participant.product.sabio_compound_id': 1 }
-        collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
+    # '''Testing queries in h1_hesc
+    # '''
+    # # @unittest.skip('skip to testing for h1_hesc')
+    # def test_doc_feeder(self):
+    #     target = 'C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6'
+    #     query = {'$or': [ {'reaction_participant.substrate.structure.inchi_connectivity': target }, 
+    #                       {'reaction_participant.product.structure.inchi_connectivity': target }  ] }
+    #     projection = {'reaction_participant.substrate.sabio_compound_id': 1,
+    #                  'reaction_participant.product.sabio_compound_id': 1 }
+    #     collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
 
 
 class TestQueryMetabolitesMeta(unittest.TestCase):
@@ -67,16 +69,18 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.src = query_nosql.QueryMetabolitesMeta(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, replicaSet=None, db=cls.db,
-                 verbose=True, max_entries=20)
+            cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=None, db=cls.db,
+                 verbose=True, max_entries=20, username = username, password = password)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_synonyms(self):
         c = "ATP"
         compounds = ["ATP", "Oxygen", '']
@@ -119,7 +123,7 @@ class TestQuerySabio(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_find_reaction_participants(self):
         _id = [31, 32, 33, 34]
         rxns = self.src.find_reaction_participants(_id)
@@ -129,7 +133,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi_slow(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -138,7 +142,7 @@ class TestQuerySabio(unittest.TestCase):
         print(kinlaw_id)
         self.assertTrue(9 in kinlaw_id)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -147,7 +151,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertTrue(9 in rxn)
         self.assertTrue(21016 in rxn)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_rxn(self):
         substrates = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                     'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1']

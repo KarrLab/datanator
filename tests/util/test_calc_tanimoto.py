@@ -17,13 +17,14 @@ class TestCalcTanimoto(unittest.TestCase):
             config_file=config_file).get_user_config()
         cls.src = calc_tanimoto.CalcTanimoto(
             cache_dirname=cls.cache_dirname, MongoDB=cls.server, replicaSet=None, db=cls.db,
-            verbose=True, max_entries=float('inf'), password=cls.password, username=cls.username)
+            verbose=True, max_entries=5, password=cls.password, username=cls.username,
+            result_db = 'test')
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_tanimoto(self):
         mol1 = 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29'
         mol2 = 'InChI=1S/C10H7NO3/c12-9(10(13)14)7-5-11-8-4-2-1-3-6(7)8/h1-5,11H,(H,13,14)'
@@ -33,7 +34,7 @@ class TestCalcTanimoto(unittest.TestCase):
         self.assertEqual(0.121, coe)
         self.assertEqual(1., coe2)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_one_to_many(self):
         inchi = 'InChI=1S/C6H8O6/c7-1-2(8)5-3(9)4(10)6(11)12-5'
         coeff, hashes = self.src.one_to_many(inchi)
@@ -45,7 +46,7 @@ class TestCalcTanimoto(unittest.TestCase):
         self.assertEqual(coeff[10], self.src.get_tanimoto(inchi, inchi2))
         client.close()
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_many_to_many(self):
         client, _, col = mongo_util.MongoUtil(db = self.db, MongoDB = self.server,
                                         username = self.username, password = self.password).con_db('metabolites_meta')

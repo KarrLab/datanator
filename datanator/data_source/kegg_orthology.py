@@ -2,11 +2,14 @@ import json
 import requests
 import os
 from datanator.util import mongo_util
+from datanator.util import file_util
 
 
 class KeggOrthology(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, verbose=False, max_entries=float('inf')):
+    def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, 
+        verbose=False, max_entries=float('inf'), username = None,
+        password = None, authSource = 'admin'):
         self.ENDPOINT_DOMAINS = {
             'root': 'https://www.genome.jp/kegg-bin/download_htext?htext=ko00001&format=json&filedir=',
         }
@@ -18,7 +21,9 @@ class KeggOrthology(mongo_util.MongoUtil):
         self.collection = 'kegg_orthology'
         self.path = os.path.join(self.cache_dirname, self.collection)
         super(KeggOrthology, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                                            verbose=verbose, max_entries=max_entries)
+                                            verbose=verbose, max_entries=max_entries, username = username,
+                                            password = password, authSource = authSource)
+        self.file_manager = file_util.FileUtil()
 
     def load_content(self):
         '''Load kegg_orthologs into MongoDB
@@ -36,7 +41,7 @@ class KeggOrthology(mongo_util.MongoUtil):
         with open(store_path, 'w') as f:
             json.dump(data, f, indent=4)
 
-        names = self.extract_values(data, 'name')
+        names = self.file_manager.extract_values(data, 'name')
         names = [name.split()[0] for name in names if name[0] == 'K']
         names = list(set(names)) # remove duplicate name
         names.sort()

@@ -1,4 +1,5 @@
 from datanator.data_source import intact_nosql
+from datanator.util import server_util
 import shutil
 import unittest
 import tempfile
@@ -9,9 +10,13 @@ class TestCorumNoSQL(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.db = 'test'
-        self.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        self.username, self.password, self.MongoDB, self.port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         self.src = intact_nosql.IntActNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, None, verbose=True, max_entries=20)
+            cache_dirname = self.cache_dirname, MongoDB = self.MongoDB, 
+            db = self.db, verbose=True, max_entries=20,
+            username  = self.username, password = self.password)
         self.src.load_content()
 
     def tearDown(self):

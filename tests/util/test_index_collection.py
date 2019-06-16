@@ -1,5 +1,6 @@
 import unittest
 from datanator.util import index_collection
+from datanator.util import server_util
 import tempfile
 import shutil
 
@@ -10,9 +11,13 @@ class TestMongoUtil(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.src = index_collection.IndexCollection(
-            cls.cache_dirname, cls.MongoDB, None, cls.db, verbose=True, max_entries=20)
+            cache_dirname = cls.cache_dirname, MongoDB = MongoDB, 
+            replicaSet = None, db = cls.db, verbose=True, max_entries=20,
+            username = username, password = password)
 
     @classmethod
     def tearDownClass(cls):
@@ -34,6 +39,7 @@ class TestMongoUtil(unittest.TestCase):
         self.assertEqual( len(list(collection.list_indexes())), 11) # 10 + 1
         client.close()
 
+    @unittest.skip('passed')
     def test_index_uniprot(self):
         col_str = 'uniprot'
         self.src.index_uniprot(col_str)
