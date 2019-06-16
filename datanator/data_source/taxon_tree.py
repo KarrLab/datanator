@@ -240,10 +240,13 @@ class TaxonTree(mongo_util.MongoUtil):
                 i += 1
 
 def main():
-    mongodb = 'mongodb://mongo:27017'
+    db = 'datanator'
+    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+    username, password, MongoDB, port = server_util.ServerUtil(
+        config_file=config_file).get_user_config()
     cache_dirname = '/root/host/karr_lab/datanator/datanator/data_source/cache/taxon_tree'
-    manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=mongodb, replicaSet='rs0', 
-                    db='datanator', verbose=True)
+    manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=None, 
+                    db='datanator', verbose=True, username = username, password = password)
     manager.load_content()
 
 
