@@ -147,7 +147,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             final.update_one( {lookup1: doc[lookup1]},
                             {'$set': {'similar_compounds': dic} },
                             upsert = False)
-                i += 1
+            i += 1
 
 def main():
 
