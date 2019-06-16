@@ -104,7 +104,8 @@ class CalcTanimoto(mongo_util.MongoUtil):
     def many_to_many(self, collection_str1='metabolites_meta',
                      collection_str2='metabolites_meta', field1='inchi_deprot',
                      field2='inchi_deprot', lookup1 = 'inchi_hashed', 
-                     lookup2 ='inchi_hashed', batch_size = 10, num = 100):
+                     lookup2 ='inchi_hashed', batch_size = 100, num = 100,
+                     no_cursor_timeout = False):
         ''' Go through collection_str and assign each
                 compound top 'num' amount of most similar 
                 compounds
@@ -125,7 +126,8 @@ class CalcTanimoto(mongo_util.MongoUtil):
 
         projection = {field1: 1, lookup1: 1, '_id': 0}
         _, _, col = self.con_db(collection_str1)
-        cursor = col.find({}, projection=projection, batch_size = batch_size)
+        cursor = col.find({}, projection=projection, batch_size = batch_size, 
+                        no_cursor_timeout = no_cursor_timeout)
         count = col.count_documents({})
         total = min(count, self.max_entries)
         
@@ -148,6 +150,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
                             {'$set': {'similar_compounds': dic} },
                             upsert = False)
             i += 1
+        cursor.close()
 
 def main():
 
@@ -159,7 +162,7 @@ def main():
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username,
         result_db = 'datanator')
-    manager.many_to_many()
+    manager.many_to_many(no_cursor_timeout = True)
 
 
 if __name__ == '__main__':
