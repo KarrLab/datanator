@@ -131,9 +131,11 @@ class CalcTanimoto(mongo_util.MongoUtil):
         
         i = 0
         for doc in cursor:
+            if 'similar_compounds' in doc:
+                continue
             if i > self.max_entries:
                 break
-            if self.verbose and i % 1 == 0:
+            if self.verbose and i % 100 == 0:
                 print('Going through document {} out of {} in collection {}'.format(i, total, collection_str1))
             compound = doc[field1]
             coeff, inchi_hashed = self.one_to_many(compound, lookup = lookup2,
@@ -145,7 +147,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             final.update_one( {lookup1: doc[lookup1]},
                             {'$set': {'similar_compounds': dic} },
                             upsert = False)
-            i += 1
+                i += 1
 
 def main():
 
