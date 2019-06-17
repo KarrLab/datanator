@@ -27,7 +27,6 @@ class MongoUtil:
         '''List all non-system collections within database
         '''
 
-        expression = {"name": {"$regex": r"^(?!system\.)"}}
         return self.db_obj.list_collection_names()
 
     def con_db(self, collection_str):
