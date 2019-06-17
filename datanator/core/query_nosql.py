@@ -478,6 +478,24 @@ class QueryTaxonTree(DataQuery):
         self.file_manager = file_util.FileUtil()
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
+    
+    def get_name_by_id(self, ids):
+        ''' Get organisms' names given their tax_ids
+            Args:
+                ids: organisms' tax_ids
+            Return:
+                names: organisms' names
+        '''
+        names = []
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'tax_name':1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(query, collation = collation,
+                                            projection = projection)
+            names.append(cursor['tax_name'])
+        return names
+
     def get_anc_id_by_name(self, names):
         ''' Get organism's ancestor ids by
             using organism's names
@@ -535,7 +553,7 @@ class QueryTaxonTree(DataQuery):
 
         org1_anc = anc_ids[0]
         org2_anc = anc_ids[1]
-        
+
         ancestor = self.file_manager.get_common(org1_anc, org2_anc)
         idx_org1 = org1_anc.index(ancestor)
         idx_org2 = org2_anc.index(ancestor)

@@ -203,6 +203,13 @@ class TestQueryTaxonTree(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     @unittest.skip('passed')
+    def test_get_name_by_id(self):
+        ids = [743725, 2107591]
+        names = self.src.get_name_by_id(ids)
+        self.assertEqual(names[0], 'Candidatus Diapherotrites')
+
+
+    @unittest.skip('passed')
     def test_get_anc_id_by_name(self):
         names = ['Candidatus Diapherotrites', 'Candidatus Forterrea multitransposorum CG_2015-17_Forterrea_25_41']
         result = self.src.get_anc_id_by_name(names)
@@ -215,6 +222,7 @@ class TestQueryTaxonTree(unittest.TestCase):
         self.assertEqual(result[0], [131567, 2157, 1783276])
         self.assertEqual(result[1], [131567, 2157, 1783276, 743725, 2107589, 2107590])
 
+    @unittest.skip('passed')
     def test_get_common_ancestor(self):
         names = ['Candidatus Diapherotrites', 'Candidatus Forterrea multitransposorum CG_2015-17_Forterrea_25_41']
         ancestor, distances = self.src.get_common_ancestor(names[0], names[1])
