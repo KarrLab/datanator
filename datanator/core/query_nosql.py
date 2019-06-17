@@ -3,6 +3,7 @@ from datanator.util import chem_util
 from datanator.util import file_util
 import time
 import hashlib
+import numpy as np
 
 class DataQuery(mongo_util.MongoUtil):
 
@@ -137,6 +138,8 @@ class QueryMetabolitesMeta(DataQuery):
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.file_manager = file_util.FileUtil()
+        self.chem_manager = chem_util.ChemUtil()
 
     def get_metabolite_synonyms(self, compounds):
         ''' Find synonyms of a compound
@@ -199,6 +202,98 @@ class QueryMetabolitesMeta(DataQuery):
                                 projection = projection, collation = collation)
             inchi.append(cursor['inchi'])
         return inchi
+
+    def get_metabolite_hashed_inchi(self, compounds):
+        ''' Given a list of compound name(s)
+            Return the corresponding hashed inchi string
+            Args:
+                compounds: ['ATP', '2-Ketobutanoate']
+            Return:
+                hashed_inchi: ['3e23df....', '7666ffa....']
+        '''
+        hashed_inchi = []
+        projection = {'_id': 0, 'inchi_hashed': 1}
+        collation = {'locale': 'en', 'strength': 2}
+        for compound in compounds:
+            cursor = self.collection.find_one({'synonyms.synonym': compound},
+                                projection = projection, collation = collation)
+            hashed_inchi.append(cursor['inchi_hashed'])
+        return hashed_inchi        
+
+   
+    def get_metabolite_name_by_hash(self, compounds):
+        ''' Given a list of hashed inchi, 
+            return a list of name (one of the synonyms)
+            for each compound
+            Args:
+                compounds: list of compounds in hashed_inchi format
+            Return:
+                result: list of names
+                    [name, name, name]
+        '''
+        result = []
+        projection = {'_id': 0, 'synonyms.synonym': 1}
+        for compound in compounds:
+            cursor = self.collection.find_one({'inchi_hashed': compound},
+                                            projection = projection)
+            try:
+                result.append(cursor['synonyms'])
+            except KeyError:
+                result.append('No synonyms')
+        return [x['synonym'][-1] for x in result]
+
+
+    def get_metabolite_similar_compounds(self, compounds, num = 0, threshold = 0):
+        ''' Given a list of compound names
+            Return the top num number of similar compounds
+            with tanimoto score above threshold values
+            Args:
+                compounds: list of compound names
+                num: number of similar compounds to return
+                threshold: threshold tanimoto coefficient value
+                return_format: return dictionary key format, either
+                                hashed inchi or name
+            Return:
+                result: list of similar compounds and their tanimoto score
+                [ {'compound1': score, 'compound2': score, ... 'compound_num': score},
+                  {'compound1': score, 'compound2': score, ... 'compound_num': score}, ...]
+                    compound(1-n) will be in name format
+                raw: list of similar compounds and their tanimoto score
+                [ {'compound1': score, 'compound2': score, ... 'compound_num': score},
+                  {'compound1': score, 'compound2': score, ... 'compound_num': score}, ...]
+                    compound(1-n) will be in hashed_inchi format
+        '''
+        result = []
+        raw = []
+        hashed_inchi = self.get_metabolite_hashed_inchi(compounds)
+        projection = {'_id': 0, 'similar_compounds': 1}
+
+        for item in hashed_inchi:
+            cursor = self.collection.find_one({'inchi_hashed': item},
+                                                projection = projection)
+            compounds = cursor['similar_compounds']
+
+            scores = list(compounds.values())
+            hashes = list(compounds.keys())
+            names = self.get_metabolite_name_by_hash(hashes[:num])
+            # convert to numpy object for faster calculations
+            scores = np.asarray(scores)
+            indices = np.nonzero(scores >= threshold)
+            size = indices[0].size 
+            if size == 0:
+                raw.append(['No similar compound above threshold'])
+                result.append(['No similar compound above threshold'])
+            elif size < num:
+                raw.append(compounds)
+                replaced = self.file_manager.replace_dict_key(compounds, names)
+                result.append(replaced)
+            else:
+                first_num = self.file_manager.access_dict_by_index(compounds, num)
+                raw.append(first_num)
+                replaced = self.file_manager.replace_dict_key(first_num, names[:num])
+                result.append(replaced)
+
+        return raw, result
 
 
 class QuerySabio(DataQuery):
@@ -366,3 +461,86 @@ class QuerySabio(DataQuery):
         result = list(set(sub_id) & set(pro_id))
 
         return result
+
+
+class QueryTaxonTree(DataQuery):
+    '''Queries specific to taxon_tree collection
+    '''
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
+                collection_str='taxon_tree', verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = 'admin'):
+        self.collection_str = collection_str
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
+                replicaSet= replicaSet, db=db,
+                verbose=verbose, max_entries=max_entries, username = username, 
+                 password = password, authSource = authSource)
+        self.chem_manager = chem_util.ChemUtil()
+        self.file_manager = file_util.FileUtil()
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+
+    def get_anc_id_by_name(self, names):
+        ''' Get organism's ancestor ids by
+            using organism's names
+            Args:
+                names: list of organism's names e.g. Candidatus Diapherotrites
+            Return:
+                result: list of ancestors in order of the farthest to the closest
+        '''
+        result = []
+        
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'anc_id':1}
+        for name in names:
+            query = {'tax_name': name}
+            cursor = self.collection.find_one(query, collation = collation,
+                                             projection = projection)
+            result.append(cursor['anc_id'])
+        return result
+
+    def get_anc_id_by_id(self, ids):
+        ''' Get organism's ancestor ids by
+            using organism's ids
+            Args:
+                ids: list of organism's ids e.g. Candidatus Diapherotrites
+            Return:
+                result: list of ancestors in order of the farthest to the closest
+        '''
+        result = []
+        
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'anc_id':1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(query, collation = collation,
+                                             projection = projection)
+            result.append(cursor['anc_id'])
+        return result
+
+    def get_common_ancestor(self, org1, org2, org_format = 'name'):
+        ''' Get the closest common ancestor between
+            two organisms and their distances to the 
+            said ancestor
+            Args:
+                org1: organism 1
+                org2: organism 2
+                org_format: the format of organism eg tax_id or tax_name
+            Return:
+                ancestor: closest common ancestor's id
+                distance: each organism's distance to the ancestor
+        '''
+        if org_format == 'name':
+            anc_ids = self.get_anc_id_by_name([org1, org2])
+        else:
+            anc_ids = self.get_anc_id_by_id([org1, org2])
+
+        org1_anc = anc_ids[0]
+        org2_anc = anc_ids[1]
+        
+        ancestor = self.file_manager.get_common(org1_anc, org2_anc)
+        idx_org1 = org1_anc.index(ancestor)
+        idx_org2 = org2_anc.index(ancestor)
+
+        distance1 = len(org1_anc) - (idx_org1)
+        distance2 = len(org2_anc) - (idx_org2)
+
+        return (ancestor, [distance1, distance2])

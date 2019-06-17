@@ -146,7 +146,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
         i = 0
 
         for doc in cursor:
-            if 'similar_compounds' in doc:
+            if 'similar_compounds' in doc or i == 899:
                 i += 1
                 if self.verbose and i % 10 == 0:
                     print('Skipping document {} out of {} in collection {}'.format(
@@ -168,6 +168,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
                              {'$set': {'similar_compounds': dic}},
                              upsert=False)
             i += 1
+        cursor.close()
 
             
 def main():
@@ -179,7 +180,7 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many(batch_size=2)
+    manager.many_to_many(batch_size=2, no_cursor_timeout = False)
 
 
 if __name__ == '__main__':
