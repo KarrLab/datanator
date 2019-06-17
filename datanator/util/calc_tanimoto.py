@@ -68,6 +68,9 @@ class CalcTanimoto(mongo_util.MongoUtil):
         projection = {field: 1, lookup: 1}
         cursor = col.find({}, projection=projection)
 
+        count = col.count_documents({})
+        total = min(count, self.max_entries)
+
         while (np_size < num):  # iterate through first 100 documents
             mol2 = cursor[np_size][field]
             hash2 = cursor[np_size][lookup]
@@ -80,9 +83,13 @@ class CalcTanimoto(mongo_util.MongoUtil):
         min_index = np.argmin(coeff_np)
 
         i = 0
+        j = 0
         for doc in cursor[num:]:  # iterate through the rest of the documents
             if i > self.max_entries:
                 break
+            if self.verbose and j % 200 == 0:
+                print('     Calculating between given and doc {} out of {} in collection {}'.format(
+                    j + num, total, collection_str))
             mol2 = doc[field]
             hash2 = doc[lookup]
             tanimoto = self.get_tanimoto(inchi, mol2)
@@ -93,6 +100,9 @@ class CalcTanimoto(mongo_util.MongoUtil):
                 coeff_min = np.amin(coeff_np)
                 min_index = np.argmin(coeff_np)
                 i += 1
+                j += 1
+            else:
+                j += 1
 
         indices = np.argsort(coeff_np)
         sorted_inchi = []
