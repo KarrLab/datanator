@@ -130,7 +130,6 @@ class CalcTanimoto(mongo_util.MongoUtil):
                         num: number of most similar compound
                         batch_size: batch_size for each server round trip
         '''
-        pool = mp.Pool(4)
         client = pymongo.MongoClient(
             self.MongoDB, replicaSet=self.replicaSet,
             username=self.username, password=self.password,
@@ -148,20 +147,18 @@ class CalcTanimoto(mongo_util.MongoUtil):
 
         i = 0
 
-        def iter_cursor(doc, total = total, collection_str1 = collection_str1,
-                    collection_str2 = collection_str2, field1 = field1, field2 = field2,
-                    lookup1 = lookup1, lookup2 = lookup2, num = num, final = final):
-            if 'similar_compounds' in doc:
-                # i += 1
-                # if self.verbose and i % 10 == 0:
-                #     print('Skipping document {} out of {} in collection {}'.format(
-                #         i, total, collection_str1))
+        for doc in cursor:
+            if 'similar_compounds' in doc or i == 899:
+                i += 1
+                if self.verbose and i % 10 == 0:
+                    print('Skipping document {} out of {} in collection {}'.format(
+                        i, total, collection_str1))
                 continue
-            # if i > self.max_entries:
-            #     break
-            # if self.verbose and i % 1 == 0:
-            #     print('Going through document {} out of {} in collection {}'.format(
-            #         i, total, collection_str1))
+            if i > self.max_entries:
+                break
+            if self.verbose and i % 1 == 0:
+                print('Going through document {} out of {} in collection {}'.format(
+                    i, total, collection_str1))
             compound = doc[field1]
             coeff, inchi_hashed = self.one_to_many(compound, lookup=lookup2,
                                                    collection_str=collection_str2, field=field2, num=num)
@@ -172,34 +169,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             final.update_one({lookup1: doc[lookup1]},
                              {'$set': {'similar_compounds': dic}},
                              upsert=False)
-
-        pool.map(iter_cursor, [doc for doc in cursor])
-        pool.close()
-
-
-        # for doc in cursor:
-        #     if 'similar_compounds' in doc or i == 899:
-        #         i += 1
-        #         if self.verbose and i % 10 == 0:
-        #             print('Skipping document {} out of {} in collection {}'.format(
-        #                 i, total, collection_str1))
-        #         continue
-        #     if i > self.max_entries:
-        #         break
-        #     if self.verbose and i % 1 == 0:
-        #         print('Going through document {} out of {} in collection {}'.format(
-        #             i, total, collection_str1))
-        #     compound = doc[field1]
-        #     coeff, inchi_hashed = self.one_to_many(compound, lookup=lookup2,
-        #                                            collection_str=collection_str2, field=field2, num=num)
-        #     dic = {}
-        #     for a, b in zip(coeff, inchi_hashed):
-        #         dic[b] = a
-
-        #     final.update_one({lookup1: doc[lookup1]},
-        #                      {'$set': {'similar_compounds': dic}},
-        #                      upsert=False)
-        #     i += 1
+            i += 1
 
             
 def main():
@@ -211,7 +181,7 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many(batch_size=5, no_cursor_timeout = False)
+    manager.many_to_many(batch_size=2, no_cursor_timeout = False)
 
 
 if __name__ == '__main__':
