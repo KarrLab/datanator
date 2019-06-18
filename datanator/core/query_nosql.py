@@ -1,6 +1,9 @@
 from datanator.util import mongo_util
+from datanator.util import chem_util
+from datanator.util import file_util
 import time
 import hashlib
+import numpy as np
 
 class DataQuery(mongo_util.MongoUtil):
 
@@ -13,6 +16,7 @@ class DataQuery(mongo_util.MongoUtil):
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
+
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -133,8 +137,11 @@ class QueryMetabolitesMeta(DataQuery):
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.file_manager = file_util.FileUtil()
+        self.chem_manager = chem_util.ChemUtil()
 
-    def find_synonyms(self, compounds):
+    def get_metabolite_synonyms(self, compounds):
         ''' Find synonyms of a compound
             Args:
                 compound: name(s) of the compound e.g. "ATP", ["ATP", "Oxygen", ...]
@@ -146,14 +153,13 @@ class QueryMetabolitesMeta(DataQuery):
         '''
         synonyms = {}
         rxns = {}
-        _, _, col = self.con_db(self.collection_str)
 
         def find_synonyms_of_str(c):
             if len(c) != 0:
                 query = {'synonyms.synonym': c}
                 projection = {'synonyms.synonym': 1, '_id': -1, 'kinlaw_id': 1}
                 collation = {'locale': 'en', 'strength': 2}
-                doc = col.find_one(filter = query, projection = projection, collation = collation)
+                doc = self.collection.find_one(filter = query, projection = projection, collation = collation)
                 synonym = {}
                 rxn = {}
                 try:
@@ -204,27 +210,113 @@ class QueryMetabolitesMeta(DataQuery):
     '''
     def find_rxn_by_participant(self, substrates, products):
         '''Find reactions by substrates' or products' names
+
             Args:
-                substrates: list of substrates in the reaction
-                            [ATP, NADH, ...]
-                products: list of products in the reaction
-                            [ADP, NADH+, ...]
-            Returns:
-                list of kinetic law ids from SabioRK [12345, 23456, ...]
+                compounds: list of compounds
+                ['ATP', '2-Ketobutanoate']
+            Return:
+                ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7']
         '''
-        rxns = []
-        _, _, col = self.con_db(self.collection_str)
+        inchi = []
+        projection = {'_id': 0, 'inchi': 1}
+        collation = {'locale': 'en', 'strength': 2}
+        for compound in compounds:
+            cursor = self.collection.find_one({'synonyms.synonym': compound},
+                                projection = projection, collation = collation)
+            inchi.append(cursor['inchi'])
+        return inchi
 
-        sub_kinlaw_id, sub_syn = self.find_synonyms(substrates)
-        pro_kinlaw_id, pro_syn = self.find_synonyms(products)
+    def get_metabolite_hashed_inchi(self, compounds):
+        ''' Given a list of compound name(s)
+            Return the corresponding hashed inchi string
+            Args:
+                compounds: ['ATP', '2-Ketobutanoate']
+            Return:
+                hashed_inchi: ['3e23df....', '7666ffa....']
+        '''
+        hashed_inchi = []
+        projection = {'_id': 0, 'inchi_hashed': 1}
+        collation = {'locale': 'en', 'strength': 2}
+        for compound in compounds:
+            cursor = self.collection.find_one({'synonyms.synonym': compound},
+                                projection = projection, collation = collation)
+            hashed_inchi.append(cursor['inchi_hashed'])
+        return hashed_inchi        
 
-        list_sub = list(sub_kinlaw_id.values())
-        list_sub_flat = [y for x in list_sub for y in x]
-        list_pro = list(pro_kinlaw_id.values())
-        list_pro_flat = [y for x in list_pro for y in x]
-        overlap = set(list_sub_flat).intersection(list_pro_flat)
-        print(overlap)
-        return overlap
+   
+    def get_metabolite_name_by_hash(self, compounds):
+        ''' Given a list of hashed inchi, 
+            return a list of name (one of the synonyms)
+            for each compound
+            Args:
+                compounds: list of compounds in hashed_inchi format
+            Return:
+                result: list of names
+                    [name, name, name]
+        '''
+        result = []
+        projection = {'_id': 0, 'synonyms.synonym': 1}
+        for compound in compounds:
+            cursor = self.collection.find_one({'inchi_hashed': compound},
+                                            projection = projection)
+            try:
+                result.append(cursor['synonyms'])
+            except KeyError:
+                result.append('No synonyms')
+        return [x['synonym'][-1] for x in result]
+
+
+    def get_metabolite_similar_compounds(self, compounds, num = 0, threshold = 0):
+        ''' Given a list of compound names
+            Return the top num number of similar compounds
+            with tanimoto score above threshold values
+            Args:
+                compounds: list of compound names
+                num: number of similar compounds to return
+                threshold: threshold tanimoto coefficient value
+                return_format: return dictionary key format, either
+                                hashed inchi or name
+            Return:
+                result: list of similar compounds and their tanimoto score
+                [ {'compound1': score, 'compound2': score, ... 'compound_num': score},
+                  {'compound1': score, 'compound2': score, ... 'compound_num': score}, ...]
+                    compound(1-n) will be in name format
+                raw: list of similar compounds and their tanimoto score
+                [ {'compound1': score, 'compound2': score, ... 'compound_num': score},
+                  {'compound1': score, 'compound2': score, ... 'compound_num': score}, ...]
+                    compound(1-n) will be in hashed_inchi format
+        '''
+        result = []
+        raw = []
+        hashed_inchi = self.get_metabolite_hashed_inchi(compounds)
+        projection = {'_id': 0, 'similar_compounds': 1}
+
+        for item in hashed_inchi:
+            cursor = self.collection.find_one({'inchi_hashed': item},
+                                                projection = projection)
+            compounds = cursor['similar_compounds']
+
+            scores = list(compounds.values())
+            hashes = list(compounds.keys())
+            names = self.get_metabolite_name_by_hash(hashes[:num])
+            # convert to numpy object for faster calculations
+            scores = np.asarray(scores)
+            indices = np.nonzero(scores >= threshold)
+            size = indices[0].size 
+            if size == 0:
+                raw.append(['No similar compound above threshold'])
+                result.append(['No similar compound above threshold'])
+            elif size < num:
+                raw.append(compounds)
+                replaced = self.file_manager.replace_dict_key(compounds, names)
+                result.append(replaced)
+            else:
+                first_num = self.file_manager.access_dict_by_index(compounds, num)
+                raw.append(first_num)
+                replaced = self.file_manager.replace_dict_key(first_num, names[:num])
+                result.append(replaced)
+
+        return raw, result
 
 
 class QuerySabio(DataQuery):
@@ -238,6 +330,9 @@ class QuerySabio(DataQuery):
                 replicaSet= replicaSet, db=db,
                 verbose=verbose, max_entries=max_entries, username = username, 
                  password = password, authSource = authSource)
+        self.chem_manager = chem_util.ChemUtil()
+        self.file_manager = file_util.FileUtil()
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
@@ -260,7 +355,7 @@ class QuerySabio(DataQuery):
             if i % 10 == 0:
                 print ('Finding reaction participants for kinlaw_id {} ...'.format(doc['kinlaw_id']))
             doc.pop('_id', None)
-            doc_flat = self.flatten_json(doc)
+            doc_flat = self.file_manager.flatten_json(doc)
 
             substrates = []
             products = []
@@ -287,11 +382,12 @@ class QuerySabio(DataQuery):
             rxn participants' inchi string
             Args:
                 sub_inchi: list of inchi, all in one rxn
+                inchi: list of inchi, all in one rxn
             Return:
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
         inchi_exp = ['\"' + s + '\"' for s in short_inchi]
         inchi_str = ''
         for s in inchi_exp:
@@ -312,13 +408,12 @@ class QuerySabio(DataQuery):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
-                sub_inchi: list of inchi, all in one rxn
+                inchi: list of inchi, all in one rxn
             Return:
                 rxns: list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        _, _, col_obj = self.con_db(self.collection_str)
-        short_inchi = [self.simplify_inchi(s) for s in inchi]
+        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
         hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
         substrate = 'reaction_participant.substrate.hashed_inchi'
         product = 'reaction_participant.product.hashed_inchi'
@@ -328,9 +423,166 @@ class QuerySabio(DataQuery):
         for inchi in hashed_inchi:
             ids = []
             query = {'$or': [ {substrate: inchi}, {product: inchi} ] }
-            cursor = col_obj.find(filter = query, projection = projection)
+            cursor = self.collection.find(filter = query, projection = projection)
             for doc in cursor:
                 ids.append(doc['kinlaw_id'])
             id_tally.append(ids)
 
         return list(set(id_tally[0]).intersection(*id_tally))
+
+    def get_kinlawid_by_rxn(self, substrates, products):
+        ''' Find the kinlaw_id defined in sabio_rk using 
+            rxn participants' inchi string
+            Args:
+                substrates: list of substrates' inchi
+                products: list of products' inchi
+            Return:
+                rxns: list of kinlaw_ids that satisfy the condition
+                [id0, id1, id2,...,  ]
+        '''
+
+        def get_kinlawid(inchi, side = 'substrate'):
+            ''' Find the kinlaw_id defined in sabio_rk using 
+                rxn participants' inchi string
+                Args:
+                    inchi: list of inchi, all in one rxn, on one side
+                Return:
+                    rxns: list of kinlaw_ids that satisfy the condition
+                    [id0, id1, id2,...,  ]
+            '''
+            short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
+            hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
+
+            substrate = 'reaction_participant.substrate.hashed_inchi'
+            product = 'reaction_participant.product.hashed_inchi'
+            projection = {'kinlaw_id': 1, '_id': 0}
+            
+            id_tally = []
+            if side == 'substrate':
+                for inchi in hashed_inchi:
+                    ids = []
+                    query = {substrate: inchi}
+                    cursor = self.collection.find(filter = query, projection = projection)
+                    for doc in cursor:
+                        ids.append(doc['kinlaw_id'])
+                    id_tally.append(ids)
+
+                return list(set(id_tally[0]).intersection(*id_tally))
+            else:
+
+                for inchi in hashed_inchi:
+                    ids = []
+                    query = {product: inchi}
+                    cursor = self.collection.find(filter = query, projection = projection)
+                    for doc in cursor:
+                        ids.append(doc['kinlaw_id'])
+                    id_tally.append(ids)
+
+                return list(set(id_tally[0]).intersection(*id_tally))
+
+        sub_id = get_kinlawid(substrates, side = 'substrate')
+        pro_id = get_kinlawid(products, side = 'product')
+        result = list(set(sub_id) & set(pro_id))
+
+        return result
+
+
+class QueryTaxonTree(DataQuery):
+    '''Queries specific to taxon_tree collection
+    '''
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
+                collection_str='taxon_tree', verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = 'admin'):
+        self.collection_str = collection_str
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
+                replicaSet= replicaSet, db=db,
+                verbose=verbose, max_entries=max_entries, username = username, 
+                 password = password, authSource = authSource)
+        self.chem_manager = chem_util.ChemUtil()
+        self.file_manager = file_util.FileUtil()
+        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+
+    
+    def get_name_by_id(self, ids):
+        ''' Get organisms' names given their tax_ids
+            Args:
+                ids: organisms' tax_ids
+            Return:
+                names: organisms' names
+        '''
+        names = []
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'tax_name':1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(query, collation = collation,
+                                            projection = projection)
+            names.append(cursor['tax_name'])
+        return names
+
+    def get_anc_id_by_name(self, names):
+        ''' Get organism's ancestor ids by
+            using organism's names
+            Args:
+                names: list of organism's names e.g. Candidatus Diapherotrites
+            Return:
+                result: list of ancestors in order of the farthest to the closest
+        '''
+        result = []
+        
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'anc_id':1}
+        for name in names:
+            query = {'tax_name': name}
+            cursor = self.collection.find_one(query, collation = collation,
+                                             projection = projection)
+            result.append(cursor['anc_id'])
+        return result
+
+    def get_anc_id_by_id(self, ids):
+        ''' Get organism's ancestor ids by
+            using organism's ids
+            Args:
+                ids: list of organism's ids e.g. Candidatus Diapherotrites
+            Return:
+                result: list of ancestors in order of the farthest to the closest
+        '''
+        result = []
+        
+        collation = {'locale': 'en', 'strength': 2}
+        projection = {'_id': 0, 'anc_id':1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(query, collation = collation,
+                                             projection = projection)
+            result.append(cursor['anc_id'])
+        return result
+
+    def get_common_ancestor(self, org1, org2, org_format = 'name'):
+        ''' Get the closest common ancestor between
+            two organisms and their distances to the 
+            said ancestor
+            Args:
+                org1: organism 1
+                org2: organism 2
+                org_format: the format of organism eg tax_id or tax_name
+            Return:
+                ancestor: closest common ancestor's id
+                distance: each organism's distance to the ancestor
+        '''
+        if org_format == 'name':
+            anc_ids = self.get_anc_id_by_name([org1, org2])
+        else:
+            anc_ids = self.get_anc_id_by_id([org1, org2])
+
+        org1_anc = anc_ids[0]
+        org2_anc = anc_ids[1]
+
+        ancestor = self.file_manager.get_common(org1_anc, org2_anc)
+        idx_org1 = org1_anc.index(ancestor)
+        idx_org2 = org2_anc.index(ancestor)
+
+        distance1 = len(org1_anc) - (idx_org1)
+        distance2 = len(org2_anc) - (idx_org2)
+
+        return (ancestor, [distance1, distance2])

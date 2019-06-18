@@ -18,10 +18,10 @@ import requests.exceptions
 import warnings
 import zipfile
 import xmltodict
-from pymongo import MongoClient
+from datanator.util import mongo_util
 
 
-class MetaboliteNoSQL():
+class MetaboliteNoSQL(mongo_util.MongoUtil):
     '''Loads metabolite information into mongodb and output documents as JSON files for each metabolite
         Attribuites:
             source: source database e.g. 'ecmdb' 'ymdb'
@@ -29,13 +29,12 @@ class MetaboliteNoSQL():
             max_entries: maximum number of documents to be processed
             output_direcotory: directory in which JSON files will be stored.
     '''
-    def __init__(self,output_directory, source, MongoDB, db, verbose=True, max_entries = float('inf')):
+    def __init__(self,output_directory, source, MongoDB, db, 
+        verbose=True, max_entries = float('inf'), username = None,
+        password = None, authSource = 'admin', replicaSet = None):
         self.verbose = verbose
         self.source = source
-        self.db = db
         self.max_entries = max_entries
-        self.MongoDB = MongoDB
-        self.output_directory = output_directory      
 
         if self.source == 'ecmdb':
             self.domain = 'http://ecmdb.ca'
@@ -49,17 +48,10 @@ class MetaboliteNoSQL():
                 '/system/downloads/current/ymdb.json.zip'  # list of metabolites
             self.compound_url = self.domain + '/compounds/{}.xml'
             self.collection_dir = output_directory
-
-    # make connections wth mongoDB
-    def con_db(self):
-        try:
-            client = MongoClient(self.MongoDB, 400)  # 400ms max timeout
-            client.server_info()
-            db = client[self.db]
-            collection = db[self.source]
-            return collection
-        except pymongo.errors.ConnectionFailure:
-            return ('Server not available')
+        super(MetaboliteNoSQL, self).__init__(cache_dirname=output_directory, MongoDB=MongoDB, 
+                 replicaSet= replicaSet, db=db,
+                 verbose=self.verbose , max_entries=max_entries, username = username, 
+                 password = password, authSource = authSource)
 
     '''Each compound's collection of imformation is written into a json file for mongodb
 
@@ -71,7 +63,7 @@ class MetaboliteNoSQL():
 
         response = requests.get(self.compound_index)
         response.raise_for_status()
-        collection = self.con_db()
+        _, _, collection = self.con_db(self.source)
 
         if self.verbose:
             print('... Done!')

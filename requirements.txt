@@ -40,5 +40,4 @@ capturer
 ftputil
 elasticsearch
 genson
-configparser
-hashlib
+pybel

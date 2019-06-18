@@ -8,7 +8,9 @@ import pymongo
 
 class TaxonTree(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, verbose=False, max_entries=float('inf')):
+    def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, 
+        verbose=False, max_entries=float('inf'), username = None,
+        password = None, authSource = 'admin'):
         self.ENDPOINT_DOMAINS = {
             'root': 'https://ftp.ncbi.nlm.nih.gov',
         }
@@ -20,26 +22,27 @@ class TaxonTree(mongo_util.MongoUtil):
         self.collection_str = 'taxon_tree'
         self.path = os.path.join(self.cache_dirname, self.collection_str)
         super(TaxonTree, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                                            verbose=verbose, max_entries=max_entries)
+                                            verbose=verbose, max_entries=max_entries, username = username,
+                                            password = password, authSource = authSource)
         self.client, self.db, self.collection = self.con_db(self.collection_str)
-        self.repetition = 1000 # how often verbose messages show
+        self.repetition = 1 # how often verbose messages show
 
     def load_content(self):
         '''Load contents of several .dmp files into MongoDB
         '''
         self.download_dump()
-        # self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
-        # if self.verbose:
-        #     print('Indexing tax_id ... \n')
-        # self.collection.create_index( [("tax_id", pymongo.ASCENDING)] , background=False, sparse=True)
-        # self.parse_nodes() # nodes.dmp
-        # if self.verbose:
-        #     print('Indexing division_id and gene_code ... \n')
-        # index1 = pymongo.IndexModel( [("division_id", pymongo.ASCENDING)] , background=False, sparse=True)
-        # index2 = pymongo.IndexModel([("gene_code", pymongo.ASCENDING)] , background=False, sparse=True)
-        # self.collection.create_indexes([index1, index2])
-        # self.parse_division() # division.dmp
-        # self.parse_names() # names.dmp
+        self.parse_fullname_taxid() # taxidlineage.dmp fullnamelineage.dmp
+        if self.verbose:
+            print('Indexing tax_id ... \n')
+        self.collection.create_index( [("tax_id", pymongo.ASCENDING)] , background=False, sparse=True)
+        self.parse_nodes() # nodes.dmp
+        if self.verbose:
+            print('Indexing division_id and gene_code ... \n')
+        index1 = pymongo.IndexModel( [("division_id", pymongo.ASCENDING)] , background=False, sparse=True)
+        index2 = pymongo.IndexModel([("gene_code", pymongo.ASCENDING)] , background=False, sparse=True)
+        self.collection.create_indexes([index1, index2])
+        self.parse_division() # division.dmp
+        self.parse_names() # names.dmp
         self.parse_gencode() # gencode.dmp
 
 
@@ -237,10 +240,13 @@ class TaxonTree(mongo_util.MongoUtil):
                 i += 1
 
 def main():
-    mongodb = 'mongodb://mongo:27017'
+    db = 'datanator'
+    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+    username, password, MongoDB, port = server_util.ServerUtil(
+        config_file=config_file).get_user_config()
     cache_dirname = '/root/host/karr_lab/datanator/datanator/data_source/cache/taxon_tree'
-    manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=mongodb, replicaSet='rs0', 
-                    db='datanator', verbose=True)
+    manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=None, 
+                    db='datanator', verbose=True, username = username, password = password)
     manager.load_content()
 
 

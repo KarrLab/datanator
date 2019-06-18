@@ -1,6 +1,6 @@
 import unittest
 from datanator.data_source import kegg_reaction_class
-from datanator.core import query_nosql
+from datanator.util import server_util
 import tempfile
 import shutil
 import pymongo
@@ -14,11 +14,14 @@ class TestKeggReaction(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         # cls.cache_dirname = './datanator/data_source/cache/'
         cls.db = 'test'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        cls.username, cls.password, cls.MongoDB, cls.port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.collection_str = 'kegg_reaction_class'
         cls.src = kegg_reaction_class.KeggReaction(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
-        cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
+            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, 
+            verbose=True, max_entries=20, username = cls.username, password = cls.password)
+        cls.client, cls.db_obj, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)
         os.makedirs(path, exist_ok=True)
         cls.data = {

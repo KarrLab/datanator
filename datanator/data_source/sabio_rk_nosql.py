@@ -13,6 +13,7 @@ import pymongo
 from pymongo import MongoClient
 from datanator.util import mongo_util
 from datanator.util import server_util
+from datanator.util import chem_util
 from pathlib import Path
 import re
 import os
@@ -46,6 +47,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                                     password = password, authSource = authSource)
 
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.chem_manager = chem_util.ChemUtil()
 
     # load json files
     def load_json(self):
@@ -569,7 +571,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             '''
             for i in range(len(rxnp)):
                 substrate_inchi = get_inchi_structure(rxnp[i])
-                inchi_deprot = self.simplify_inchi(inchi = substrate_inchi)
+                inchi_deprot = self.chem_manager.simplify_inchi(inchi = substrate_inchi)
                 rxnp[i]['inchi_deprot'] = inchi_deprot
                 try:
                     hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()

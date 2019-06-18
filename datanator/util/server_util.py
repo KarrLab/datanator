@@ -25,6 +25,7 @@ class ServerUtil():
         self.config.read(config_file)
 
     def get_user_config(self, username = 'admin'):
+
         admin = self.config[username]
         username = admin.get('User', self.username)
         password = admin.get('Password', self.password)

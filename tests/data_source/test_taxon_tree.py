@@ -1,5 +1,6 @@
 import unittest
 from datanator.data_source import taxon_tree
+from datanator.util import server_util
 import tempfile
 import shutil
 import os
@@ -11,12 +12,14 @@ class TestTaxonTree(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        # cls.cache_dirname = './datanator/data_source/cache/'
         cls.db = 'test'
-        cls.MongoDB = 'mongodb://mongo:27017/'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
         cls.collection_str = 'taxon_tree'
         cls.src = taxon_tree.TaxonTree(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, verbose=True, max_entries=20)
+            cls.cache_dirname, MongoDB, cls.db, replicaSet=None, 
+            verbose=True, max_entries=10, username = username, password = password)
         cls.path = os.path.join(cls.cache_dirname, cls.collection_str)
 
     @classmethod

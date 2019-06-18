@@ -4,12 +4,14 @@ from six import BytesIO
 import shutil
 import pandas as pd
 import requests
-import pymongo
+from datanator.util import mongo_util
 
 
-class PaxNoSQL():
+class PaxNoSQL(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname, MongoDB, db, verbose=False, max_entries=float('inf')):
+    def __init__(self, cache_dirname, MongoDB, db, verbose=False, 
+                max_entries=float('inf'), username = None, password = None,
+                authSource = 'admin', replicaSet = None):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
@@ -20,23 +22,17 @@ class PaxNoSQL():
             'pax_protein': 'http://pax-db.org/downloads/latest/paxdb-uniprot-links-v4.1.zip'
         }
         self.collection = 'pax'
+        super(PaxNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
+                replicaSet=replicaSet, db=db,
+                 verbose=verbose, max_entries=max_entries, username = username, 
+                 password = password, authSource = authSource)
 
-    def con_db(self):
-        try:
-            client = pymongo.MongoClient(
-                self.MongoDB, 400)  # 400ms max timeout
-            client.server_info()
-            db = client[self.db]
-            collection = db[self.collection]
-            return collection
-        except pymongo.errors.ConnectionFailure:
-            return ('Server not available')
 
     def load_content(self):
         """ Collects and Parses all data from Pax DB website and adds to MongoDB
 
         """
-        collection = self.con_db()
+        client, db_obj, collection = self.con_db(self.collection)
         database_url = self.ENDPOINT_DOMAINS['pax']
         protein_conversion_url = self.ENDPOINT_DOMAINS['pax_protein']
 
@@ -70,12 +66,19 @@ class PaxNoSQL():
         for _,_,files in (os.walk(self.cache_dirname)):
         	file_count += len(files)
         total = min(file_count, self.max_entries)
+
+        i = 0
         for self.file_id in range(total):
             if self.verbose:
                 print('Processing file_id = '+str(self.file_id+1)+' (out of '+str(total) +
                       '; '+str(round(100*self.file_id/total, 2))+'%'+' already done)')
+            if i > self.max_entries:
+                break
             entry = self.parse_paxDB_files()
             collection.replace_one({'file_name':entry['file_name']},entry,upsert=True)
+            i += 1
+
+        client.close()
 
         return collection
 

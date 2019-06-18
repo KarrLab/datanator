@@ -2,31 +2,26 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import uniprot_nosql
-import os
-import json
+from datanator.util import server_util
+
 
 class TestUniprotNoSQL(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.MongoDB = 'mongodb://mongo:27017/'
-        cls.db = 'test'
-        cls.output_directory = cls.cache_dirname # directory to store JSON files
-        cls.src = uniprot_nosql.UniprotNoSQL(cls.MongoDB, cls.db, max_entries=10)
+        db = 'test'
+        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+        username, password, MongoDB, port = server_util.ServerUtil(
+            config_file=config_file).get_user_config()
+        cls.src = uniprot_nosql.UniprotNoSQL(MongoDB = MongoDB, db = db, max_entries=10,
+                                            username = username, password = password)
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    def setUp(self):
-        self.collection = self.src.con_db()
 
-    def tearDown(self):
-        self.collection.drop()
-
-    def test_con_db(self):
-        self.assertNotEqual(self.collection, 'Server not available')
-
+    @unittest.skip('large single file download')
     def test_proper_loading(self):
         uni = self.src.load_uniprot()
         count = uni.count()

@@ -9,7 +9,9 @@ import requests
 from datanator.util import mongo_util
 
 class CorumNoSQL(mongo_util.MongoUtil):
-    def __init__(self,cache_dirname, MongoDB, db, replicaSet=None, verbose=False, max_entries=float('inf')):
+    def __init__(self,cache_dirname, MongoDB, db, replicaSet=None, 
+        verbose=False, max_entries=float('inf'), username = None, password = None,
+        authSource = 'admin'):
         self.ENDPOINT_DOMAINS = {
             'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
         }
@@ -20,7 +22,8 @@ class CorumNoSQL(mongo_util.MongoUtil):
         self.max_entries = max_entries
         self.collection = 'corum'
         super(CorumNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
-                    verbose=verbose, max_entries=max_entries)
+                    verbose=verbose, max_entries=max_entries, username = username, password = password,
+                    authSource = authSource)
 
     def load_content(self):
         """ Collect and parse all data from CORUM website into JSON files and add to NoSQL database """

@@ -1,22 +1,30 @@
 from datanator.core import query_nosql
+from datanator.util import chem_util
+from datanator.util import server_util
+import pymongo
 import re
 
-class MetabolitesMeta(query_nosql.DataQuery):
+class MetabolitesMeta(query_nosql.QuerySabio):
+    ''' meta_loc: database location to save the meta collection
+    '''
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf'), username = None, password = None,
-                 authSource = 'admin'):
+                 verbose=False, max_entries=float('inf'), username = None, 
+                 password = None, authSource = 'admin', meta_loc = None):
         self.cache_dirname = cache_dirname
+        self.verbose = verbose
         self.MongoDB = MongoDB
         self.replicaSet = replicaSet
-        self.db = db
-        self.verbose = verbose
         self.max_entries = max_entries
-
+        self.username = username
+        self.password = password
+        self.authSource = authSource
+        self.meta_loc = meta_loc
         super(MetabolitesMeta, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
                                               db=db, verbose=verbose, max_entries=max_entries, username = username,
-                                              password = password, authSource = 'admin')
+                                              password = password, authSource = authSource)
         self.frequency = 100
+        self.chem_manager = chem_util.ChemUtil()
 
     def load_content(self):
         ecmdb_fields = ['m2m_id', 'inchi', 'synonyms.synonym']
@@ -28,32 +36,54 @@ class MetabolitesMeta(query_nosql.DataQuery):
             fields=ymdb_fields, collection_str='ymdb')
 
         collection_name = 'metabolites_meta'
-        client, _, collection = self.con_db(collection_name)
+        client = pymongo.MongoClient(
+            self.MongoDB, replicaSet=self.replicaSet, 
+            username = self.username, password = self.password,
+            authSource = self.authSource)
+        meta_db = client[self.meta_loc]
+        collection = meta_db[collection_name]
 
+        i = 0
         for doc in ecmdb_list:
+            if i > self.max_entries:
+                break
+            doc['inchi_deprot'] = self.chem_manager.simplify_inchi(inchi = doc['inchi'])
+            doc['inchi_hashed'] = self.chem_manager.hash_inchi(inchi = doc['inchi_deprot'])
             collection.update_one({'inchi': doc['inchi']},
                                   { '$set': doc},
                                   upsert=True)
+            i += 1
 
+        j = 0
         for doc in ymdb_list:
+            if j > self.max_entries:
+                break
+            doc['inchi_deprot'] = self.chem_manager.simplify_inchi(inchi = doc['inchi'])
+            doc['inchi_hashed'] = self.chem_manager.hash_inchi(inchi = doc['inchi_deprot'])
             collection.update_one({'inchi': doc['inchi']},
                                   { '$set': doc},
                                   upsert=True)
+            j += 1
 
-        # for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
-        #     kinlaw_id = self.find_rxn_id(inchi = doc['inchi'])
-        #     rxn_participants = self.find_reaction_participants(kinlaw_id)
-        #     collection.update_one({'inchi': doc['inchi']},
-        #                           {'$set': {'kinlaw_id': kinlaw_id,
-        #                            'reaction_participants': rxn_participants}},
-        #                           upsert=False)
+        k = 0
+        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
+            if k > self.max_entries:
+                break
+            kinlaw_id = self.get_kinlawid_by_inchi([doc['inchi']])
+            rxn_participants = self.find_reaction_participants(kinlaw_id)
+            collection.update_one({'inchi': doc['inchi']},
+                                  {'$set': {'kinlaw_id': kinlaw_id,
+                                   'reaction_participants': rxn_participants}},
+                                  upsert=False)
+            k += 1
         
 
         client.close()
 
 
     def get_metabolite_fields(self, fields=None, collection_str=None):
-        '''Get fields of interest from metabolite collection: ecmdb or ymdb
+        '''Get values of fields of interest from 
+            metabolite collection: ecmdb or ymdb
                 Args:
                         fileds: list of fields of interest
                         collection_str: collection in which query will be done
@@ -74,72 +104,22 @@ class MetabolitesMeta(query_nosql.DataQuery):
                 break
             if i % self.frequency == 0:
                 print('Getting fields of interest from {}'.format(collection_str))
-            doc['inchi'] = self.parse_inchi(inchi=doc['inchi'])
+            doc['inchi'] = self.chem_manager.simplify_inchi(inchi=doc['inchi'])
             dict_list.append(doc)
             i += 1
 
         return dict_list
 
-    def find_rxn_id(self, inchi=None):
-        '''Find reactions' kinlaw_id in sabio_rk given inchi structures
-                Return:
-                        List of kinlaw_id that contain the given inchi string
-        '''
-        substrate = 'reaction_participant.substrate.structure.inchi'
-        product = 'reaction_participant.product.structure.inchi'
-        c = 'sabio_rk'
-        # regular expressions are weird
-        try:
-            inchi = inchi.replace('(', '\(').replace(')', '\)')
-        except AttributeError:
-            return -1
-        regex = re.compile(inchi)
-        query = {'$or': [{substrate: regex},
-                         {product: regex}]}
-        docs = self.doc_feeder(collection_str=c, query=query)
-        kinlaw_id = []
-        i = 0
-        for doc in docs:
-            if i == self.max_entries:
-                break
-            if i % self.frequency == 0:
-                print('Getting kinlaw_id of inchi {}'.format(inchi))
-            _id = doc['kinlaw_id']
-            kinlaw_id.append(_id)
-            i += 1
-
-        return kinlaw_id
-
-    def find_metabolite_inchi(self, doc):
-        '''Find inchi structure information of metabolites in ecmdb or ymdb
-                return inchi information without protonation state
-        '''
-        try:
-            return self.parse_inchi(doc['inchi'])
-        except KeyError:
-            return 'No key named "inchi" in given document'
-
-    def parse_inchi(self, inchi=None):
-        '''Remove molecules's protonation state
-        "InChI=1S/H2O/h1H2" = > "InChI=1S/H2O"
-        '''
-        # if self.verbose:
-        #     print('Parsing inchi by taking out protonation state')
-        try:
-            inchi_neutral = inchi.split('/h')[0]
-            return inchi_neutral
-        except AttributeError:
-            return None
-
 
 def main():
-    MongoDB = '35.173.159.185:27017'
     db = 'datanator'
-    username = None
-    password = None
-    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet = None, db=db, 
+    meta_loc = 'datanator'
+    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
+    username, password, server, port = server_util.ServerUtil(
+        config_file=config_file).get_user_config()
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=server, replicaSet = None, db=db, 
                                 verbose=True, max_entries=float('inf'), 
-                                username = username, password = password)
+                                username = username, password = password, meta_loc = meta_loc)
 
     manager.load_content()
 
