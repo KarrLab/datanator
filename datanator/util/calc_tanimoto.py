@@ -181,7 +181,7 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many(batch_size=2, no_cursor_timeout = False)
+    manager.many_to_many(batch_size=10, no_cursor_timeout = False)
 
 
 if __name__ == '__main__':

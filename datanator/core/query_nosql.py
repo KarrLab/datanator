@@ -496,24 +496,27 @@ class QueryTaxonTree(DataQuery):
             names.append(cursor['tax_name'])
         return names
 
-    def get_anc_id_by_name(self, names):
+    def get_anc_by_name(self, names):
         ''' Get organism's ancestor ids by
             using organism's names
             Args:
                 names: list of organism's names e.g. Candidatus Diapherotrites
             Return:
-                result: list of ancestors in order of the farthest to the closest
+                result_id: list of ancestors ids in order of the farthest to the closest
+                result_name: list of ancestors' names in order of the farthest to the closest
         '''
-        result = []
+        result_id = []
+        result_name = []
         
         collation = {'locale': 'en', 'strength': 2}
-        projection = {'_id': 0, 'anc_id':1}
+        projection = {'_id': 0, 'anc_id':1, 'anc_name': 1}
         for name in names:
             query = {'tax_name': name}
             cursor = self.collection.find_one(query, collation = collation,
                                              projection = projection)
-            result.append(cursor['anc_id'])
-        return result
+            result_id.append(cursor['anc_id'])
+            result_name.append(cursor['anc_name'])
+        return result_id, result_name
 
     def get_anc_id_by_id(self, ids):
         ''' Get organism's ancestor ids by
