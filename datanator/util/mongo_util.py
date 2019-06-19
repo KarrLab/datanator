@@ -1,8 +1,6 @@
 import pymongo
 import wc_utils.quilt
-import json
 from bson import decode_all
-from genson import SchemaBuilder
 import hashlib
 
 

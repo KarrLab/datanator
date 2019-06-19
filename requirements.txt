@@ -45,4 +45,3 @@ capturer
 ftputil
 elasticsearch
 genson
-pybel

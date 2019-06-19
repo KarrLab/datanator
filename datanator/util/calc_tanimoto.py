@@ -117,8 +117,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
     def many_to_many(self, collection_str1='metabolites_meta',
                      collection_str2='metabolites_meta', field1='inchi_deprot',
                      field2='inchi_deprot', lookup1='inchi_hashed',
-                     lookup2='inchi_hashed', batch_size=100, num=100,
-                     no_cursor_timeout=False):
+                     lookup2='inchi_hashed', num=100):
         ''' Go through collection_str and assign each
                 compound top 'num' amount of most similar 
                 compounds
@@ -137,25 +136,27 @@ class CalcTanimoto(mongo_util.MongoUtil):
         db_obj = client[self.db]
         final = db_obj[collection_str1]
 
-        projection = {'m2m_id':0, '_id': 0, 'ymdb_id': 0, 'kinlaw_id': 0, 
+        projection = {'m2m_id':0,  'ymdb_id': 0, 'kinlaw_id': 0, 
                     'reaction_participants': 0, 'synonyms': 0}
         _, _, col = self.con_db(collection_str1)
-        cursor = col.find({}, projection=projection, batch_size=batch_size,
-                          no_cursor_timeout=no_cursor_timeout)
         count = col.count_documents({})
         total = min(count, self.max_entries)
 
-        i = 0
-
-        for doc in cursor:
-            if 'similar_compounds' in doc or i == 899:
-                i += 1
-                if self.verbose and i % 10 == 0:
+        ''' The rest of the code in this function is to force
+            a cursor refresh every 'limit' number of documents
+            because no_cursor_timeout option in pymongo's find()
+            function is not working as intended
+        '''
+        def process_doc(doc, final, i, total = total, collection_str1 = collection_str1,
+                        field1 = field1, lookup1 = lookup1, collection_str2 = collection_str2,
+                        field2 = field2, lookup2 = lookup2):
+            if 'similar_compounds' in doc:
+                if self.verbose and i % 10 ==0:
                     print('Skipping document {} out of {} in collection {}'.format(
                         i, total, collection_str1))
-                continue
+                return 
             if i > self.max_entries:
-                break
+                return 
             if self.verbose and i % 1 == 0:
                 print('Going through document {} out of {} in collection {}'.format(
                     i, total, collection_str1))
@@ -169,7 +170,25 @@ class CalcTanimoto(mongo_util.MongoUtil):
             final.update_one({lookup1: doc[lookup1]},
                              {'$set': {'similar_compounds': dic}},
                              upsert=False)
+ 
+        limit = 100    # number of documents from the cursor to be stuffed into a list
+        sorted_field = 'inchi_hashed' # indexed field used to sort cursor
+        i = 0
+
+        documents = list(col.find({}, projection = projection).sort(sorted_field, pymongo.ASCENDING).limit(limit))
+        
+        for doc in documents: 
+            process_doc(doc, final, i)
             i += 1
+
+        while True:
+            cursor = col.find({sorted_field: {'$gte': documents[-1][sorted_field]}})
+            documents = list(cursor.sort(sorted_field, pymongo.ASCENDING).limit(limit))
+            if not documents:
+                break
+            for doc in documents:
+                process_doc(doc, final, i)
+                i += 1
 
             
 def main():
@@ -181,7 +200,7 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=None, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many(batch_size=10, no_cursor_timeout = False)
+    manager.many_to_many()
 
 
 if __name__ == '__main__':
