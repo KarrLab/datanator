@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import pymongo
 import json
+import datanator.config.core
 import os
 
 class TestKeggReaction(unittest.TestCase):
@@ -14,13 +15,15 @@ class TestKeggReaction(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         # cls.cache_dirname = './datanator/data_source/cache/'
         cls.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        cls.username, cls.password, cls.MongoDB, cls.port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.collection_str = 'kegg_reaction_class'
         cls.src = kegg_reaction_class.KeggReaction(
-            cls.cache_dirname, cls.MongoDB, cls.db, replicaSet=None, 
-            verbose=True, max_entries=20, username = cls.username, password = cls.password)
+            cls.cache_dirname, MongoDB, cls.db, replicaSet=replSet, 
+            verbose=True, max_entries=20, username = username, password = password)
         cls.client, cls.db_obj, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)
         os.makedirs(path, exist_ok=True)
@@ -73,14 +76,6 @@ class TestKeggReaction(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
-
-    # @unittest.skip('passed')
-    def test_extract_values(self):
-        data = json.dumps(self.data)
-        loaded_data = json.loads(data)
-        name_list = self.src.extract_values(loaded_data, 'name')
-        self.assertEqual(name_list[0], 'br08204')
-        self.assertEqual(name_list[-1][:7], 'RC02273')
     
     # @unittest.skip('passed')
     def test_download_rxn_cls(self):

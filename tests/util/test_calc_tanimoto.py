@@ -2,7 +2,7 @@ import unittest
 from datanator.util import calc_tanimoto
 import tempfile
 import shutil
-from datanator.util import server_util
+import datanator.config.core
 from datanator.util import mongo_util
 
 
@@ -12,13 +12,14 @@ class TestCalcTanimoto(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        cls.username, cls.password, cls.server, cls.port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        cls.server = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = calc_tanimoto.CalcTanimoto(
-            cache_dirname=cls.cache_dirname, MongoDB=cls.server, replicaSet=None, db=cls.db,
-            verbose=True, max_entries=5, password=cls.password, username=cls.username,
-            result_db = 'test')
+            cache_dirname=cls.cache_dirname, MongoDB=cls.server, replicaSet=replSet, db=cls.db,
+            verbose=True, max_entries=5, password=cls.password, username=cls.username)
 
     @classmethod
     def tearDownClass(cls):

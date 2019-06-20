@@ -1,6 +1,6 @@
 import unittest
 from datanator.util import mongo_util
-from datanator.util import server_util
+import datanator.config.core
 import tempfile
 import shutil
 
@@ -11,12 +11,14 @@ class TestMongoUtil(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = mongo_util.MongoUtil(
             cache_dirname = cls.cache_dirname, MongoDB = MongoDB, 
-            replicaSet = None, db = cls.db, verbose=True, max_entries=20,
+            replicaSet = replSet, db = cls.db, verbose=True, max_entries=20,
             username = username, password = password)
         cls.collection_str = 'ecmdb'
 

@@ -10,6 +10,7 @@ services:
     tty: true
     volumes: 
       - "../:/root/host/karr_lab"
+      - "~/.wc:/root/.wc"
 
   postgres_service:
     image: circleci/postgres:11.2-alpine-ram

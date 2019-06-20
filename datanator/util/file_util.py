@@ -1,5 +1,3 @@
-from itertools import chain
-
 class FileUtil:
 
     def extract_values(self, obj, key):

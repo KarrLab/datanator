@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import json
 import os
+import datanator.config.core
 
 class TestKeggOrthology(unittest.TestCase):
 
@@ -12,13 +13,15 @@ class TestKeggOrthology(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, cls.MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        cls.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.collection_str = 'kegg_orthology'
         cls.src = kegg_orthology.KeggOrthology(
                                     cls.cache_dirname, cls.MongoDB, cls.db, 
-                                    replicaSet=None, verbose=True, max_entries=20,
+                                    replicaSet=replSet, verbose=True, max_entries=20,
                                     username = username, password = password)
         cls.client, cls.db, cls.collection = cls.src.con_db(cls.collection_str)
         path = os.path.join(cls.cache_dirname, cls.collection_str)
@@ -71,14 +74,6 @@ class TestKeggOrthology(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
-
-    # @unittest.skip('passed')
-    def test_extract_values(self):
-        data = json.dumps(self.data)
-        loaded_data = json.loads(data)
-        name_list = self.src.extract_values(loaded_data, 'name')
-        self.assertEqual(name_list[0], 'ko00001')
-        self.assertEqual(name_list[-1][:6], 'K15231')
     
     # @unittest.skip('passed')
     def test_download_ko(self):

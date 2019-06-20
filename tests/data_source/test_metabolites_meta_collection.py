@@ -1,6 +1,6 @@
 import unittest
 from datanator.data_source import metabolites_meta_collection
-from datanator.util import server_util
+import datanator.config.core
 import pymongo
 import tempfile
 import shutil
@@ -13,9 +13,11 @@ class TestMetabolitesMeta(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
         cls.meta_loc = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        cls.username, cls.password, cls.MongoDB, cls.port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        cls.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = metabolites_meta_collection.MetabolitesMeta(cache_dirname=cls.cache_dirname,
                                                               MongoDB=cls.MongoDB,  db=cls.db,
                                                               verbose=True, max_entries=20, username = cls.username,

@@ -2,7 +2,8 @@ import unittest
 from datanator.core import query_nosql
 import tempfile
 import shutil
-from datanator.util import server_util
+import datanator.config.core
+
 
 class TestQueryNoSQL(unittest.TestCase):
 
@@ -10,9 +11,11 @@ class TestQueryNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.collection_str = 'ecmdb'
         cls.src = query_nosql.DataQuery(
             cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=None, db=cls.db,
@@ -69,11 +72,13 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = query_nosql.QueryMetabolitesMeta(
-            cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=None, db=cls.db,
+            cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=replSet, db=cls.db,
                  verbose=True, max_entries=20, username = username, password = password)
 
     @classmethod
@@ -97,7 +102,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         rxn, syn = self.src.get_metabolite_synonyms(empty)
         self.assertEqual(syn, {'synonyms': None})
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_inchi(self):
         compounds = ['atp']
         inchi = self.src.get_metabolite_inchi(compounds)
@@ -133,8 +138,11 @@ class TestQuerySabio(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        server = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.MongoDB = server
         cls.username = username
         cls.password = password
@@ -156,7 +164,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi_slow(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -189,8 +197,11 @@ class TestQueryTaxonTree(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'datanator'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, server, port = server_util.ServerUtil(config_file = config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        server = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.MongoDB = server
         cls.username = username
         cls.password = password

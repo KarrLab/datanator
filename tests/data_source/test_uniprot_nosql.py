@@ -10,9 +10,11 @@ class TestUniprotNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = uniprot_nosql.UniprotNoSQL(MongoDB = MongoDB, db = db, max_entries=10,
                                             username = username, password = password)
 

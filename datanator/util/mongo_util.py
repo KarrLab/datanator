@@ -2,6 +2,7 @@ import pymongo
 import wc_utils.quilt
 from bson import decode_all
 import hashlib
+from genson import SchemaBuilder
 
 
 class MongoUtil:

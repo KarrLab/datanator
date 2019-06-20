@@ -1,6 +1,6 @@
 import unittest
 from datanator.data_source import pax_nosql
-from datanator.util import server_util
+import datanator.config.core
 import tempfile
 import shutil
 
@@ -9,9 +9,11 @@ class TestCorumNoSQL(unittest.TestCase):
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        self.username, self.password, self.MongoDB, self.port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        self.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        self.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        self.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)

@@ -7,11 +7,12 @@ import json
 import pymongo
 import requests
 from datanator.util import mongo_util
+import datanator.config.core
 
 class CorumNoSQL(mongo_util.MongoUtil):
-    def __init__(self,cache_dirname, MongoDB, db, replicaSet=None, 
+    def __init__(self, MongoDB, db, replicaSet=None, 
         verbose=False, max_entries=float('inf'), username = None, password = None,
-        authSource = 'admin'):
+        authSource = 'admin', cache_dirname = None):
         self.ENDPOINT_DOMAINS = {
             'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
         }
@@ -224,3 +225,18 @@ def correct_protein_name_list(lst):
                           '[Cleaved into: Lamin-A/C ];')
         lst = lst.replace('[Includes: Maltase ;', '[Includes: Maltase ];')
     return lst
+
+def main():
+    db = 'datanator'
+    cache_dirname = '../../datanator/data_source/cache'
+    username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+    password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+    replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
+    manager = CorumNoSQL(MongoDB, db, replicaSet=replSet, cache_dirname = cache_dirname,
+            verbose = True, username = username, password = password)
+    manager.load_content()
+
+if __name__ == '__main__':
+    main()

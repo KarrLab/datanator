@@ -2,6 +2,7 @@ import json
 import requests
 import os
 from datanator.util import mongo_util
+from datanator.util import file_util
 
 
 class KeggReaction(mongo_util.MongoUtil):
@@ -38,7 +39,7 @@ class KeggReaction(mongo_util.MongoUtil):
         with open(store_path, 'w') as f:
             json.dump(data, f, indent=4)
 
-        names = self.extract_values(data, 'name')
+        names = file_util.FileUtil().extract_values(data, 'name')
         names = [name.split()[0] for name in names if name[:2] == 'RC']
 
         return names

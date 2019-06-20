@@ -11,7 +11,7 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import metabolite_nosql
-from datanator.util import server_util
+import datanator.config.core
 import os
 import json
 
@@ -23,9 +23,11 @@ class TestMetaboliteNoSQL(unittest.TestCase):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.source = 'ecmdb' # 'ymdb' or 'ecmdb'
         cls.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        username, password, MongoDB, port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.output_directory = cls.cache_dirname # directory to store JSON files
         cls.src = metabolite_nosql.MetaboliteNoSQL(cls.output_directory,
             cls.source, MongoDB, cls.db, verbose = True, max_entries=20,

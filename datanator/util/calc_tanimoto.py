@@ -4,6 +4,7 @@ from datanator.util import server_util
 import pymongo
 import numpy as np
 import multiprocessing as mp
+import datanator.config.core
 
 
 class CalcTanimoto(mongo_util.MongoUtil):
@@ -176,16 +177,15 @@ class CalcTanimoto(mongo_util.MongoUtil):
         i = 0
 
         documents = list(col.find({}, projection = projection).sort(sorted_field, pymongo.ASCENDING).limit(limit))
-        
         for doc in documents: 
             process_doc(doc, final, i)
             i += 1
 
-        while True:
-            cursor = col.find({sorted_field: {'$gte': documents[-1][sorted_field]}})
+        is_last_batch = False
+        while not is_last_batch:
+            cursor = col.find({sorted_field: {'$gt': documents[-1][sorted_field]}}, projection = projection)
             documents = list(cursor.sort(sorted_field, pymongo.ASCENDING).limit(limit))
-            if not documents:
-                break
+            is_last_batch = False if len(documents) == limit else True 
             for doc in documents:
                 process_doc(doc, final, i)
                 i += 1
@@ -194,11 +194,13 @@ class CalcTanimoto(mongo_util.MongoUtil):
 def main():
 
     db = 'datanator'
-    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-    username, password, server, port = server_util.ServerUtil(
-        config_file=config_file).get_user_config()
+    username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+    password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config()['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+    replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
     manager = CalcTanimoto(
-        MongoDB=server, replicaSet=None, db=db,
+        MongoDB=server, replicaSet=replSet, db=db,
         verbose=True, password=password, username=username)
     manager.many_to_many()
 

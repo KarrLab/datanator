@@ -16,24 +16,25 @@ from datanator.util import server_util
 import tempfile
 import shutil
 import pymongo
-
+import datanator.config.core
 
 class TestCorumNoSQL(unittest.TestCase):
  
     def setUp(self):
         self.cache_dirname = tempfile.mkdtemp()
         self.db = 'test'
-        config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-        self.username, self.password, self.MongoDB, self.port = server_util.ServerUtil(
-            config_file=config_file).get_user_config()
+        self.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+        self.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+        self.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+        self.port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+        self.replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
 
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
     #@unittest.skip("loading everything")
     def test_load_some_content(self):
-        src = corum_nosql.CorumNoSQL(
-            self.cache_dirname, self.MongoDB, self.db, replicaSet=None, 
+        src = corum_nosql.CorumNoSQL(self.MongoDB, self.db, replicaSet=self.replSet, cache_dirname = self.cache_dirname,
             verbose = True, max_entries = 20, username = self.username, password = self.password)
         collection = src.load_content()
         self.assertEqual(collection.find().count(), 20)
@@ -41,14 +42,12 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertEqual(cursor.count(), 3)
         self.assertEqual(cursor[1]['complex_id'], 2)
         self.assertEqual(cursor[2]['subunits_protein_name'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
-        # collection.drop()
         
     @unittest.skip("will not work on circle ci due to file directory setting")
     def test_load_all_content(self):
         db = 'datanator'
-        cache_dirname = '../../datanator/data_source/cache'
-        src = corum_nosql.CorumNoSQL(
-            cache_dirname, self.MongoDB, db, verbose = True)
+        src = corum_nosql.CorumNoSQL(self.MongoDB, db, verbose = True, username = self.username, password = self.password,
+                                    cache_dirname = self.cache_dirname)
         collection = src.load_content()
 
         c = collection.find_one({'ComplexID':80})
@@ -56,11 +55,8 @@ class TestCorumNoSQL(unittest.TestCase):
 
         s = collection.find_one({'subunits(UniProt IDs)':'Q9UQL6'})
         self.assertEqual(s['subunits(Protein name)'][1], 'Histone deacetylase 5')
-        collection.drop()
         client.close()
 
-        # t = session.query(corum.Taxon).filter(corum.Taxon.ncbi_id == 9606).first()
-        # self.assertEqual(t.swissprot_id, 'Homo sapiens (Human)')
 
     def test_parse_list(self):
         self.assertEqual(corum_nosql.parse_list(None), [None])

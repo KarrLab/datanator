@@ -51,7 +51,7 @@ class TestFileUtil(unittest.TestCase):
         result = self.src.access_dict_by_index(_dict, 3)
         self.assertEqual({'a':0, 'b':1, 'c':2}, result)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_replace_dict_key(self):
         _dict = {'a': 0, 'b': 1, 'c': 2}
         replacements = ['d', 'e', 'f']
