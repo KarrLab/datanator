@@ -2,7 +2,7 @@ import unittest
 import shutil
 import tempfile
 from datanator.data_source import uniprot_nosql
-from datanator.util import server_util
+import datanator.config.core
 
 
 class TestUniprotNoSQL(unittest.TestCase):
