@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <h2>Search Datanator</h2>
+  {% block content %}
+    <form method="post">
+    <span style="display:inline-block">
+      <label for="molecule_name" style="display:block">Name</label>
+      <input name="molecule_name" id="molecule_name" required>
+    </span>
+    <span style="display:inline-block">
+      <label for="organism_name" style="display:block">Organism</label>
+      <input type="organism_name" name="organism_name" id="organism_name" required>
+    </span>
+    <input type="submit" value="Search">
+    </form>
+  {% endblock %}
+</div>
+</body>
+</html>
