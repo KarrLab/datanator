@@ -8,6 +8,8 @@ services:
     entrypoint: bash
     stdin_open: true
     tty: true
+    ports:
+      - "5000:5000"
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
