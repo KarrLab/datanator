@@ -108,6 +108,14 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         inchi = self.src.get_metabolite_inchi(compounds)
         self.assertEqual(inchi[0], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
 
+    def test_get_ids_from_hash(self):
+        hashed_inchi_1 = '616dd2c2a1ead9e8a7647bb571c3511678524bafc1af3944721e67e3'
+        hasehd_inchi_2 = 'd65642055743d2850a5121c79339545fbba69aa666e0f9a54e779161'
+        result_1 = self.src.get_ids_from_hash(hashed_inchi_1)
+        result_2 = self.src.get_ids_from_hash(hasehd_inchi_2)
+        self.assertEqual(result_1, {'m2m_id': 'M2MDB000016', 'ymdb_id': 'YMDB00058'})
+        self.assertEqual(result_2, {'m2m_id': 'M2MDB000006', 'ymdb_id': None})
+
     @unittest.skip('passed')
     def test_get_metabolite_name_by_hash(self):
         compounds = ['991703a1e15dc35f078ec2823017c292872d687bbff5f91bd727840e',

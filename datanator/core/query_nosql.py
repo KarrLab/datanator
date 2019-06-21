@@ -203,6 +203,26 @@ class QueryMetabolitesMeta(DataQuery):
             inchi.append(cursor['inchi'])
         return inchi
 
+    def get_ids_from_hash(self, hashed_inchi):
+        ''' Given a hashed inchi string, find its
+            corresponding m2m_id and/or ymdb_id
+            Args:
+                hashed_inchi: string of hashed inchi
+            Returns:
+                result: dictionary of ids and their keys
+                    {'m2m_id': ..., 'ymdb_id': ...}
+        '''
+        query = {'inchi_hashed': hashed_inchi}
+        projection = {'_id': 0}
+        doc = self.collection.find_one(filter = query, projection = projection)
+        result = {'m2m_id': None, 'ymdb_id': None}
+        if 'm2m_id' in doc:
+            result['m2m_id'] = doc['m2m_id']
+        if 'ymdb_id' in doc:
+            result['ymdb_id'] = doc['ymdb_id']
+
+        return result
+
     def get_metabolite_hashed_inchi(self, compounds):
         ''' Given a list of compound name(s)
             Return the corresponding hashed inchi string
@@ -554,6 +574,8 @@ class QueryTaxonTree(DataQuery):
         else:
             anc_ids = self.get_anc_id_by_id([org1, org2])
 
+        if org1 == org2:
+            return ('org1', [0, 0])
         org1_anc = anc_ids[0]
         org2_anc = anc_ids[1]
 
