@@ -14,7 +14,7 @@ class TestQueryFrontEnd(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    def string_query(self):
+    def test_string_query(self):
         string = '2-Ketobutyric acid (alpha ketobutyric acid)'
-        result = self.src.string_query(string)
-        self.assertEqual(result[0]['m2m_id'], 'M2MDB000001')
+        results = self.src.string_query(string)
+        self.assertEqual(results[0]['m2m_id'], 'M2MDB001633')

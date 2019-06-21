@@ -30,7 +30,7 @@ class DataQuery(mongo_util.MongoUtil):
         else:
             _, _, col_obj = self.con_db(collection)
             return col_obj.find({'$text': {'$search': v}},
-                                { 'score': { '$meta': "textScore" } }).sort( { 'score': { '$meta': "textScore" } } )
+                                { 'score': { '$meta': "textScore" } }).sort( [('score', {'$meta': 'textScore'})] )
 
     def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
         s=None, e=None, inbatch=False, query=None, 
