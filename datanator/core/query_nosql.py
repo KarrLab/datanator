@@ -215,11 +215,9 @@ class QueryMetabolitesMeta(DataQuery):
         query = {'inchi_hashed': hashed_inchi}
         projection = {'_id': 0}
         doc = self.collection.find_one(filter = query, projection = projection)
-        result = {'m2m_id': None, 'ymdb_id': None}
-        if 'm2m_id' in doc:
-            result['m2m_id'] = doc['m2m_id']
-        if 'ymdb_id' in doc:
-            result['ymdb_id'] = doc['ymdb_id']
+        result = {}
+        result['m2m_id'] = doc.get('m2m_id', None)
+        result['ymdb_id'] = doc.get('ymdb_id', None)
 
         return result
 
@@ -516,7 +514,7 @@ class QueryTaxonTree(DataQuery):
             names.append(cursor['tax_name'])
         return names
 
-    def get_anc_by_name(self, names):
+    def get_anc_id_by_name(self, names):
         ''' Get organism's ancestor ids by
             using organism's names
             Args:
@@ -580,6 +578,8 @@ class QueryTaxonTree(DataQuery):
         org2_anc = anc_ids[1]
 
         ancestor = self.file_manager.get_common(org1_anc, org2_anc)
+        if ancestor == '':
+            return ('No common ancestor', [-1, -1])
         idx_org1 = org1_anc.index(ancestor)
         idx_org2 = org2_anc.index(ancestor)
 

@@ -39,10 +39,10 @@ class QueryFrontEnd:
         results = self.dataquery_manager.find_text(query, collection='ecmdb')
         return(results)
 
-    def inchi_query(self, string):
+    def inchi_query_metabolite(self, string):
         # query for inchi string
         inchi_deprot = self.chem_manager.simplify_inchi(inchi=string)
-        inchi_hashed = self.chem_maanger.hash_inchi(inchi=inchi_deprot)
+        inchi_hashed = self.chem_manager.hash_inchi(inchi=inchi_deprot)
         ids = self.metabolitesmeta_manager.get_ids_from_hash(inchi_hashed)
 
         list_jsons = []
@@ -61,7 +61,13 @@ class QueryFrontEnd:
             list_jsons.append(doc)
         return(list_jsons)
 
-    def inchi_query(self, string, organism, molecule_name):
+    def inchi_query_organism(self, string, organism):
+        ''' Find metabolite (defined by string) concentration
+            in e.coli and yeast, return documents
+            Args:
+                string: inchi value
+                organism: concentration value missing in this organism
+        '''
 
         tree = self.taxontree_manager.get_anc_id_by_name([organism])
         for entry in tree:
@@ -72,10 +78,9 @@ class QueryFrontEnd:
         anc, dist = self.taxontree_manager.get_common_ancestor(
             organism, "Saccharomyces cerevisiae")
         distance_y = dist[0]
-        print(anc)
 
         inchi_deprot = self.chem_manager.simplify_inchi(inchi=string)
-        inchi_hashed = self.chem_maanger.hash_inchi(inchi=inchi_deprot)
+        inchi_hashed = self.chem_manager.hash_inchi(inchi=inchi_deprot)
         ids = self.metabolitesmeta_manager.get_ids_from_hash(inchi_hashed)
         list_jsons = []
 
@@ -84,13 +89,15 @@ class QueryFrontEnd:
             projection = {'_id': 0}
             _, _, col = self.mongoutil_manager.con_db('ecmdb')
             doc = col.find_one(filter=query, projection=projection)
+            doc["taxon_distance"] = distance_e
             list_jsons.append(doc)
 
-        if ids['ymdb'] != None:
-            query = {'ymdb': ids['ymdb']}
+        if ids['ymdb_id'] != None:
+            query = {'ymdb_id': ids['ymdb_id']}
             projection = {'_id': 0}
             _, _, col = self.mongoutil_manager.con_db('ymdb')
             doc = col.find_one(filter=query, projection=projection)
+            doc["taxon_distance"] = distance_y
             list_jsons.append(doc)
         return(list_jsons)
 
@@ -100,7 +107,7 @@ class QueryFrontEnd:
         # try:
         inchi = self.metabolitesmeta_manager.get_metabolite_inchi([string])[
             0]
-        response = self.inchi_query(inchi, organism, string)
+        response = self.inchi_query_organism(inchi, organism, string)
         # except Exception as e:
         # print(e)
 
