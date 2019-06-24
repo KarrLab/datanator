@@ -195,12 +195,14 @@ class QueryMetabolitesMeta(DataQuery):
                 ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7']
         '''
         inchi = []
-        projection = {'_id': 0, 'inchi': 1}
+        projection = {'_id': 0, 'inchi': 1, 'm2m_id': 1, 'ymdb_id': 1}
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
             cursor = self.collection.find_one({'synonyms.synonym': compound},
                                 projection = projection, collation = collation)
             inchi.append(cursor['inchi'])
+            inchi.append(cursor['m2m_id'])
+            inchi.append(cursor['ymdb_id'])
         return inchi
 
     def get_ids_from_hash(self, hashed_inchi):
