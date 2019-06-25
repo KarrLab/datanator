@@ -3,7 +3,7 @@ version: '3'
 
 services:
   wc_env:
-    image: karrlab/wc_env:latest
+    image: lzy7071/karrlabdatanator_dependencies
     restart: always
     entrypoint: bash
     stdin_open: true
@@ -23,60 +23,60 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
 
-  mongo:
-    image: mongo:4.1
-    restart: always
-    volumes:
-      - ./datanator/data_source/cache/mongo:/data/db
-      - ./docs/mongod.conf:/etc/mongod.conf
-      - ../:/root/host/karr_lab
-    ports:
-      - "20000:27017"
-    command: ["mongod", "--config", "/etc/mongod.conf"]
+  # mongo:
+  #   image: mongo:4.1
+  #   restart: always
+  #   volumes:
+  #     - ./datanator/data_source/cache/mongo:/data/db
+  #     - ./docs/mongod.conf:/etc/mongod.conf
+  #     - ../:/root/host/karr_lab
+  #   ports:
+  #     - "20000:27017"
+  #   command: ["mongod", "--config", "/etc/mongod.conf"]
  
-  mongo_secondary:
-    image: mongo:4.1
-    restart: always
-    volumes:
-      - ./datanator/data_source/cache/mongo_secondary:/data/db
-      - ./docs/mongod.conf:/etc/mongod.conf
-      - ../:/root/host/karr_lab
-    ports:
-      - "20001:27017"
-    command: ["mongod", "--config", "/etc/mongod.conf"]
-    depends_on:
-      - mongo
+  # mongo_secondary:
+  #   image: mongo:4.1
+  #   restart: always
+  #   volumes:
+  #     - ./datanator/data_source/cache/mongo_secondary:/data/db
+  #     - ./docs/mongod.conf:/etc/mongod.conf
+  #     - ../:/root/host/karr_lab
+  #   ports:
+  #     - "20001:27017"
+  #   command: ["mongod", "--config", "/etc/mongod.conf"]
+  #   depends_on:
+  #     - mongo
 
-  mongo_tertiary:
-    image: mongo:4.1
-    restart: always
-    volumes:
-      - ./datanator/data_source/cache/mongo_tertiary:/data/db
-      - ./docs/mongod.conf:/etc/mongod.conf
-      - ../:/root/host/karr_lab
-    ports:
-      - "20002:27017"
-    command: ["mongod", "--config", "/etc/mongod.conf"]
-    depends_on:
-      - mongo
-      - mongo_secondary
+  # mongo_tertiary:
+  #   image: mongo:4.1
+  #   restart: always
+  #   volumes:
+  #     - ./datanator/data_source/cache/mongo_tertiary:/data/db
+  #     - ./docs/mongod.conf:/etc/mongod.conf
+  #     - ../:/root/host/karr_lab
+  #   ports:
+  #     - "20002:27017"
+  #   command: ["mongod", "--config", "/etc/mongod.conf"]
+  #   depends_on:
+  #     - mongo
+  #     - mongo_secondary
 
 
-  mongosetup:
-    image: mongo:4.1
-    volumes:
-      - ./docs:/scripts
-    entrypoint: [ "bash", "/scripts/mongosetup.sh" ]
-    restart: on-failure
-    depends_on:
-      - mongo
-      - mongo_secondary
-      - mongo_tertiary
+  # mongosetup:
+  #   image: mongo:4.1
+  #   volumes:
+  #     - ./docs:/scripts
+  #   entrypoint: [ "bash", "/scripts/mongosetup.sh" ]
+  #   restart: on-failure
+  #   depends_on:
+  #     - mongo
+  #     - mongo_secondary
+  #     - mongo_tertiary
 
-  mongoexpress:
-    image: mongo-express:0.49.0
-    restart: always
-    ports:
-      - "8081:8081"
-    restart: always
-    command: sh -c 'sleep 10 && tini -- node app'
+  # mongoexpress:
+  #   image: mongo-express:0.49.0
+  #   restart: always
+  #   ports:
+  #     - "8081:8081"
+  #   restart: always
+  #   command: sh -c 'sleep 10 && tini -- node app'
