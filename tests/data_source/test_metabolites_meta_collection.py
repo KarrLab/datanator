@@ -30,11 +30,11 @@ class TestMetabolitesMeta(unittest.TestCase):
         cls.client.close()
 
 
-    def test_get_metabolite_fields(self):
-        dict_list = self.src.get_metabolite_fields(
-        	fields = ['m2m_id', 'inchi'], collection_str = 'ecmdb')
-        self.assertEqual(
-            dict_list[0]['inchi'], 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7')
+    # def test_fill_metabolite_fields(self):
+    #     dict_list = self.src.fill_metabolite_fields(
+    #     	fields = ['m2m_id', 'inchi'], collection_src = 'ecmdb', collection_des = 'metabolites_meta')
+    #     self.assertEqual(
+    #         dict_list[0]['inchi'], 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7')
 
     def test_load_content(self):
         self.src.load_content()

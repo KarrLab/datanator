@@ -513,6 +513,7 @@ class QueryTaxonTree(DataQuery):
                                             projection = projection)
             names.append(cursor['tax_name'])
         return names
+    	
 
     def get_anc_id_by_name(self, names):
         ''' Get organism's ancestor ids by

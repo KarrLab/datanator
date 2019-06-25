@@ -41,13 +41,13 @@ class CalcTanimoto(mongo_util.MongoUtil):
                 Return:
                         tani: rounded tanimoto coefficient
         '''
-        if mol1 == 'InChI = None' or mol2 == 'InChI = None':
-            return -1
-        else:           
+        try:           
             inchi = [mol1, mol2]
             mols = [pybel.readstring(str_format, x) for x in inchi]
             fps = [x.calcfp() for x in mols]
             return round((fps[0] | fps[1]), rounding)
+        except TypeError:
+            return -1
 
     def one_to_many(self, inchi, collection_str='metabolites_meta',
                     field='inchi_deprot', lookup='inchi_hashed', num=100):
@@ -74,13 +74,14 @@ class CalcTanimoto(mongo_util.MongoUtil):
         count = col.count_documents({})
         total = min(count, self.max_entries)
 
-        while (np_size < num):  # iterate through first 100 documents
+        while (np_size < num):  # fill in first 100 tanimoto coefficients
             mol2 = cursor[np_size][field]
             hash2 = cursor[np_size][lookup]
             tanimoto = self.get_tanimoto(inchi, mol2)
             coeff_np = np.append(coeff_np, tanimoto)
-            top_inchi.append(hash2)
-            np_size += 1
+            if tanimoto < 1:
+                top_inchi.append(hash2)
+                np_size += 1
 
         coeff_min = np.amin(coeff_np)
         min_index = np.argmin(coeff_np)
@@ -96,7 +97,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             mol2 = doc[field]
             hash2 = doc[lookup]
             tanimoto = self.get_tanimoto(inchi, mol2)
-            if tanimoto > coeff_min:
+            if tanimoto > coeff_min and tanimoto < 1:
                 np.put(coeff_np, min_index, tanimoto)
                 top_inchi[min_index] = hash2
                 # update min coeff information
@@ -151,7 +152,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
         def process_doc(doc, final, i, total = total, collection_str1 = collection_str1,
                         field1 = field1, lookup1 = lookup1, collection_str2 = collection_str2,
                         field2 = field2, lookup2 = lookup2):
-            if 'similar_compounds' in doc:
+            if 'similar_compounds_corrected' in doc:
                 if self.verbose and i % 10 ==0:
                     print('Skipping document {} out of {} in collection {}'.format(
                         i, total, collection_str1))
@@ -169,7 +170,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
                 dic[b] = a
 
             final.update_one({lookup1: doc[lookup1]},
-                             {'$set': {'similar_compounds': dic}},
+                             {'$set': {'similar_compounds_corrected': dic}},
                              upsert=False)
  
         limit = 100    # number of documents from the cursor to be stuffed into a list
@@ -202,7 +203,7 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=replSet, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many()
+    manager.many_to_many(field1 = 'inchi', field2 = 'inchi')
 
 
 if __name__ == '__main__':

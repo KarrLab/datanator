@@ -25,7 +25,7 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing corum ...')
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)  # index all text fields
         index2 = pymongo.IndexModel(
@@ -39,7 +39,7 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing Sabio RK ... ')
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)  # index all text fields
         index2 = pymongo.IndexModel(
@@ -74,7 +74,7 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing {} ...'.format(collection_str))
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)
         collection.create_indexes([index1])
@@ -84,7 +84,7 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing intact_complex ... ')
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)
         index2 = pymongo.IndexModel(
@@ -96,7 +96,7 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing pax ...')
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)
         index2 = pymongo.IndexModel(
@@ -114,12 +114,22 @@ class IndexCollection(mongo_util.MongoUtil):
         '''
         if self.verbose:
             print('Indexing uniprot ...')
-        collection = self.fill_db(collection_str)
+        collection = self.con_db(collection_str)
         index1 = pymongo.IndexModel(
             [("$**", pymongo.TEXT)], background=False, sparse=True)
         index2 = pymongo.IndexModel(
             [('length', pymongo.ASCENDING)], background=False, sparse=True)
         collection.create_indexes([index1, index2])
+
+    def index_metabolites_meta(self, collection_str='metabolites_meta'):
+        ''' Index metabolites_meta collection
+        '''
+        if self.verbose:
+            print('Indexing metabolites_meta')
+        _, _, collection = self.con_db(collection_str)
+        index1 = pymongo.IndexModel(
+            [('inchi_hashed', pymongo.ASCENDING)], background=False, sparse=False)
+        collection.create_indexes([index1])
 
 
 def main():
