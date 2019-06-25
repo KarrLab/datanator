@@ -106,7 +106,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def test_get_metabolite_inchi(self):
         compounds = ['atp']
         inchi = self.src.get_metabolite_inchi(compounds)
-        self.assertEqual(inchi['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
+        self.assertEqual(inchi[0]['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
 
     def test_get_ids_from_hash(self):
         hashed_inchi_1 = '616dd2c2a1ead9e8a7647bb571c3511678524bafc1af3944721e67e3'
