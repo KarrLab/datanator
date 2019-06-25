@@ -83,7 +83,8 @@ class MetabolitesMeta(query_nosql.QuerySabio):
             if i % self.frequency == 0:
                 print('Getting fields of interest from {} document in {}'.format(i, collection_src))
             doc['inchi_deprot'] = self.chem_manager.simplify_inchi(inchi = doc['inchi'])
-            doc['inchi_hashed'] = self.chem_manager.hash_inchi(inchi = doc['inchi_deprot'])
+            doc['inchi_hashed'] = self.chem_manager.hash_inchi(inchi = doc['inchi'])
+            doc['inchi_hashed_deprot'] = self.chem_manager.hash_inchi(inchi = doc['inchi_deprot'])
             col_des.update_one({'inchi': doc['inchi']},
                                   { '$set': doc},
                                   upsert=True)

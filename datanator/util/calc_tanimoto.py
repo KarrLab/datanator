@@ -74,14 +74,18 @@ class CalcTanimoto(mongo_util.MongoUtil):
         count = col.count_documents({})
         total = min(count, self.max_entries)
 
+        i = 0
         while (np_size < num):  # fill in first 100 tanimoto coefficients
-            mol2 = cursor[np_size][field]
-            hash2 = cursor[np_size][lookup]
+            mol2 = cursor[i][field]
+            hash2 = cursor[i][lookup]
             tanimoto = self.get_tanimoto(inchi, mol2)
-            coeff_np = np.append(coeff_np, tanimoto)
             if tanimoto < 1:
+                coeff_np = np.append(coeff_np, tanimoto)
                 top_inchi.append(hash2)
                 np_size += 1
+                i += 1
+            else:
+                i +=1
 
         coeff_min = np.amin(coeff_np)
         min_index = np.argmin(coeff_np)
@@ -162,6 +166,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             if self.verbose and i % 1 == 0:
                 print('Going through document {} out of {} in collection {}'.format(
                     i, total, collection_str1))
+                print(doc[field1])
             compound = doc[field1]
             coeff, inchi_hashed = self.one_to_many(compound, lookup=lookup2,
                                                    collection_str=collection_str2, field=field2, num=num)

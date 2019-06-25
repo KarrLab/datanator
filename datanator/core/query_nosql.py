@@ -301,7 +301,7 @@ class QueryMetabolitesMeta(DataQuery):
             if size == 0:
                 raw.append(['No similar compound above threshold'])
                 result.append(['No similar compound above threshold'])
-            elif size < num:
+            elif 0 < size < num:
                 raw.append(compounds)
                 replaced = self.file_manager.replace_dict_key(compounds, names)
                 result.append(replaced)
@@ -513,7 +513,7 @@ class QueryTaxonTree(DataQuery):
                                             projection = projection)
             names.append(cursor['tax_name'])
         return names
-    	
+
 
     def get_anc_id_by_name(self, names):
         ''' Get organism's ancestor ids by
