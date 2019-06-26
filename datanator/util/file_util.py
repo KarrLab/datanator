@@ -66,6 +66,7 @@ class FileUtil:
             the first num of elements in dictionary
             Args:
                 _dict: { 'a':1, 'b':2, 'c':3, ... }
+                count: number of items to return
             Return:
                 result: a dictionary with the first count 
                         from _dict

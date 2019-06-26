@@ -127,21 +127,29 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         self.assertEqual(result[0], 'Unispheres Q 10')
         self.assertEqual(result[1], 'Guanosine diphosphoric acid fucose')
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_hashed_inchi(self):
         compounds = ['atp', 'Pyruvic acid', 'pyruvic Acid']
         hashed_inchi = self.src.get_metabolite_hashed_inchi(compounds)
-        self.assertEqual(hashed_inchi[1], '76663ffa0197d6ae200f0124fb4cf8002ac8f12f9ed9680a42d3f3b6')
+        self.assertEqual(hashed_inchi[1], 'adb60a29296db43210c3a5456fc49c9a6e53605ce271773c79598595')
         self.assertEqual(hashed_inchi[1], hashed_inchi[2])
+        compound = ['methionine']
+        hashed_inchi = self.src.get_metabolite_hashed_inchi(compound)
+        self.assertEqual(hashed_inchi, ['394c8c92dbe2f6c8c24fba086d06658fe8408ceb352fbf3a44732282'])
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_similar_compounds(self):
-        compounds = ['atp', 'Pyruvic acid', 'Guanosine diphosphate fucose']
-        raw, result = self.src.get_metabolite_similar_compounds(compounds, num = 3, threshold = 0.6)
-        self.assertEqual(result[0]['Succinyladenosine monophosphoric acid'], 0.769)
-        self.assertEqual(result[2]['Guanosine pyrophosphate mannose'], 0.893)
-
-
+        # compounds = ['atp', 'Pyruvic acid', 'Guanosine diphosphate fucose']
+        # raw, result = self.src.get_metabolite_similar_compounds(compounds, num = 3, threshold = 0.6)
+        # self.assertEqual(result[0]['Succinyladenosine monophosphoric acid'], 0.769)
+        # self.assertEqual(result[2]['Guanosine pyrophosphate mannose'], 0.893)
+        compound = ['methionine']
+        raw1, result1 = self.src.get_metabolite_similar_compounds(compound, num = 3, threshold = 0.6)
+        self.assertTrue(list(raw1[0].keys())[0], '5c40a5a611421d5a2fdb8d29e9d334009d59955909ff755db7491cf4')
+        raw2, result2 = self.src.get_metabolite_similar_compounds(compound, num = 10, threshold = 0.75)
+        self.assertEqual(len(raw2[0].keys()), 6)
+        raw3, result3 = self.src.get_metabolite_similar_compounds(compound, num = 10, threshold = 0.9)
+        self.assertEqual(raw3[0]['raw'], -1)
 
 class TestQuerySabio(unittest.TestCase):
 
@@ -175,7 +183,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_kinlawid_by_inchi_slow(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -184,7 +192,7 @@ class TestQuerySabio(unittest.TestCase):
         print(kinlaw_id)
         self.assertTrue(9 in kinlaw_id)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',

@@ -5,18 +5,18 @@ import time
 import hashlib
 import numpy as np
 
+
 class DataQuery(mongo_util.MongoUtil):
 
     '''Collection agnostic queries
     '''
 
-    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = 'admin'):
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, 
-                                    db=db, verbose=verbose, max_entries=max_entries, username = username, 
-                                    password = password, authSource = authSource)
-
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 verbose=False, max_entries=float('inf'), username=None,
+                 password=None, authSource='admin'):
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
+                                        db=db, verbose=verbose, max_entries=max_entries, username=username,
+                                        password=password, authSource=authSource)
 
     def find_text(self, v, collection=None):
         ''' Find documents containing string v
@@ -30,11 +30,11 @@ class DataQuery(mongo_util.MongoUtil):
         else:
             _, _, col_obj = self.con_db(collection)
             return col_obj.find({'$text': {'$search': v}},
-                                { 'score': { '$meta': "textScore" } }).sort( [('score', {'$meta': 'textScore'})] )
+                                {'score': {'$meta': "textScore"}}).sort([('score', {'$meta': 'textScore'})])
 
-    def doc_feeder(self,collection_str=None, sym_link = False, step=1000, 
-        s=None, e=None, inbatch=False, query=None, 
-        batch_callback=None, projection=None, verbose=False):
+    def doc_feeder(self, collection_str=None, sym_link=False, step=1000,
+                   s=None, e=None, inbatch=False, query=None,
+                   batch_callback=None, projection=None, verbose=False):
         '''An iterator for returning docs in a collection, with batch query.
            additional filter query can be passed via "query", e.g.,
            doc_feeder(collection_str, query={'taxid': {'$in': [9606, 10090, 10116]}})
@@ -42,7 +42,8 @@ class DataQuery(mongo_util.MongoUtil):
            fields is optional parameter passed to find to restrict fields to return.
         '''
         _, _, collection = self.con_db(collection_str)
-        cur = collection.find(query, no_cursor_timeout=True, projection=projection)
+        cur = collection.find(
+            query, no_cursor_timeout=True, projection=projection)
         n = cur.count()
         s = s or 0
         e = e or n
@@ -65,7 +66,7 @@ class DataQuery(mongo_util.MongoUtil):
             cur.batch_size(step)
             if verbose:
                 print("Processing %d-%d documents..." %
-                  (cnt + 1, min(cnt + step, e)), end='')
+                      (cnt + 1, min(cnt + step, e)), end='')
             for doc in cur:
                 if inbatch:
                     doc_li.append(doc)
@@ -77,7 +78,8 @@ class DataQuery(mongo_util.MongoUtil):
                         yield doc_li
                         doc_li = []
                     if verbose:
-                        print('Done.[%.1f%%,%s]' % (cnt * 100. / n, self.timesofar(t1)))
+                        print('Done.[%.1f%%,%s]' %
+                              (cnt * 100. / n, self.timesofar(t1)))
                     if batch_callback:
                         batch_callback(cnt, time.time()-t1)
                     if cnt < e:
@@ -91,7 +93,8 @@ class DataQuery(mongo_util.MongoUtil):
 
             # print 'Done.[%s]' % timesofar(t1)
             if verbose:
-                print('Done.[%.1f%%,%s]' % (cnt * 100. / (n+1), self.timesofar(t1)))
+                print('Done.[%.1f%%,%s]' %
+                      (cnt * 100. / (n+1), self.timesofar(t1)))
                 print("=" * 20)
                 print('Finished.[total time: %s]' % self.timesofar(t0))
         finally:
@@ -128,16 +131,18 @@ class DataQuery(mongo_util.MongoUtil):
 class QueryMetabolitesMeta(DataQuery):
     '''Queries specific to metabolites_meta collection
     '''
-    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                collection_str='metabolites_meta', verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = 'admin'):
+
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 collection_str='metabolites_meta', verbose=False, max_entries=float('inf'), username=None,
+                 password=None, authSource='admin'):
         self.collection_str = collection_str
         self.verbose = verbose
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
-                replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries, username = username, 
-                 password = password, authSource = authSource)
-        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
+                                        replicaSet=replicaSet, db=db,
+                                        verbose=verbose, max_entries=max_entries, username=username,
+                                        password=password, authSource=authSource)
+        self.client, self.db_obj, self.collection = self.con_db(
+            self.collection_str)
         self.file_manager = file_util.FileUtil()
         self.chem_manager = chem_util.ChemUtil()
 
@@ -159,15 +164,17 @@ class QueryMetabolitesMeta(DataQuery):
                 query = {'synonyms.synonym': c}
                 projection = {'synonyms.synonym': 1, '_id': -1, 'kinlaw_id': 1}
                 collation = {'locale': 'en', 'strength': 2}
-                doc = self.collection.find_one(filter = query, projection = projection, collation = collation)
+                doc = self.collection.find_one(
+                    filter=query, projection=projection, collation=collation)
                 synonym = {}
                 rxn = {}
                 try:
                     synonym[c] = doc['synonyms']['synonym']
                     rxn[c] = doc['kinlaw_id']
                 except TypeError as e:
-                    synonym[c] = (c + ' does not exist in '+ self.collection_str)
-                    rxn[c] = (c + ' does not exist in '+ self.collection_str)
+                    synonym[c] = (c + ' does not exist in ' +
+                                  self.collection_str)
+                    rxn[c] = (c + ' does not exist in ' + self.collection_str)
                 return rxn, synonym
             else:
                 return ({'reactions': None}, {'synonyms': None})
@@ -177,7 +184,7 @@ class QueryMetabolitesMeta(DataQuery):
         elif isinstance(compounds, str):
             rxn, syn = find_synonyms_of_str(compounds)
             synonyms.update(syn)
-            rxns.update(rxn)            
+            rxns.update(rxn)
         else:
             for c in compounds:
                 rxn, syn = find_synonyms_of_str(c)
@@ -199,8 +206,9 @@ class QueryMetabolitesMeta(DataQuery):
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
             cursor = self.collection.find_one({'synonyms.synonym': compound},
-                                projection = projection, collation = collation)
-            inchi.append({"inchi": cursor['inchi'], "m2m_id":cursor['m2m_id'], "ymdb_id":cursor['ymdb_id']})
+                                              projection=projection, collation=collation)
+            inchi.append(
+                {"inchi": cursor['inchi'], "m2m_id": cursor['m2m_id'], "ymdb_id": cursor['ymdb_id']})
         return inchi
 
     def get_ids_from_hash(self, hashed_inchi):
@@ -214,7 +222,7 @@ class QueryMetabolitesMeta(DataQuery):
         '''
         query = {'inchi_hashed': hashed_inchi}
         projection = {'_id': 0}
-        doc = self.collection.find_one(filter = query, projection = projection)
+        doc = self.collection.find_one(filter=query, projection=projection)
         result = {}
         result['m2m_id'] = doc.get('m2m_id', None)
         result['ymdb_id'] = doc.get('ymdb_id', None)
@@ -234,11 +242,10 @@ class QueryMetabolitesMeta(DataQuery):
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
             cursor = self.collection.find_one({'synonyms.synonym': compound},
-                                projection = projection, collation = collation)
+                                              projection=projection, collation=collation)
             hashed_inchi.append(cursor['inchi_hashed'])
-        return hashed_inchi        
+        return hashed_inchi
 
-   
     def get_metabolite_name_by_hash(self, compounds):
         ''' Given a list of hashed inchi, 
             return a list of name (one of the synonyms)
@@ -253,15 +260,14 @@ class QueryMetabolitesMeta(DataQuery):
         projection = {'_id': 0, 'synonyms.synonym': 1}
         for compound in compounds:
             cursor = self.collection.find_one({'inchi_hashed': compound},
-                                            projection = projection)
+                                              projection=projection)
             try:
                 result.append(cursor['synonyms'])
             except KeyError:
-                result.append('No synonyms')
+                result.append({'synonym': ['None']})
         return [x['synonym'][-1] for x in result]
 
-
-    def get_metabolite_similar_compounds(self, compounds, num = 0, threshold = 0):
+    def get_metabolite_similar_compounds(self, compounds, num=0, threshold=0):
         ''' Given a list of compound names
             Return the top num number of similar compounds
             with tanimoto score above threshold values
@@ -284,31 +290,36 @@ class QueryMetabolitesMeta(DataQuery):
         result = []
         raw = []
         hashed_inchi = self.get_metabolite_hashed_inchi(compounds)
-        projection = {'_id': 0, 'similar_compounds': 1}
+        projection = {'_id': 0, 'similar_compounds_corrected': 1}
 
         for item in hashed_inchi:
             cursor = self.collection.find_one({'inchi_hashed': item},
-                                                projection = projection)
-            compounds = cursor['similar_compounds']
+                                              projection=projection)
+            compounds = cursor['similar_compounds_corrected']
 
             scores = list(compounds.values())
             hashes = list(compounds.keys())
-            names = self.get_metabolite_name_by_hash(hashes[:num])
+            names = self.get_metabolite_name_by_hash(hashes)
             # convert to numpy object for faster calculations
             scores = np.asarray(scores)
             indices = np.nonzero(scores >= threshold)
-            size = indices[0].size 
+            size = indices[0].size
             if size == 0:
-                raw.append(['No similar compound above threshold'])
-                result.append(['No similar compound above threshold'])
+                raw.append({'raw': -1})
+                result.append({'result': -1})
             elif 0 < size < num:
-                raw.append(compounds)
-                replaced = self.file_manager.replace_dict_key(compounds, names)
+                first_size = self.file_manager.access_dict_by_index(
+                    compounds, size)
+                raw.append(first_size)
+                replaced = self.file_manager.replace_dict_key(
+                    first_size, names[:size])
                 result.append(replaced)
             else:
-                first_num = self.file_manager.access_dict_by_index(compounds, num)
+                first_num = self.file_manager.access_dict_by_index(
+                    compounds, num)
                 raw.append(first_num)
-                replaced = self.file_manager.replace_dict_key(first_num, names[:num])
+                replaced = self.file_manager.replace_dict_key(
+                    first_num, names[:num])
                 result.append(replaced)
 
         return raw, result
@@ -317,17 +328,19 @@ class QueryMetabolitesMeta(DataQuery):
 class QuerySabio(DataQuery):
     '''Queries specific to sabio_rk collection
     '''
-    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                collection_str='sabio_rk', verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = 'admin'):
+
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 collection_str='sabio_rk', verbose=False, max_entries=float('inf'), username=None,
+                 password=None, authSource='admin'):
         self.collection_str = collection_str
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
-                replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries, username = username, 
-                 password = password, authSource = authSource)
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
+                                        replicaSet=replicaSet, db=db,
+                                        verbose=verbose, max_entries=max_entries, username=username,
+                                        password=password, authSource=authSource)
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
-        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.client, self.db_obj, self.collection = self.con_db(
+            self.collection_str)
 
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
@@ -338,23 +351,25 @@ class QuerySabio(DataQuery):
                 [{'substrates': [], 'products': [] }, ... {} ]
         '''
         if isinstance(kinlaw_id, list):
-            query = {'kinlaw_id': {'$in': kinlaw_id} }
+            query = {'kinlaw_id': {'$in': kinlaw_id}}
         else:
             query = {'kinlaw_id': kinlaw_id}
-        docs = self.doc_feeder(collection_str = self.collection_str, query=query)
+        docs = self.doc_feeder(collection_str=self.collection_str, query=query)
         rxns = []
         i = 0
         for doc in docs:
             if i == self.max_entries:
-                break 
+                break
             if i % 10 == 0:
-                print ('Finding reaction participants for kinlaw_id {} ...'.format(doc['kinlaw_id']))
+                print('Finding reaction participants for kinlaw_id {} ...'.format(
+                    doc['kinlaw_id']))
             doc.pop('_id', None)
             doc_flat = self.file_manager.flatten_json(doc)
 
             substrates = []
             products = []
-            substrate_identifier = ['reaction_participant', 'substrate', 'name']
+            substrate_identifier = [
+                'reaction_participant', 'substrate', 'name']
             product_identifier = ['reaction_participant', 'product', 'name']
 
             for k, v in doc_flat.items():
@@ -367,8 +382,7 @@ class QuerySabio(DataQuery):
             rxn = {'substrates': substrates, 'products': products}
 
             rxns.append(rxn)
-            i += 1 
-
+            i += 1
 
         return rxns
 
@@ -386,12 +400,13 @@ class QuerySabio(DataQuery):
         inchi_str = ''
         for s in inchi_exp:
             inchi_str = inchi_str + s + ' '
-        condition = { '$text': {'$search': inchi_str} }
+        condition = {'$text': {'$search': inchi_str}}
         projection = {'kinlaw_id': 1, '_id': 0}
         col = self.db_obj[self.collection_str]
         if self.verbose:
-            print("\nQuerying text {} in collection {} ...".format(inchi_str, self.collection_str))
-        cursor = col.find(filter = condition, projection = projection)
+            print("\nQuerying text {} in collection {} ...".format(
+                inchi_str, self.collection_str))
+        cursor = col.find(filter=condition, projection=projection)
         _id = []
         for doc in cursor:
             _id.append(doc['kinlaw_id'])
@@ -408,16 +423,17 @@ class QuerySabio(DataQuery):
                 [id0, id1, id2,...,  ]
         '''
         short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
-        hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
+        hashed_inchi = [hashlib.sha224(s.encode()).hexdigest()
+                        for s in short_inchi]
         substrate = 'reaction_participant.substrate.hashed_inchi'
         product = 'reaction_participant.product.hashed_inchi'
         projection = {'kinlaw_id': 1}
-        
+
         id_tally = []
         for inchi in hashed_inchi:
             ids = []
-            query = {'$or': [ {substrate: inchi}, {product: inchi} ] }
-            cursor = self.collection.find(filter = query, projection = projection)
+            query = {'$or': [{substrate: inchi}, {product: inchi}]}
+            cursor = self.collection.find(filter=query, projection=projection)
             for doc in cursor:
                 ids.append(doc['kinlaw_id'])
             id_tally.append(ids)
@@ -435,7 +451,7 @@ class QuerySabio(DataQuery):
                 [id0, id1, id2,...,  ]
         '''
 
-        def get_kinlawid(inchi, side = 'substrate'):
+        def get_kinlawid(inchi, side='substrate'):
             ''' Find the kinlaw_id defined in sabio_rk using 
                 rxn participants' inchi string
                 Args:
@@ -445,18 +461,20 @@ class QuerySabio(DataQuery):
                     [id0, id1, id2,...,  ]
             '''
             short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
-            hashed_inchi = [hashlib.sha224(s.encode()).hexdigest() for s in short_inchi]
+            hashed_inchi = [hashlib.sha224(
+                s.encode()).hexdigest() for s in short_inchi]
 
             substrate = 'reaction_participant.substrate.hashed_inchi'
             product = 'reaction_participant.product.hashed_inchi'
             projection = {'kinlaw_id': 1, '_id': 0}
-            
+
             id_tally = []
             if side == 'substrate':
                 for inchi in hashed_inchi:
                     ids = []
                     query = {substrate: inchi}
-                    cursor = self.collection.find(filter = query, projection = projection)
+                    cursor = self.collection.find(
+                        filter=query, projection=projection)
                     for doc in cursor:
                         ids.append(doc['kinlaw_id'])
                     id_tally.append(ids)
@@ -467,15 +485,16 @@ class QuerySabio(DataQuery):
                 for inchi in hashed_inchi:
                     ids = []
                     query = {product: inchi}
-                    cursor = self.collection.find(filter = query, projection = projection)
+                    cursor = self.collection.find(
+                        filter=query, projection=projection)
                     for doc in cursor:
                         ids.append(doc['kinlaw_id'])
                     id_tally.append(ids)
 
                 return list(set(id_tally[0]).intersection(*id_tally))
 
-        sub_id = get_kinlawid(substrates, side = 'substrate')
-        pro_id = get_kinlawid(products, side = 'product')
+        sub_id = get_kinlawid(substrates, side='substrate')
+        pro_id = get_kinlawid(products, side='product')
         result = list(set(sub_id) & set(pro_id))
 
         return result
@@ -484,19 +503,20 @@ class QuerySabio(DataQuery):
 class QueryTaxonTree(DataQuery):
     '''Queries specific to taxon_tree collection
     '''
-    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet= None, db=None,
-                collection_str='taxon_tree', verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = 'admin'):
+
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 collection_str='taxon_tree', verbose=False, max_entries=float('inf'), username=None,
+                 password=None, authSource='admin'):
         self.collection_str = collection_str
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, 
-                replicaSet= replicaSet, db=db,
-                verbose=verbose, max_entries=max_entries, username = username, 
-                 password = password, authSource = authSource)
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
+                                        replicaSet=replicaSet, db=db,
+                                        verbose=verbose, max_entries=max_entries, username=username,
+                                        password=password, authSource=authSource)
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
-        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.client, self.db_obj, self.collection = self.con_db(
+            self.collection_str)
 
-    
     def get_name_by_id(self, ids):
         ''' Get organisms' names given their tax_ids
             Args:
@@ -506,14 +526,13 @@ class QueryTaxonTree(DataQuery):
         '''
         names = []
         collation = {'locale': 'en', 'strength': 2}
-        projection = {'_id': 0, 'tax_name':1}
+        projection = {'_id': 0, 'tax_name': 1}
         for _id in ids:
             query = {'tax_id': _id}
-            cursor = self.collection.find_one(query, collation = collation,
-                                            projection = projection)
+            cursor = self.collection.find_one(query, collation=collation,
+                                              projection=projection)
             names.append(cursor['tax_name'])
         return names
-
 
     def get_anc_id_by_name(self, names):
         ''' Get organism's ancestor ids by
@@ -526,13 +545,13 @@ class QueryTaxonTree(DataQuery):
         '''
         result_id = []
         result_name = []
-        
+
         collation = {'locale': 'en', 'strength': 2}
-        projection = {'_id': 0, 'anc_id':1, 'anc_name': 1}
+        projection = {'_id': 0, 'anc_id': 1, 'anc_name': 1}
         for name in names:
             query = {'tax_name': name}
-            cursor = self.collection.find_one(query, collation = collation,
-                                             projection = projection)
+            cursor = self.collection.find_one(query, collation=collation,
+                                              projection=projection)
             result_id.append(cursor['anc_id'])
             result_name.append(cursor['anc_name'])
         return result_id, result_name
@@ -546,17 +565,17 @@ class QueryTaxonTree(DataQuery):
                 result: list of ancestors in order of the farthest to the closest
         '''
         result = []
-        
+
         collation = {'locale': 'en', 'strength': 2}
-        projection = {'_id': 0, 'anc_id':1}
+        projection = {'_id': 0, 'anc_id': 1}
         for _id in ids:
             query = {'tax_id': _id}
-            cursor = self.collection.find_one(query, collation = collation,
-                                             projection = projection)
+            cursor = self.collection.find_one(query, collation=collation,
+                                              projection=projection)
             result.append(cursor['anc_id'])
         return result
 
-    def get_common_ancestor(self, org1, org2, org_format = 'name'):
+    def get_common_ancestor(self, org1, org2, org_format='name'):
         ''' Get the closest common ancestor between
             two organisms and their distances to the 
             said ancestor
