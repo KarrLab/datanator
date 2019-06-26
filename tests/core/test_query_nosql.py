@@ -106,11 +106,14 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def test_get_metabolite_inchi(self):
         compounds = ['atp']
         inchi = self.src.get_metabolite_inchi(compounds)
-        self.assertEqual(inchi[0]['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)27-29(18,19)20')
+        self.assertEqual(inchi[0]['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)'+
+            '15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)' +
+            '27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)' +
+            '(H2,18,19,20)/t4-,6-,7-,10-/m1/s1')
 
     def test_get_ids_from_hash(self):
-        hashed_inchi_1 = '616dd2c2a1ead9e8a7647bb571c3511678524bafc1af3944721e67e3'
-        hasehd_inchi_2 = 'd65642055743d2850a5121c79339545fbba69aa666e0f9a54e779161'
+        hashed_inchi_1 = '09fab91d3708097484215d419c9326290150f37e7c1bcc48a1bb4c7b'
+        hasehd_inchi_2 = 'cc46a6b3360bd6a51da1ec1b3da746456c7c05ed8ff63f930452bf9f'
         result_1 = self.src.get_ids_from_hash(hashed_inchi_1)
         result_2 = self.src.get_ids_from_hash(hasehd_inchi_2)
         self.assertEqual(result_1, {'m2m_id': 'M2MDB000016', 'ymdb_id': 'YMDB00058'})

@@ -1,5 +1,5 @@
 import unittest
-from datanator.flask.query import front_end_query
+from datanator.rest.query import front_end_query
 import tempfile
 import shutil
 
@@ -28,7 +28,7 @@ class TestQueryFrontEnd(unittest.TestCase):
     	self.assertEqual(results[1]['ymdb_id'], 'YMDB00671')
 
     def test_inchi_query_organism(self):
-    	inchi = 'InChI=1S/C3H8O10P2/c4-3(5)2(13-15(9,10)11)1-12-14(6,7)8'
+    	inchi = 'InChI=1S/C3H8O10P2/c4-3(5)2(13-15(9,10)11)1-12-14(6,7)8/h2H,1H2,(H,4,5)(H2,6,7,8)(H2,9,10,11)/t2-/m1/s1'
     	organism = 'Candidatus Pacearchaeota archaeon'
     	results = self.src.inchi_query_organism(inchi, organism)
     	self.assertEqual(results[0]['m2m_id'], 'M2MDB000326')
