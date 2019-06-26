@@ -3,7 +3,7 @@ version: '3'
 
 services:
   wc_env:
-    image: lzy7071/karrlabdatanator_dependencies
+    image: lzy7071/karrlabdatanator_dependencies:latest
     restart: always
     entrypoint: bash
     stdin_open: true
