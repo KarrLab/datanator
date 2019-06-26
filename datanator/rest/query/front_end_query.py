@@ -79,8 +79,7 @@ class QueryFrontEnd:
             organism, "Saccharomyces cerevisiae")
         distance_y = dist[0]
 
-        inchi_deprot = self.chem_manager.simplify_inchi(inchi=string)
-        inchi_hashed = self.chem_manager.hash_inchi(inchi=inchi_deprot)
+        inchi_hashed = self.chem_manager.hash_inchi(inchi=string)
         ids = self.metabolitesmeta_manager.get_ids_from_hash(inchi_hashed)
         list_jsons = []
 
