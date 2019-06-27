@@ -199,7 +199,7 @@ class QueryMetabolitesMeta(DataQuery):
                 compounds: list of compounds
                 ['ATP', '2-Ketobutanoate']
             Return:
-                ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7']
+                ['....', 'InChI=1S/C4H6O3/c1-2-3(5)4(6)7/...']
         '''
         inchi = []
         projection = {'_id': 0, 'inchi': 1, 'm2m_id': 1, 'ymdb_id': 1}

@@ -105,11 +105,14 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     # @unittest.skip('passed')
     def test_get_metabolite_inchi(self):
         compounds = ['atp']
-        inchi = self.src.get_metabolite_inchi(compounds)
-        self.assertEqual(inchi[0]['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)'+
+        inchis = self.src.get_metabolite_inchi(compounds)
+        self.assertEqual(inchis[0]['inchi'], 'InChI=1S/C10H16N5O13P3/c11-8-5-9(13-2-12-8)'+
             '15(3-14-5)10-7(17)6(16)4(26-10)1-25-30(21,22)28-31(23,24)' +
             '27-29(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H,23,24)(H2,11,12,13)' +
             '(H2,18,19,20)/t4-,6-,7-,10-/m1/s1')
+        compound = ['β-D-Ribopyranose']
+        inchi = self.src.get_metabolite_inchi(compound)
+        self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001172')
 
     def test_get_ids_from_hash(self):
         hashed_inchi_1 = '09fab91d3708097484215d419c9326290150f37e7c1bcc48a1bb4c7b'
@@ -150,6 +153,10 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         self.assertEqual(len(raw2[0].keys()), 6)
         raw3, result3 = self.src.get_metabolite_similar_compounds(compound, num = 10, threshold = 0.9)
         self.assertEqual(raw3[0]['raw'], -1)
+        compound = ['β-D-Ribopyranose']
+        raw4, result4 = self.src.get_metabolite_similar_compounds(compound, num = 30, threshold = 0.6)
+        self.assertTrue('d' not in list(result4[0].keys()))
+        self.assertTrue('Auto inducer 2' in list(result4[0].keys()))
 
 class TestQuerySabio(unittest.TestCase):
 
