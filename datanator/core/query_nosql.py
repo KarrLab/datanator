@@ -260,7 +260,7 @@ class QueryMetabolitesMeta(DataQuery):
         result = []
         projection = {'_id': 0, 'synonyms.synonym': 1}
         for compound in compounds:
-            cursor = self.collection.find_one({'inchi_hashed': compound},
+            cursor = self.collection.find_one({'inchi_hashed_deprot': compound},
                                               projection=projection)
             try:
                 result.append(cursor['synonyms'])
@@ -299,7 +299,6 @@ class QueryMetabolitesMeta(DataQuery):
             cursor = self.collection.find_one({'inchi_hashed': item},
                                               projection=projection)
             compounds = cursor['similar_compounds'][0]
-            print(len(compounds))
             scores = list(compounds.values())
             hashes = list(compounds.keys())
             names = self.get_metabolite_name_by_hash(hashes)
