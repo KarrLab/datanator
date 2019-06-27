@@ -293,13 +293,13 @@ class QueryMetabolitesMeta(DataQuery):
         result = []
         raw = []
         hashed_inchi = self.get_metabolite_hashed_inchi(compounds)
-        projection = {'_id': 0, 'similar_compounds_corrected': 1}
+        projection = {'_id': 0, 'similar_compounds': 1}
 
         for item in hashed_inchi:
             cursor = self.collection.find_one({'inchi_hashed': item},
                                               projection=projection)
-            compounds = cursor['similar_compounds_corrected']
-
+            compounds = cursor['similar_compounds'][0]
+            print(len(compounds))
             scores = list(compounds.values())
             hashes = list(compounds.keys())
             names = self.get_metabolite_name_by_hash(hashes)
