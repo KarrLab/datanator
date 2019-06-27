@@ -232,7 +232,7 @@ class TestQueryTaxonTree(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_name_by_id(self):
         ids = [743725, 2107591]
         names = self.src.get_name_by_id(ids)
@@ -240,19 +240,19 @@ class TestQueryTaxonTree(unittest.TestCase):
 
 
     # @unittest.skip('passed')
-    def test_get_anc_id_by_name(self):
+    def test_get_anc_by_name(self):
         names = ['Candidatus Diapherotrites', 'Candidatus Forterrea multitransposorum CG_2015-17_Forterrea_25_41']
-        result_id, result_name = self.src.get_anc_id_by_name(names)
-        self.assertEqual(result_id[0], [131567, 2157, 1783276])
+        result_ids, result_names = self.src.get_anc_by_name(names)
+        self.assertEqual(result_ids[0], [131567, 2157, 1783276])
 
-    @unittest.skip('passed')
-    def test_get_anc_id_by_id(self):
+    # @unittest.skip('passed')
+    def test_get_anc_by_id(self):
         ids = [743725, 2107591]
-        result = self.src.get_anc_id_by_id(ids)
-        self.assertEqual(result[0], [131567, 2157, 1783276])
-        self.assertEqual(result[1], [131567, 2157, 1783276, 743725, 2107589, 2107590])
+        result_ids, result_names = self.src.get_anc_by_id(ids)
+        self.assertEqual(result_ids[0], [131567, 2157, 1783276])
+        self.assertEqual(result_ids[1], [131567, 2157, 1783276, 743725, 2107589, 2107590])
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_common_ancestor(self):
         names = ['Candidatus Diapherotrites', 'Candidatus Forterrea multitransposorum CG_2015-17_Forterrea_25_41']
         ancestor, distances = self.src.get_common_ancestor(names[0], names[1])

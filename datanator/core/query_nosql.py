@@ -535,7 +535,7 @@ class QueryTaxonTree(DataQuery):
             names.append(cursor['tax_name'])
         return names
 
-    def get_anc_id_by_name(self, names):
+    def get_anc_by_name(self, names):
         ''' Get organism's ancestor ids by
             using organism's names
             Args:
@@ -557,7 +557,7 @@ class QueryTaxonTree(DataQuery):
             result_name.append(cursor['anc_name'])
         return result_id, result_name
 
-    def get_anc_id_by_id(self, ids):
+    def get_anc_by_id(self, ids):
         ''' Get organism's ancestor ids by
             using organism's ids
             Args:
@@ -565,16 +565,16 @@ class QueryTaxonTree(DataQuery):
             Return:
                 result: list of ancestors in order of the farthest to the closest
         '''
-        result = []
-
-        collation = {'locale': 'en', 'strength': 2}
-        projection = {'_id': 0, 'anc_id': 1}
+        result_name = []
+        result_id = []
+        projection = {'_id': 0, 'anc_id': 1, 'anc_name': 1}
         for _id in ids:
             query = {'tax_id': _id}
-            cursor = self.collection.find_one(query, collation=collation,
+            cursor = self.collection.find_one(query,
                                               projection=projection)
-            result.append(cursor['anc_id'])
-        return result
+            result_id.append(cursor['anc_id'])
+            result_name.append(cursor['anc_name'])
+        return result_id, result_name
 
     def get_common_ancestor(self, org1, org2, org_format='name'):
         ''' Get the closest common ancestor between
@@ -585,13 +585,13 @@ class QueryTaxonTree(DataQuery):
                 org2: organism 2
                 org_format: the format of organism eg tax_id or tax_name
             Return:
-                ancestor: closest common ancestor's id
+                ancestor: closest common ancestor's name
                 distance: each organism's distance to the ancestor
         '''
         if org_format == 'name':
-            anc_ids = self.get_anc_id_by_name([org1, org2])
+            anc_ids, anc_names = self.get_anc_by_name([org1, org2])
         else:
-            anc_ids = self.get_anc_id_by_id([org1, org2])
+            anc_ids, anc_names = self.get_anc_by_id([org1, org2])
 
         if org1 == org2:
             return ('org1', [0, 0])
