@@ -1,5 +1,6 @@
 beautifulsoup4
 biopython
+pytest
 bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
