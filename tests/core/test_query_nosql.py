@@ -142,15 +142,12 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
 
     # @unittest.skip('passed')
     def test_get_metabolite_similar_compounds(self):
-        # compounds = ['atp', 'Pyruvic acid', 'Guanosine diphosphate fucose']
-        # raw, result = self.src.get_metabolite_similar_compounds(compounds, num = 3, threshold = 0.6)
-        # self.assertEqual(result[0]['Succinyladenosine monophosphoric acid'], 0.769)
-        # self.assertEqual(result[2]['Guanosine pyrophosphate mannose'], 0.893)
+
         compound = ['methionine']
         raw1, result1 = self.src.get_metabolite_similar_compounds(compound, num = 3, threshold = 0.6)
-        self.assertTrue(list(raw1[0].keys())[0], '5c40a5a611421d5a2fdb8d29e9d334009d59955909ff755db7491cf4')
+        self.assertTrue(list(raw1[0][0].keys())[0], '5c40a5a611421d5a2fdb8d29e9d334009d59955909ff755db7491cf4')
         raw2, result2 = self.src.get_metabolite_similar_compounds(compound, num = 10, threshold = 0.75)
-        self.assertEqual(len(raw2[0].keys()), 2)
+        self.assertEqual(len(raw2[0][0].keys()), 1)
         raw3, result3 = self.src.get_metabolite_similar_compounds(compound, num = 10, threshold = 0.9)
         # self.assertEqual(raw3[0]['raw'], -1)
         compound = ['β-D-Ribopyranose']

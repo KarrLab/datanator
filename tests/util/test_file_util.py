@@ -77,3 +77,10 @@ class TestFileUtil(unittest.TestCase):
         self.assertEqual(result4, 'i')
         self.assertEqual(result5, 'a')
         self.assertEqual(result6, 1783276)
+
+    def test_make_dict(self):
+        keys = ['a', 'b', 'c', 'd']
+        values = [1, 2, 3, 4]
+
+        result = self.src.make_dict(keys, values)
+        self.assertEqual(result['a'], 1)

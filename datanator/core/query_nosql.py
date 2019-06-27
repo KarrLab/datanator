@@ -208,8 +208,8 @@ class QueryMetabolitesMeta(DataQuery):
             cursor = self.collection.find_one({'synonyms.synonym': compound},
                                               projection=projection, collation=collation)
             inchi.append(
-                {"inchi": cursor['inchi'], "m2m_id": cursor.get('m2m_id', None), 
-                "ymdb_id": cursor.get('ymdb_id', None)})
+                {"inchi": cursor['inchi'], "m2m_id": cursor.get('m2m_id', None),
+                 "ymdb_id": cursor.get('ymdb_id', None)})
         return inchi
 
     def get_ids_from_hash(self, hashed_inchi):
@@ -265,7 +265,8 @@ class QueryMetabolitesMeta(DataQuery):
             try:
                 result.append(cursor['synonyms'])
                 if not isinstance(cursor['synonyms']['synonym'], list):
-                    cursor['synonyms']['synonym'] = [cursor['synonyms']['synonym']]
+                    cursor['synonyms']['synonym'] = [
+                        cursor['synonyms']['synonym']]
             except KeyError:
                 result.append({'synonym': ['None']})
         return [x['synonym'][-1] for x in result]
@@ -298,30 +299,29 @@ class QueryMetabolitesMeta(DataQuery):
         for item in hashed_inchi:
             cursor = self.collection.find_one({'inchi_hashed': item},
                                               projection=projection)
-            compounds = cursor['similar_compounds'][0]
-            scores = list(compounds.values())
-            hashes = list(compounds.keys())
+            compounds = cursor['similar_compounds']
+            scores = [list(dic.values()) for dic in compounds]
+            scores = self.file_manager.unpack_list(scores)
+            hashes = [list(dic.keys()) for dic in compounds]
+            hashes = self.file_manager.unpack_list(hashes)
+
             names = self.get_metabolite_name_by_hash(hashes)
             # convert to numpy object for faster calculations
-            scores = np.asarray(scores)
-            indices = np.nonzero(scores >= threshold)
+            scores_np = np.asarray(scores)
+            indices = np.nonzero(scores_np >= threshold)
             size = indices[0].size
             if size == 0:
                 raw.append({'raw': -1})
                 result.append({'result': -1})
             elif 0 < size < num:
-                first_size = self.file_manager.access_dict_by_index(
-                    compounds, size)
+                first_size = compounds[:size]
                 raw.append(first_size)
-                replaced = self.file_manager.replace_dict_key(
-                    first_size, names[:size])
+                replaced = self.file_manager.make_dict(names[:size], scores[:size])
                 result.append(replaced)
             else:
-                first_num = self.file_manager.access_dict_by_index(
-                    compounds, num)
+                first_num = compounds[:num]
                 raw.append(first_num)
-                replaced = self.file_manager.replace_dict_key(
-                    first_num, names[:num])
+                replaced = self.file_manager.make_dict(names[:num], scores[:num])
                 result.append(replaced)
 
         return raw, result

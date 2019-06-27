@@ -121,3 +121,17 @@ class FileUtil:
             else:
                 return ancestor
         return ancestor
+
+    def make_dict(self, keys, values):
+        ''' Give two lists, make a list of 
+            dictionaries
+            Args:
+                keys: [a, b, c, d, ...]
+                values: [1, 2, 3, 4]
+            Return:
+                dic: {'a': 1, 'b': 2, 'c': 3, ...} 
+        '''
+        result = {}
+        for k, v in zip(keys, values):
+            result[k] = v
+        return result

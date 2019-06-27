@@ -175,7 +175,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
                 dic[b] = a
 
             final.update_one({lookup1: doc[lookup1]},
-                             {'$set': {'similar_compounds_corrected': dic}},
+                             {'$set': {'similar_compounds_corrected': [dic]}},
                              upsert=False)
  
         limit = 100    # number of documents from the cursor to be stuffed into a list

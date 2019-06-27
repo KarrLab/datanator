@@ -58,7 +58,11 @@ class MetabolitesMeta(query_nosql.QuerySabio):
             if i % self.frequency == 0:
                 print(i)
 
-            replacement = [doc.get('similar_compounds_bak', None)]
+            replacement = []
+            for k, v in doc['similar_compounds_bak'].items():
+                dic = {}
+                dic[k] = v
+                replacement.append(dic)
 
             collection.update_one({'_id': doc['_id']},
                                  {'$set': {'similar_compounds': replacement}},
