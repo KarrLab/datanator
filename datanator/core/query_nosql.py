@@ -258,15 +258,17 @@ class QueryMetabolitesMeta(DataQuery):
                     [name, name, name]
         '''
         result = []
-        projection = {'_id': 0, 'synonyms.synonym': 1}
+        projection = {'_id': 0, 'kinlaw_id': 0, 'reaction_participants': 0,
+        			'inchi_deprot': 0, 'similar_compounds_corrected': 0,
+        			'similar_compounds': 0, 'inchi_hashed_deprot': 0}
         for compound in compounds:
             cursor = self.collection.find_one({'inchi_hashed': compound},
                                               projection=projection)
             try:
-                result.append(cursor['synonyms'])
+                result.append(cursor['synonyms']['synonym'])
             except KeyError:
-                result.append({'synonym': ['None']})
-        return [x['synonym'][-1] for x in result]
+                result.append([cursor['inchi_hashed']])
+        return [x[-1] for x in result]
 
     def get_metabolite_similar_compounds(self, compounds, num=0, threshold=0):
         ''' Given a list of compound names
