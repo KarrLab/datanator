@@ -69,7 +69,7 @@ class QueryFrontEnd:
                 organism: concentration value missing in this organism
         '''
 
-        tree = self.taxontree_manager.get_anc_id_by_name([organism])
+        tree = self.taxontree_manager.get_anc_by_name([organism])
         for entry in tree:
             print(entry)
         anc, dist = self.taxontree_manager.get_common_ancestor(

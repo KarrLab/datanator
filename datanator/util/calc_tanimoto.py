@@ -170,12 +170,14 @@ class CalcTanimoto(mongo_util.MongoUtil):
             compound = doc[field1]
             coeff, inchi_hashed = self.one_to_many(compound, lookup=lookup2,
                                                    collection_str=collection_str2, field=field2, num=num)
-            dic = {}
+            result = []
             for a, b in zip(coeff, inchi_hashed):
+                dic = {}
                 dic[b] = a
+                result.append(dic)
 
             final.update_one({lookup1: doc[lookup1]},
-                             {'$set': {'similar_compounds_corrected': [dic]}},
+                             {'$set': {'similar_compounds_corrected': result}},
                              upsert=False)
  
         limit = 100    # number of documents from the cursor to be stuffed into a list

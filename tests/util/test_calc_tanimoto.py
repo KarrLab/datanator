@@ -47,7 +47,7 @@ class TestCalcTanimoto(unittest.TestCase):
         self.assertEqual(coeff[10], self.src.get_tanimoto(inchi, inchi2))
         client.close()
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_many_to_many(self):
         client, _, col = mongo_util.MongoUtil(db = self.db, MongoDB = self.server,
                                         username = self.username, password = self.password).con_db('metabolites_meta')
