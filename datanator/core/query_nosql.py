@@ -609,3 +609,25 @@ class QueryTaxonTree(DataQuery):
         distance2 = len(org2_anc) - (idx_org2)
 
         return (ancestor, [distance1, distance2])
+
+    def get_rank(self, ids):
+        ''' Given a list of taxon ids, return
+            the list of ranks. no rank = '+'
+            Args:
+                ids: list of taxon ids [1234,2453,431]
+            Return:
+                ranks: list of ranks ['kingdom', '+', 'phylum']
+        '''
+        ranks = []
+        roi = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+        projection = {'rank': 1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(filter = query, projection = projection)
+            rank = cursor.get('rank', None)
+            if rank in roi:
+                ranks.append(rank)
+            else:
+                ranks.append('+')
+
+        return ranks

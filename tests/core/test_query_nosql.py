@@ -263,3 +263,9 @@ class TestQueryTaxonTree(unittest.TestCase):
         self.assertEqual(ancestor, 1783276)
         self.assertEqual(distances[0], 1)
         self.assertEqual(distances[1], 4)
+
+    def test_get_rank(self):
+        ids = [131567, 2759, 33154, 33208, 6072, 33213, 33511, 7711, 9526, 314295, 9604, 207598, 9605, 9606]
+        ranks = self.src.get_rank(ids)
+        self.assertEqual(ranks[3], 'kingdom')
+        self.assertEqual(ranks[1], '+')

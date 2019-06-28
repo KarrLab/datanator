@@ -32,4 +32,4 @@ class TestQueryFrontEnd(unittest.TestCase):
     	organism = 'Candidatus Pacearchaeota archaeon'
     	results = self.src.inchi_query_organism(inchi, organism)
     	self.assertEqual(results[0]['m2m_id'], 'M2MDB000326')
-    	self.assertEqual(results[0]['taxon_distance'], -1)
+    	self.assertEqual(results[0]['taxon_distance'], 4)
