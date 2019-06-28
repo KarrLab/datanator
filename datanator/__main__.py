@@ -38,6 +38,7 @@ class BaseController(cement.Controller):
     class Meta:
         label = 'base'
         description = 'Utilities for aggregating data for biochemical models'
+        help = 'Utilities for aggregating data for biochemical models'
         arguments = [
             (['-v', '--version'], dict(action='version', version=datanator.__version__)),
         ]
@@ -52,6 +53,7 @@ class UploadDataController(cement.Controller):
     class Meta:
         label = 'upload'
         description = "Upload reference genome into Datanator. The reference genome must be in Genbank or Ensembl format"
+        help = "Upload reference genome into Datanator. The reference genome must be in Genbank or Ensembl format"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -66,6 +68,7 @@ class UploadReferenceGenome(cement.Controller):
     class Meta:
         label = 'reference-genome'
         description = 'Upload a ref-seq genome'
+        help = 'Upload a ref-seq genome'
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
@@ -87,6 +90,7 @@ class UploadRNASeqExperiment(cement.Controller):
     class Meta:
         label = 'rna-seq-experiment'
         description = 'Upload an RNA-seq experiment'
+        help = 'Upload an RNA-seq experiment'
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
@@ -107,6 +111,7 @@ class UploadData(cement.Controller):
     class Meta:
         label = 'general-data'
         description = 'Upload data from overall schema'
+        help = 'Upload data from overall schema'
         stacked_on = 'upload'
         stacked_type = 'nested'
         arguments = [
@@ -131,6 +136,7 @@ class BuildController(cement.Controller):
     class Meta:
         label = 'build'
         description = "Build aggregated database"
+        help = "Build aggregated database"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -209,6 +215,7 @@ class AggregateBuildController(cement.Controller):
     class Meta:
         label = 'aggregate'
         description = "Builds Aggregated Database"
+        help = "Builds Aggregated Database"
         stacked_on = 'build'
         stacked_type = 'nested'
         arguments = [
@@ -251,6 +258,7 @@ class DownloadController(cement.Controller):
     class Meta:
         label = 'download'
         description = "Download existing databases from Karr Lab Server"
+        help = "Download existing databases from Karr Lab Server"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -317,6 +325,7 @@ class GetDataController(cement.Controller):
     class Meta:
         label = 'get-data'
         description = "Get relevant data for a model of a taxon"
+        help = "Get relevant data for a model of a taxon"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -387,6 +396,7 @@ class GenerateTemplateController(cement.Controller):
     class Meta:
         label = 'generate-template'
         description = "Generate an Excel template for specifying which reactions to aggregate kinetic data about"
+        help = "Generate an Excel template for specifying which reactions to aggregate kinetic data about"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -405,6 +415,7 @@ class GenerateRNASeqTemplate(cement.Controller):
     class Meta:
         label = 'generate-rna-seq-template'
         description = "Generate a folder with excel tables to upload rna-seq experiments"
+        help = "Generate a folder with excel tables to upload rna-seq experiments"
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = [
@@ -423,6 +434,7 @@ class TaxonomyController(cement.Controller):
     class Meta:
         label = 'taxonomy'
         description = 'Taxonomy utilities'
+        help = 'Taxonomy utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -437,6 +449,7 @@ class TaxonomyGetRankController(cement.Controller):
     class Meta:
         label = 'get-rank'
         description = 'Get the rank of a taxon'
+        help = 'Get the rank of a taxon'
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
@@ -457,6 +470,7 @@ class TaxonomyGetParentsController(cement.Controller):
     class Meta:
         label = 'get-parents'
         description = 'Get the parents of a taxon'
+        help = 'Get the parents of a taxon'
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
@@ -480,6 +494,7 @@ class TaxonomyGetCommonAncestorController(cement.Controller):
     class Meta:
         label = 'get-common-ancestor'
         description = "Get the latest common ancestor between two taxa"
+        help = "Get the latest common ancestor between two taxa"
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
@@ -507,6 +522,7 @@ class TaxonomyGetDistanceToCommonAncestorController(cement.Controller):
     class Meta:
         label = 'get-distance-to-common-ancestor'
         description = "Get the distance to the latest common ancestor between two taxa"
+        help = "Get the distance to the latest common ancestor between two taxa"
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
@@ -534,6 +550,7 @@ class TaxonomyGetDistanceToRoot(cement.Controller):
     class Meta:
         label = 'get-distance-to-root'
         description = "Get the distance to from a taxon to the root of the taxonomic tree"
+        help = "Get the distance to from a taxon to the root of the taxonomic tree"
         stacked_on = 'taxonomy'
         stacked_type = 'nested'
         arguments = [
@@ -556,6 +573,7 @@ class MoleculeController(cement.Controller):
     class Meta:
         label = 'molecule'
         description = 'Molecule utilities'
+        help = 'Molecule utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -570,6 +588,7 @@ class MoleculeGetStructureController(cement.Controller):
     class Meta:
         label = 'get-structure'
         description = 'Get the structure of a molecule by its name or id'
+        help = 'Get the structure of a molecule by its name or id'
         stacked_on = 'molecule'
         stacked_type = 'nested'
         arguments = [
@@ -616,6 +635,7 @@ class MoleculeConvertStructureController(cement.Controller):
     class Meta:
         label = 'convert-structure'
         description = 'Convert molecule structure'
+        help = 'Convert molecule structure'
         stacked_on = 'molecule'
         stacked_type = 'nested'
         arguments = [
@@ -635,6 +655,7 @@ class ReactionController(cement.Controller):
     class Meta:
         label = 'reaction'
         description = 'Reaction utilities'
+        help = 'Reaction utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -649,6 +670,7 @@ class ReactionGetEcNumberController(cement.Controller):
     class Meta:
         label = 'get-ec-number'
         description = 'Use Ezyme to predict the EC number of a reaction'
+        help = 'Use Ezyme to predict the EC number of a reaction'
         stacked_on = 'reaction'
         stacked_type = 'nested'
         arguments = [
@@ -712,6 +734,7 @@ class DbController(cement.Controller):
     class Meta:
         label = 'db'
         description = 'Database management utilities'
+        help = 'Database management utilities'
         stacked_on = 'base'
         stacked_type = 'nested'
         arguments = []
@@ -745,6 +768,7 @@ class DbRestoreController(cement.Controller):
     class Meta:
         label = 'restore'
         description = 'Restore the content of the Datanator database'
+        help = 'Restore the content of the Datanator database'
         stacked_on = 'db'
         stacked_type = 'nested'
         arguments = [
