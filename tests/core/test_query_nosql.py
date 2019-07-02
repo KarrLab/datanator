@@ -112,7 +112,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
             '(H2,18,19,20)/t4-,6-,7-,10-/m1/s1')
         compound = ['β-D-Ribopyranose']
         inchi = self.src.get_metabolite_inchi(compound)
-        self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001172')
+        self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001173')
 
     def test_get_ids_from_hash(self):
         hashed_inchi_1 = '09fab91d3708097484215d419c9326290150f37e7c1bcc48a1bb4c7b'
