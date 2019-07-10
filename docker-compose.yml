@@ -73,10 +73,10 @@ services:
   #     - mongo_secondary
   #     - mongo_tertiary
 
-  mongoexpress:
-    image: mongo-express:0.49.0
-    restart: always
-    ports:
-      - "8081:8081"
-    restart: always
-    command: sh -c 'sleep 10 && tini -- node app'
+#  mongoexpress:
+#    image: mongo-express:0.49.0
+#    restart: always
+#    ports:
+#      - "8081:8081"
+#    restart: always
+#    command: sh -c 'sleep 10 && tini -- node app'
