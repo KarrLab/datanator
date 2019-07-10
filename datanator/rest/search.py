@@ -35,7 +35,7 @@ def results(molecule_name, organism_name, abstract_default=False):
     if abstract_default:
         abstract_default = (abstract_default.lower() == "true")
 
-    list_jsons = front_end_query.QueryFrontEnd().molecule_name_query(molecule_name, organism_name, abstract_default)
+    list_jsons = front_end_query.QueryFrontEnd().molecule_name_query(molecule_name, organism_name, abstract_default=abstract_default)
 
     return(jsonify(list_jsons))
     #return render_template('/results.html', results=[the_json_1,the_json_2])

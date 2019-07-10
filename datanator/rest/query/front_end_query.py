@@ -21,93 +21,140 @@ class QueryFrontEnd:
         )['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config(
         )['datanator']['mongodb']['replSet']
-        self.dataquery_manager = query_nosql.DataQuery(MongoDB=MongoDB, replicaSet=replSet, db=db,
+        self.db = query_nosql.DataQuery(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                        username=username, password=password)
-        self.metabolitesmeta_manager = query_nosql.QueryMetabolitesMeta(MongoDB=MongoDB, replicaSet=replSet, db=db,
+        self.metab_db = query_nosql.QueryMetabolitesMeta(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                                         username=username, password=password)
         self.sabio_manager = query_nosql.QuerySabio(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                     username=username, password=password)
-        self.taxontree_manager = query_nosql.QueryTaxonTree(MongoDB=MongoDB, replicaSet=replSet, db=db,
+        self.tax_db = query_nosql.QueryTaxonTree(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                             username=username, password=password)
         self.mongoutil_manager = mongo_util.MongoUtil(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                       username=username, password=password)
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
 
-    def string_query(self, string):
-        query = string
-        results = self.dataquery_manager.find_text(query, collection='ecmdb')
-        return(results)
+    def get_ecmdb_entries(self, m2m_ids, organism):
+        query = { 'm2m_id': {"$in": m2m_ids} } 
+        projection = {'_id': 0}
+        cursor = self.db.doc_feeder(collection_str='ecmdb', query=query ,projection=projection)
+        list_e_coli = []
+        for doc in cursor:
+            if doc['concentrations']:
+                if len(doc['concentrations']['concentration']) > 0:
+                    list_e_coli.append(doc)
+        return(list_e_coli)
 
-    def inchi_query_metabolite(self, string):
-        # query for inchi string
-        inchi_deprot = self.chem_manager.simplify_inchi(inchi=string)
-        inchi_hashed = self.chem_manager.hash_inchi(inchi=inchi_deprot)
-        ids = self.metabolitesmeta_manager.get_ids_from_hash(inchi_hashed)
+    def get_ymdb_entries(self, ymdb_ids, organism):
+        query = { 'ymdb_id': {"$in": ymdb_ids} } 
+        projection = {'_id': 0}
+        cursor2 = self.db.doc_feeder(collection_str='ymdb', query=query ,projection=projection)
+        list_yeast = []
+        for doc in cursor2:
+            if doc['concentrations']:
+                if len(doc['concentrations']['concentration']) > 0:
+                    list_yeast.append(doc)
+        return(list_yeast)
 
-        list_jsons = []
-        if ids['m2m_id'] != None:
-            query = {'m2m_id': ids['m2m_id']}
-            projection = {'_id': 0}
-            _, _, col = self.mongoutil_manager.con_db('ecmdb')
-            doc = col.find_one(filter=query, projection=projection)
-            list_jsons.append(doc)
+    def get_conc_ids(self, list_names):
+        m2m_ids = []
+        ymdb_ids = []
+        for entry in self.metab_db.get_metabolite_inchi(list_names):
+            if entry['m2m_id']:
+                m2m_ids.append(entry['m2m_id'])
+            if entry['ymdb_id']:
+                ymdb_ids.append(entry['ymdb_id'])
+        return(m2m_ids, ymdb_ids)
+    """
+    def get_generic_names(self, molecule_name):
+        raw, result = self.metab_db.get_metabolite_similar_compounds([molecule_name], num = 5, threshold = 0.6)
+        list_names = []
+        list_scores = []
+        for key in result[0]:
+            list_names.append(key)
+            list_scores.append(result[0][key])
+        return(list_names, list_scores)
+    """
 
-        if ids['ymdb_id'] != None:
-            query = {'ymdb_id': ids['ymdb_id']}
-            projection = {'_id': 0}
-            _, _, col = self.mongoutil_manager.con_db('ymdb')
-            doc = col.find_one(filter=query, projection=projection)
-            list_jsons.append(doc)
-        return(list_jsons)
+    def get_generic_concs(self, molecule_name, organism):
+        raw, result = self.metab_db.get_metabolite_similar_compounds([molecule_name], num = 30, threshold = 0.6)
+        print(raw)
+        print(result)
+        
+        list_names = []
+        list_scores = []
+        for key in result[0]:
+            if key != 'None':
+                list_names.append(key)
+                list_scores.append(result[0][key])
+        print(list_names)
 
-    def inchi_query_organism(self, string, organism):
-        ''' Find metabolite (defined by string) concentration
-            in e.coli and yeast, return documents
-            Args:
-                string: inchi value
-                organism: concentration value missing in this organism
-        '''
+        m2m_ids = []
+        ymdb_ids = []
+        id_to_score = {}
+        list_db_id = self.metab_db.get_metabolite_inchi(list_names)
+        for i in range(len(list_db_id)):
+            entry = list_db_id[i]
+            if entry['m2m_id']:
+                m2m_ids.append(entry['m2m_id'])
+                id_to_score[entry['m2m_id']] = list_scores[i]
+            if entry['ymdb_id']:
+                ymdb_ids.append(entry['ymdb_id'])
+                id_to_score[entry['ymdb_id']] = list_scores[i]
 
-        tree = self.taxontree_manager.get_anc_by_name([organism])
-        for entry in tree:
-            print(entry)
-        anc, dist = self.taxontree_manager.get_common_ancestor(
-            organism, "Escherichia coli")
-        distance_e = dist[0]
-        anc, dist = self.taxontree_manager.get_common_ancestor(
-            organism, "Saccharomyces cerevisiae")
-        distance_y = dist[0]
+        #m2m_ids, ymdb_ids = self.get_conc_ids(list_names)
+        print(m2m_ids)
+        print(ymdb_ids)
+        ecmdb_data = self.get_ecmdb_entries(m2m_ids, organism)
+        ymdb_data = self.get_ymdb_entries(ymdb_ids, organism)
+        
+        
+        for entry in ecmdb_data:
+            entry["tanitomo_similarity"] = id_to_score[entry["m2m_id"]]
+        for entry in ymdb_data:
+            entry["tanitomo_similarity"] = id_to_score[entry["ymdb_id"]]
 
-        inchi_hashed = self.chem_manager.hash_inchi(inchi=string)
-        ids = self.metabolitesmeta_manager.get_ids_from_hash(inchi_hashed)
-        list_jsons = []
+        return(ecmdb_data, ymdb_data)
 
-        if ids['m2m_id'] != None:
-            query = {'m2m_id': ids['m2m_id']}
-            projection = {'_id': 0}
-            _, _, col = self.mongoutil_manager.con_db('ecmdb')
-            doc = col.find_one(filter=query, projection=projection)
-            doc["taxon_distance"] = distance_e
-            list_jsons.append(doc)
+    def molecule_name_query(self, molecule_name, organism, abstract_default=False):
 
-        if ids['ymdb_id'] != None:
-            query = {'ymdb_id': ids['ymdb_id']}
-            projection = {'_id': 0}
-            _, _, col = self.mongoutil_manager.con_db('ymdb')
-            doc = col.find_one(filter=query, projection=projection)
-            doc["taxon_distance"] = distance_y
-            list_jsons.append(doc)
-        return(list_jsons)
+        #list_metabolites = ["ATP", "GTP"]
+        list_metabolites = [molecule_name]
+        print(self.metab_db.get_metabolite_inchi(list_metabolites))
+        m2m_ids, ymdb_ids = self.get_conc_ids(list_metabolites)
+        ecmdb_data = self.get_ecmdb_entries(m2m_ids, organism)
+        ymdb_data = self.get_ymdb_entries(ymdb_ids, organism)
 
-    def molecule_name_query(self, string, organism):
 
-        response = None
-        # try:
-        inchi = self.metabolitesmeta_manager.get_metabolite_inchi([string])[
-            0]
-        response = self.inchi_query_organism(inchi, organism, string)
-        # except Exception as e:
-        # print(e)
+        for entry in ecmdb_data:
+            entry["tanitomo_similarity"] = 1
+        for entry in ymdb_data:
+            entry["tanitomo_similarity"] = 1
 
+
+        response = []
+        if (not (ecmdb_data or ymdb_data)) or abstract_default:
+            new_ecmdb_data, new_ymdb_data  = self.get_generic_concs(molecule_name, organism)
+            ecmdb_data = ecmdb_data + new_ecmdb_data
+            ymdb_data = ymdb_data + new_ymdb_data
+        else:
+            pass
+        response.append(ecmdb_data)
+        response.append(ymdb_data)
+
+
+        anc, dist = self.tax_db.get_common_ancestor(organism, "Escherichia coli")
+        for doc in ecmdb_data:
+            doc["taxon_distance"] = dist[0]
+        anc, dist = self.tax_db.get_common_ancestor(organism, "Saccharomyces cerevisiae")
+        for doc in ymdb_data:
+            doc["taxon_distance"] = dist[0]
+
+
+
+        result_id, result_name = self.tax_db.get_anc_by_name([organism])
+        result_name[0].append(organism)
+        response.append(result_name)
+        #response = self.inchi_query(inchi, organism, string)
         return(response)
+
