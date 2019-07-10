@@ -9,5 +9,4 @@ with open(pkg_resources.resource_filename('datanator', 'VERSION'), 'r') as file:
 # API
 from . import config
 from . import core
-from . import data_source
 from . import util
