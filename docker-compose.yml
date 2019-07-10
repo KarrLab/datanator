@@ -23,15 +23,15 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
 
-  mongo:
-    image: mongo:4.1
-    restart: always
-    volumes:
-      - ./datanator/data_source/cache/mongo:/data/db
-      - ./docs/mongod.conf:/etc/mongod.conf
-      - ../:/root/host/karr_lab
-    ports:
-      - "20000:27017"
+#  mongo:
+#    image: mongo:4.1
+#    restart: always
+#    volumes:
+#      - ./datanator/data_source/cache/mongo:/data/db
+#      - ./docs/mongod.conf:/etc/mongod.conf
+#      - ../:/root/host/karr_lab
+#    ports:
+#      - "20000:27017"
     # command: ["mongod", "--config", "/etc/mongod.conf"]
  
   # mongo_secondary:
