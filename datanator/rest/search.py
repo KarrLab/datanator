@@ -41,3 +41,5 @@ def results(molecule_name, organism_name, abstract_default=False):
     #return render_template('/results.html', results=[the_json_1,the_json_2])
 
     #return render_template('/results.html', results=json.dumps(the_json))
+if __name__ == '__main__':
+    bp_r.run(debug=True, host='0.0.0.0')

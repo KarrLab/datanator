@@ -29,14 +29,11 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
-
-    from . import auth
-    app.register_blueprint(auth.bp)
-
-    from . import db_2
-    db_2.init_app(app)
-
-    from . import search
+    from datanator.rest import search
     app.register_blueprint(search.bp)
     app.register_blueprint(search.bp_r)
+    app.run(debug=True, host='0.0.0.0')
     return app
+
+if __name__ == '__main__':
+    create_app()
