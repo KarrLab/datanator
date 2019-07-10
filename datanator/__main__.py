@@ -8,8 +8,6 @@
 :License: MIT
 """
 
-from __future__ import print_function
-from datanator import io
 from datanator.core import data_model, common_schema, upload_data, data_query  # , json_schema
 from datanator.core.render_form import render_html_from_schema
 from datanator.data_source import *
