@@ -727,42 +727,6 @@ class ReactionGetEcNumberController(cement.Controller):
             print('There is no appropriate EC number for the reaction')
 
 
-class DbController(cement.Controller):
-
-    class Meta:
-        label = 'db'
-        description = 'Database management utilities'
-        help = 'Database management utilities'
-        stacked_on = 'base'
-        stacked_type = 'nested'
-        arguments = []
-
-    @cement.ex(hide=True)
-    def _default(self):
-        self._parser.print_help()
-
-    @cement.ex(help='Create the structure of the Datanator database')
-    def create(self):
-        if not sqlalchemy_utils.functions.database_exists(datanator.db.engine.url):
-            sqlalchemy_utils.functions.create_database(datanator.db.engine.url)
-        datanator.db.create_all()
-
-    @cement.ex(help='Migrate the structure of the Datanator database')
-    def migrate(self):
-        with datanator.app.app_context():
-            if not os.path.isdir('migrations'):
-                flask_migrate.init()
-            flask_migrate.migrate()
-            flask_migrate.upgrade()
-
-    @cement.ex(help='Drop the Datanator database')
-    def drop(self):
-        datanator.db.engine.dispose()
-        sqlalchemy_utils.functions.drop_database(datanator.db.engine.url)
-
-
-class DbRestoreController(cement.Controller):
-
     class Meta:
         label = 'restore'
         description = 'Restore the content of the Datanator database'
@@ -832,9 +796,6 @@ class App(cement.App):
 
             ReactionController,
             ReactionGetEcNumberController,
-
-            DbController,
-            DbRestoreController,
         ]
 
 
