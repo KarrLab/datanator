@@ -4,11 +4,6 @@ jobs:
     working_directory: /root/project
     docker:
       - image: karrlab/wc_env_dependencies:latest
-      - image: circleci/postgres:11.2-alpine-ram
-        name: postgres_service
-        environment:
-          POSTGRES_USER: postgres
-          POSTGRES_DB: CommonSchema
 
     steps:
       # Clone repository
@@ -51,14 +46,6 @@ jobs:
           key: v4-{{ arch }}-{{ .Branch }}-{{ checksum "/etc/docker-image-tag" }}-{{ checksum "requirements.txt" }}
           paths:
             - /usr/local/lib/python3.6/site-packages
-
-      # Restore Database
-      - run:
-          name: Restore Database
-          command: |
-            # todo: remove --restore-schema
-            # todo: remove --do-not-exit-on-error
-            python3 manage.py restore_db --restore-schema --do-not-exit-on-error
 
       # Test code
       - run:

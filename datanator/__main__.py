@@ -8,12 +8,9 @@
 :License: MIT
 """
 
-from __future__ import print_function
-from datanator import io
-from datanator.core import data_model, common_schema, upload_data, data_query  # , json_schema
+from datanator.core import data_model, query_nosql
 from datanator.core.render_form import render_html_from_schema
 from datanator.data_source import *
-from datanator.data_source import refseq
 from datanator.util import molecule_util
 from datanator.util import taxonomy_util
 from pkg_resources import resource_filename
@@ -28,8 +25,6 @@ import shutil
 import sqlalchemy_utils
 import sys
 from Bio import SeqIO
-from datanator.api.query import reaction_kinetics
-#from datanator.core import data_query
 from datanator.util.constants import DATA_CACHE_DIR
 
 
@@ -318,78 +313,6 @@ class DownloadController(cement.Controller):
     @cement.ex(hide=True)
     def _default(self):
         self._parser.print_help()
-
-
-class GetDataController(cement.Controller):
-
-    class Meta:
-        label = 'get-data'
-        description = "Get relevant data for a model of a taxon"
-        help = "Get relevant data for a model of a taxon"
-        stacked_on = 'base'
-        stacked_type = 'nested'
-        arguments = [
-            (['input_file'], dict(type=str, help="path to the input data spreadsheet (.xlsx)")),
-            (['output_file'], dict(type=str, help="path to the output data spreadsheet (.xlsx)")),
-            (['--max-taxon-dist'], dict(help="Maximum acceptable taxonomic distance",
-                                        type=int, default=None)),
-            (['--taxon-dist-scale'], dict(help="Exponential constant for scoring taxonomic distance",
-                                          type=float, default=float('nan'))),
-            (['--include-variants'], dict(help="If set, include data from genetic variants",
-                                          action='store_true', default=False)),
-            (['--temperature'], dict(help="Target temperature", type=float, default=37.)),
-            (['--temperature-std'], dict(help="Standard deviation for scoring temperatures",
-                                         type=float, default=1.)),
-            (['--ph'], dict(help="Target pH", type=float, default=7.5)),
-            (['--ph-std'], dict(help="Standard deviation for scoring pHs",
-                                type=float, default=0.3)),
-        ]
-
-    @cement.ex(hide=True)
-    def _default(self):
-        pargs = self.app.pargs
-        genetics, compartments, species, reactions = io.InputReader().run(pargs.input_file)
-        # print(reactions)
-        # for thing in reactions[0].get_reactants():
-        #    print(thing.specie.to_inchi())
-        #    print(thing.specie.to_smiles())
-        cache_dirname = DATA_CACHE_DIR
-        # print(cache_dirname)
-        observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
-
-        class ConcreteDataQueryGenerator(data_query.DataQueryGenerator):
-
-            def get_observed_result(self):
-                pass
-        print("the length is initially {}".format(len(observed_values)))
-        gen = ConcreteDataQueryGenerator()
-        gen.filters = [
-            data_query.TemperatureRangeFilter(min=36., max=38.),
-            data_query.TaxonomicDistanceFilter(taxon='Mycoplasma genitalium')  # , max=7)
-        ]
-        filtered = gen.filter_observed_results(None, observed_values)
-        print(filtered.observed_value_indices)
-        print(data_query.ConsensusGenerator().calc_average(filtered.observed_value_indices, method='median'))
-        # print(thing.)
-
-        #con_gen =  data_query.ConsensusGenerator().run(filtered, "median")
-        # print(con_gen)
-
-        #print(gen.get_consensus(None, filtered))
-        #print("the length after filtering is {}".format(len(filtered.observed_results)))
-        #consensus = data_query.ConsensusGenerator().run(filtered, 'median')
-        # print(consensus)
-
-        # todo: implement
-        return
-
-        data = datanator.get_kinetic_data(
-            taxon=genetics.taxon, max_taxon_dist=pargs.max_taxon_dist, taxon_dist_scale=pargs.taxon_dist_scale,
-            include_variants=pargs.include_variants,
-            temperature=pargs.temperature, temperature_std=pargs.temperature_std,
-            ph=pargs.ph, ph_std=pargs.ph_std)
-        io.OutputWriter().run(pargs.pargs.output_file, data)
-
 
 class GenerateTemplateController(cement.Controller):
 
@@ -729,42 +652,6 @@ class ReactionGetEcNumberController(cement.Controller):
             print('There is no appropriate EC number for the reaction')
 
 
-class DbController(cement.Controller):
-
-    class Meta:
-        label = 'db'
-        description = 'Database management utilities'
-        help = 'Database management utilities'
-        stacked_on = 'base'
-        stacked_type = 'nested'
-        arguments = []
-
-    @cement.ex(hide=True)
-    def _default(self):
-        self._parser.print_help()
-
-    @cement.ex(help='Create the structure of the Datanator database')
-    def create(self):
-        if not sqlalchemy_utils.functions.database_exists(datanator.db.engine.url):
-            sqlalchemy_utils.functions.create_database(datanator.db.engine.url)
-        datanator.db.create_all()
-
-    @cement.ex(help='Migrate the structure of the Datanator database')
-    def migrate(self):
-        with datanator.app.app_context():
-            if not os.path.isdir('migrations'):
-                flask_migrate.init()
-            flask_migrate.migrate()
-            flask_migrate.upgrade()
-
-    @cement.ex(help='Drop the Datanator database')
-    def drop(self):
-        datanator.db.engine.dispose()
-        sqlalchemy_utils.functions.drop_database(datanator.db.engine.url)
-
-
-class DbRestoreController(cement.Controller):
-
     class Meta:
         label = 'restore'
         description = 'Restore the content of the Datanator database'
@@ -814,7 +701,6 @@ class App(cement.App):
             BuildController,
             AggregateBuildController,
 
-            GetDataController,
             GenerateTemplateController,
             GenerateRNASeqTemplate,
 
@@ -834,9 +720,6 @@ class App(cement.App):
 
             ReactionController,
             ReactionGetEcNumberController,
-
-            DbController,
-            DbRestoreController,
         ]
 
 
