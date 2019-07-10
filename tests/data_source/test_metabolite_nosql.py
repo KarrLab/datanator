@@ -39,6 +39,7 @@ class TestMetaboliteNoSQL(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
 
+    # @unittest.skip('no json files in circle')
     def test_write_to_json(self):
         session = self.src.write_to_json()
         null = None
