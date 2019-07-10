@@ -26,7 +26,7 @@ import shutil
 import sqlalchemy_utils
 import sys
 from Bio import SeqIO
-from datanator.api.query import reaction_kinetics
+#from datanator.api.query import reaction_kinetics
 #from datanator.core import data_query
 from datanator.util.constants import DATA_CACHE_DIR
 
@@ -353,7 +353,7 @@ class GetDataController(cement.Controller):
         #    print(thing.specie.to_smiles())
         cache_dirname = DATA_CACHE_DIR
         # print(cache_dirname)
-        observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
+        #observed_values = reaction_kinetics.ReactionKineticsQuery(cache_dirname=cache_dirname).get_observed_result(reactions[0])
 
         class ConcreteDataQueryGenerator(data_query.DataQueryGenerator):
 
