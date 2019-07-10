@@ -32,8 +32,8 @@ def create_app(test_config=None):
     from datanator.rest import search
     app.register_blueprint(search.bp)
     app.register_blueprint(search.bp_r)
-    app.run(debug=True, host='0.0.0.0')
+    
     return app
 
 if __name__ == '__main__':
-    create_app()
+    create_app().run(debug=True, host='0.0.0.0')
