@@ -701,7 +701,6 @@ class App(cement.App):
             BuildController,
             AggregateBuildController,
 
-            GetDataController,
             GenerateTemplateController,
             GenerateRNASeqTemplate,
 
