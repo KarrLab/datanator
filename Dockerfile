@@ -6,6 +6,8 @@ COPY . /tmp/datanator
 
 RUN cd /tmp/datanator \
 	&& pip3 install -e .
+	&& rm -rf /tmp/datanator
 
 WORKDIR /root
-CMD bash
+ENTRYPOINT ["python3"]
+CMD ["/home/datanator/rest/__init__.py"]
