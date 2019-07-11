@@ -12,8 +12,8 @@ import json
 import pymongo
 from pymongo import MongoClient
 from datanator.util import mongo_util
-from datanator.util import server_util
 from datanator.util import chem_util
+import datanator.config.core
 from pathlib import Path
 import re
 import os
@@ -42,9 +42,9 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         self.verbose = verbose
         self.max_entries = max_entries
         self.collection_str = 'sabio_rk'
-        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_directory, MongoDB=MongoDB, replicaSet=replicaSet, 
-                                    db=db, verbose=verbose, max_entries=max_entries, username = username, 
-                                    password = password, authSource = authSource)
+        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
+                                              db=db, verbose=verbose, max_entries=max_entries, username = username,
+                                              password = password, authSource = authSource)
 
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
         self.chem_manager = chem_util.ChemUtil()
@@ -600,10 +600,15 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
 
 
 def main():
-    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-    username, password, MongoDB, port = server_util.ServerUtil(config_file = config_file).get_user_config()
-    manager = SabioRkNoSQL(username = username, password = password, 
-                        db = 'datanator', MongoDB = MongoDB)
+    db = 'datanator'
+    username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+    password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config()['datanator']['mongodb']['port']
+    replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet = replSet, db=db, 
+                                verbose=True, max_entries=float('inf'), 
+                                username = username, password = password)
     manager.add_deprot_inchi()
 
 if __name__ == '__main__':

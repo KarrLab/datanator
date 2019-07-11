@@ -1,6 +1,5 @@
 import pybel
 from datanator.util import mongo_util
-from datanator.util import server_util
 import pymongo
 import numpy as np
 import multiprocessing as mp
