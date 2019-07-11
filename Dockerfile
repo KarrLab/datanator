@@ -5,5 +5,5 @@ WORKDIR /home
 
 RUN pip3 install -U -e /home/[all]
 
-
-CMD gunicorn -w 4 -b 0.0.0.0:${PORT} --timeout 120 manage:app
+ENTRYPOINT ["python3"]
+CMD ["/home/datanator/rest/__init__.py"]

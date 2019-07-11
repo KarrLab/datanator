@@ -42,7 +42,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         self.verbose = verbose
         self.max_entries = max_entries
         self.collection_str = 'sabio_rk'
-        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
+        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_directory, MongoDB=MongoDB, replicaSet=replicaSet,
                                               db=db, verbose=verbose, max_entries=max_entries, username = username,
                                               password = password, authSource = authSource)
 
