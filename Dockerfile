@@ -1,9 +1,11 @@
 FROM lzy7071/karrlabdatanator_dependencies:latest
 
-COPY . /home
-WORKDIR /home
+RUN mkdir -p /tmp/datanator
 
-RUN pip3 install -e .
+COPY . /tmp/datanator
 
-ENTRYPOINT ["python3"]
-CMD ["/home/datanator/rest/__init__.py"]
+RUN cd /tmp/datanator \
+	&& pip3 install -e .
+
+WORKDIR /root
+CMD bash
