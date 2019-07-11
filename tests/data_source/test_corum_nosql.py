@@ -12,7 +12,6 @@
 
 import unittest
 from datanator.data_source import corum_nosql
-from datanator.util import server_util
 import tempfile
 import shutil
 import pymongo

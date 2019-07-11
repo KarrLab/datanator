@@ -1,6 +1,5 @@
 import unittest
 from datanator.data_source import kegg_orthology
-from datanator.util import server_util
 import tempfile
 import shutil
 import json

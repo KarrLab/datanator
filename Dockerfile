@@ -1,4 +1,4 @@
-FROM karrlab/wc_env_dependencies:latest
+FROM lzy7071/karrlabdatanator_dependencies:latest
 
 ADD . /home
 WORKDIR /home
