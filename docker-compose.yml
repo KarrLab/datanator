@@ -1,6 +1,5 @@
 version: '3'
 
-
 services:
   datanator:
     image: lzy7071/karrlabdatanator:latest
@@ -13,19 +12,6 @@ services:
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
     command: ["python3", "/root/host/karr_lab/datanator/datanator/rest/__init__.py"]
-
-  # flask:
-  #   image: lzy7071/datanatorflask:latest
-  #   restart: always
-  #   entrypoint: bash
-  #   stdin_open: true
-  #   tty: true
-  #   ports:
-  #     - "5000:5000"
-  #   volumes: 
-  #     - "../:/root/host/karr_lab"
-  #     - "~/.wc:/root/.wc"
-
 
   mongo:
     image: mongo:4.0.10

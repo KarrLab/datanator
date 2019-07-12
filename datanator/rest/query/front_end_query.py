@@ -4,9 +4,6 @@ from datanator.util import chem_util
 from datanator.util import file_util
 from datanator.util import mongo_util
 import sys
-# print("hello")
-
-# sys.path.insert(0, '~/karr_lab/datanator_frontend2/datanator')
 
 class QueryFrontEnd:
     def __init__(self):
@@ -34,7 +31,7 @@ class QueryFrontEnd:
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
 
-    def get_ecmdb_entries(self, m2m_ids, organism):
+    def get_ecmdb_entries(self, m2m_ids):
         query = { 'm2m_id': {"$in": m2m_ids} } 
         projection = {'_id': 0}
         cursor = self.db.doc_feeder(collection_str='ecmdb', query=query ,projection=projection)
@@ -45,7 +42,7 @@ class QueryFrontEnd:
                     list_e_coli.append(doc)
         return(list_e_coli)
 
-    def get_ymdb_entries(self, ymdb_ids, organism):
+    def get_ymdb_entries(self, ymdb_ids):
         query = { 'ymdb_id': {"$in": ymdb_ids} } 
         projection = {'_id': 0}
         cursor2 = self.db.doc_feeder(collection_str='ymdb', query=query ,projection=projection)
@@ -76,7 +73,7 @@ class QueryFrontEnd:
         return(list_names, list_scores)
     """
 
-    def get_generic_concs(self, molecule_name, organism):
+    def get_generic_concs(self, molecule_name):
         raw, result = self.metab_db.get_metabolite_similar_compounds([molecule_name], num = 30, threshold = 0.6)
         print(raw)
         print(result)
@@ -105,8 +102,8 @@ class QueryFrontEnd:
         #m2m_ids, ymdb_ids = self.get_conc_ids(list_names)
         print(m2m_ids)
         print(ymdb_ids)
-        ecmdb_data = self.get_ecmdb_entries(m2m_ids, organism)
-        ymdb_data = self.get_ymdb_entries(ymdb_ids, organism)
+        ecmdb_data = self.get_ecmdb_entries(m2m_ids)
+        ymdb_data = self.get_ymdb_entries(ymdb_ids)
         
         
         for entry in ecmdb_data:
@@ -122,8 +119,8 @@ class QueryFrontEnd:
         list_metabolites = [molecule_name]
         print(self.metab_db.get_metabolite_inchi(list_metabolites))
         m2m_ids, ymdb_ids = self.get_conc_ids(list_metabolites)
-        ecmdb_data = self.get_ecmdb_entries(m2m_ids, organism)
-        ymdb_data = self.get_ymdb_entries(ymdb_ids, organism)
+        ecmdb_data = self.get_ecmdb_entries(m2m_ids)
+        ymdb_data = self.get_ymdb_entries(ymdb_ids)
 
 
         for entry in ecmdb_data:
@@ -134,7 +131,7 @@ class QueryFrontEnd:
 
         response = []
         if (not (ecmdb_data or ymdb_data)) or abstract_default:
-            new_ecmdb_data, new_ymdb_data  = self.get_generic_concs(molecule_name, organism)
+            new_ecmdb_data, new_ymdb_data  = self.get_generic_concs(molecule_name)
             ecmdb_data = ecmdb_data + new_ecmdb_data
             ymdb_data = ymdb_data + new_ymdb_data
         else:
