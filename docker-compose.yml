@@ -11,10 +11,10 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
-    entrypoint: ["wget", "-P", "/tmp", "https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive"]
+    entrypoint: ["curl", "-o", "/root/host/karr_lab/datanator.archive", "https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive"]
 
   flask:
-    image: lzy7071/karrlabdatanator:latest
+    image: lzy7071/datanatorflask:latest
     restart: always
     entrypoint: bash
     stdin_open: true
@@ -40,7 +40,7 @@ services:
     image: mongo:4.0.10
     volumes:
       - ../:/root/host/karr_lab
-    entrypoint: [ "mongorestore", "-d", "datanator", "--host", "mongo", "--archive=/root/host/karr_lab/datanator.20190701.archive" ]
+    entrypoint: [ "mongorestore", "-d", "datanator", "--host", "mongo", "--archive=/root/host/karr_lab/datanator.archive" ]
     restart: on-failure
     depends_on:
       - mongo
