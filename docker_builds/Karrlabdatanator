@@ -1,10 +1,6 @@
 FROM lzy7071/karrlabdatanator_dependencies:latest
 
-COPY . /tmp
-
-RUN cd /tmp/datanator \
-	&& pip3 install -e . \
-	&& rm -rf /tmp/datanator
+RUN pip3 install git+https://github.com/KarrLab/datanator.git
 
 WORKDIR /root
 CMD bash
