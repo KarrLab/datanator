@@ -1,0 +1,10 @@
+FROM mongo:4.0.10
+
+RUN apt-get update -y \
+	&& apt-get install -y --no-install-recommends \
+		curl \
+		wget \
+	&& rm -rf /var/lib/apt/lists/*
+
+WORKDIR /root
+CMD bash

@@ -2,11 +2,11 @@ FROM lzy7071/karrlabdatanator_dependencies:latest
 
 RUN mkdir -p /tmp/datanator
 
-COPY . /tmp/datanator
-
-RUN cd /tmp/datanator \
-	&& pip3 install -e . \
-	&& rm -rf /tmp/datanator
+RUN apt-get update -y \
+	&& apt-get install -y --no-install-recommends \
+		curl \
+		wget \
+	&& rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
 ENTRYPOINT ["python3"]
