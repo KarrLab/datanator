@@ -11,7 +11,7 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
-    entrypoint: ["curl", "-o", "/root/host/karr_lab/datanator.archive", "https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive"]
+    command: ["curl", "-o", "/root/host/karr_lab/datanator.archive", "https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive"]
 
   flask:
     image: lzy7071/datanatorflask:latest
