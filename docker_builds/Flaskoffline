@@ -1,7 +1,7 @@
 FROM lzy7071/karrlabdatanator:latest
 
-COPY . /home
+COPY ./ /home
 WORKDIR /home
 
 ENTRYPOINT ["python3"]
-CMD ["/home/datanator/datanator/rest/__init__.py"]
+CMD ["/home/datanator/rest/__init__.py"]
