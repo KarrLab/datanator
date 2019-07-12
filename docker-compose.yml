@@ -5,13 +5,11 @@ services:
   datanator:
     image: lzy7071/karrlabdatanator:latest
     restart: always
-    entrypoint: bash
     stdin_open: true
     tty: true
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
-    entrypoint: ["curl", "-o", "/root/host/karr_lab/datanator.archive", "https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive"]
 
   flask:
     image: lzy7071/datanatorflask:latest
@@ -37,10 +35,10 @@ services:
       - datanator
 
   mongosetup:
-    image: mongo:4.0.10
+    image: lzy7071/mongo-curl:latest
     volumes:
       - ../:/root/host/karr_lab
-    entrypoint: [ "mongorestore", "-d", "datanator", "--host", "mongo", "--archive=/root/host/karr_lab/datanator.archive" ]
+    entrypoint: [ "bash", "/root/host/karr_lab/datanator/scripts/mongorestore.sh" ]
     restart: on-failure
     depends_on:
       - mongo

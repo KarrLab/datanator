@@ -11,11 +11,16 @@ import sys
 class QueryFrontEnd:
     def __init__(self):
         db = 'datanator'
-        username = ''
-        password = ''
-        MongoDB = 'mongo'
-        port = 27017
-        replSet = ''
+        username = datanator.config.core.get_config()[
+            'datanator']['mongodb']['user']
+        password = datanator.config.core.get_config(
+        )['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config(
+        )['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config(
+        )['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config(
+        )['datanator']['mongodb']['replSet']
         self.db = query_nosql.DataQuery(MongoDB=MongoDB, replicaSet=replSet, db=db,
                                                        username=username, password=password)
         self.metab_db = query_nosql.QueryMetabolitesMeta(MongoDB=MongoDB, replicaSet=replSet, db=db,

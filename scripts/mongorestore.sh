@@ -1,11 +1,3 @@
 #!/bin/bash
-
-MONGO_DATABASE="datanator"
-APP_NAME="datanator"
-
-MONGO_HOST="mongo"
-TIMESTAMP=`date +%F-%H%M`
-MONGORESTORE_PATH="/usr/bin/mongorestore"
-BACKUPS_DIR="/root/host/karr_lab/datanator.20190701.archive"
-
-$MONGORESTORE_PATH -d $MONGO_DATABASE --host $MONGO_HOST --archive=BACKUPS_DIR
+curl -o /root/host/karr_lab/datanator.archive https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive
+mongorestore -d datanator --host mongo:27017 --archive=/root/host/karr_lab/datanator.archive
