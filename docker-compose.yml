@@ -35,7 +35,7 @@ services:
       - datanator
 
   mongosetup:
-    image: mongo:4.0.10
+    image: lzy7071/mongo-curl:latest
     volumes:
       - ../:/root/host/karr_lab
     entrypoint: [ "bash", "/root/host/karr_lab/datanator/scripts/mongorestore.sh" ]
