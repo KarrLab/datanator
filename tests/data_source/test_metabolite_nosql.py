@@ -39,7 +39,7 @@ class TestMetaboliteNoSQL(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
 
-    # @unittest.skip('no json files in circle')
+    @unittest.skip('ecmdb.ca and ymdb.ca xml server http 500 error')
     def test_write_to_json(self):
         session = self.src.write_to_json()
         null = None
