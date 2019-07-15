@@ -22,7 +22,7 @@ class TestMetaboliteNoSQL(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.source = 'ecmdb' # 'ymdb' or 'ecmdb'
-        cls.db = 'test'
+        cls.db = 'datanator'
         username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
