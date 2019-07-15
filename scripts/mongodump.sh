@@ -7,7 +7,7 @@ source <(grep = ~/.wc/datanator.cfg | tr -d ' ')
 MONGO_HOST="localhost"
 TIMESTAMP=`date +%F-%H%M`
 MONGODUMP_PATH="/usr/bin/mongodump"
-BACKUPS_DIR="/data/mongodump_$TIMESTAMP"
+BACKUPS_DIR="/data/mongodump"
 mkdir -p $BACKUPS_DIR
 BACKUP_NAME="$BACKUPS_DIR/$APP_NAME"
  
