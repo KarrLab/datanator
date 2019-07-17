@@ -1,4 +1,4 @@
-from datanator.data_source import sabio_rk_trial
+from datanator.data_source import sabio_rk
 import datanator.config.core
 import unittest
 import tempfile
