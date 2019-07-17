@@ -23,7 +23,7 @@ class TestSabioRk(unittest.TestCase):
         cls.src = sabio_rk_trial.SabioRk(cache_dirname=cls.cache_dirname,
                                          MongoDB=MongoDB,  db=db,
                                          verbose=True, max_entries=20, username=username,
-                                         password=password)
+                                         password=password, webservice_batch_size = 10)
 
     @classmethod
     def tearDownClass(cls):
