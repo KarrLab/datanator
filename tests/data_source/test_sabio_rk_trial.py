@@ -3,6 +3,7 @@ import unittest
 import tempfile
 import shutil
 
+
 class TestSabioRk(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -14,4 +15,4 @@ class TestSabioRk(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     def test_suds_trial(self):
-    	self.src.suds_trial()
+        self.assertEqual(self.src.suds_trial(), 'HTTP Error 404: Not Found')
