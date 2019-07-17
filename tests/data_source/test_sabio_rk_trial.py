@@ -1,4 +1,5 @@
 from datanator.data_source import sabio_rk_trial
+import datanator.config.core
 import unittest
 import tempfile
 import shutil
@@ -28,3 +29,8 @@ class TestSabioRk(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
+
+    def test_load_kinetic_law_ids(self):
+        ids = self.src.load_kinetic_law_ids()
+        self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.assertGreater(len(ids), 55000)

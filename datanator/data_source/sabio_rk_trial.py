@@ -1,6 +1,8 @@
 import datanator.config.core
 from datanator.util import mongo_util
 import six
+import requests
+from xml import etree
 
 class SabioRk:
 
@@ -14,23 +16,23 @@ class SabioRk:
         self.verbose = verbose
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
-            MongoDB=MongoDB, db=db, username=username, password=password, authSource=authSource)
+            MongoDB=MongoDB, db=db, username=username, password=password, authSource=authSource).con_db('sabio_rk')
         ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
             'uniprot': 'http://www.uniprot.org',
         }
-        ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAINS['sabio_rk'] + \
             '/sabioRestWebServices/searchKineticLaws/entryIDs'
-        ENDPOINT_WEBSERVICE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_WEBSERVICE = ENDPOINT_DOMAINS['sabio_rk'] + \
             '/sabioRestWebServices/kineticLaws'
-        ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAINS['sabio_rk'] + \
             '/entry/exportToExcelCustomizable'
-        ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
             '/compdetails.jsp'
-        ENDPOINT_KINETIC_LAWS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_KINETIC_LAWS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
             '/kindatadirectiframe.jsp'
-        PUBCHEM_MAX_TRIES = 10
-        PUBCHEM_TRY_DELAY = 0.25
+        self.PUBCHEM_MAX_TRIES = 10
+        self.PUBCHEM_TRY_DELAY = 0.25
 
 
     def load_kinetic_law_ids(self):
@@ -43,8 +45,7 @@ class SabioRk:
             :obj:`Error`: if an HTTP request fails or the expected number of kinetic laws is not returned
         """
         # create session
-        session = self.requests_session
-        response = session.get(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
+        response = requests.get(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
             'q': 'DateSubmitted:01/01/2000',
         })
         response.raise_for_status()
