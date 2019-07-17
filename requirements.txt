@@ -45,3 +45,4 @@ capturer
 ftputil
 elasticsearch
 genson
+suds-py3
