@@ -25,11 +25,11 @@ class TestSabioRk(unittest.TestCase):
                                          MongoDB=MongoDB,  db=db,
                                          verbose=True, max_entries=20, username=username,
                                          password=password, webservice_batch_size = 10)
-        sbml = requests.get('http://sabiork.h-its.org/sabioRestWebServices/kineticLaws', params={
+        cls.sbml = requests.get('http://sabiork.h-its.org/sabioRestWebServices/kineticLaws', params={
                 'kinlawids': '4096'}).text
-        reader = libsbml.SBMLReader()
-        doc = reader.readSBMLFromString(sbml)
-        cls.test_model = doc.getModel()
+        cls.reader = libsbml.SBMLReader()
+        cls.doc = cls.reader.readSBMLFromString(cls.sbml)
+        cls.test_model = cls.doc.getModel()
         cls.species_sbml = cls.test_model.getListOfSpecies()
         cls.reactions_sbml = cls.test_model.getListOfReactions()
 
