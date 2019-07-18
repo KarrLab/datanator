@@ -44,7 +44,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         self.assertGreater(len(ids), 55000)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_create_cross_references_from_sbml(self):
         x_refs = self.src.create_cross_references_from_sbml(self.test_model.getListOfSpecies().get(0))
         exp = [{'namespace': 'chebi', 'id': 'CHEBI:16670'}, {'namespace': 'kegg.compound', 'id': 'C00012'}]
@@ -57,5 +57,7 @@ class TestSabioRk(unittest.TestCase):
 
     def test_get_specie_from_sbml(self):
         specie, properties = self.src.get_specie_from_sbml(self.species_sbml.get(2))
-        print(specie)
-        print(properties)
+        specie_exp = {'_id': 139393, 'molecular_weight': None, 'name': 'subtilisin', 'subunits': [], 'cross_references': []}
+        properties_exp = {'is_wildtype': False, 'variant': 'S156E/S166D of subtilisin DSAI (N76D/N87S/S103A/V104I)', 'modifier_type': ''}
+        self.assertEqual(specie['_id'], specie_exp['_id'])
+        self.assertEqual(properties_exp['variant'], properties['variant'])   
