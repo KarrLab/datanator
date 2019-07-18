@@ -4,6 +4,8 @@ import six
 import requests
 from xml import etree
 import libsbml
+import re
+import datetime
 
 class SabioRk:
 
@@ -172,6 +174,198 @@ class SabioRk:
 
         return (kinetic_laws, species, compartments)
 
+    def create_kinetic_law_from_sbml(self, id, sbml, specie_properties, functions, units):
+        """ Add a kinetic law to the mongodb database
+
+        Args:
+            id (:obj:`int`): identifier
+            sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction
+            specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
+
+                * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
+                * `variant` (:obj:`str`): description of the variant of the eznyme
+                * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
+
+            functions (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of rate law equations (keys = IDs in SBML, values = equations)
+            units (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of units (keys = IDs in SBML, values = names)
+
+        Returns:
+            :obj:`dictionary`: kinetic law
+
+        Raises:
+            :obj:`ValueError`: if the temperature is expressed in an unsupported unit
+        """
+        law = sbml.getKineticLaw()
+        x_refs = self.create_cross_references_from_sbml(law)
+        reaction_x_refs = self.create_cross_references_from_sbml(sbml)
+
+        # stop if kinetic law entry is empty
+        if not law.getMetaId():
+            return None
+
+        # ID
+        annotated_id = next((int(float(x_ref['id'])) for x_ref in x_refs if x_ref['namespace'] == 'sabiork.kineticrecord'), None)
+        if annotated_id is not None and annotated_id != id:
+            raise ValueError('Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
+        id = annotated_id
+
+        """ participants """
+        kinetic_law['reactants'] = []
+        reactants = sbml.getListOfReactants()
+        for i_part in range(reactants.size()):
+            part_sbml = reactants.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            part = {
+                'compound':compound,
+                'compartment':compartment,
+                'coefficient':part_sbml.getStoichiometry()}
+            kinetic_law['reactants'].append(part)
+
+        kinetic_law.products[:] = []
+        products = sbml.getListOfProducts()
+        for i_part in range(products.size()):
+            part_sbml = products.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            part = {
+                'compound':compound,
+                'compartment':compartment,
+                'coefficient':part_sbml.getStoichiometry()}
+            kinetic_law['products'].append(part)
+
+        """ cross references """
+        # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
+        # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
+        # 1.1.1.50, respectively.
+        kinetic_law.cross_references = list(filter(lambda x_ref: x_ref.namespace not in ['taxonomy'], reaction_x_refs))
+
+        # rate_law
+        kinetic_law.equation = functions[law.getMetaId()[5:]]
+
+        # parameters
+        kinetic_law.parameters = []
+        params = law.getListOfLocalParameters()
+        for i_param in range(params.size()):
+            param = params.get(i_param)
+
+            match = re.match(r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
+            if match:
+                observed_name = match.group(1)
+                species, compartment = self.get_specie_reference_from_sbml(match.group(2))
+                if isinstance(species, Compound):
+                    compound = species
+                    enzyme = None
+                else:
+                    compound = None
+                    enzyme = species
+            else:
+                observed_name = param.getId()
+                compound = None
+                enzyme = None
+                compartment = None
+            observed_name = observed_name.replace('div', '/')
+
+            observed_type = param.getSBOTerm()
+
+            observed_units_id = param.getUnits()
+            if observed_units_id:
+                if observed_units_id in units:
+                    observed_units = units[observed_units_id]
+                else:
+                    observed_units = observed_units_id
+            else:
+                observed_units = None
+
+            observed_value = param.getValue()
+
+            parameter = Parameter(
+                compound=compound,
+                enzyme=enzyme,
+                compartment=compartment,
+                observed_name=observed_name,
+                observed_type=observed_type,
+                observed_value=observed_value,
+                observed_units=observed_units,
+                modified=datetime.datetime.utcnow(),
+            )
+            self.session.add(parameter)
+            kinetic_law.parameters.append(parameter)
+
+        # modifiers to kinetic law
+        kinetic_law.modifiers[:] = []
+        modifiers = sbml.getListOfModifiers()
+        for i_modifier in range(modifiers.size()):
+            modifier = modifiers.get(i_modifier)
+            modifier_id = modifier.getSpecies()
+            specie, compartment = self.get_specie_reference_from_sbml(modifier_id)
+            type = specie_properties[modifier.getSpecies()]['modifier_type']
+            if modifier.getSpecies()[0:3] == 'SPC':
+                part = ReactionParticipant(
+                    compound=specie,
+                    compartment=compartment,
+                    type=type,
+                )
+                self.session.add(part)
+                kinetic_law.modifiers.append(part)
+            elif modifier_id[0:3] == 'ENZ':
+                kinetic_law.enzyme, kinetic_law.enzyme_compartment = self.get_specie_reference_from_sbml(modifier_id)
+                kinetic_law.enzyme_type = specie_properties[modifier.getSpecies()]['modifier_type']
+                kinetic_law.taxon_wildtype = specie_properties[modifier_id]['is_wildtype']
+                kinetic_law.taxon_variant = specie_properties[modifier_id]['variant']
+
+        # taxon
+        kinetic_law.taxon = next((int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'taxonomy'), None)
+
+        """ conditions """
+        conditions = law \
+            .getAnnotation() \
+            .getChild('sabiork') \
+            .getChild('experimentalConditions')
+
+        # temperature
+        if conditions.hasChild('temperature'):
+            temperature = conditions \
+                .getChild('temperature') \
+                .getChild('startValueTemperature') \
+                .getChild(0) \
+                .getCharacters()
+            temperature = float(temperature)
+            temperature_units = conditions \
+                .getChild('temperature') \
+                .getChild('temperatureUnit') \
+                .getChild(0) \
+                .getCharacters()
+            if temperature_units not in ['°C', '��C']:
+                raise ValueError('Unsupported temperature units: {}'.format(temperature_units))
+            kinetic_law.temperature = temperature
+
+        # pH
+        if conditions.hasChild('pH'):
+            ph = conditions \
+                .getChild('pH') \
+                .getChild('startValuepH') \
+                .getChild(0) \
+                .getCharacters()
+            kinetic_law.ph = float(ph)
+
+        # media
+        if conditions.hasChild('buffer'):
+            media = conditions \
+                .getChild('buffer') \
+                .getChild(0) \
+                .getCharacters() \
+                .strip()
+            if six.PY2:
+                media = unicode(media.decode('utf-8'))
+            kinetic_law.media = media
+
+        """ references """
+        kinetic_law.references = list(filter(lambda x_ref: x_ref.namespace != 'sabiork.kineticrecord', x_refs))
+
+        """ updated """
+        kinetic_law.modified = datetime.datetime.utcnow()
+
+        return kinetic_law
+
     def get_compartment_from_sbml(self, sbml):
         """ get compartment from sbml
 
@@ -189,6 +383,50 @@ class SabioRk:
         compartment = {'name': name, 'modified': modified}
 
         return compartment
+
+    def get_specie_reference_from_sbml(self, specie_id):
+        """ Get the compound/enzyme associated with an SBML species by its ID
+
+        Args:
+            specie_id (:obj:`str`): ID of an SBML species
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`Compound` or :obj:`Enzyme`: compound or enzyme
+                * :obj:`Compartment`: compartment
+
+        Raises:
+            :obj:`ValueError`: if the species is not a compound or enzyme, no species
+                with `id` = `specie_id` exists, or no compartment with `name` = `compartment_name`
+                exists
+        """
+        tmp = specie_id.split('_')
+        type = tmp[0]
+        specie_id = int(float(tmp[1]))
+        compartment_name = '_'.join(tmp[2:])
+
+        if type == 'SPC':
+            name = sbml.getName()
+            properties = {'modifier_type': modifier_type}
+            specie = {'_id': id, 'name': name}
+        elif type == 'ENZ':
+            name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
+            if six.PY2:
+                variant = unicode(variant.decode('utf-8'))
+            properties = {'is_wildtype': is_wildtype, 'variant': variant, 'modifier_type': modifier_type}
+
+            specie = {'_id': id, 'molecular_weight': None, 'name': name}
+        else:
+            raise ValueError('Unsupported species type: {}'.format(type))
+
+        if compartment_name != 'Cell':
+            compartment = compartment_name
+        else:
+            compartment = None
+
+        return (specie, compartment)
+
 
     def get_specie_from_sbml(self, sbml):
         """ get species information from sbml
@@ -255,7 +493,7 @@ class SabioRk:
                     specie['cross_references'].append(cross_reference)
 
         # updated
-        specie.modified = datetime.datetime.utcnow()
+        specie['modified'] = datetime.datetime.utcnow()
 
         return (specie, properties)
 
