@@ -230,46 +230,29 @@ class SabioRk:
         if type == 'SPC':
             name = sbml.getName()
             properties = {'modifier_type': modifier_type}
-            query = self.session.query(Compound).filter_by(id=id)
-            if query.count():
-                specie = query.first()
-            else:
-                specie = Compound()
-                self.session.add(specie)
+            specie = {'_id': id, 'name': name}
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
             if six.PY2:
                 variant = unicode(variant.decode('utf-8'))
             properties = {'is_wildtype': is_wildtype, 'variant': variant, 'modifier_type': modifier_type}
 
-            query = self.session.query(Enzyme).filter_by(id=id)
-            if query.count():
-                specie = query.first()
-            else:
-                specie = Enzyme()
-                self.session.add(specie)
+            specie = {'_id': id, 'molecular_weight': None, 'name': name}
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
-
-        # set properties
-        specie.id = id
-        if specie.name is None:
-            specie.name = name
-        elif specie.name != name:
-            specie._is_name_ambiguous = True
 
         # cross references
         cross_references = self.create_cross_references_from_sbml(sbml)
         if type == 'SPC':
-            specie.cross_references = cross_references
+            specie['cross_references'] = cross_references
         elif type == 'ENZ':
-            specie.subunits = []
-            specie.cross_references = []
+            specie['subunits'] = []
+            specie['cross_references'] = []
             for cross_reference in cross_references:
-                if cross_reference.namespace == 'uniprot':
-                    specie.subunits.append(EnzymeSubunit(cross_references=[cross_reference]))
+                if cross_reference['namespace'] == 'uniprot':
+                    specie['subunits'].append(cross_reference)
                 else:
-                    specie.cross_references.append(cross_reference)
+                    specie['cross_references'].append(cross_reference)
 
         # updated
         specie.modified = datetime.datetime.utcnow()
@@ -320,13 +303,13 @@ class SabioRk:
         raise ValueError('Cannot parse enzyme name: {}'.format(sbml))
 
     def create_cross_references_from_sbml(self, sbml):
-        """ Add cross references to the local sqlite database for an SBML object
+        """ Look up cross references from an SBML object to dictionary
 
         Args:
             sbml (:obj:`libsbml.SBase`): object in an SBML documentation
 
         Returns:
-            :obj:`list` of :obj:`Resource`: list of resources
+            :obj:`list` of dictionary: list of resources
         """
         if not sbml.isSetAnnotation():
             return []
@@ -353,12 +336,7 @@ class SabioRk:
                         resources = [(parsed_url[2], parsed_url[3])]
 
                 for namespace, id in resources:
-                    query = self.session.query(Resource).filter_by(namespace=namespace, id=id)
-                    if query.count():
-                        resource = query.first()
-                    else:
-                        resource = Resource(namespace=namespace, id=id)
-                        self.session.add(resource)
+                    resource = {'namespace': namespace, 'id': id}
 
                 if resource not in x_refs:
                     x_refs.append(resource)
