@@ -26,12 +26,12 @@ class TestSabioRk(unittest.TestCase):
                                          verbose=True, max_entries=20, username=username,
                                          password=password, webservice_batch_size = 10)
         sbml = requests.get('http://sabiork.h-its.org/sabioRestWebServices/kineticLaws', params={
-                'kinlawids': ','.join('4096'),
-            }).text
+                'kinlawids': '4096'}).text
         reader = libsbml.SBMLReader()
         doc = reader.readSBMLFromString(sbml)
         cls.test_model = doc.getModel()
         cls.species_sbml = cls.test_model.getListOfSpecies()
+        cls.reactions_sbml = cls.test_model.getListOfReactions()
 
     @classmethod
     def tearDownClass(cls):
@@ -46,18 +46,21 @@ class TestSabioRk(unittest.TestCase):
 
     # @unittest.skip('passed')
     def test_create_cross_references_from_sbml(self):
-        x_refs = self.src.create_cross_references_from_sbml(self.test_model.getListOfSpecies().get(0))
-        exp = [{'namespace': 'chebi', 'id': 'CHEBI:16670'}, {'namespace': 'kegg.compound', 'id': 'C00012'}]
+        x_refs = self.src.create_cross_references_from_sbml(self.species_sbml.get(0))
+        exp = [{'namespace': 'chebi', 'id': 'CHEBI:16810'}, {'namespace': 'chebi', 'id': 'CHEBI:30915'}, 
+        {'namespace': 'kegg.compound', 'id': 'C00026'}]
         self.assertEqual(exp, x_refs)
 
     def test_parse_enzyme_name(self):
-        name, is_wildtype, variant = self.src.parse_enzyme_name(self.species_sbml.get(2).getName())
-        self.assertEqual('S156E/S166D of subtilisin DSAI (N76D/N87S/S103A/V104I)', variant)
-        self.assertEqual('subtilisin', name)
+        name, is_wildtype, variant = self.src.parse_enzyme_name(self.species_sbml.get(5).getName())
+        self.assertEqual('E211S/I50N/V80T', variant)
+        self.assertEqual('4-aminobutyrate transaminase', name)
 
+    # @unittest.skip('passed')
     def test_get_specie_from_sbml(self):
-        specie, properties = self.src.get_specie_from_sbml(self.species_sbml.get(2))
-        specie_exp = {'_id': 139393, 'molecular_weight': None, 'name': 'subtilisin', 'subunits': [], 'cross_references': []}
-        properties_exp = {'is_wildtype': False, 'variant': 'S156E/S166D of subtilisin DSAI (N76D/N87S/S103A/V104I)', 'modifier_type': ''}
+        specie, properties = self.src.get_specie_from_sbml(self.species_sbml.get(5))
+        specie_exp = {'_id': 141214, 'molecular_weight': None, 'name': '4-aminobutyrate transaminase', 'subunits': [{'namespace': 'uniprot', 'id': 'P22256'}, {'namespace': 'uniprot', 'id': 'P50457'}], 
+        'cross_references': []}
+        properties_exp = {'is_wildtype': False, 'variant': 'E211S/I50N/V80T', 'modifier_type': 'Modifier-Catalyst'}
         self.assertEqual(specie['_id'], specie_exp['_id'])
         self.assertEqual(properties_exp['variant'], properties['variant'])   
