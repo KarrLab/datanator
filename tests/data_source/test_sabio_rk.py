@@ -65,7 +65,13 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(specie['_id'], specie_exp['_id'])
         self.assertEqual(properties_exp['variant'], properties['variant'])
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_specie_reference_from_sbml(self):
         species = []
+        for i_specie in range(self.species_sbml.size()):
+            specie_sbml = self.species_sbml.get(i_specie)
+            specie, properties = self.src.get_specie_from_sbml(specie_sbml)
+            species.append(specie)
         specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', species)
+        self.assertEqual(compartment, None)
+        self.assertEqual(specie[0]['subunits'], [{'namespace': 'uniprot', 'id': 'P22256'}, {'namespace': 'uniprot', 'id': 'P50457'}])
