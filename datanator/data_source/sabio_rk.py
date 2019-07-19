@@ -96,7 +96,8 @@ class SabioRk:
             if not response.text:
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
 
-            self.create_kinetic_laws_from_sbml(batch_ids, response.content if six.PY2 else response.text)
+            kinetic_laws, species, compartments = self.create_kinetic_laws_from_sbml(batch_ids, 
+                                                    response.content if six.PY2 else response.text)
 
         # print warning with list of unidentified ids
         loaded_ids = [l.id for l in self.session.query(KineticLaw).order_by(KineticLaw.id)]
@@ -174,12 +175,13 @@ class SabioRk:
 
         return (kinetic_laws, species, compartments)
 
-    def create_kinetic_law_from_sbml(self, id, sbml, specie_properties, functions, units):
+    def create_kinetic_law_from_sbml(self, id, sbml, root_species, specie_properties, functions, units):
         """ Add a kinetic law to the mongodb database
 
         Args:
             id (:obj:`int`): identifier
             sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction (reaction_sbml)
+            species (:obj:`list`): list of species in root sbml
             specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
 
                 * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
@@ -198,7 +200,7 @@ class SabioRk:
         law = sbml.getKineticLaw()
         x_refs = self.create_cross_references_from_sbml(law)
         reaction_x_refs = self.create_cross_references_from_sbml(sbml)
-
+        kinetic_law = {}
         # stop if kinetic law entry is empty
         if not law.getMetaId():
             return None
@@ -207,25 +209,24 @@ class SabioRk:
         annotated_id = next((int(float(x_ref['id'])) for x_ref in x_refs if x_ref['namespace'] == 'sabiork.kineticrecord'), None)
         if annotated_id is not None and annotated_id != id:
             raise ValueError('Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
-        id = annotated_id
 
         """ participants """
         kinetic_law['reactants'] = []
         reactants = sbml.getListOfReactants()
         for i_part in range(reactants.size()):
             part_sbml = reactants.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
             part = {
                 'compound':compound,
                 'compartment':compartment,
                 'coefficient':part_sbml.getStoichiometry()}
             kinetic_law['reactants'].append(part)
 
-        kinetic_law.products[:] = []
+        kinetic_law['products'] = []
         products = sbml.getListOfProducts()
         for i_part in range(products.size()):
             part_sbml = products.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies())
+            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
             part = {
                 'compound':compound,
                 'compartment':compartment,
@@ -236,13 +237,13 @@ class SabioRk:
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
         # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
         # 1.1.1.50, respectively.
-        kinetic_law.cross_references = list(filter(lambda x_ref: x_ref.namespace not in ['taxonomy'], reaction_x_refs))
+        kinetic_law['cross_references'] = list(filter(lambda x_ref: x_ref['namespace'] not in ['taxonomy'], reaction_x_refs))
 
         # rate_law
-        kinetic_law.equation = functions[law.getMetaId()[5:]]
+        kinetic_law['equation'] = functions[law.getMetaId()[5:]]
 
         # parameters
-        kinetic_law.parameters = []
+        kinetic_law['parameters'] = []
         params = law.getListOfLocalParameters()
         for i_param in range(params.size()):
             param = params.get(i_param)
@@ -250,13 +251,13 @@ class SabioRk:
             match = re.match(r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
                 observed_name = match.group(1)
-                species, compartment = self.get_specie_reference_from_sbml(match.group(2))
-                if isinstance(species, Compound):
-                    compound = species
-                    enzyme = None
-                else:
+                species, compartment = self.get_specie_reference_from_sbml(match.group(2), root_species)
+                if 'subunits' in species[0].keys():
                     compound = None
                     enzyme = species
+                else:
+                    compound = species
+                    enzyme = None
             else:
                 observed_name = param.getId()
                 compound = None
@@ -277,43 +278,41 @@ class SabioRk:
 
             observed_value = param.getValue()
 
-            parameter = Parameter(
-                compound=compound,
-                enzyme=enzyme,
-                compartment=compartment,
-                observed_name=observed_name,
-                observed_type=observed_type,
-                observed_value=observed_value,
-                observed_units=observed_units,
-                modified=datetime.datetime.utcnow(),
-            )
-            self.session.add(parameter)
-            kinetic_law.parameters.append(parameter)
+            parameter = {
+                'compound':compound,
+                'enzyme':enzyme,
+                'compartment':compartment,
+                'observed_name':observed_name,
+                'observed_type':observed_type,
+                'observed_value':observed_value,
+                'observed_units':observed_units,
+                'modified':datetime.datetime.utcnow()
+            }
+            kinetic_law['parameters'].append(parameter)
 
         # modifiers to kinetic law
-        kinetic_law.modifiers[:] = []
+        kinetic_law['modifiers'] = []
         modifiers = sbml.getListOfModifiers()
         for i_modifier in range(modifiers.size()):
             modifier = modifiers.get(i_modifier)
             modifier_id = modifier.getSpecies()
-            specie, compartment = self.get_specie_reference_from_sbml(modifier_id)
+            specie, compartment = self.get_specie_reference_from_sbml(modifier_id, root_species)
             type = specie_properties[modifier.getSpecies()]['modifier_type']
-            if modifier.getSpecies()[0:3] == 'SPC':
-                part = ReactionParticipant(
-                    compound=specie,
-                    compartment=compartment,
-                    type=type,
-                )
-                self.session.add(part)
-                kinetic_law.modifiers.append(part)
+            if modifier_id[0:3] == 'SPC':
+                part = {
+                    'compound':specie,
+                    'compartment':compartment,
+                    'type':type
+                } # ReactionParticipant
+                kinetic_law['modifiers'].append(part)
             elif modifier_id[0:3] == 'ENZ':
-                kinetic_law.enzyme, kinetic_law.enzyme_compartment = self.get_specie_reference_from_sbml(modifier_id)
-                kinetic_law.enzyme_type = specie_properties[modifier.getSpecies()]['modifier_type']
-                kinetic_law.taxon_wildtype = specie_properties[modifier_id]['is_wildtype']
-                kinetic_law.taxon_variant = specie_properties[modifier_id]['variant']
+                kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(modifier_id,root_species)
+                kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies()]['modifier_type']
+                kinetic_law['taxon_wildtype'] = specie_properties[modifier_id]['is_wildtype']
+                kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
 
         # taxon
-        kinetic_law.taxon = next((int(float(x_ref.id)) for x_ref in reaction_x_refs if x_ref.namespace == 'taxonomy'), None)
+        kinetic_law['taxon'] = next((int(float(x_ref['id'])) for x_ref in reaction_x_refs if x_ref['namespace'] == 'taxonomy'), None)
 
         """ conditions """
         conditions = law \
@@ -336,7 +335,7 @@ class SabioRk:
                 .getCharacters()
             if temperature_units not in ['°C', '��C']:
                 raise ValueError('Unsupported temperature units: {}'.format(temperature_units))
-            kinetic_law.temperature = temperature
+            kinetic_law['temperature'] = temperature
 
         # pH
         if conditions.hasChild('pH'):
@@ -345,7 +344,7 @@ class SabioRk:
                 .getChild('startValuepH') \
                 .getChild(0) \
                 .getCharacters()
-            kinetic_law.ph = float(ph)
+            kinetic_law['ph'] = float(ph)
 
         # media
         if conditions.hasChild('buffer'):
@@ -356,13 +355,13 @@ class SabioRk:
                 .strip()
             if six.PY2:
                 media = unicode(media.decode('utf-8'))
-            kinetic_law.media = media
+            kinetic_law['media'] = media
 
         """ references """
-        kinetic_law.references = list(filter(lambda x_ref: x_ref.namespace != 'sabiork.kineticrecord', x_refs))
+        kinetic_law['references'] = list(filter(lambda x_ref: x_ref['namespace'] != 'sabiork.kineticrecord', x_refs))
 
         """ updated """
-        kinetic_law.modified = datetime.datetime.utcnow()
+        kinetic_law['modified'] = datetime.datetime.utcnow()
 
         return kinetic_law
 

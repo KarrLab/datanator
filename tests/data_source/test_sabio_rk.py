@@ -74,4 +74,37 @@ class TestSabioRk(unittest.TestCase):
             species.append(specie)
         specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', species)
         self.assertEqual(compartment, None)
-        self.assertEqual(specie[0]['subunits'], [{'namespace': 'uniprot', 'id': 'P22256'}, {'namespace': 'uniprot', 'id': 'P50457'}])
+        self.assertEqual(specie[0]['subunits'], [{'namespace': 'uniprot', 'id': 'P22256'}, 
+            {'namespace': 'uniprot', 'id': 'P50457'}])
+
+    def test_create_kinetic_law_from_sbml(self):
+        species = []
+        specie_properties = {}
+        for i_specie in range(self.species_sbml.size()):
+            specie_sbml = self.species_sbml.get(i_specie)
+            specie, properties = self.src.get_specie_from_sbml(specie_sbml)
+            species.append(specie)
+            specie_properties[specie_sbml.getId()] = properties
+        units = {}
+        units_sbml = self.test_model.getListOfUnitDefinitions()
+        for i_unit in range(units_sbml.size()):
+            unit_sbml = units_sbml.get(i_unit)
+            units[unit_sbml.getId()] = unit_sbml.getName()
+
+        functions = {}
+        functions_sbml = self.test_model.getListOfFunctionDefinitions()
+        for i_function in range(functions_sbml.size()):
+            function_sbml = functions_sbml.get(i_function)
+            math_sbml = function_sbml.getMath()
+            if math_sbml.isLambda() and math_sbml.getNumChildren():
+                eq = libsbml.formulaToL3String(math_sbml.getChild(math_sbml.getNumChildren() - 1))
+            else:
+                eq = None
+            if eq in ('', 'NaN'):
+                eq = None
+            functions[function_sbml.getId()] = eq
+
+        result = self.src.create_kinetic_law_from_sbml(4096, self.reactions_sbml.get(0), species, 
+                                                        specie_properties, functions, units)
+        test_1 = 1922
+        self.assertEqual(result['reactants'][0]['compound'][0]['_id'], test_1)
