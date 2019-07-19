@@ -143,7 +143,7 @@ class FileUtil:
             Args:
                 dict_list (:obj: `list`): list of dictionaries
                 key (:obj: `string`): key in the dictionary
-                value (:obj: `string`): value to be matched
+                value (:obj: ``): value to be matched
             Returns:
                 result (:obj: `dictionary`): list of dictionaries with the key/value pair
         '''

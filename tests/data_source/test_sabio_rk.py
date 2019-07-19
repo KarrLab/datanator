@@ -67,4 +67,5 @@ class TestSabioRk(unittest.TestCase):
 
     @unittest.skip('passed')
     def test_get_specie_reference_from_sbml(self):
-        specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', self.species_sbml.get(5))
+        species = []
+        specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', species)

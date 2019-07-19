@@ -1,11 +1,13 @@
 import datanator.config.core
 from datanator.util import mongo_util
+from datanator.util import file_util
 import six
 import requests
 from xml import etree
 import libsbml
 import re
 import datetime
+
 
 class SabioRk:
 
@@ -37,6 +39,7 @@ class SabioRk:
         self.PUBCHEM_MAX_TRIES = 10
         self.PUBCHEM_TRY_DELAY = 0.25
         self.webservice_batch_size = webservice_batch_size
+        self.file_manager = file_util.FileUtil()
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -176,7 +179,7 @@ class SabioRk:
 
         Args:
             id (:obj:`int`): identifier
-            sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction
+            sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction (reaction_sbml)
             specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
 
                 * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
@@ -403,17 +406,8 @@ class SabioRk:
         specie_id = int(float(tmp[1]))
         compartment_name = '_'.join(tmp[2:])
 
-        if type == 'SPC':
-            name = sbml.getName()
-            properties = {'modifier_type': modifier_type}
-            specie = {'_id': id, 'name': name}
-        elif type == 'ENZ':
-            name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
-            if six.PY2:
-                variant = unicode(variant.decode('utf-8'))
-            properties = {'is_wildtype': is_wildtype, 'variant': variant, 'modifier_type': modifier_type}
-
-            specie = {'_id': id, 'molecular_weight': None, 'name': name}
+        if type == 'SPC' or type == 'ENZ':
+            specie = self.file_manager.search_dict_list(species, '_id', specie_id)
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
 
