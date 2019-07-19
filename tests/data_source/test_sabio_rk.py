@@ -38,7 +38,7 @@ class TestSabioRk(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    @unittest.skip('passed')
+    @unittest.skip('passed, avoid unnecessary http requests')
     def test_load_kinetic_law_ids(self):
         ids = self.src.load_kinetic_law_ids()
         self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -63,4 +63,8 @@ class TestSabioRk(unittest.TestCase):
         'cross_references': []}
         properties_exp = {'is_wildtype': False, 'variant': 'E211S/I50N/V80T', 'modifier_type': 'Modifier-Catalyst'}
         self.assertEqual(specie['_id'], specie_exp['_id'])
-        self.assertEqual(properties_exp['variant'], properties['variant'])   
+        self.assertEqual(properties_exp['variant'], properties['variant'])
+
+    @unittest.skip('passed')
+    def test_get_specie_reference_from_sbml(self):
+        specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', self.species_sbml.get(5))

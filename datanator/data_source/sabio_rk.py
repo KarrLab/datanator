@@ -95,9 +95,6 @@ class SabioRk:
 
             self.create_kinetic_laws_from_sbml(batch_ids, response.content if six.PY2 else response.text)
 
-            if self.commit_intermediate_results:
-                self.session.commit()
-
         # print warning with list of unidentified ids
         loaded_ids = [l.id for l in self.session.query(KineticLaw).order_by(KineticLaw.id)]
 
@@ -112,7 +109,7 @@ class SabioRk:
 
         Args:
             ids (:obj:`list` of :obj:`int`): list kinetic law IDs
-            sbml (:obj:`str`): SBML representation of one or more kinetic laws
+            sbml (:obj:`str`): SBML representation of one or more kinetic laws (root)
 
         Returns:
             :obj:`tuple`:
@@ -169,7 +166,7 @@ class SabioRk:
         for i_reaction, id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
             kinetic_law = self.create_kinetic_law_from_sbml(
-                id, reaction_sbml, specie_properties, functions, units)
+                id, reaction_sbml, species, specie_properties, functions, units)
             kinetic_laws.append(kinetic_law)
 
         return (kinetic_laws, species, compartments)
@@ -384,7 +381,7 @@ class SabioRk:
 
         return compartment
 
-    def get_specie_reference_from_sbml(self, specie_id):
+    def get_specie_reference_from_sbml(self, specie_id, species):
         """ Get the compound/enzyme associated with an SBML species by its ID
 
         Args:

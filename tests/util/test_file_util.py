@@ -84,3 +84,12 @@ class TestFileUtil(unittest.TestCase):
 
         result = self.src.make_dict(keys, values)
         self.assertEqual(result['a'], 1)
+
+    def test_search_dict_list(self):
+        dict_list = [
+            {'name': "Tom", 'age': 10},
+            {'name': "Mark", 'age': 5},
+            {'name': "Pam", 'age': 7}
+            ]
+        result = self.src.search_dict_list(dict_list, 'name', 'Tom')
+        self.assertEqual(result, [{'name': "Tom", 'age': 10}])

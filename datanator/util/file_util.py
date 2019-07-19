@@ -135,3 +135,16 @@ class FileUtil:
         for k, v in zip(keys, values):
             result[k] = v
         return result
+
+    def search_dict_list(self, dict_list, key, value):
+        ''' Find the dictionary with 
+            key/value pair in a list of dictionaries
+
+            Args:
+                dict_list (:obj: `list`): list of dictionaries
+                key (:obj: `string`): key in the dictionary
+                value (:obj: `string`): value to be matched
+            Returns:
+                result (:obj: `dictionary`): list of dictionaries with the key/value pair
+        '''
+        return list(filter(lambda search: search[key] == value, dict_list))
