@@ -368,7 +368,7 @@ class SabioRk:
                 'coefficient':part_sbml.getStoichiometry()}
             kinetic_law['reactants'].append(part)
             self.collection_compound.update_one( {'_id': id},
-                                                {'$set': compound}, upsert=True )
+                                                {'$addToSet': {'compound':compound}}, upsert=True )
 
         kinetic_law['products'] = []
         products = sbml.getListOfProducts()
@@ -381,7 +381,7 @@ class SabioRk:
                 'coefficient':part_sbml.getStoichiometry()}
             kinetic_law['products'].append(part)
             self.collection_compound.update_one( {'_id': id},
-                                                {'$set': compound}, upsert=True )
+                                                {'$addToSet': {'compound':compound}}, upsert=True )
 
         """ cross references """
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
@@ -610,7 +610,7 @@ class SabioRk:
             properties = {'modifier_type': modifier_type}
             specie = {'_id': id, 'name': name}
             self.collection_compound.update_one( {'_id': id}, 
-                                                {'$set': {'name': name} }, 
+                                                {'$addToSet': {'compound':specie}}, 
                                                 upsert=True )
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
@@ -627,7 +627,7 @@ class SabioRk:
         if type == 'SPC':
             specie['cross_references'] = cross_references
             self.collection_compound.update_one( {'_id': id}, 
-                                                {'$set': {'cross_references': cross_references} }, 
+                                                {'$addToSet': {'compound':specie}}, 
                                                 upsert=True )
         elif type == 'ENZ':
             specie['subunits'] = []
