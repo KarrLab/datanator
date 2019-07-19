@@ -108,3 +108,12 @@ class TestSabioRk(unittest.TestCase):
                                                         specie_properties, functions, units)
         test_1 = 1922
         self.assertEqual(result['reactants'][0]['compound'][0]['_id'], test_1)
+
+    def test_create_kinetic_laws_from_sbml(self):
+        ids = [4096]
+        self.src.create_kinetic_laws_from_sbml(ids, self.sbml)
+        doc = self.src.collection.find_one({'kinlaw_id':ids[0]})
+        test_1 = doc['compartments'][0]
+        self.assertEqual(test_1, None)
+        test_2 = doc['species'][0]['_id']
+        self.assertEqual(test_2, 1922)

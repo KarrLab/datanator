@@ -167,16 +167,19 @@ class SabioRk:
         if reactions_sbml.size() != len(ids):
             raise ValueError('{} reactions {} is different from the expected {}'.format(reaction_sbml.size(), len(ids)))
         kinetic_laws = []
-        for i_reaction, id in enumerate(ids):
+        for i_reaction, _id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
             kinetic_law = self.create_kinetic_law_from_sbml(
-                id, reaction_sbml, species, specie_properties, functions, units)
+                _id, reaction_sbml, species, specie_properties, functions, units)
             kinetic_laws.append(kinetic_law)
-
-        return (kinetic_laws, species, compartments)
+            self.collection.update_one({'kinlaw_id': _id},
+                                  {'$set': {'kinetic_laws': kinetic_laws,
+                                   'species': species,
+                                   'compartments': compartments}},
+                                  upsert=True)
 
     def create_kinetic_law_from_sbml(self, id, sbml, root_species, specie_properties, functions, units):
-        """ Add a kinetic law to the mongodb database
+        """ Make a kinetic law doc for mongoDB
 
         Args:
             id (:obj:`int`): identifier
