@@ -367,8 +367,6 @@ class SabioRk:
                 'compartment':compartment,
                 'coefficient':part_sbml.getStoichiometry()}
             kinetic_law['reactants'].append(part)
-            self.collection_compound.update_one( {'_id': id},
-                                                {'$addToSet': {'compound':compound}}, upsert=True )
 
         kinetic_law['products'] = []
         products = sbml.getListOfProducts()
@@ -380,8 +378,6 @@ class SabioRk:
                 'compartment':compartment,
                 'coefficient':part_sbml.getStoichiometry()}
             kinetic_law['products'].append(part)
-            self.collection_compound.update_one( {'_id': id},
-                                                {'$addToSet': {'compound':compound}}, upsert=True )
 
         """ cross references """
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
@@ -555,8 +551,12 @@ class SabioRk:
         specie_id = int(float(tmp[1]))
         compartment_name = '_'.join(tmp[2:])
 
-        if type == 'SPC' or type == 'ENZ':
+        if type == 'SPC':
             specie = self.file_manager.search_dict_list(species, '_id', specie_id)
+            self.collection_compound.update_one({'_id': specie_id},
+            									{'$set': specie[0]}, upsert=True)
+        elif type == 'ENZ':
+        	specie = self.file_manager.search_dict_list(species, '_id', specie_id)
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
 
@@ -610,7 +610,7 @@ class SabioRk:
             properties = {'modifier_type': modifier_type}
             specie = {'_id': id, 'name': name}
             self.collection_compound.update_one( {'_id': id}, 
-                                                {'$addToSet': {'compound':specie}}, 
+                                                {'$set': {'name':name}}, 
                                                 upsert=True )
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
@@ -627,7 +627,7 @@ class SabioRk:
         if type == 'SPC':
             specie['cross_references'] = cross_references
             self.collection_compound.update_one( {'_id': id}, 
-                                                {'$addToSet': {'compound':specie}}, 
+                                                {'$set': {'cross_references':cross_references}}, 
                                                 upsert=True )
         elif type == 'ENZ':
             specie['subunits'] = []
