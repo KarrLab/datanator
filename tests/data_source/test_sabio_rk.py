@@ -44,7 +44,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         self.assertGreater(len(ids), 55000)
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_create_cross_references_from_sbml(self):
         x_refs = self.src.create_cross_references_from_sbml(self.species_sbml.get(0))
         exp = [{'namespace': 'chebi', 'id': 'CHEBI:16810'}, {'namespace': 'chebi', 'id': 'CHEBI:30915'}, 
@@ -56,7 +56,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual('E211S/I50N/V80T', variant)
         self.assertEqual('4-aminobutyrate transaminase', name)
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_specie_from_sbml(self):
         specie, properties = self.src.get_specie_from_sbml(self.species_sbml.get(5))
         specie_exp = {'_id': 141214, 'molecular_weight': None, 'name': '4-aminobutyrate transaminase', 'subunits': [{'namespace': 'uniprot', 'id': 'P22256'}, {'namespace': 'uniprot', 'id': 'P50457'}], 
@@ -65,7 +65,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(specie['_id'], specie_exp['_id'])
         self.assertEqual(properties_exp['variant'], properties['variant'])
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_specie_reference_from_sbml(self):
         species = []
         for i_specie in range(self.species_sbml.size()):
@@ -77,6 +77,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(specie[0]['subunits'], [{'namespace': 'uniprot', 'id': 'P22256'}, 
             {'namespace': 'uniprot', 'id': 'P50457'}])
 
+    @unittest.skip('passed')
     def test_create_kinetic_law_from_sbml(self):
         species = []
         specie_properties = {}
@@ -109,6 +110,7 @@ class TestSabioRk(unittest.TestCase):
         test_1 = 1922
         self.assertEqual(result['reactants'][0]['compound'][0]['_id'], test_1)
 
+    @unittest.skip('passed')
     def test_create_kinetic_laws_from_sbml(self):
         ids = [4096]
         self.src.create_kinetic_laws_from_sbml(ids, self.sbml)
@@ -117,3 +119,31 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(test_1, None)
         test_2 = doc['species'][0]['_id']
         self.assertEqual(test_2, 1922)
+
+    def test_load_compounds(self):
+        compound_1 = {
+            "_id" : 1922,
+            "name" : "2-Oxoglutarate",
+            "cross_references" : [
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:16810"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:30915"
+                },
+                {
+                    "namespace" : "kegg.compound",
+                    "id" : "C00026"
+                }
+            ]
+        }
+
+        compound_2 = {
+            "_id" : 21128,
+            "name" : "2-Methylaspartic acid",
+            "cross_references" : []
+        }
+
+        self.src.load_compounds(compounds = [compound_1, compound_2])

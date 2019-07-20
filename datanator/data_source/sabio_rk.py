@@ -7,7 +7,9 @@ from xml import etree
 import libsbml
 import re
 import datetime
-
+import bs4
+import warnings
+import html
 
 class SabioRk:
 
@@ -728,18 +730,16 @@ class SabioRk:
         return x_refs
 
     def load_compounds(self, compounds=None):
-        """ Download information from SABIO-RK about all of the compounds stored in the local sqlite copy of SABIO-RK
-
+        """ Download information from SABIO-RK about all of the compounds stored sabio_compounds
+        	collection
         Args:
-            compounds (:obj:`list` of :obj:`Compound`): list of compounds to download
+            compounds (:obj:`list` of :obj:`obj`): list of compounds to download
 
         Raises:
             :obj:`Error`: if an HTTP request fails
         """
-        session = self.requests_session
-
         if compounds is None:
-            compounds = self.session.query(Compound).order_by(Compound.id).all()
+            compounds = self.collection_compound.find({})
         n_compounds = len(compounds)
 
         for i_compound, c in enumerate(compounds):
@@ -748,7 +748,7 @@ class SabioRk:
                 print('  Downloading compound {} of {}'.format(i_compound + 1, n_compounds))
 
             # download info
-            response = session.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c.id})
+            response = requests.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c['_id']})
             response.raise_for_status()
 
             # parse info
@@ -758,51 +758,33 @@ class SabioRk:
             # name
             node = table.find('span', id='commonName')
             if node:
-                c.name = node.get_text()
+                c['name'] = node.get_text()
 
             # synonyms
-            c.synonyms = []
+            c['synonyms'] = []
             synonym_label_node = table.find('b', text='Synonyms')
             if synonym_label_node:
                 for node in list(synonym_label_node.parents)[1].find_all('span'):
                     name = node.get_text()
-
-                    q = self.session.query(Synonym).filter_by(name=name)
-                    if q.count():
-                        synonym = q[0]
-                    else:
-                        synonym = Synonym(name=name)
-                        self.session.add(synonym)
-
-                    c.synonyms.append(synonym)
+                    c['synonyms'].append(name)
 
             # structure
-            c.structures = []
+            c['structures'] = []
 
             inchi_label_node = table.find('b', text='InChI')
             if inchi_label_node:
                 for node in list(inchi_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
-                    q = self.session.query(CompoundStructure).filter_by(format='inchi', value=value)
-                    if q.count():
-                        compound_structure = q.first()
-                    else:
-                        compound_structure = CompoundStructure(format='inchi', value=value)
-                    c.structures.append(compound_structure)
+                    c['structures'].append({'inchi': value})
 
             smiles_label_node = table.find('b', text='SMILES')
             if smiles_label_node:
                 for node in list(smiles_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
-                    q = self.session.query(CompoundStructure).filter_by(format='smiles', value=value)
-                    if q.count():
-                        compound_structure = q.first()
-                    else:
-                        compound_structure = CompoundStructure(format='smiles', value=value)
-                    c.structures.append(compound_structure)
+                    c['structures'].append({'smiles': value})
 
             # cross references
-            c.cross_references = []
+            c['cross_references'] = []
             for node in table.find_all('a'):
 
                 url = node.get('href')
@@ -828,20 +810,17 @@ class SabioRk:
                     continue
                 else:
                     namespace = html.unescape(node.parent.parent.parent.find_all('td')[0].get_text()).strip()
-                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c.id, namespace), 
-                        data_source.DataSourceWarning)
+                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'], 
+                    	namespace))
+                resource = {'namespace':namespace, 'id':id}
 
-                q = self.session.query(Resource).filter_by(namespace=namespace, id=id)
-                if q.count():
-                    resource = q[0]
-                else:
-                    resource = Resource(namespace=namespace, id=id)
-                    self.session.add(resource)
-
-                c.cross_references.append(resource)
+                c['cross_references'].append(resource)
 
             # udated
-            c.modified = datetime.datetime.utcnow()
-
-            if self.commit_intermediate_results and (i_compound % 100 == 99):
-                self.session.commit()
+            c['modified'] = datetime.datetime.utcnow()
+            self.collection_compound.update_one( {'_id': c['_id']},
+            									{'$set': {'synonyms': c['synonyms'],
+            											'structures': c['structures'],
+            											'cross_references': c['cross_references']}},
+            									upsert=True)
+            
