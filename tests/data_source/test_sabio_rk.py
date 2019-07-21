@@ -51,6 +51,7 @@ class TestSabioRk(unittest.TestCase):
         {'namespace': 'kegg.compound', 'id': 'C00026'}]
         self.assertEqual(exp, x_refs)
 
+    @unittest.skip('passed')
     def test_parse_enzyme_name(self):
         name, is_wildtype, variant = self.src.parse_enzyme_name(self.species_sbml.get(5).getName())
         self.assertEqual('E211S/I50N/V80T', variant)
@@ -120,6 +121,7 @@ class TestSabioRk(unittest.TestCase):
         test_2 = doc['species'][0]['_id']
         self.assertEqual(test_2, 1922)
 
+    @unittest.skip('passed')
     def test_load_compounds(self):
         compound_1 = {
             "_id" : 1922,
@@ -147,3 +149,18 @@ class TestSabioRk(unittest.TestCase):
         }
 
         self.src.load_compounds(compounds = [compound_1, compound_2])
+        test_1 = self.src.collection_compound.find_one({'_id': compound_1['_id']})
+        test_2 = self.src.collection_compound.find_one({'_id': compound_2['_id']})
+        self.assertTrue('synonyms' in test_1)
+        self.assertTrue(isinstance(test_2['structures'], list))
+
+    def test_get_parameter_by_properties(self):
+        kinetic_law_mock = {'kinlaw_id': 4096, 'mechanism': 'mock_mechanism',
+                            'tissue': 'mock_tissue', 'enzyme_type': 'mock_et',
+                            'parameters': [{'observed_type': ['mock_ot', 'ssss'], 'compound': None,
+                                        'observed_value': ['mock_ov', 'some_1']}]}
+        parameter_properties_mock = {'type_code': ['mock_ot'], 'associatedSpecies': None,
+                                'startValue': ['mock_ov', 'some_2'], 'type': 'some_type'}
+        result = self.src.get_parameter_by_properties(kinetic_law_mock, parameter_properties_mock)
+        exp = {'observed_type': ['mock_ot', 'ssss'], 'compound': None, 'observed_value': ['mock_ov', 'some_1']}
+        self.assertEqual(result, exp)

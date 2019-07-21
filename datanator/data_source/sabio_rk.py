@@ -15,7 +15,8 @@ class SabioRk:
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                  verbose=False, max_entries=float('inf'), username=None,
-                 password=None, authSource='admin', webservice_batch_size=100):
+                 password=None, authSource='admin', webservice_batch_size=100,
+                 excel_batch_size=100):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.replicaSet = replicaSet
@@ -28,7 +29,7 @@ class SabioRk:
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password, 
             authSource=authSource).con_db('sabio_compound')
-
+        self.excel_batch_size = excel_batch_size
         ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
             'uniprot': 'http://www.uniprot.org',
@@ -90,18 +91,18 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # # download compounds
-        # compounds = self.session.query(Compound).filter(~Compound.structures.any()).order_by(Compound.id).all()
+        ##################################
+        ##################################
+        # download compounds
+        compounds = self.collection_compound.find({'structures': {'$exists': False} })
 
-        # if self.verbose:
-        #     print('Downloading {} compounds ...'.format(len(compounds)))
+        if self.verbose:
+            print('Downloading {} compounds ...'.format(len(compounds)))
 
-        # self.load_compounds(compounds)
+        self.load_compounds(compounds)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
         # ##################################
         # ##################################
@@ -823,4 +824,194 @@ class SabioRk:
             											'structures': c['structures'],
             											'cross_references': c['cross_references']}},
             									upsert=True)
-            
+
+    def load_missing_kinetic_law_information_from_tsv(self, ids):
+        """ Update the properties of kinetic laws in mongodb based on content downloaded
+        from SABIO in TSV format.
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+        """
+        batch_size = self.excel_batch_size
+
+        for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
+            if self.verbose:
+                print('  Downloading kinetic laws {}-{} of {} in Excel format'.format(
+                    i_batch * batch_size + 1,
+                    min(len(ids), (i_batch + 1) * batch_size),
+                    len(ids)))
+
+            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            response = requests.get(self.ENDPOINT_EXCEL_EXPORT, params={
+                'entryIDs[]': batch_ids,
+                'fields[]': [
+                    'EntryID',
+                    'KineticMechanismType',
+                    'Tissue',
+                    'Parameter',
+                ],
+                'preview': False,
+                'format': 'tsv',
+                'distinctRows': 'false',
+            })
+            response.raise_for_status()
+            if not response.text:
+                cache = session.cache
+                key = cache.create_key(response.request)
+                cache.delete(key)
+                raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
+
+            self.load_missing_kinetic_law_information_from_tsv_helper(response.text)
+
+    def load_missing_kinetic_law_information_from_tsv_helper(self, tsv):
+        """ Update the properties of kinetic laws in the mongodb based on content downloaded
+        from SABIO in TSV format.
+
+        Note: this method is necessary because neither of SABIO's SBML and Excel export methods provide
+        all of the SABIO's content.
+
+        Args:
+            tsv (:obj:`str`): TSV-formatted table
+
+        Raises:
+            :obj:`ValueError`: if a kinetic law or compartment is not contained in the local sqlite database
+        """
+        # group properties
+        tsv = tsv.split('\n')
+        law_properties = {}
+        for row in csv.DictReader(tsv, delimiter='\t'):
+            entry_id = int(float(row['EntryID']))
+            if entry_id not in law_properties:
+                law_properties[entry_id] = {
+                    'KineticMechanismType': row['KineticMechanismType'],
+                    'Tissue': row['Tissue'],
+                    'Parameters': [],
+                }
+
+            parameter = {}
+
+            # type
+            parameter['type'] = row['parameter.type']
+
+            if row['parameter.type'] == 'kcat':
+                parameter['type_code'] = 25
+            elif row['parameter.type'] == 'Vmax':
+                parameter['type_code'] = 186
+            elif row['parameter.type'] == 'Km':
+                parameter['type_code'] = 27
+            elif row['parameter.type'] == 'Ki':
+                parameter['type_code'] = 261
+            else:
+                parameter['type_code'] = None
+
+            # associatated species
+            if row['parameter.associatedSpecies'] in ['', '-']:
+                parameter['associatedSpecies'] = None
+            else:
+                parameter['associatedSpecies'] = row['parameter.associatedSpecies']
+
+            # start value
+            if row['parameter.startValue'] in ['', '-']:
+                parameter['startValue'] = None
+            else:
+                parameter['startValue'] = float(row['parameter.startValue'])
+
+            # end value
+            if row['parameter.endValue'] in ['', '-']:
+                parameter['endValue'] = None
+            else:
+                parameter['endValue'] = float(row['parameter.endValue'])
+
+            # error
+            if row['parameter.standardDeviation'] in ['', '-']:
+                parameter['standardDeviation'] = None
+            else:
+                parameter['standardDeviation'] = float(row['parameter.standardDeviation'])
+
+            # units
+            if row['parameter.unit'] in ['', '-']:
+                parameter['unit'] = None
+            else:
+                parameter['unit'] = row['parameter.unit']
+
+            law_properties[entry_id]['Parameters'].append(parameter)
+
+        # update properties
+        for id, properties in law_properties.items():
+            # get kinetic law
+            q = self.collection_compound.find_one({'kinlaw_id': id})
+            if q == None:
+                raise ValueError('No Kinetic Law with id {}'.format(id))
+            law = q['kinetic_laws']
+
+            # mechanism
+            if properties['KineticMechanismType'] == 'unknown':
+                law['mechanism'] = None
+            else:
+                law['mechanism'] = properties['KineticMechanismType']
+
+            # tissue
+            if properties['Tissue'] in ['', '-']:
+                law['tissue'] = None
+            else:
+                law['tissue'] = properties['Tissue']
+
+            # parameter
+            for param_properties in properties['Parameters']:
+                param = self.get_parameter_by_properties(law, param_properties)
+                if param is None:
+                    if param_properties['type'] != 'concentration':
+                        warnings.warn('Unable to find parameter `{}:{}` for law {}'.format(
+                            param_properties['type'], param_properties['associatedSpecies'], law['kinlaw_id']))
+                    continue
+
+                param['observed_value'] = param_properties['startValue']
+                param['observed_error'] = param_properties['standardDeviation']
+                param['observed_units'] = param_properties['unit']
+
+            # updated
+            law['modified'] = datetime.datetime.utcnow()
+
+    def get_parameter_by_properties(self, kinetic_law, parameter_properties):
+        """ Get the parameter of :obj:`kinetic_law` whose attribute values are 
+        	equal to that of :obj:`parameter_properties`
+        Args:
+            kinetic_law (:obj:`KineticLaw`): kinetic law to find parameter of
+            parameter_properties (:obj:`dict`): properties of parameter to find
+
+        Returns:
+            :obj:`Parameter`: parameter with attribute values equal to values of :obj:`parameter_properties`
+        """
+        if parameter_properties['type'] == 'concentration':
+            return None
+
+        # match observed name and compound
+        def func(parameter):
+            return parameter['observed_type'] == parameter_properties['type_code'] and \
+                ((parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or
+                 (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies']))
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match observed name
+        def func(parameter):
+            return parameter['observed_type'] == parameter_properties['type_code']
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match compound
+        def func(parameter):
+            return (parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or \
+                (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies'])
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match value
+        def func(parameter):
+            return parameter['observed_value'] == parameter_properties['startValue']
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
