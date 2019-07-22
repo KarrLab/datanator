@@ -93,3 +93,8 @@ class TestFileUtil(unittest.TestCase):
             ]
         result = self.src.search_dict_list(dict_list, 'name', 'Tom')
         self.assertEqual(result, [{'name': "Tom", 'age': 10}])
+
+    def test_merge_dict(self):
+        dicts = [ {'a': 1, 'b': 2}, {'c': 3}, {'d': 4} ]
+        result = self.src.merge_dict(dicts)
+        self.assertEqual(result, {'a':1,'b':2,'c':3,'d':4})

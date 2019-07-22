@@ -10,6 +10,7 @@ import datetime
 import bs4
 import warnings
 import html
+import csv
 
 class SabioRk:
 
@@ -86,7 +87,7 @@ class SabioRk:
         if self.verbose:
             print('Downloading {} kinetic laws ...'.format(len(new_ids)))
 
-        self.load_kinetic_laws(new_ids)
+        missing_ids = self.load_kinetic_laws(new_ids)
 
         if self.verbose:
             print('  done')
@@ -250,6 +251,7 @@ class SabioRk:
             not_loaded_ids.sort()
             warnings.warn('Several kinetic laws were not found:\n  {}'.format(
                 '\n  '.join([str(id) for id in not_loaded_ids])), data_source.DataSourceWarning)
+        return not_loaded_ids
 
     def create_kinetic_laws_from_sbml(self, ids, sbml):
         """ Add kinetic laws defined in an SBML file to the local mongodb database
@@ -309,17 +311,17 @@ class SabioRk:
         reactions_sbml = model.getListOfReactions()
         if reactions_sbml.size() != len(ids):
             raise ValueError('{} reactions {} is different from the expected {}'.format(reaction_sbml.size(), len(ids)))
-        kinetic_laws = []
+        # kinetic_laws = []
         loaded_ids = []
         for i_reaction, _id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
             kinetic_law = self.create_kinetic_law_from_sbml(
                 _id, reaction_sbml, species, specie_properties, functions, units)
-            kinetic_laws.append(kinetic_law)
+            # kinetic_laws.append(kinetic_law)
+            combined = self.file_manager.merge_dict([{'species': species}, 
+            	{'compartments':compartments}, kinetic_law])
             self.collection.update_one({'kinlaw_id': _id},
-                                  {'$set': {'kinetic_laws': kinetic_laws,
-                                   'species': species,
-                                   'compartments': compartments}},
+                                   {'$set': combined},
                                   upsert=True)
             loaded_ids.append(_id)
         return loaded_ids
@@ -366,10 +368,10 @@ class SabioRk:
             part_sbml = reactants.get(i_part)
             compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
             part = {
-                'compound':compound,
                 'compartment':compartment,
                 'coefficient':part_sbml.getStoichiometry()}
-            kinetic_law['reactants'].append(part)
+            react = {**compound[0], **part}
+            kinetic_law['reactants'].append(react)
 
         kinetic_law['products'] = []
         products = sbml.getListOfProducts()
@@ -377,10 +379,10 @@ class SabioRk:
             part_sbml = products.get(i_part)
             compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
             part = {
-                'compound':compound,
                 'compartment':compartment,
                 'coefficient':part_sbml.getStoichiometry()}
-            kinetic_law['products'].append(part)
+            prod = {**compound[0], **part}
+            kinetic_law['products'].append(prod)
 
         """ cross references """
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
@@ -449,11 +451,11 @@ class SabioRk:
             type = specie_properties[modifier.getSpecies()]['modifier_type']
             if modifier_id[0:3] == 'SPC':
                 part = {
-                    'compound':specie,
                     'compartment':compartment,
                     'type':type
                 } # ReactionParticipant
-                kinetic_law['modifiers'].append(part)
+                modif = {**specie[0], **part}
+                kinetic_law['modifiers'].append(modif)
             elif modifier_id[0:3] == 'ENZ':
                 kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(modifier_id,root_species)
                 kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies()]['modifier_type']
@@ -939,10 +941,10 @@ class SabioRk:
         # update properties
         for id, properties in law_properties.items():
             # get kinetic law
-            q = self.collection_compound.find_one({'kinlaw_id': id})
+            q = self.collection.find_one({'kinlaw_id': id})
             if q == None:
                 raise ValueError('No Kinetic Law with id {}'.format(id))
-            law = q['kinetic_laws']
+            law = q
 
             # mechanism
             if properties['KineticMechanismType'] == 'unknown':
@@ -971,6 +973,8 @@ class SabioRk:
 
             # updated
             law['modified'] = datetime.datetime.utcnow()
+            self.collection.update_one({'kinlaw_id': id},
+            							{'$set': law }, upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
         """ Get the parameter of :obj:`kinetic_law` whose attribute values are 

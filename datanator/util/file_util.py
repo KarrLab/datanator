@@ -148,3 +148,16 @@ class FileUtil:
                 result (:obj: `dictionary`): list of dictionaries with the key/value pair
         '''
         return list(filter(lambda search: search[key] == value, dict_list))
+
+    def merge_dict(self, dicts):
+        ''' Merge a list of dictionaries
+            Args:
+                dicts (:obj: `list` of :obj: `dict`): list of dictionaries
+            Returns:
+                result (:obj: `dict`): merged dictionries
+        '''
+        result = {}
+        for d in dicts:
+            for k, v in d.items(): 
+                result[k] = v
+        return result
