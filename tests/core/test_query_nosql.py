@@ -208,6 +208,10 @@ class TestQueryTaxonTree(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     # @unittest.skip('passed')
+    def test_get_all_species(self):
+        result = self.src.get_all_species()
+        self.assertTrue('Candidatus Heimdallarchaeota archaeon AB_125' in result)
+
     def test_get_name_by_id(self):
         ids = [743725, 2107591]
         names = self.src.get_name_by_id(ids)

@@ -782,8 +782,9 @@ class SabioRk:
             if inchi_label_node:
                 for node in list(inchi_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
-                    norm = self.calc_inchi_formula_connectivity({'inchi': value})
-                    c['structures'].append(norm)
+                    inchi = {'inchi': value}
+                    norm = self.calc_inchi_formula_connectivity(inchi)
+                    c['structures'].append({**inchi, **norm})
 
             smiles_label_node = table.find('b', text='SMILES')
             if smiles_label_node:

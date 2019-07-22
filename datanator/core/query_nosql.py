@@ -519,6 +519,14 @@ class QueryTaxonTree(DataQuery):
         self.client, self.db_obj, self.collection = self.con_db(
             self.collection_str)
 
+    def get_all_species(self):
+        result = []
+        projection = {'tax_name':1}
+        mass = self.collection.find({ 'tax_name': {'$exists': True} }, projection=projection)
+        for thing in mass:
+            result.append(thing['tax_name'])
+        return result
+
     def get_name_by_id(self, ids):
         ''' Get organisms' names given their tax_ids
             Args:

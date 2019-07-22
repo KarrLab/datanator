@@ -1,16 +1,26 @@
 import functools
 from datanator.rest.query import front_end_query
+from datanator.core import query_nosql
 from flask import jsonify
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
 import json
 import re
-
+import datanator.config.core
 
 bp = Blueprint('/search', __name__)
 bp_r = Blueprint('/results', __name__)
-
+username = datanator.config.core.get_config()[
+    'datanator']['mongodb']['user']
+password = datanator.config.core.get_config(
+)['datanator']['mongodb']['password']
+MongoDB = datanator.config.core.get_config(
+)['datanator']['mongodb']['server']
+port = datanator.config.core.get_config(
+)['datanator']['mongodb']['port']
+replSet = datanator.config.core.get_config(
+)['datanator']['mongodb']['replSet']
 #have not used
 @bp.route('/search', methods=('GET', 'POST'))
 def search():
@@ -41,5 +51,11 @@ def results(molecule_name, organism_name, abstract_default=False):
     #return render_template('/results.html', results=[the_json_1,the_json_2])
 
     #return render_template('/results.html', results=json.dumps(the_json))
+
+def get_organisms():
+    return query_nosql.QueryTaxonTree(MongoDB=MongoDB, db='datanator',
+                 verbose=True, username = username, password = password).get_all_species()
+
+
 if __name__ == '__main__':
     bp_r.run(debug=True, host='0.0.0.0')
