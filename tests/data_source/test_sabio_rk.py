@@ -265,3 +265,19 @@ class TestSabioRk(unittest.TestCase):
         result = self.src.infer_compound_structures_from_names([compound_1, compound_2])
         self.assertEqual(result[1], compound_2)
         self.assertTrue('structures' in result[0])
+
+    def test_calc_inchi_formula_connectivity(self):
+        s = {'smiles': '[H]O[H]'}
+        test_1 = self.src.calc_inchi_formula_connectivity(s)
+        self.assertEqual(test_1['_value_inchi'], 'InChI=1S/H2O/h1H2')
+        self.assertEqual(test_1['_value_inchi_formula_connectivity'], 'H2O')
+
+        s = {'inchi': 'InChI=1S/H2O/h1H2'}
+        test_2 = self.src.calc_inchi_formula_connectivity(s)
+        self.assertEqual(test_2['_value_inchi'], 'InChI=1S/H2O/h1H2')
+        self.assertEqual(test_2['_value_inchi_formula_connectivity'], 'H2O')
+
+        s = {'inchi': 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1'}
+        test_3 = self.src.calc_inchi_formula_connectivity(s)
+        self.assertEqual(test_3['_value_inchi'], 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
+        self.assertEqual(test_3['_value_inchi_formula_connectivity'], 'C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')

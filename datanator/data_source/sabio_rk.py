@@ -1,6 +1,7 @@
 import datanator.config.core
 from datanator.util import mongo_util
 from datanator.util import file_util
+from datanator.util import molecule_util
 import six
 import requests
 from xml import etree
@@ -134,24 +135,25 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # # normalize compound structures to facilitate seaching. retain only
-        # # - InChI formula layer (without hydrogen)
-        # # - InChI connectivity layer
-        # compound_structures = self.session.query(CompoundStructure).filter_by(_value_inchi_formula_connectivity=None).all()
+        ##################################
+        ##################################
+        # normalize compound structures to facilitate seaching. retain only
+        # - InChI formula layer (without hydrogen)
+        # - InChI connectivity layer
+        projection = {'_id': 1, 'structures': 1}
+        compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} }, 
+                                                filter=projection )
+        if self.verbose:
+            print('Calculating searchable structures for {} structures ...'.format(len(compounds)))
 
-        # if self.verbose:
-        #     print('Calculating searchable structures for {} structures ...'.format(len(compound_structures)))
+        for i_compound_structure, compound_structure in enumerate(compounds):
+            if self.verbose and (i_compound_structure % 100 == 0):
+                print('  Calculating searchable structure for compound {} of {}'.format(
+                    i_compound_structure + 1, len(compound_structures)))
+            compound_structure.calc_inchi_formula_connectivity()
 
-        # for i_compound_structure, compound_structure in enumerate(compound_structures):
-        #     if self.verbose and (i_compound_structure % 100 == 0):
-        #         print('  Calculating searchable structure for compound {} of {}'.format(
-        #             i_compound_structure + 1, len(compound_structures)))
-        #     compound_structure.calc_inchi_formula_connectivity()
-
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
         # ##################################
         # ##################################
@@ -1067,5 +1069,32 @@ class SabioRk:
             self.collection_compound.update_one( {'_id': compound['_id']},
                                                 {'$set': compound} )
             result.append(compound)
+
+        return result
+
+    def calc_inchi_formula_connectivity(self, structure):
+        """ Calculate a searchable structures
+
+        * InChI format
+        * Core InChI format
+
+            * Formula layer (without hydrogen)
+            * Connectivity layer
+        """
+
+        # if necessary, convert structure to InChI
+        if 'inchi' in structure:
+            _value_inchi = structure['inchi']
+        else:
+            try:
+                _value_inchi = molecule_util.Molecule(structure=structure.get('smiles',)).to_inchi() or None
+            except ValueError:
+                _value_inchi = None
+
+        # calculate formula (without hydrogen) and connectivity
+        if _value_inchi:
+            _value_inchi_formula_connectivity = molecule_util.InchiMolecule(_value_inchi) \
+                .get_formula_and_connectivity()
+        result = {'_value_inchi': _value_inchi, '_value_inchi_formula_connectivity':_value_inchi_formula_connectivity}
 
         return result
