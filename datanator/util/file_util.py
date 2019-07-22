@@ -144,6 +144,7 @@ class FileUtil:
                 dict_list (:obj: `list`): list of dictionaries
                 key (:obj: `string`): key in the dictionary
                 value (:obj: ``): value to be matched
+                                if value==None, then only search for key
             Returns:
                 result (:obj: `dictionary`): list of dictionaries with the key/value pair
         '''

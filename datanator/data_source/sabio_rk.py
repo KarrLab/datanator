@@ -13,6 +13,8 @@ import warnings
 import html
 import csv
 import pubchempy
+import sys
+
 
 class SabioRk:
 
@@ -27,10 +29,10 @@ class SabioRk:
         self.verbose = verbose
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
-            MongoDB=MongoDB, db=db, username=username, password=password, 
+            MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_rk')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
-            MongoDB=MongoDB, db=db, username=username, password=password, 
+            MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_compound')
         self.excel_batch_size = excel_batch_size
         ENDPOINT_DOMAINS = {
@@ -97,7 +99,8 @@ class SabioRk:
         ##################################
         ##################################
         # download compounds
-        compounds = self.collection_compound.find({'structures': {'$exists': False} })
+        compounds = self.collection_compound.find(
+            {'structures': {'$exists': False}})
 
         if self.verbose:
             print('Downloading {} compounds ...'.format(len(compounds)))
@@ -125,7 +128,8 @@ class SabioRk:
         ##################################
         # infer structures for compounds with no provided structure
         projection = {'_id': 1, 'cross_references': 1, 'name': 1}
-        compounds = self.collection_compound.find({'structures': {'$exists': False} }, filter=projection )
+        compounds = self.collection_compound.find(
+            {'structures': {'$exists': False}}, filter=projection)
 
         if self.verbose:
             print('Inferring structures for {} compounds ...'.format(len(compounds)))
@@ -141,7 +145,7 @@ class SabioRk:
         # # - InChI formula layer (without hydrogen)
         # # - InChI connectivity layer
         # projection = {'_id': 1, 'structures': 1}
-        # compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} }, 
+        # compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} },
         #                                         filter=projection )
         # if self.verbose:
         #     print('Calculating searchable structures for {} structures ...'.format(len(compounds)))
@@ -238,17 +242,19 @@ class SabioRk:
                     min(len(ids), i_batch * batch_size + max(100, batch_size)),
                     len(ids)))
 
-            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            batch_ids = ids[i_batch *
+                            batch_size:min((i_batch + 1) * batch_size, len(ids))]
             response = session.get(self.ENDPOINT_WEBSERVICE, params={
                 'kinlawids': ','.join(str(id) for id in batch_ids),
             })
 
             response.raise_for_status()
             if not response.text:
-                raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
+                raise Exception('Unable to download kinetic laws with ids {}'.format(
+                    ', '.join([str(id) for id in batch_ids])))
 
-            loaded_ids = self.create_kinetic_laws_from_sbml(batch_ids, 
-                                                    response.content if six.PY2 else response.text)
+            loaded_ids = self.create_kinetic_laws_from_sbml(batch_ids,
+                                                            response.content if six.PY2 else response.text)
 
         not_loaded_ids = list(set(ids).difference(loaded_ids))
         if not_loaded_ids:
@@ -281,7 +287,8 @@ class SabioRk:
             function_sbml = functions_sbml.get(i_function)
             math_sbml = function_sbml.getMath()
             if math_sbml.isLambda() and math_sbml.getNumChildren():
-                eq = libsbml.formulaToL3String(math_sbml.getChild(math_sbml.getNumChildren() - 1))
+                eq = libsbml.formulaToL3String(
+                    math_sbml.getChild(math_sbml.getNumChildren() - 1))
             else:
                 eq = None
             if eq in ('', 'NaN'):
@@ -299,7 +306,8 @@ class SabioRk:
         compartments = []
         for i_compartment in range(compartments_sbml.size()):
             compartment_sbml = compartments_sbml.get(i_compartment)
-            compartments.append(self.get_compartment_from_sbml(compartment_sbml))
+            compartments.append(
+                self.get_compartment_from_sbml(compartment_sbml))
 
         # species
         specie_properties = {}
@@ -314,7 +322,8 @@ class SabioRk:
         # kinetic laws
         reactions_sbml = model.getListOfReactions()
         if reactions_sbml.size() != len(ids):
-            raise ValueError('{} reactions {} is different from the expected {}'.format(reaction_sbml.size(), len(ids)))
+            raise ValueError('{} reactions {} is different from the expected {}'.format(
+                reaction_sbml.size(), len(ids)))
         # kinetic_laws = []
         loaded_ids = []
         for i_reaction, _id in enumerate(ids):
@@ -322,11 +331,11 @@ class SabioRk:
             kinetic_law = self.create_kinetic_law_from_sbml(
                 _id, reaction_sbml, species, specie_properties, functions, units)
             # kinetic_laws.append(kinetic_law)
-            combined = self.file_manager.merge_dict([{'species': species}, 
-            	{'compartments':compartments}, kinetic_law])
+            combined = self.file_manager.merge_dict([{'species': species},
+                                                     {'compartments': compartments}, kinetic_law])
             self.collection.update_one({'kinlaw_id': _id},
-                                   {'$set': combined},
-                                  upsert=True)
+                                       {'$set': combined},
+                                       upsert=True)
             loaded_ids.append(_id)
         return loaded_ids
 
@@ -361,19 +370,22 @@ class SabioRk:
             return None
 
         # ID
-        annotated_id = next((int(float(x_ref['id'])) for x_ref in x_refs if x_ref['namespace'] == 'sabiork.kineticrecord'), None)
+        annotated_id = next((int(float(
+            x_ref['id'])) for x_ref in x_refs if x_ref['namespace'] == 'sabiork.kineticrecord'), None)
         if annotated_id is not None and annotated_id != id:
-            raise ValueError('Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
+            raise ValueError(
+                'Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
 
         """ participants """
         kinetic_law['reactants'] = []
         reactants = sbml.getListOfReactants()
         for i_part in range(reactants.size()):
             part_sbml = reactants.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
+            compound, compartment = self.get_specie_reference_from_sbml(
+                part_sbml.getSpecies(), root_species)
             part = {
-                'compartment':compartment,
-                'coefficient':part_sbml.getStoichiometry()}
+                'compartment': compartment,
+                'coefficient': part_sbml.getStoichiometry()}
             react = {**compound[0], **part}
             kinetic_law['reactants'].append(react)
 
@@ -381,10 +393,11 @@ class SabioRk:
         products = sbml.getListOfProducts()
         for i_part in range(products.size()):
             part_sbml = products.get(i_part)
-            compound, compartment = self.get_specie_reference_from_sbml(part_sbml.getSpecies(), root_species)
+            compound, compartment = self.get_specie_reference_from_sbml(
+                part_sbml.getSpecies(), root_species)
             part = {
-                'compartment':compartment,
-                'coefficient':part_sbml.getStoichiometry()}
+                'compartment': compartment,
+                'coefficient': part_sbml.getStoichiometry()}
             prod = {**compound[0], **part}
             kinetic_law['products'].append(prod)
 
@@ -392,7 +405,8 @@ class SabioRk:
         # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
         # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
         # 1.1.1.50, respectively.
-        kinetic_law['cross_references'] = list(filter(lambda x_ref: x_ref['namespace'] not in ['taxonomy'], reaction_x_refs))
+        kinetic_law['cross_references'] = list(
+            filter(lambda x_ref: x_ref['namespace'] not in ['taxonomy'], reaction_x_refs))
 
         # rate_law
         kinetic_law['equation'] = functions[law.getMetaId()[5:]]
@@ -403,10 +417,12 @@ class SabioRk:
         for i_param in range(params.size()):
             param = params.get(i_param)
 
-            match = re.match(r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
+            match = re.match(
+                r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
             if match:
                 observed_name = match.group(1)
-                species, compartment = self.get_specie_reference_from_sbml(match.group(2), root_species)
+                species, compartment = self.get_specie_reference_from_sbml(
+                    match.group(2), root_species)
                 if 'subunits' in species[0].keys():
                     compound = None
                     enzyme = species
@@ -434,14 +450,14 @@ class SabioRk:
             observed_value = param.getValue()
 
             parameter = {
-                'compound':compound,
-                'enzyme':enzyme,
-                'compartment':compartment,
-                'observed_name':observed_name,
-                'observed_type':observed_type,
-                'observed_value':observed_value,
-                'observed_units':observed_units,
-                'modified':datetime.datetime.utcnow()
+                'compound': compound,
+                'enzyme': enzyme,
+                'compartment': compartment,
+                'observed_name': observed_name,
+                'observed_type': observed_type,
+                'observed_value': observed_value,
+                'observed_units': observed_units,
+                'modified': datetime.datetime.utcnow()
             }
             kinetic_law['parameters'].append(parameter)
 
@@ -451,23 +467,27 @@ class SabioRk:
         for i_modifier in range(modifiers.size()):
             modifier = modifiers.get(i_modifier)
             modifier_id = modifier.getSpecies()
-            specie, compartment = self.get_specie_reference_from_sbml(modifier_id, root_species)
+            specie, compartment = self.get_specie_reference_from_sbml(
+                modifier_id, root_species)
             type = specie_properties[modifier.getSpecies()]['modifier_type']
             if modifier_id[0:3] == 'SPC':
                 part = {
-                    'compartment':compartment,
-                    'type':type
-                } # ReactionParticipant
+                    'compartment': compartment,
+                    'type': type
+                }  # ReactionParticipant
                 modif = {**specie[0], **part}
                 kinetic_law['modifiers'].append(modif)
             elif modifier_id[0:3] == 'ENZ':
-                kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(modifier_id,root_species)
-                kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies()]['modifier_type']
+                kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(
+                    modifier_id, root_species)
+                kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies(
+                )]['modifier_type']
                 kinetic_law['taxon_wildtype'] = specie_properties[modifier_id]['is_wildtype']
                 kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
 
         # taxon
-        kinetic_law['taxon'] = next((int(float(x_ref['id'])) for x_ref in reaction_x_refs if x_ref['namespace'] == 'taxonomy'), None)
+        kinetic_law['taxon'] = next((int(float(
+            x_ref['id'])) for x_ref in reaction_x_refs if x_ref['namespace'] == 'taxonomy'), None)
 
         """ conditions """
         conditions = law \
@@ -489,7 +509,8 @@ class SabioRk:
                 .getChild(0) \
                 .getCharacters()
             if temperature_units not in ['°C', '��C']:
-                raise ValueError('Unsupported temperature units: {}'.format(temperature_units))
+                raise ValueError(
+                    'Unsupported temperature units: {}'.format(temperature_units))
             kinetic_law['temperature'] = temperature
 
         # pH
@@ -513,7 +534,8 @@ class SabioRk:
             kinetic_law['media'] = media
 
         """ references """
-        kinetic_law['references'] = list(filter(lambda x_ref: x_ref['namespace'] != 'sabiork.kineticrecord', x_refs))
+        kinetic_law['references'] = list(
+            filter(lambda x_ref: x_ref['namespace'] != 'sabiork.kineticrecord', x_refs))
 
         """ updated """
         kinetic_law['modified'] = datetime.datetime.utcnow()
@@ -561,11 +583,13 @@ class SabioRk:
         compartment_name = '_'.join(tmp[2:])
 
         if type == 'SPC':
-            specie = self.file_manager.search_dict_list(species, '_id', value=specie_id)
+            specie = self.file_manager.search_dict_list(
+                species, '_id', value=specie_id)
             self.collection_compound.update_one({'_id': specie_id},
-            									{'$set': specie[0]}, upsert=True)
+                                                {'$set': specie[0]}, upsert=True)
         elif type == 'ENZ':
-        	specie = self.file_manager.search_dict_list(species, '_id', value=specie_id)
+            specie = self.file_manager.search_dict_list(
+                species, '_id', value=specie_id)
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
 
@@ -575,7 +599,6 @@ class SabioRk:
             compartment = None
 
         return (specie, compartment)
-
 
     def get_specie_from_sbml(self, sbml):
         """ get species information from sbml
@@ -618,14 +641,15 @@ class SabioRk:
             name = sbml.getName()
             properties = {'modifier_type': modifier_type}
             specie = {'_id': id, 'name': name}
-            self.collection_compound.update_one( {'_id': id}, 
-                                                {'$set': {'name':name}}, 
-                                                upsert=True )
+            self.collection_compound.update_one({'_id': id},
+                                                {'$set': {'name': name}},
+                                                upsert=True)
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
             if six.PY2:
                 variant = unicode(variant.decode('utf-8'))
-            properties = {'is_wildtype': is_wildtype, 'variant': variant, 'modifier_type': modifier_type}
+            properties = {'is_wildtype': is_wildtype,
+                          'variant': variant, 'modifier_type': modifier_type}
 
             specie = {'_id': id, 'molecular_weight': None, 'name': name}
         else:
@@ -635,9 +659,10 @@ class SabioRk:
         cross_references = self.create_cross_references_from_sbml(sbml)
         if type == 'SPC':
             specie['cross_references'] = cross_references
-            self.collection_compound.update_one( {'_id': id}, 
-                                                {'$set': {'cross_references':cross_references}}, 
-                                                upsert=True )
+            self.collection_compound.update_one({'_id': id},
+                                                {'$set': {
+                                                    'cross_references': cross_references}},
+                                                upsert=True)
         elif type == 'ENZ':
             specie['subunits'] = []
             specie['cross_references'] = []
@@ -669,14 +694,16 @@ class SabioRk:
         Raises:
             :obj:`ValueError`: if the enzyme name is formatted in an unsupport format
         """
-        match = re.match(r'^(.*?)\(Enzyme\) (wildtype|mutant),?(.*?)$', sbml, re.IGNORECASE)
+        match = re.match(
+            r'^(.*?)\(Enzyme\) (wildtype|mutant),?(.*?)$', sbml, re.IGNORECASE)
         if match:
             name = match.group(1)
             is_wildtype = match.group(2).lower() == 'wildtype'
             variant = match.group(3).strip()
             return (name, is_wildtype, variant)
 
-        match = re.match(r'^Enzyme (wildtype|mutant),?( (.*?))*$', sbml, re.IGNORECASE)
+        match = re.match(
+            r'^Enzyme (wildtype|mutant),?( (.*?))*$', sbml, re.IGNORECASE)
         if match:
             if match.group(3):
                 name = match.group(3).strip()
@@ -709,7 +736,8 @@ class SabioRk:
 
         xml = sbml.getAnnotation().getChild('RDF').getChild('Description')
 
-        attr = libsbml.XMLTriple('resource', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf')
+        attr = libsbml.XMLTriple(
+            'resource', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf')
 
         x_refs = []
         for i_child in range(xml.getNumChildren()):
@@ -738,7 +766,7 @@ class SabioRk:
 
     def load_compounds(self, compounds=None):
         """ Download information from SABIO-RK about all of the compounds stored sabio_compounds
-        	collection
+                collection
         Args:
             compounds (:obj:`list` of :obj:`obj`): list of compounds to download
 
@@ -752,10 +780,12 @@ class SabioRk:
         for i_compound, c in enumerate(compounds):
             # print status
             if self.verbose and (i_compound % 100 == 0):
-                print('  Downloading compound {} of {}'.format(i_compound + 1, n_compounds))
+                print('  Downloading compound {} of {}'.format(
+                    i_compound + 1, n_compounds))
 
             # download info
-            response = requests.get(self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c['_id']})
+            response = requests.get(
+                self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c['_id']})
             response.raise_for_status()
 
             # parse info
@@ -820,20 +850,21 @@ class SabioRk:
                 elif url.startswith('http://sabiork.h-its.org/newSearch?q=sabiocompoundid:'):
                     continue
                 else:
-                    namespace = html.unescape(node.parent.parent.parent.find_all('td')[0].get_text()).strip()
-                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'], 
-                    	namespace))
-                resource = {'namespace':namespace, 'id':id}
+                    namespace = html.unescape(node.parent.parent.parent.find_all('td')[
+                                              0].get_text()).strip()
+                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
+                                                                                                        namespace))
+                resource = {'namespace': namespace, 'id': id}
 
                 c['cross_references'].append(resource)
 
             # udated
             c['modified'] = datetime.datetime.utcnow()
-            self.collection_compound.update_one( {'_id': c['_id']},
-            									{'$set': {'synonyms': c['synonyms'],
-            											'structures': c['structures'],
-            											'cross_references': c['cross_references']}},
-            									upsert=True)
+            self.collection_compound.update_one({'_id': c['_id']},
+                                                {'$set': {'synonyms': c['synonyms'],
+                                                          'structures': c['structures'],
+                                                          'cross_references': c['cross_references']}},
+                                                upsert=True)
 
     def load_missing_kinetic_law_information_from_tsv(self, ids):
         """ Update the properties of kinetic laws in mongodb based on content downloaded
@@ -851,7 +882,8 @@ class SabioRk:
                     min(len(ids), (i_batch + 1) * batch_size),
                     len(ids)))
 
-            batch_ids = ids[i_batch * batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            batch_ids = ids[i_batch *
+                            batch_size:min((i_batch + 1) * batch_size, len(ids))]
             response = requests.get(self.ENDPOINT_EXCEL_EXPORT, params={
                 'entryIDs[]': batch_ids,
                 'fields[]': [
@@ -869,9 +901,11 @@ class SabioRk:
                 cache = session.cache
                 key = cache.create_key(response.request)
                 cache.delete(key)
-                raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
+                raise Exception('Unable to download kinetic laws with ids {}'.format(
+                    ', '.join([str(id) for id in batch_ids])))
 
-            self.load_missing_kinetic_law_information_from_tsv_helper(response.text)
+            self.load_missing_kinetic_law_information_from_tsv_helper(
+                response.text)
 
     def load_missing_kinetic_law_information_from_tsv_helper(self, tsv):
         """ Update the properties of kinetic laws in the mongodb based on content downloaded
@@ -936,7 +970,8 @@ class SabioRk:
             if row['parameter.standardDeviation'] in ['', '-']:
                 parameter['standardDeviation'] = None
             else:
-                parameter['standardDeviation'] = float(row['parameter.standardDeviation'])
+                parameter['standardDeviation'] = float(
+                    row['parameter.standardDeviation'])
 
             # units
             if row['parameter.unit'] in ['', '-']:
@@ -984,12 +1019,13 @@ class SabioRk:
             # updated
             law['modified'] = datetime.datetime.utcnow()
             self.collection.update_one({'kinlaw_id': id},
-            							{'$set': law, '$set': { 'parameters': properties['Parameters']}}, 
-            							upsert=False)
+                                       {'$set': law, '$set': {
+                                           'parameters': properties['Parameters']}},
+                                       upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
         """ Get the parameter of :obj:`kinetic_law` whose attribute values are 
-        	equal to that of :obj:`parameter_properties`
+                equal to that of :obj:`parameter_properties`
         Args:
             kinetic_law (:obj:`KineticLaw`): kinetic law to find parameter of
             parameter_properties (:obj:`dict`): properties of parameter to find
@@ -1019,7 +1055,8 @@ class SabioRk:
         # match compound
         def func(parameter):
             return (parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or \
-                (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies'])
+                (parameter['compound'] is not None and parameter['compound']
+                 ['name'] == parameter_properties['associatedSpecies'])
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
             return parameters[0]
@@ -1043,14 +1080,16 @@ class SabioRk:
         result = []
         for i_compound, compound in enumerate(compounds):
             if self.verbose and (i_compound % 100 == 0):
-                print('  Trying to infer the structure of compound {} of {}'.format(i_compound + 1, len(compounds)))
+                print('  Trying to infer the structure of compound {} of {}'.format(
+                    i_compound + 1, len(compounds)))
 
             if compound['name'] == 'Unknown':
                 continue
 
             for i_try in range(self.PUBCHEM_MAX_TRIES):
                 try:
-                    p_compounds = pubchempy.get_compounds(compound['name'], 'name')
+                    p_compounds = pubchempy.get_compounds(
+                        compound['name'], 'name')
                     break
                 except pubchempy.PubChemHTTPError:
                     if i_try < self.PUBCHEM_MAX_TRIES - 1:
@@ -1060,9 +1099,10 @@ class SabioRk:
                         raise
 
             for p_compound in p_compounds:
-                namespace='pubchem.compound'
-                id=str(p_compound.cid)
-                q = self.file_manager.search_dict_list(compound['cross_references'], 'id', value=id)
+                namespace = 'pubchem.compound'
+                id = str(p_compound.cid)
+                q = self.file_manager.search_dict_list(
+                    compound['cross_references'], 'id', value=id)
                 if len(q) == 0:
                     resource = {'namespace': namespace, 'id': id}
                     compound['cross_references'].append(resource)
@@ -1071,8 +1111,8 @@ class SabioRk:
                 norm = self.calc_inchi_formula_connectivity(structure)
                 tmp = compound.setdefault('structures', [])
                 tmp.append(norm)
-            self.collection_compound.update_one( {'_id': compound['_id']},
-                                                {'$set': compound} )
+            self.collection_compound.update_one({'_id': compound['_id']},
+                                                {'$set': compound})
             result.append(compound)
 
         return result
@@ -1092,7 +1132,8 @@ class SabioRk:
             _value_inchi = structure['inchi']
         else:
             try:
-                _value_inchi = molecule_util.Molecule(structure=structure.get('smiles',)).to_inchi() or None
+                _value_inchi = molecule_util.Molecule(
+                    structure=structure.get('smiles',)).to_inchi() or None
             except ValueError:
                 _value_inchi = None
 
@@ -1100,7 +1141,127 @@ class SabioRk:
         if _value_inchi:
             _value_inchi_formula_connectivity = molecule_util.InchiMolecule(_value_inchi) \
                 .get_formula_and_connectivity()
-        result = {'_value_inchi': _value_inchi, '_value_inchi_formula_connectivity':_value_inchi_formula_connectivity}
+        result = {'_value_inchi': _value_inchi,
+                  '_value_inchi_formula_connectivity': _value_inchi_formula_connectivity}
 
         return result
 
+    def load_missing_enzyme_information_from_html(self, ids):
+        """ Loading enzyme subunit information from html
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+        """
+        query = {'$and': [{'kinlaw_id': {'$in': ids}},
+                          {'enzyme._id': {'$exists': True}}]}
+        projection = {'enzyme': 1, 'kinlaw_id': 1}
+        kinetic_laws = self.collection.find(
+            filter=query, projection=projection)
+        total_count = self.collection.count_documents(query)
+
+        for i_kinetic_law, kinetic_law in enumerate(kinetic_laws):
+            if self.verbose and (i_kinetic_law % 100 == 0):
+                print('  Loading enzyme information for {} of {} kinetic laws'.format(
+                    i_kinetic_law + 1, total_count))
+
+            response = requests.get(self.ENDPOINT_KINETIC_LAWS_PAGE, params={
+                                    'kinlawid': kinetic_law['kinlaw_id'], 'newinterface': 'true'})
+            response.raise_for_status()
+
+            enzyme = kinetic_law['enzyme'][0]
+            subunits = enzyme['subunits']
+            for subunit in subunits:
+                subunit['coefficient'] = None
+
+            doc = bs4.BeautifulSoup(response.text, 'html.parser')
+            td = doc.find('td', text='Modifier-Catalyst')
+            tr = td.parent
+            td = tr.find_all('td')[-1]
+            inner_html = td.decode_contents(formatter='html').strip() + ' '
+            if inner_html == '- ':
+                continue
+            try:
+                subunit_coefficients = self.parse_complex_subunit_structure(
+                    inner_html)
+            except Exception as error:
+                six.reraise(
+                    ValueError,
+                    ValueError('Subunit structure for kinetic law {} could not be parsed: {}\n\t{}'.format(
+                        kinetic_law['kinlaw_id'], inner_html, str(error).replace('\n', '\n\t'))),
+                    sys.exc_info()[2])
+
+            enzyme['subunits'] = []
+            for subunit_id, coefficient in subunit_coefficients.items():
+                xref = {'uniprot': subunit_id}
+                coeff = {'coefficient': coefficient}
+                subunit = {**xref, **coeff}
+                enzyme['subunits'].append(subunit)
+            self.collection.update_one({'kinlaw_id': kinetic_law['kinlaw_id']},
+                                       {'$set': {'enzyme': enzyme}})
+
+    def parse_complex_subunit_structure(self, text):
+        """ Parse the subunit structure of complex into a dictionary of subunit coefficients
+
+        Args:
+            text (:obj:`str`): subunit structure described with nested parentheses
+
+        Returns:
+            :obj:`dict` of :obj:`str`, :obj:`int`: dictionary of subunit coefficients
+        """
+        # try adding missing parentheses
+        n_open = text.count('(')
+        n_close = text.count(')')
+        if n_open > n_close:
+            text += ')' * (n_open - n_close)
+        elif n_open < n_close:
+            text = '(' * (n_close - n_open) + text
+
+        # for convenenice, add parenthesis at the beginning and end of the string and before and after each subunit
+        if text[0] != '(':
+            text = '(' + text + ')'
+        text = text.replace('<a ', '(<a ').replace('</a>', '</a>)')
+        print(text)
+        # parse the nested subunit structure
+        i = 0
+        stack = [{'subunits': {}}]
+        while i < len(text):
+            if text[i] == '(':
+                stack.append({'start': i, 'subunits': {}})
+                i += 1
+            elif text[i] == ')':
+                tmp = stack.pop()
+                start = tmp['start']
+                end = i
+
+                subunits = tmp['subunits']
+                str_r = '<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>'
+                if not subunits:
+                    matches = re.findall(
+                        r'<a href="#" onclick="window\.open(\'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\', \'\',\'width=600,height=500,scrollbars=1,resizable=1\')\">.*?</a>', text[start+1:end])
+                    for match in matches:
+                        subunits[match] = 1
+
+                match = re.match(r'^\)\*(\d+)', text[i:])
+                if match:
+                    i += len(match.group(0))
+                    coefficient = int(float(match.group(1)))
+                else:
+                    i += 1
+                    coefficient = 1
+
+                for id in subunits.keys():
+                    if id not in stack[-1]['subunits']:
+                        stack[-1]['subunits'][id] = 0
+                    stack[-1]['subunits'][id] += subunits[id] * coefficient
+
+            else:
+                i += 1
+
+        # check that all subunits were extracted
+        matches = re.findall(
+            r'<a href="#" onclick="window\.open(\'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\', \'\',\'width=600,height=500,scrollbars=1,resizable=1\')\">.*?</a>', text)
+        if len(set(matches)) != len(stack[0]['subunits'].keys()):
+            raise ValueError(
+                'Subunit structure could not be parsed: {}'.format(text))
+
+        return stack[0]['subunits']

@@ -1,4 +1,5 @@
 from datanator.data_source import sabio_rk
+from datanator.util import file_util
 import datanator.config.core
 import unittest
 import tempfile
@@ -32,6 +33,7 @@ class TestSabioRk(unittest.TestCase):
         cls.test_model = cls.doc.getModel()
         cls.species_sbml = cls.test_model.getListOfSpecies()
         cls.reactions_sbml = cls.test_model.getListOfReactions()
+        cls.file_manager = file_util.FileUtil()
 
     @classmethod
     def tearDownClass(cls):
@@ -281,3 +283,75 @@ class TestSabioRk(unittest.TestCase):
         test_3 = self.src.calc_inchi_formula_connectivity(s)
         self.assertEqual(test_3['_value_inchi'], 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
         self.assertEqual(test_3['_value_inchi_formula_connectivity'], 'C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')
+
+    def test_parse_complex_subunit_structure(self):
+        inner_html = '''(<a href="#" onclick="window.open('http://sabiork.h-its.org/proteindetails.jsp?enzymeUniprotID=P22256', 
+        '','width=600,height=500,scrollbars=1,resizable=1')">P22256</a>)*2; 
+        <a href="#" onclick="window.open('http://sabiork.h-its.org/proteindetails.jsp?enzymeUniprotID=P50457', 
+        '','width=600,height=500,scrollbars=1,resizable=1')">P50457</a>; 
+        '''
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+        # )), {'Q59669': 1})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)*2'
+        # )), {'Q59669': 2})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '('
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)'
+        #     ')'
+        # )), {'Q59669': 1, 'Q59670': 1})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '('
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)*2'
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)*3'
+        #     ')*4'
+        # )), {'Q59669': 8, 'Q59670': 12})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '('
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59669" target="_blank">Q59669</a>)'
+        #     '(<a href="http://www.uniprot.org/uniprot/Q59670" target="_blank">Q59670</a>)*2'
+        #     ')*3'
+        # )), {'Q59669': 3, 'Q59670': 6})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '<a href="http://www.uniprot.org/uniprot/P09219" target=_blank>P09219</a>; '
+        #     '<a href="http://www.uniprot.org/uniprot/P07677" target=_blank>P07677</a>; '
+        # )), {'P09219': 1, 'P07677': 1})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '<a href="http://www.uniprot.org/uniprot/P09219" target=_blank>P09219</a>; '
+        #     '<a href="http://www.uniprot.org/uniprot/P07677" target=_blank>P07677</a>; '
+        # )), {'P09219': 1, 'P07677': 1})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '(<a href="http://www.uniprot.org/uniprot/P19112" target=_blank>P19112</a>)*4; '
+        #     '<a href="http://www.uniprot.org/uniprot/Q9Z1N1" target=_blank>Q9Z1N1</a>; '
+        # )), {'P19112': 4, 'Q9Z1N1': 1})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '((<a href="http://www.uniprot.org/uniprot/P16924" target="_blank">P16924</a>)*2'
+        #     '(<a href="http://www.uniprot.org/uniprot/P09102" target="_blank">P09102</a>)*2); '
+        #     '((<a href="http://www.uniprot.org/uniprot/Q5ZLK5" target="_blank">Q5ZLK5</a>)*2'
+        #     '(<a href="http://www.uniprot.org/uniprot/P09102" target="_blank">P09102</a>)*2);'
+        # )), {'P16924': 2, 'P09102': 4, 'Q5ZLK5': 2})
+
+        # self.assertEqual(self.src.parse_complex_subunit_structure((
+        #     '((<a href="http://www.uniprot.org/uniprot/Q03393" target=_blank>Q03393</a>)*3)*2); '
+        # )), {'Q03393': 6})
+        test_n = self.src.parse_complex_subunit_structure(inner_html)
+        print(test_n)
+
+    @unittest.skip('passed')
+    def test_load_missing_enzyme_information_from_html(self):
+        ids = [4096]
+        self.src.load_missing_enzyme_information_from_html(ids)
+        projection = {'enzyme':1}
+        test_doc = self.src.collection.find_one(filter={'kinlaw_id': { '$in': ids }}, projection=projection)
+        l = self.file_manager.search_dict_list(test_doc['enzyme'], 'coeffcient')
+        self.assertFalse(len(l)>0)
