@@ -182,3 +182,86 @@ class TestSabioRk(unittest.TestCase):
         })
         tsv = response.text
         self.src.load_missing_kinetic_law_information_from_tsv_helper(tsv)
+        result = self.src.collection.find_one({'kinlaw_id': 4096})
+        self.assertEqual(result.get('mechanism', 'no mechanism filed'), None)
+
+    def test_infer_compound_structures_from_names(self):
+        compound_1 = {
+            "_id" : 73,
+            "name" : "L-Glutamate",
+            "cross_references" : [
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:16015"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:29972"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:29985"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:29988"
+                },
+                {
+                    "namespace" : "kegg.compound",
+                    "id" : "C00025"
+                }
+            ]
+        }
+        compound_2 = {
+            "_id" : 1922,
+            "name" : "2-Oxoglutarate",
+            "cross_references" : [
+                {
+                    "namespace" : "kegg.compound",
+                    "id" : "C00026"
+                },
+                {
+                    "namespace" : "pubchem.substance",
+                    "id" : "3328"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:16810"
+                },
+                {
+                    "namespace" : "chebi",
+                    "id" : "CHEBI:30915"
+                },
+                {
+                    "namespace" : "reactome",
+                    "id" : "113671"
+                },
+                {
+                    "namespace" : "biocyc",
+                    "id" : "2-KETOGLUTARATE"
+                },
+                {
+                    "namespace" : "metanetx.chemical",
+                    "id" : "MNXM20"
+                },
+                {
+                    "namespace" : "BioModels",
+                    "id" : "16810"
+                },
+                {
+                    "namespace" : "BioModels",
+                    "id" : "30915"
+                }
+            ],
+            "structures" : [
+                {
+                    "inchi" : "InChI=1S/C5H6O5/c6-3(5(9)10)1-2-4(7)8/h1-2H2,(H,7,8)(H,9,10)"
+                },
+                {
+                    "smiles" : "OC(=O)CCC(=O)C(O)=O"
+                }
+            ]
+        }
+        result = self.src.infer_compound_structures_from_names([compound_1, compound_2])
+        self.assertEqual(result[1], compound_2)
+        self.assertTrue('structures' in result[0])

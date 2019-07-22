@@ -11,6 +11,7 @@ import bs4
 import warnings
 import html
 import csv
+import pubchempy
 
 class SabioRk:
 
@@ -105,32 +106,33 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # # fill in missing information from Excel export
-        # loaded_new_ids = list(set(new_ids).intersection(set(l.id for l in self.session.query(KineticLaw).all())))
-        # loaded_new_ids.sort()
+        ##################################
+        ##################################
+        # fill in missing information from Excel export
+        loaded_new_ids = list(set(new_ids).intersection(exisitng_ids))
+        loaded_new_ids.sort()
 
-        # if self.verbose:
-        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        # self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
+        self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
-        # ##################################
-        # ##################################
-        # # infer structures for compounds with no provided structure
-        # compounds = self.session.query(Compound).filter(~Compound.structures.any()).all()
+        ##################################
+        ##################################
+        # infer structures for compounds with no provided structure
+        projection = {'_id': 1, 'cross_references': 1, 'name': 1}
+        compounds = self.collection_compound.find({'structures': {'$exists': False} }, filter=projection )
 
-        # if self.verbose:
-        #     print('Inferring structures for {} compounds ...'.format(len(compounds)))
+        if self.verbose:
+            print('Inferring structures for {} compounds ...'.format(len(compounds)))
 
-        # self.infer_compound_structures_from_names(compounds)
+        self.infer_compound_structures_from_names(compounds)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
         # ##################################
         # ##################################
@@ -1022,3 +1024,48 @@ class SabioRk:
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
             return parameters[0]
+
+    def infer_compound_structures_from_names(self, compounds):
+        """ Try to use PubChem to infer the structure of compounds from their names
+
+        Notes: we don't try look up structures from their cross references because SABIO has already gathered
+        all structures from their cross references to ChEBI, KEGG, and PubChem
+
+        Args:
+            compounds (:obj:`list` of :obj:`dict`): list of compounds
+        """
+        result = []
+        for i_compound, compound in enumerate(compounds):
+            if self.verbose and (i_compound % 100 == 0):
+                print('  Trying to infer the structure of compound {} of {}'.format(i_compound + 1, len(compounds)))
+
+            if compound['name'] == 'Unknown':
+                continue
+
+            for i_try in range(self.PUBCHEM_MAX_TRIES):
+                try:
+                    p_compounds = pubchempy.get_compounds(compound['name'], 'name')
+                    break
+                except pubchempy.PubChemHTTPError:
+                    if i_try < self.PUBCHEM_MAX_TRIES - 1:
+                        # sleep to avoid getting overloading PubChem server and then try again
+                        time.sleep(self.PUBCHEM_TRY_DELAY)
+                    else:
+                        raise
+
+            for p_compound in p_compounds:
+                namespace='pubchem.compound'
+                id=str(p_compound.cid)
+                q = self.file_manager.search_dict_list(compound['cross_references'], 'id', id)
+                if len(q) == 0:
+                    resource = {'namespace': namespace, 'id': id}
+                    compound['cross_references'].append(resource)
+
+                structure = {'inchi': p_compound.inchi}
+                tmp = compound.setdefault('structures', [])
+                tmp.append(structure)
+            self.collection_compound.update_one( {'_id': compound['_id']},
+                                                {'$set': compound} )
+            result.append(compound)
+
+        return result

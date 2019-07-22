@@ -15,7 +15,7 @@ class TestFileUtil(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_flatten_json(self):
         dic = {
             "a": 1,
@@ -28,7 +28,7 @@ class TestFileUtil(unittest.TestCase):
         self.assertEqual(flat['c_0_e_0_f'], 1)
         self.assertEqual(flat['h_0'], 1)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_extract_values(self):
         dic = {
             "a": 1,
@@ -39,13 +39,13 @@ class TestFileUtil(unittest.TestCase):
         values = self.src.extract_values(dic, 'g')
         self.assertEqual([2], values)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_unpack_list(self):
         _list = [ [1], [2], [3, 4] ]
         result = self.src.unpack_list(_list)
         self.assertEqual(result, [1,2,3,4])
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_access_dict_by_index(self):
         _dict = {'a':0, 'b':1, 'c':2, 'd':3}
         result = self.src.access_dict_by_index(_dict, 3)
@@ -92,9 +92,19 @@ class TestFileUtil(unittest.TestCase):
             {'name': "Pam", 'age': 7}
             ]
         result = self.src.search_dict_list(dict_list, 'name', 'Tom')
+        result_1 = self.src.search_dict_list(dict_list, 'ah', 'chu')
         self.assertEqual(result, [{'name': "Tom", 'age': 10}])
+        self.assertEqual(result_1, [])
 
     def test_merge_dict(self):
         dicts = [ {'a': 1, 'b': 2}, {'c': 3}, {'d': 4} ]
         result = self.src.merge_dict(dicts)
         self.assertEqual(result, {'a':1,'b':2,'c':3,'d':4})
+
+    def test_exists_key_value_pair(self):
+        dictionary = {'name': "Tom", 'age': 10, 'grade': 3}
+        k_1, k_2, v_1, v_2 = 'age', 'grade', 10, 11
+        test_1 = self.src.exists_key_value_pair(dictionary, k_1, v_1)
+        test_2 = self.src.exists_key_value_pair(dictionary, k_1, v_2)
+        self.assertTrue(test_1)
+        self.assertTrue(not test_2)
