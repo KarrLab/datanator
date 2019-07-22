@@ -136,7 +136,7 @@ class FileUtil:
             result[k] = v
         return result
 
-    def search_dict_list(self, dict_list, key, value):
+    def search_dict_list(self, dict_list, key, value=''):
         ''' Find the dictionary with 
             key/value pair in a list of dictionaries
 
@@ -147,7 +147,12 @@ class FileUtil:
             Returns:
                 result (:obj: `dictionary`): list of dictionaries with the key/value pair
         '''
-        return list(filter(lambda search: search.get(key, None) == value, dict_list))
+        if value:
+            return list(filter(lambda search: search.get(key, None) == value, dict_list))
+        else:
+            result = []
+            [result.append(d) for i,d in enumerate(dict_list) if key in d]
+            return result
 
     def merge_dict(self, dicts):
         ''' Merge a list of dictionaries

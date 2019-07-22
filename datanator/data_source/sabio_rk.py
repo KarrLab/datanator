@@ -135,36 +135,36 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        # normalize compound structures to facilitate seaching. retain only
-        # - InChI formula layer (without hydrogen)
-        # - InChI connectivity layer
-        projection = {'_id': 1, 'structures': 1}
-        compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} }, 
-                                                filter=projection )
-        if self.verbose:
-            print('Calculating searchable structures for {} structures ...'.format(len(compounds)))
-
-        for i_compound_structure, compound_structure in enumerate(compounds):
-            if self.verbose and (i_compound_structure % 100 == 0):
-                print('  Calculating searchable structure for compound {} of {}'.format(
-                    i_compound_structure + 1, len(compound_structures)))
-            compound_structure.calc_inchi_formula_connectivity()
-
-        if self.verbose:
-            print('  done')
-
         # ##################################
         # ##################################
-        # # fill in missing information from HTML pages
+        # # normalize compound structures to facilitate seaching. retain only
+        # # - InChI formula layer (without hydrogen)
+        # # - InChI connectivity layer
+        # projection = {'_id': 1, 'structures': 1}
+        # compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} }, 
+        #                                         filter=projection )
         # if self.verbose:
-        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        #     print('Calculating searchable structures for {} structures ...'.format(len(compounds)))
 
-        # self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        # for i_compound_structure, compound_structure in enumerate(compounds):
+        #     if self.verbose and (i_compound_structure % 100 == 0):
+        #         print('  Calculating searchable structure for compound {} of {}'.format(
+        #             i_compound_structure + 1, len(compounds)))
+        #     result = calc_inchi_formula_connectivity(compound_structure['structures'])
 
         # if self.verbose:
         #     print('  done')
+
+        ##################################
+        ##################################
+        # fill in missing information from HTML pages
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+
+        self.load_missing_enzyme_information_from_html(loaded_new_ids)
+
+        if self.verbose:
+            print('  done')
 
         # ##################################
         # ##################################
@@ -561,11 +561,11 @@ class SabioRk:
         compartment_name = '_'.join(tmp[2:])
 
         if type == 'SPC':
-            specie = self.file_manager.search_dict_list(species, '_id', specie_id)
+            specie = self.file_manager.search_dict_list(species, '_id', value=specie_id)
             self.collection_compound.update_one({'_id': specie_id},
             									{'$set': specie[0]}, upsert=True)
         elif type == 'ENZ':
-        	specie = self.file_manager.search_dict_list(species, '_id', specie_id)
+        	specie = self.file_manager.search_dict_list(species, '_id', value=specie_id)
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
 
@@ -782,13 +782,16 @@ class SabioRk:
             if inchi_label_node:
                 for node in list(inchi_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
-                    c['structures'].append({'inchi': value})
+                    norm = self.calc_inchi_formula_connectivity({'inchi': value})
+                    c['structures'].append(norm)
 
             smiles_label_node = table.find('b', text='SMILES')
             if smiles_label_node:
                 for node in list(smiles_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
-                    c['structures'].append({'smiles': value})
+                    smiles = {'smiles': value}
+                    norm = self.calc_inchi_formula_connectivity(smiles)
+                    c['structures'].append({**smiles, **norm})
 
             # cross references
             c['cross_references'] = []
@@ -1058,14 +1061,15 @@ class SabioRk:
             for p_compound in p_compounds:
                 namespace='pubchem.compound'
                 id=str(p_compound.cid)
-                q = self.file_manager.search_dict_list(compound['cross_references'], 'id', id)
+                q = self.file_manager.search_dict_list(compound['cross_references'], 'id', value=id)
                 if len(q) == 0:
                     resource = {'namespace': namespace, 'id': id}
                     compound['cross_references'].append(resource)
 
                 structure = {'inchi': p_compound.inchi}
+                norm = self.calc_inchi_formula_connectivity(structure)
                 tmp = compound.setdefault('structures', [])
-                tmp.append(structure)
+                tmp.append(norm)
             self.collection_compound.update_one( {'_id': compound['_id']},
                                                 {'$set': compound} )
             result.append(compound)
@@ -1098,3 +1102,4 @@ class SabioRk:
         result = {'_value_inchi': _value_inchi, '_value_inchi_formula_connectivity':_value_inchi_formula_connectivity}
 
         return result
+

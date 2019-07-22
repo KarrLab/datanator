@@ -38,7 +38,7 @@ class TestSabioRk(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    @unittest.skip('passed, avoid unnecessary http requests')
+    # @unittest.skip('passed, avoid unnecessary http requests')
     def test_load_kinetic_law_ids(self):
         ids = self.src.load_kinetic_law_ids()
         self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])

@@ -91,10 +91,14 @@ class TestFileUtil(unittest.TestCase):
             {'name': "Mark", 'age': 5},
             {'name': "Pam", 'age': 7}
             ]
-        result = self.src.search_dict_list(dict_list, 'name', 'Tom')
-        result_1 = self.src.search_dict_list(dict_list, 'ah', 'chu')
+        result = self.src.search_dict_list(dict_list, 'name', value = 'Tom')
+        result_1 = self.src.search_dict_list(dict_list, 'ah', value = 'chu')
+        result_2 = self.src.search_dict_list(dict_list, 'ah', value = '')
+        result_3 = self.src.search_dict_list(dict_list, 'name', value = '')
         self.assertEqual(result, [{'name': "Tom", 'age': 10}])
         self.assertEqual(result_1, [])
+        self.assertEqual(result_2, [])
+        self.assertEqual(result_3, dict_list)
 
     def test_merge_dict(self):
         dicts = [ {'a': 1, 'b': 2}, {'c': 3}, {'d': 4} ]
