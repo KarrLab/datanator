@@ -955,8 +955,10 @@ class SabioRk:
             # tissue
             if properties['Tissue'] in ['', '-']:
                 law['tissue'] = None
+                properties.pop('Tissue')
             else:
                 law['tissue'] = properties['Tissue']
+                properties.pop('Tissue')
 
             # parameter
             for param_properties in properties['Parameters']:
@@ -974,7 +976,8 @@ class SabioRk:
             # updated
             law['modified'] = datetime.datetime.utcnow()
             self.collection.update_one({'kinlaw_id': id},
-            							{'$set': law }, upsert=False)
+            							{'$set': law, '$set': { 'parameters': properties['Parameters']}}, 
+            							upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
         """ Get the parameter of :obj:`kinetic_law` whose attribute values are 
