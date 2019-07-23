@@ -41,7 +41,6 @@ sqlalchemy_utils
 wc_utils
 pymongo
 xmltodict
-capturer
 ftputil
 elasticsearch
 genson
