@@ -86,7 +86,7 @@ class SabioRk:
         ##################################
         ##################################
         # download kinetic laws
-        exisitng_ids = self.collection.distict('kinlaw_id')
+        exisitng_ids = self.collection.distinct('kinlaw_id')
         new_ids = list(set(ids).difference(set(exisitng_ids)))
         new_ids.sort()
 
@@ -103,9 +103,10 @@ class SabioRk:
         # download compounds
         compounds = self.collection_compound.find(
             {'structures': {'$exists': False}})
-
+        compounds_len = self.collection_compound.count_documents(
+            {'structures': {'$exists': False}})
         if self.verbose:
-            print('Downloading {} compounds ...'.format(len(compounds)))
+            print('Downloading {} compounds ...'.format(compounds_len))
 
         self.load_compounds(compounds)
 

@@ -25,7 +25,7 @@ class TestSabioRk(unittest.TestCase):
         )['datanator']['mongodb']['replSet']
         cls.src = sabio_rk.SabioRk(cache_dirname=cls.cache_dirname,
                                          MongoDB=MongoDB,  db=db,
-                                         verbose=True, max_entries=20, username=username,
+                                         verbose=True, max_entries=10, username=username,
                                          password=password, webservice_batch_size = 10)
         cls.sbml = requests.get('http://sabiork.h-its.org/sabioRestWebServices/kineticLaws', params={
                 'kinlawids': '4096'}).text
@@ -325,3 +325,7 @@ class TestSabioRk(unittest.TestCase):
         }]
         results = self.src.calc_enzyme_molecular_weights(enzyme)
         self.assertTrue(results[0]['molecular_weight'] != None)
+
+    @unittest.skip('takes too long')
+    def test_load_content(self):
+        self.src.load_content()
