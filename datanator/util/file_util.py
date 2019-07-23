@@ -146,7 +146,7 @@ class FileUtil:
                 value (:obj: ``): value to be matched
                                 if value==None, then only search for key
             Returns:
-                result (:obj: `dictionary`): list of dictionaries with the key/value pair
+                result (:obj: `list` of :obj: `dict`): list of dictionaries with the key/value pair
         '''
         if value:
             return list(filter(lambda search: search.get(key, None) == value, dict_list))

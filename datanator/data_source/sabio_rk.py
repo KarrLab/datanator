@@ -451,7 +451,11 @@ class SabioRk:
                 kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
 
         # taxon
-        kinetic_law['taxon'] = [x_ref.get('taxonomy', None) for x_ref in reaction_x_refs]
+        taxon = self.file_manager.search_dict_list(reaction_x_refs, 'taxonomy')
+        if len(taxon) > 0:
+            kinetic_law['taxon'] = int(taxon[0]['taxonomy'])
+        else:
+            kinetic_law['taxon'] = None
 
         """ conditions """
         conditions = law \
