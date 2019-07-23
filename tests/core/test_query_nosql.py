@@ -25,7 +25,7 @@ class TestQueryNoSQL(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('skip to testing for h1_hesc')
+    # @unittest.skip('skip to testing for h1_hesc')
     def test_doc_feeder(self):
         query = {'m2m_id': {
             '$in': ["M2MDB000004", "M2MDB000005", "M2MDB000006"]}}
@@ -35,35 +35,6 @@ class TestQueryNoSQL(unittest.TestCase):
                 self.assertEqual(doc['accession'], "ECMDB00023")
             elif doc['accession'] == "ECMDB00019":
                 self.assertEqual(doc['m2m_id'], "M2MDB000004")
-
-        # taxon_range = list(range(100, 20000))
-        # null = None
-        # query = {'taxon': {'$in': taxon_range}, 
-        #          'taxon_wildtype': {'$eq': 1}, 
-        #          'temperature': {'$lte':45, '$gte': 20},
-        #          'ph': {'$lte': 8, '$gte': 6},
-        #          'parameter.value': {'$ne': null },
-        #          'parameter.sbo_type': {'$in': [25,27] } }
-
-        # # only return these fileds in projection
-        # projection = {'kinlaw_id':1, 'resource': 1, 'enzymes.enzyme': 1, 
-        #             'enzymes.subunit': 1, 'parameter': 1}
-
-        # collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
-        # with self.assertRaises(KeyError):
-        #     next(collection)['reaction_participant']
-
-
-    # '''Testing queries in h1_hesc
-    # '''
-    # # @unittest.skip('skip to testing for h1_hesc')
-    # def test_doc_feeder(self):
-    #     target = 'C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6'
-    #     query = {'$or': [ {'reaction_participant.substrate.structure.inchi_connectivity': target }, 
-    #                       {'reaction_participant.product.structure.inchi_connectivity': target }  ] }
-    #     projection = {'reaction_participant.substrate.sabio_compound_id': 1,
-    #                  'reaction_participant.product.sabio_compound_id': 1 }
-    #     collection = self.src.doc_feeder('sabio_rk', query = query, projection=projection)
 
 
 class TestQueryMetabolitesMeta(unittest.TestCase):
@@ -85,7 +56,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_synonyms(self):
         c = "ATP"
         compounds = ["ATP", "Oxygen", '']
@@ -112,7 +83,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
             '(H2,18,19,20)/t4-,6-,7-,10-/m1/s1')
         compound = ['β-D-Ribopyranose']
         inchi = self.src.get_metabolite_inchi(compound)
-        self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001172')
+        self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001173')
 
     def test_get_ids_from_hash(self):
         hashed_inchi_1 = '09fab91d3708097484215d419c9326290150f37e7c1bcc48a1bb4c7b'
@@ -122,10 +93,10 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         self.assertEqual(result_1, {'m2m_id': 'M2MDB000016', 'ymdb_id': 'YMDB00058'})
         self.assertEqual(result_2, {'m2m_id': 'M2MDB000006', 'ymdb_id': None})
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_metabolite_name_by_hash(self):
-        compounds = ['991703a1e15dc35f078ec2823017c292872d687bbff5f91bd727840e',
-                    '7b03db493e6dc3a48fb77023048a7f566b8a87e78fbc061bd0f5f865']
+        compounds = ['f56e0c2c16f3a2549c65be52179ed860b7cb375e4037061d238e433d',
+                    'afaca8d9351843f37d9d010c8eb15601eb385121c988ca671ac0db31']
         result = self.src.get_metabolite_name_by_hash(compounds)
         self.assertEqual(result[0], 'Unispheres Q 10')
         self.assertEqual(result[1], 'Guanosine diphosphoric acid fucose')
@@ -177,7 +148,7 @@ class TestQuerySabio(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_find_reaction_participants(self):
         _id = [31, 32, 33, 34]
         rxns = self.src.find_reaction_participants(_id)
@@ -187,7 +158,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertEqual(rxns[3], {'substrates': ['Riboflavin-5-phosphate', '4-Chloromandelate'],
                                     'products': ['Reduced FMN', '4-Chloro-2-Oxobenzeneacetic acid'] } )
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_inchi_slow(self):
         inchi = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                 'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1',
@@ -205,7 +176,7 @@ class TestQuerySabio(unittest.TestCase):
         self.assertTrue(9 in rxn)
         self.assertTrue(21016 in rxn)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_get_kinlawid_by_rxn(self):
         substrates = ['InChI=1S/C8H8O3/c9-7(8(10)11)6-4-2-1-3-5-6/h1-5,7,9H,(H,10,11)/t7-/m0/s1',
                     'InChI=1S/C17H21N4O9P/c1-7-3-9-10(4-8(7)2)21(15-13(18-9)16(25)20-17(26)19-15)5-11(22)14(24)12(23)6-30-31(27,28)29/h3-4,11-12,14,22-24H,5-6H2,1-2H3,(H,20,25,26)(H2,27,28,29)/t11-,12+,14-/m0/s1']
@@ -237,6 +208,10 @@ class TestQueryTaxonTree(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
 
     # @unittest.skip('passed')
+    def test_get_all_species(self):
+        result = self.src.get_all_species()
+        self.assertTrue('Candidatus Heimdallarchaeota archaeon AB_125' in result)
+
     def test_get_name_by_id(self):
         ids = [743725, 2107591]
         names = self.src.get_name_by_id(ids)
@@ -263,3 +238,9 @@ class TestQueryTaxonTree(unittest.TestCase):
         self.assertEqual(ancestor, 1783276)
         self.assertEqual(distances[0], 1)
         self.assertEqual(distances[1], 4)
+
+    def test_get_rank(self):
+        ids = [131567, 2759, 33154, 33208, 6072, 33213, 33511, 7711, 9526, 314295, 9604, 207598, 9605, 9606]
+        ranks = self.src.get_rank(ids)
+        self.assertEqual(ranks[3], 'kingdom')
+        self.assertEqual(ranks[1], '+')

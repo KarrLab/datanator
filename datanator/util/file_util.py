@@ -135,3 +135,46 @@ class FileUtil:
         for k, v in zip(keys, values):
             result[k] = v
         return result
+
+    def search_dict_list(self, dict_list, key, value=''):
+        ''' Find the dictionary with 
+            key/value pair in a list of dictionaries
+
+            Args:
+                dict_list (:obj: `list`): list of dictionaries
+                key (:obj: `string`): key in the dictionary
+                value (:obj: ``): value to be matched
+                                if value==None, then only search for key
+            Returns:
+                result (:obj: `dictionary`): list of dictionaries with the key/value pair
+        '''
+        if value:
+            return list(filter(lambda search: search.get(key, None) == value, dict_list))
+        else:
+            result = []
+            [result.append(d) for i,d in enumerate(dict_list) if key in d]
+            return result
+
+    def merge_dict(self, dicts):
+        ''' Merge a list of dictionaries
+            Args:
+                dicts (:obj: `list` of :obj: `dict`): list of dictionaries
+            Returns:
+                result (:obj: `dict`): merged dictionries
+        '''
+        result = {}
+        for d in dicts:
+            for k, v in d.items(): 
+                result[k] = v
+        return result
+
+    def exists_key_value_pair(self, dictionary, k, v):
+        ''' Test if a key/value pair exists in dictionary
+            Args:
+                dict (:obj: `dict`): dictionary to be checked
+                k (:obj: `str`): key to be matched
+                v (:obj: ``): value to be matched
+            Returns:
+                result (:obj: `bool`): True or False
+        '''
+        return k in dictionary and v == dictionary[k]

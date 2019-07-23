@@ -1,5 +1,4 @@
 from datanator.data_source import intact_nosql
-from datanator.util import server_util
 import shutil
 import unittest
 import tempfile

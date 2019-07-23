@@ -32,42 +32,43 @@ class MetabolitesMeta(query_nosql.QuerySabio):
     def load_content(self):
         collection_name = 'metabolites_meta'
 
-        # ecmdb_fields = ['m2m_id', 'inchi', 'synonyms.synonym']
-        # self.fill_metabolite_fields(
-        #     fields=ecmdb_fields, collection_src='ecmdb', collection_des = collection_name)
+        ecmdb_fields = ['m2m_id', 'inchi', 'synonyms.synonym']
+        self.fill_metabolite_fields(
+            fields=ecmdb_fields, collection_src='ecmdb', collection_des = collection_name)
 
-        # ymdb_fields = ['ymdb_id', 'inchi', 'synonyms.synonym']
-        # self.fill_metabolite_fields(
-        #     fields=ymdb_fields, collection_src='ymdb', collection_des = collection_name)
+        ymdb_fields = ['ymdb_id', 'inchi', 'synonyms.synonym']
+        self.fill_metabolite_fields(
+            fields=ymdb_fields, collection_src='ymdb', collection_des = collection_name)
 
         _, _, collection = self.con_db(collection_name)
-        # k = 0
-        # for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
-        #     if k > self.max_entries:
-        #         break
-        #     kinlaw_id = self.get_kinlawid_by_inchi([doc['inchi']])
-        #     rxn_participants = self.find_reaction_participants(kinlaw_id)
-        #     collection.update_one({'inchi': doc['inchi']},
-        #                           {'$set': {'kinlaw_id': kinlaw_id,
-        #                            'reaction_participants': rxn_participants}},
-        #                           upsert=False)
-        #     k += 1
-        i = 0
-        cursor = collection.find(filter = {}, projection = {'similar_compounds_bak':1, 'similar_compounds': 1})
-        for doc in cursor:
-            if i % self.frequency == 0:
-                print(i)
+        k = 0
+        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
+            if k > self.max_entries:
+                break
+            kinlaw_id = self.get_kinlawid_by_inchi([doc['inchi']])
+            rxn_participants = self.find_reaction_participants(kinlaw_id)
+            collection.update_one({'inchi': doc['inchi']},
+                                  {'$set': {'kinlaw_id': kinlaw_id,
+                                   'reaction_participants': rxn_participants}},
+                                  upsert=False)
+            k += 1
+        # i = 0
+        # cursor = collection.find(filter = {}, projection = {'similar_compounds_corrected':1, 'similar_compounds': 1})
+        # for doc in cursor:
+        #     if i % self.frequency == 0:
+        #         print(i)
 
-            replacement = []
-            for k, v in doc['similar_compounds_bak'].items():
-                dic = {}
-                dic[k] = v
-                replacement.append(dic)
+        #     replacement = []
+        #     for corrected in doc['similar_compounds_corrected']:
+        #         for k, v in corrected.items():
+        #             dic = {}
+        #             dic[k] = v
+        #             replacement.append(dic)
 
-            collection.update_one({'_id': doc['_id']},
-                                 {'$set': {'similar_compounds': replacement}},
-                                upsert=False)
-            i += 1
+        #     collection.update_one({'_id': doc['_id']},
+        #                          {'$set': {'similar_compounds': replacement}},
+        #                         upsert=False)
+        #     i += 1
         
 
     def fill_metabolite_fields(self, fields=None, collection_src=None, collection_des = None):

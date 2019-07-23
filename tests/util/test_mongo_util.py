@@ -10,7 +10,7 @@ class TestMongoUtil(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'test'
+        cls.db = 'datanator'
         username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']

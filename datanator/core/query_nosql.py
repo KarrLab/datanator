@@ -260,7 +260,7 @@ class QueryMetabolitesMeta(DataQuery):
         result = []
         projection = {'_id': 0, 'synonyms.synonym': 1}
         for compound in compounds:
-            cursor = self.collection.find_one({'inchi_hashed_deprot': compound},
+            cursor = self.collection.find_one({'inchi_hashed': compound},
                                               projection=projection)
             try:
                 result.append(cursor['synonyms'])
@@ -519,6 +519,14 @@ class QueryTaxonTree(DataQuery):
         self.client, self.db_obj, self.collection = self.con_db(
             self.collection_str)
 
+    def get_all_species(self):
+        result = []
+        projection = {'tax_name':1}
+        mass = self.collection.find({ 'tax_name': {'$exists': True} }, projection=projection)
+        for thing in mass:
+            result.append(thing['tax_name'])
+        return result
+
     def get_name_by_id(self, ids):
         ''' Get organisms' names given their tax_ids
             Args:
@@ -609,3 +617,25 @@ class QueryTaxonTree(DataQuery):
         distance2 = len(org2_anc) - (idx_org2)
 
         return (ancestor, [distance1, distance2])
+
+    def get_rank(self, ids):
+        ''' Given a list of taxon ids, return
+            the list of ranks. no rank = '+'
+            Args:
+                ids: list of taxon ids [1234,2453,431]
+            Return:
+                ranks: list of ranks ['kingdom', '+', 'phylum']
+        '''
+        ranks = []
+        roi = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+        projection = {'rank': 1}
+        for _id in ids:
+            query = {'tax_id': _id}
+            cursor = self.collection.find_one(filter = query, projection = projection)
+            rank = cursor.get('rank', None)
+            if rank in roi:
+                ranks.append(rank)
+            else:
+                ranks.append('+')
+
+        return ranks
