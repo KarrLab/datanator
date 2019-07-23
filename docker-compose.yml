@@ -11,13 +11,13 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
-    command: ["python3", "/root/host/karr_lab/datanator/datanator/rest/__init__.py"]
+    # command: ["python3", "/root/host/karr_lab/datanator/datanator/rest/__init__.py"]
 
   mongo:
     image: mongo:4.0.10
     restart: always
     volumes:
-      # - ./datanator/data_source/cache/mongo:/data/db
+      - ./datanator/data_source/cache/mongo:/data/db
       - ../:/root/host/karr_lab
     ports:
       - "27017:27017"
