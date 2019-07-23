@@ -51,7 +51,7 @@ def results(molecule_name, organism_name, abstract_default=False):
     #return render_template('/results.html', results=[the_json_1,the_json_2])
 
     #return render_template('/results.html', results=json.dumps(the_json))
-
+@bp_r.route('/results/organisms/', methods=('GET'))
 def get_organisms():
     return query_nosql.QueryTaxonTree(MongoDB=MongoDB, db='datanator',
                  verbose=True, username = username, password = password).get_all_species()
