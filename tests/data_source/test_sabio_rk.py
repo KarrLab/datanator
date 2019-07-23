@@ -324,6 +324,5 @@ class TestSabioRk(unittest.TestCase):
             "cross_references" : [ ]
         }]
         results = self.src.calc_enzyme_molecular_weights(enzyme)
-        print(results)
         self.assertTrue(results[0]['molecular_weight'] != None)
         
