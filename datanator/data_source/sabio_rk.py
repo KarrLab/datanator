@@ -14,7 +14,9 @@ import html
 import csv
 import pubchempy
 import sys
-
+import Bio.Alphabet
+import Bio.SeqUtils
+import math
 
 class SabioRk:
 
@@ -35,19 +37,19 @@ class SabioRk:
             MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_compound')
         self.excel_batch_size = excel_batch_size
-        ENDPOINT_DOMAINS = {
+        self.ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
             'uniprot': 'http://www.uniprot.org',
         }
-        self.ENDPOINT_KINETIC_LAWS_SEARCH = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_KINETIC_LAWS_SEARCH = self.ENDPOINT_DOMAINS['sabio_rk'] + \
             '/sabioRestWebServices/searchKineticLaws/entryIDs'
-        self.ENDPOINT_WEBSERVICE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_WEBSERVICE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
             '/sabioRestWebServices/kineticLaws'
-        self.ENDPOINT_EXCEL_EXPORT = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_EXCEL_EXPORT = self.ENDPOINT_DOMAINS['sabio_rk'] + \
             '/entry/exportToExcelCustomizable'
-        self.ENDPOINT_COMPOUNDS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_COMPOUNDS_PAGE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
             '/compdetails.jsp'
-        self.ENDPOINT_KINETIC_LAWS_PAGE = ENDPOINT_DOMAINS['sabio_rk'] + \
+        self.ENDPOINT_KINETIC_LAWS_PAGE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
             '/kindatadirectiframe.jsp'
         self.SKIP_KINETIC_LAW_IDS = (51286,)
         self.PUBCHEM_MAX_TRIES = 10
@@ -170,21 +172,21 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # # calculate enzyme molecular weights
-        # enzymes = self.session \
-        #     .query(Enzyme) \
-        #     .filter_by(molecular_weight=None) \
-        #     .all()
+        ##################################
+        ##################################
+        # calculate enzyme molecular weights
+        enzymes = self.session \
+            .query(Enzyme) \
+            .filter_by(molecular_weight=None) \
+            .all()
 
-        # if self.verbose:
-        #     print('Calculating {} enzyme molecular weights ...'.format(len(enzymes)))
+        if self.verbose:
+            print('Calculating {} enzyme molecular weights ...'.format(len(enzymes)))
 
-        # self.calc_enzyme_molecular_weights(enzymes)
+        self.calc_enzyme_molecular_weights(enzymes)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
         # ##################################
         # ##################################
@@ -1264,3 +1266,44 @@ class SabioRk:
                 'Subunit structure could not be parsed: {}'.format(text))
 
         return stack[0]['subunits']
+
+    def calc_enzyme_molecular_weights(self, enzymes):
+        """ Calculate the molecular weight of each enzyme
+
+        Args:
+            enzymes (:obj:`list` of :obj:`dict`): list of enzymes
+        Returns:
+            enzymes (:obj:`list` of :obj:`dict`): list of enzymes
+        """
+        letters = Bio.Alphabet.IUPAC.IUPACProtein.letters
+        mean_aa_mw = Bio.SeqUtils.molecular_weight(letters, seq_type='protein') / len(letters)
+
+        results = []
+        for i_enzyme, enzyme in enumerate(enzymes):
+            if self.verbose and i_enzyme % 100 == 0:
+                print('  Calculating molecular weight of enzyme {} of {}'.format(i_enzyme + 1, len(enzymes)))
+            enzyme_molecular_weight = 0
+            for subunit in enzyme['subunits']:
+                if 'uniprot' in subunit:
+                    response = requests.get(
+                        self.ENDPOINT_DOMAINS['uniprot'] + '/uniprot/?query={}&columns=id,sequence&format=tab'.format(subunit['uniprot']))
+                    response.raise_for_status()
+                    seqs = list(csv.DictReader(response.text.split('\n'), delimiter='\t'))
+                    if seqs:
+                        subunit['sequence'] = next((seq['Sequence'] for seq in seqs if seq['Entry'] == subunit['uniprot']), seqs[0]['Sequence'])
+                        iupac_seq = re.sub(r'[^' + Bio.Alphabet.IUPAC.IUPACProtein.letters + r']', '', subunit['sequence'])
+                        subunit['molecular_weight'] = \
+                            + Bio.SeqUtils.molecular_weight(iupac_seq, seq_type='protein') \
+                            + (len(subunit['sequence']) - len(iupac_seq)) * mean_aa_mw
+                        enzyme_molecular_weight += (subunit['coefficient'] or float('nan')) * subunit['molecular_weight']
+                    else:
+                        subunit['sequence'] = None
+                        subunit['molecular_weight'] = None
+                        enzyme_molecular_weight = float('nan')
+
+            if not enzyme_molecular_weight or math.isnan(enzyme_molecular_weight):
+                enzyme['molecular_weight'] = None
+            else:
+                enzyme['molecular_weight'] = enzyme_molecular_weight
+            results.append(enzyme)
+        return results

@@ -296,7 +296,7 @@ class TestSabioRk(unittest.TestCase):
         test_1 = self.src.parse_complex_subunit_structure(inner_html)
         self.assertEqual({'P22256': 2, 'P50457': 1}, test_1)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_load_missing_enzyme_information_from_html(self):
         ids = [4096]
         self.src.load_missing_enzyme_information_from_html(ids)
@@ -304,3 +304,26 @@ class TestSabioRk(unittest.TestCase):
         test_doc = self.src.collection.find_one(filter={'kinlaw_id': { '$in': ids }}, projection=projection)
         l = self.file_manager.search_dict_list(test_doc['enzyme'], 'coeffcient')
         self.assertFalse(len(l)>0)
+
+    def test_calc_enzyme_molecular_weights(self):
+        null = None
+        enzyme = [{
+            "_id" : 141214,
+            "molecular_weight" : null,
+            "name" : "4-aminobutyrate transaminase",
+            "subunits" : [
+                {
+                    "uniprot" : "P22256",
+                    "coefficient" : 2
+                },
+                {
+                    "uniprot" : "P50457",
+                    "coefficient" : 1
+                }
+            ],
+            "cross_references" : [ ]
+        }]
+        results = self.src.calc_enzyme_molecular_weights(enzyme)
+        print(results)
+        self.assertTrue(results[0]['molecular_weight'] != None)
+        
