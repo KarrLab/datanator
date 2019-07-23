@@ -50,8 +50,8 @@ class TestSabioRk(unittest.TestCase):
     # @unittest.skip('passed')
     def test_create_cross_references_from_sbml(self):
         x_refs = self.src.create_cross_references_from_sbml(self.species_sbml.get(0))
-        exp = [{'namespace': 'chebi', 'id': 'CHEBI:16810'}, {'namespace': 'chebi', 'id': 'CHEBI:30915'}, 
-        {'namespace': 'kegg.compound', 'id': 'C00026'}]
+        exp = [{'chebi': 'CHEBI:16810'}, {'chebi': 'CHEBI:30915'}, 
+        {'kegg.compound': 'C00026'}]
         self.assertEqual(exp, x_refs)
 
     # @unittest.skip('passed')
@@ -63,7 +63,7 @@ class TestSabioRk(unittest.TestCase):
     # @unittest.skip('passed')
     def test_get_specie_from_sbml(self):
         specie, properties = self.src.get_specie_from_sbml(self.species_sbml.get(5))
-        specie_exp = {'_id': 141214, 'molecular_weight': None, 'name': '4-aminobutyrate transaminase', 'subunits': [{'namespace': 'uniprot', 'id': 'P22256'}, {'namespace': 'uniprot', 'id': 'P50457'}], 
+        specie_exp = {'_id': 141214, 'molecular_weight': None, 'name': '4-aminobutyrate transaminase', 'subunits': [{'uniprot': 'P22256'}, {'uniprot': 'P50457'}], 
         'cross_references': []}
         properties_exp = {'is_wildtype': False, 'variant': 'E211S/I50N/V80T', 'modifier_type': 'Modifier-Catalyst'}
         self.assertEqual(specie['_id'], specie_exp['_id'])
@@ -78,8 +78,8 @@ class TestSabioRk(unittest.TestCase):
             species.append(specie)
         specie, compartment = self.src.get_specie_reference_from_sbml('ENZ_141214_Cell', species)
         self.assertEqual(compartment, None)
-        self.assertEqual(specie[0]['subunits'], [{'namespace': 'uniprot', 'id': 'P22256'}, 
-            {'namespace': 'uniprot', 'id': 'P50457'}])
+        self.assertEqual(specie[0]['subunits'], [{'uniprot': 'P22256'}, 
+            {'uniprot': 'P50457'}])
 
     # @unittest.skip('passed')
     def test_create_kinetic_law_from_sbml(self):

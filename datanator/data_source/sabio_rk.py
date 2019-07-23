@@ -341,13 +341,6 @@ class SabioRk:
         if not law.getMetaId():
             return None
 
-        # ID
-        annotated_id = next((int(float(
-            x_ref['id'])) for x_ref in x_refs if x_ref['namespace'] == 'sabiork.kineticrecord'), None)
-        if annotated_id is not None and annotated_id != id:
-            raise ValueError(
-                'Annotated ID {} is different from expected ID {}'.format(annotated_id, id))
-
         """ participants """
         kinetic_law['reactants'] = []
         reactants = sbml.getListOfReactants()
@@ -378,7 +371,7 @@ class SabioRk:
         # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
         # 1.1.1.50, respectively.
         kinetic_law['cross_references'] = list(
-            filter(lambda x_ref: x_ref['namespace'] not in ['taxonomy'], reaction_x_refs))
+            filter(lambda x_ref: list(x_ref.keys())[0] not in ['taxonomy'], reaction_x_refs))
 
         # rate_law
         kinetic_law['equation'] = functions[law.getMetaId()[5:]]
@@ -458,8 +451,7 @@ class SabioRk:
                 kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
 
         # taxon
-        kinetic_law['taxon'] = next((int(float(
-            x_ref['id'])) for x_ref in reaction_x_refs if x_ref['namespace'] == 'taxonomy'), None)
+        kinetic_law['taxon'] = [x_ref.get('taxonomy', None) for x_ref in reaction_x_refs]
 
         """ conditions """
         conditions = law \
@@ -507,7 +499,7 @@ class SabioRk:
 
         """ references """
         kinetic_law['references'] = list(
-            filter(lambda x_ref: x_ref['namespace'] != 'sabiork.kineticrecord', x_refs))
+            filter(lambda x_ref: list(x_ref.keys())[0] != 'sabiork.kineticrecord', x_refs))
 
         """ updated """
         kinetic_law['modified'] = datetime.datetime.utcnow()
@@ -639,7 +631,7 @@ class SabioRk:
             specie['subunits'] = []
             specie['cross_references'] = []
             for cross_reference in cross_references:
-                if cross_reference['namespace'] == 'uniprot':
+                if 'uniprot' in cross_reference:
                     specie['subunits'].append(cross_reference)
                 else:
                     specie['cross_references'].append(cross_reference)
@@ -1078,9 +1070,9 @@ class SabioRk:
                 namespace = 'pubchem.compound'
                 id = str(p_compound.cid)
                 q = self.file_manager.search_dict_list(
-                    compound['cross_references'], 'id', value=id)
+                    compound['cross_references'], namespace)
                 if len(q) == 0:
-                    resource = {'namespace': namespace, 'id': id}
+                    resource = {namespace: id}
                     compound['cross_references'].append(resource)
 
                 structure = {'inchi': p_compound.inchi}
