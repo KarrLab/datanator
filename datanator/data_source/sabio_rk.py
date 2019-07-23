@@ -1220,7 +1220,7 @@ class SabioRk:
         if text[0] != '(':
             text = '(' + text + ')'
         text = text.replace('<a ', '(<a ').replace('</a>', '</a>)')
-        print(text)
+        text = text.replace('open(', "open ").replace('able=1\')', "able=1\' ")
         # parse the nested subunit structure
         i = 0
         stack = [{'subunits': {}}]
@@ -1234,10 +1234,9 @@ class SabioRk:
                 end = i
 
                 subunits = tmp['subunits']
-                str_r = '<a href="http://www\.uniprot\.org/uniprot/(.*?)" target="?_blank"?>.*?</a>'
                 if not subunits:
-                    matches = re.findall(
-                        r'<a href="#" onclick="window\.open(\'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\', \'\',\'width=600,height=500,scrollbars=1,resizable=1\')\">.*?</a>', text[start+1:end])
+                    protein_pattern = re.compile('<a href="#" onclick="window\.open \'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\',\'\',\'width=600,height=500,scrollbars=1,resizable=1\' ">.*?</a>')
+                    matches = protein_pattern.findall(text[start+1:end])
                     for match in matches:
                         subunits[match] = 1
 
@@ -1258,8 +1257,8 @@ class SabioRk:
                 i += 1
 
         # check that all subunits were extracted
-        matches = re.findall(
-            r'<a href="#" onclick="window\.open(\'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\', \'\',\'width=600,height=500,scrollbars=1,resizable=1\')\">.*?</a>', text)
+        protein_pattern = re.compile('<a href="#" onclick="window\.open \'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\',\'\',\'width=600,height=500,scrollbars=1,resizable=1\' ">.*?</a>')
+        matches = protein_pattern.findall(text)
         if len(set(matches)) != len(stack[0]['subunits'].keys()):
             raise ValueError(
                 'Subunit structure could not be parsed: {}'.format(text))
