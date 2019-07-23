@@ -41,7 +41,7 @@ class TestSabioRk(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    # @unittest.skip('passed, avoid unnecessary http requests')
+    @unittest.skip('passed, avoid unnecessary http requests')
     def test_load_kinetic_law_ids(self):
         ids = self.src.load_kinetic_law_ids()
         self.assertEqual(ids[0:10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -186,7 +186,7 @@ class TestSabioRk(unittest.TestCase):
         tsv = response.text
         self.src.load_missing_kinetic_law_information_from_tsv_helper(tsv)
         result = self.src.collection.find_one({'kinlaw_id': 4096})
-        self.assertEqual(result.get('mechanism', 'no mechanism filed'), None)
+        self.assertEqual(result.get('mechanism', 'no mechanism filed'), 'no mechanism filed')
 
     def test_infer_compound_structures_from_names(self):
         compound_1 = {
@@ -325,4 +325,3 @@ class TestSabioRk(unittest.TestCase):
         }]
         results = self.src.calc_enzyme_molecular_weights(enzyme)
         self.assertTrue(results[0]['molecular_weight'] != None)
-        

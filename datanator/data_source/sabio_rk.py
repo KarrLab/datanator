@@ -141,26 +141,6 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # # normalize compound structures to facilitate seaching. retain only
-        # # - InChI formula layer (without hydrogen)
-        # # - InChI connectivity layer
-        # projection = {'_id': 1, 'structures': 1}
-        # compounds = self.collection_compound.find({'_value_inchi_formula_connectivity': {'$exists': False} },
-        #                                         filter=projection )
-        # if self.verbose:
-        #     print('Calculating searchable structures for {} structures ...'.format(len(compounds)))
-
-        # for i_compound_structure, compound_structure in enumerate(compounds):
-        #     if self.verbose and (i_compound_structure % 100 == 0):
-        #         print('  Calculating searchable structure for compound {} of {}'.format(
-        #             i_compound_structure + 1, len(compounds)))
-        #     result = calc_inchi_formula_connectivity(compound_structure['structures'])
-
-        # if self.verbose:
-        #     print('  done')
-
         ##################################
         ##################################
         # fill in missing information from HTML pages
@@ -175,10 +155,9 @@ class SabioRk:
         ##################################
         ##################################
         # calculate enzyme molecular weights
-        enzymes = self.session \
-            .query(Enzyme) \
-            .filter_by(molecular_weight=None) \
-            .all()
+        projection = {'_id': 1, 'enzyme': 1}
+        enzymes = self.collection.find(
+            {'enzyme.molecular_weight': {'$exists': False}}, filter=projection)
 
         if self.verbose:
             print('Calculating {} enzyme molecular weights ...'.format(len(enzymes)))
@@ -188,15 +167,6 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        # ##################################
-        # ##################################
-        # if self.verbose:
-        #     print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
-
-        # self.normalize_kinetic_laws(loaded_new_ids)
-
-        # if self.verbose:
-        #     print('  done')
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -653,7 +623,7 @@ class SabioRk:
             properties = {'is_wildtype': is_wildtype,
                           'variant': variant, 'modifier_type': modifier_type}
 
-            specie = {'_id': id, 'molecular_weight': None, 'name': name}
+            specie = {'_id': id, 'name': name}
         else:
             raise ValueError('Unsupported species type: {}'.format(type))
 
@@ -759,7 +729,7 @@ class SabioRk:
                         resources = [(parsed_url[2], parsed_url[3])]
 
                 for namespace, id in resources:
-                    resource = {'namespace': namespace, 'id': id}
+                    resource = {namespace: id}
 
                 if resource not in x_refs:
                     x_refs.append(resource)
@@ -856,7 +826,7 @@ class SabioRk:
                                               0].get_text()).strip()
                     warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
                                                                                                         namespace))
-                resource = {'namespace': namespace, 'id': id}
+                resource = {namespace: id}
 
                 c['cross_references'].append(resource)
 
@@ -986,12 +956,15 @@ class SabioRk:
         # update properties
         for id, properties in law_properties.items():
             # get kinetic law
-            q = self.collection.find_one({'kinlaw_id': id})
+            projection = {'kinlaw_id': 1, 'mechanism': 1, 'tissue': 1, 'parameters': 1}
+            q = self.collection.find_one({'kinlaw_id': id}, projection=projection)
             if q == None:
                 raise ValueError('No Kinetic Law with id {}'.format(id))
             law = q
 
             # mechanism
+            print('KineticMechanismType: ' + properties['KineticMechanismType'])
+            print('Tissue: ' + properties['Tissue'])
             if properties['KineticMechanismType'] == 'unknown':
                 law['mechanism'] = None
             else:
@@ -1006,6 +979,7 @@ class SabioRk:
                 properties.pop('Tissue')
 
             # parameter
+            parameters = []
             for param_properties in properties['Parameters']:
                 param = self.get_parameter_by_properties(law, param_properties)
                 if param is None:
@@ -1017,12 +991,12 @@ class SabioRk:
                 param['observed_value'] = param_properties['startValue']
                 param['observed_error'] = param_properties['standardDeviation']
                 param['observed_units'] = param_properties['unit']
+                parameters.append(param)
 
             # updated
             law['modified'] = datetime.datetime.utcnow()
             self.collection.update_one({'kinlaw_id': id},
-                                       {'$set': law, '$set': {
-                                           'parameters': properties['Parameters']}},
+                                       {'$set': law, '$set': {'parameters': parameters} },
                                        upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
@@ -1036,7 +1010,7 @@ class SabioRk:
             :obj:`Parameter`: parameter with attribute values equal to values of :obj:`parameter_properties`
         """
         if parameter_properties['type'] == 'concentration':
-            return None
+            return parameter_properties
 
         # match observed name and compound
         def func(parameter):
@@ -1198,6 +1172,7 @@ class SabioRk:
                 coeff = {'coefficient': coefficient}
                 subunit = {**xref, **coeff}
                 enzyme['subunits'].append(subunit)
+            enzyme = self.calc_enzyme_molecular_weights([enzyme])
             self.collection.update_one({'kinlaw_id': kinetic_law['kinlaw_id']},
                                        {'$set': {'enzyme': enzyme}})
 
