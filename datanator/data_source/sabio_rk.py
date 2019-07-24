@@ -1237,7 +1237,6 @@ class SabioRk:
 
 
 def main():
-        cache_dirname = tempfile.mkdtemp()
         db = 'datanator'
         username = datanator.config.core.get_config()[
             'datanator']['mongodb']['user']
@@ -1249,10 +1248,9 @@ def main():
         )['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config(
         )['datanator']['mongodb']['replSet']
-        manager = sabio_rk.SabioRk(cache_dirname=cache_dirname,
-                                         MongoDB=MongoDB,  db=db,
-                                         verbose=True, username=username,
-                                         password=password, webservice_batch_size = 100)
+        manager = sabio_rk.SabioRk(MongoDB=MongoDB,  db=db,
+                                 verbose=True, username=username,
+                                 password=password)
         manager.load_content()
 
 if __name__ == '__main__':
