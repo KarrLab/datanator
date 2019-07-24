@@ -1248,7 +1248,7 @@ def main():
         )['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config(
         )['datanator']['mongodb']['replSet']
-        manager = sabio_rk.SabioRk(MongoDB=MongoDB,  db=db,
+        manager = SabioRk(MongoDB=MongoDB,  db=db,
                                  verbose=True, username=username,
                                  password=password)
         manager.load_content()
