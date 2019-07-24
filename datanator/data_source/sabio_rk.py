@@ -98,24 +98,25 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        # download compounds
-        compounds = self.collection_compound.find(
-            {'structures': {'$exists': False}})
-        compounds_len = self.collection_compound.count_documents(
-            {'structures': {'$exists': False}})
-        if self.verbose:
-            print('Downloading {} compounds ...'.format(compounds_len))
+        # ##################################
+        # ##################################
+        # # download compounds
+        # compounds = self.collection_compound.find(
+        #     {'structures': {'$exists': False}})
+        # compounds_len = self.collection_compound.count_documents(
+        #     {'structures': {'$exists': False}})
+        # if self.verbose:
+        #     print('Downloading {} compounds ...'.format(compounds_len))
 
-        self.load_compounds(compounds)
+        # self.load_compounds(compounds)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
         ##################################
         ##################################
         # fill in missing information from Excel export
+        exisitng_ids = self.collection.distinct('kinlaw_id')
         loaded_new_ids = list(set(new_ids).intersection(exisitng_ids))
         loaded_new_ids.sort()
 
@@ -127,20 +128,20 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        # infer structures for compounds with no provided structure
-        projection = {'_id': 1, 'cross_references': 1, 'name': 1}
-        compounds = self.collection_compound.find(
-            {'structures': {'$exists': False}}, filter=projection)
+        # ##################################
+        # ##################################
+        # # infer structures for compounds with no provided structure
+        # projection = {'_id': 1, 'cross_references': 1, 'name': 1}
+        # compounds = self.collection_compound.find(
+        #     {'structures': {'$exists': False}}, projection=projection)
 
-        if self.verbose:
-            print('Inferring structures for {} compounds ...'.format(len(compounds)))
+        # if self.verbose:
+        #     print('Inferring structures for {} compounds ...'.format(len(compounds)))
 
-        self.infer_compound_structures_from_names(compounds)
+        # self.infer_compound_structures_from_names(compounds)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
         ##################################
         ##################################
@@ -153,20 +154,22 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        # calculate enzyme molecular weights
-        projection = {'_id': 1, 'enzyme': 1}
-        enzymes = self.collection.find(
-            {'enzyme.molecular_weight': {'$exists': False}}, filter=projection)
+        # ##################################
+        # ##################################
+        # # calculate enzyme molecular weights
+        # projection = {'_id': 1, 'enzyme': 1}
+        # enzymes = self.collection.find(
+        #     {'enzyme.molecular_weight': {'$exists': False}}, projection=projection)
+        # enzymes_length = self.collection.count_documents(
+        #     {'enzyme.molecular_weight': {'$exists': False}})
 
-        if self.verbose:
-            print('Calculating {} enzyme molecular weights ...'.format(len(enzymes)))
+        # if self.verbose:
+        #     print('Calculating {} enzyme molecular weights ...'.format(enzymes_length))
 
-        self.calc_enzyme_molecular_weights(enzymes)
+        # self.calc_enzyme_molecular_weights(enzymes, enzymes_length)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
 
     def load_kinetic_law_ids(self):
@@ -207,6 +210,7 @@ class SabioRk:
         session = requests
 
         batch_size = self.webservice_batch_size
+        loaded_ids = []
 
         for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
             if self.verbose and (i_batch % max(1, 100. / batch_size) == 0):
@@ -226,7 +230,7 @@ class SabioRk:
                 raise Exception('Unable to download kinetic laws with ids {}'.format(
                     ', '.join([str(id) for id in batch_ids])))
 
-            loaded_ids = self.create_kinetic_laws_from_sbml(batch_ids,
+            loaded_ids += self.create_kinetic_laws_from_sbml(batch_ids,
                                                             response.content if six.PY2 else response.text)
 
         not_loaded_ids = list(set(ids).difference(loaded_ids))
@@ -274,13 +278,13 @@ class SabioRk:
             unit_sbml = units_sbml.get(i_unit)
             units[unit_sbml.getId()] = unit_sbml.getName()
 
-        # compartments
-        compartments_sbml = model.getListOfCompartments()
-        compartments = []
-        for i_compartment in range(compartments_sbml.size()):
-            compartment_sbml = compartments_sbml.get(i_compartment)
-            compartments.append(
-                self.get_compartment_from_sbml(compartment_sbml))
+        # # compartments
+        # compartments_sbml = model.getListOfCompartments()
+        # compartments = []
+        # for i_compartment in range(compartments_sbml.size()):
+        #     compartment_sbml = compartments_sbml.get(i_compartment)
+        #     compartments.append(
+        #         self.get_compartment_from_sbml(compartment_sbml))
 
         # species
         specie_properties = {}
@@ -304,10 +308,10 @@ class SabioRk:
             kinetic_law = self.create_kinetic_law_from_sbml(
                 _id, reaction_sbml, species, specie_properties, functions, units)
             # kinetic_laws.append(kinetic_law)
-            combined = self.file_manager.merge_dict([{'species': species},
-                                                     {'compartments': compartments}, kinetic_law])
+            # combined = self.file_manager.merge_dict([{'species': species},
+            #                                          {'compartments': compartments}, kinetic_law])
             self.collection.update_one({'kinlaw_id': _id},
-                                       {'$set': combined},
+                                       {'$set': kinetic_law},
                                        upsert=True)
             loaded_ids.append(_id)
         return loaded_ids
@@ -349,6 +353,9 @@ class SabioRk:
             part_sbml = reactants.get(i_part)
             compound, compartment = self.get_specie_reference_from_sbml(
                 part_sbml.getSpecies(), root_species)
+            compound = self.load_compounds(compound)
+            if 'structures' not in compound[0].keys():
+                compound = self.infer_compound_structures_from_names(compound)
             part = {
                 'compartment': compartment,
                 'coefficient': part_sbml.getStoichiometry()}
@@ -361,6 +368,9 @@ class SabioRk:
             part_sbml = products.get(i_part)
             compound, compartment = self.get_specie_reference_from_sbml(
                 part_sbml.getSpecies(), root_species)
+            compound = self.load_compounds(compound)
+            if 'structures' not in compound[0].keys():
+                compound = self.infer_compound_structures_from_names(compound)
             part = {
                 'compartment': compartment,
                 'coefficient': part_sbml.getStoichiometry()}
@@ -391,9 +401,9 @@ class SabioRk:
                     match.group(2), root_species)
                 if 'subunits' in species[0].keys():
                     compound = None
-                    enzyme = species
+                    enzyme = species[0]
                 else:
-                    compound = species
+                    compound = species[0]
                     enzyme = None
             else:
                 observed_name = param.getId()
@@ -744,13 +754,16 @@ class SabioRk:
         """
         if compounds is None:
             compounds = self.collection_compound.find({})
-        n_compounds = len(compounds)
+            n_compounds = self.collection_compound.count_documents({})
+        else:
+            n_compounds = len(compounds)
+        result = []
 
         for i_compound, c in enumerate(compounds):
             # print status
-            if self.verbose and (i_compound % 100 == 0):
-                print('  Downloading compound {} of {}'.format(
-                    i_compound + 1, n_compounds))
+            # if self.verbose and (i_compound % 100 == 0):
+            #     print('  Downloading compound {} of {}'.format(
+            #         i_compound + 1, n_compounds))
 
             # download info
             response = requests.get(
@@ -790,8 +803,8 @@ class SabioRk:
                 for node in list(smiles_label_node.parents)[1].find_all('span'):
                     value = node.get_text()
                     smiles = {'smiles': value}
-                    norm = self.calc_inchi_formula_connectivity(smiles)
-                    c['structures'].append({**smiles, **norm})
+                    # norm = self.calc_inchi_formula_connectivity(smiles)
+                    c['structures'].append(smiles)
 
             # cross references
             c['cross_references'] = []
@@ -834,6 +847,8 @@ class SabioRk:
                                                           'structures': c['structures'],
                                                           'cross_references': c['cross_references']}},
                                                 upsert=True)
+            result.append(c)
+        return result 
 
     def load_missing_kinetic_law_information_from_tsv(self, ids):
         """ Update the properties of kinetic laws in mongodb based on content downloaded
@@ -1052,9 +1067,9 @@ class SabioRk:
         """
         result = []
         for i_compound, compound in enumerate(compounds):
-            if self.verbose and (i_compound % 100 == 0):
-                print('  Trying to infer the structure of compound {} of {}'.format(
-                    i_compound + 1, len(compounds)))
+            # if self.verbose and (i_compound % 100 == 0):
+            #     print('  Trying to infer the structure of compound {} of {}'.format(
+            #         i_compound + 1, len(compounds)))
 
             if compound['name'] == 'Unknown':
                 continue
@@ -1114,6 +1129,7 @@ class SabioRk:
         if _value_inchi:
             _value_inchi_formula_connectivity = molecule_util.InchiMolecule(_value_inchi) \
                 .get_formula_and_connectivity()
+
         result = {'_value_inchi': _value_inchi,
                   '_value_inchi_formula_connectivity': _value_inchi_formula_connectivity}
 
@@ -1169,7 +1185,7 @@ class SabioRk:
                 coeff = {'coefficient': coefficient}
                 subunit = {**xref, **coeff}
                 enzyme['subunits'].append(subunit)
-            enzyme = self.calc_enzyme_molecular_weights([enzyme])
+            enzyme = self.calc_enzyme_molecular_weights([enzyme], 1)
             self.collection.update_one({'kinlaw_id': kinetic_law['kinlaw_id']},
                                        {'$set': {'enzyme': enzyme}})
 
@@ -1239,7 +1255,7 @@ class SabioRk:
 
         return stack[0]['subunits']
 
-    def calc_enzyme_molecular_weights(self, enzymes):
+    def calc_enzyme_molecular_weights(self, enzymes, length):
         """ Calculate the molecular weight of each enzyme
 
         Args:
@@ -1252,8 +1268,8 @@ class SabioRk:
 
         results = []
         for i_enzyme, enzyme in enumerate(enzymes):
-            if self.verbose and i_enzyme % 100 == 0:
-                print('  Calculating molecular weight of enzyme {} of {}'.format(i_enzyme + 1, len(enzymes)))
+            # if self.verbose and i_enzyme % 100 == 0:
+            #     print('    Calculating molecular weight of enzyme {} of {}'.format(i_enzyme + 1, length))
             enzyme_molecular_weight = 0
             for subunit in enzyme['subunits']:
                 if 'uniprot' in subunit:
@@ -1279,3 +1295,26 @@ class SabioRk:
                 enzyme['molecular_weight'] = enzyme_molecular_weight
             results.append(enzyme)
         return results
+
+
+def main():
+        cache_dirname = tempfile.mkdtemp()
+        db = 'datanator'
+        username = datanator.config.core.get_config()[
+            'datanator']['mongodb']['user']
+        password = datanator.config.core.get_config(
+        )['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config(
+        )['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config(
+        )['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config(
+        )['datanator']['mongodb']['replSet']
+        manager = sabio_rk.SabioRk(cache_dirname=cache_dirname,
+                                         MongoDB=MongoDB,  db=db,
+                                         verbose=True, username=username,
+                                         password=password, webservice_batch_size = 100)
+        manager.load_content()
+
+if __name__ == '__main__':
+    main()

@@ -25,7 +25,7 @@ class TestSabioRk(unittest.TestCase):
         )['datanator']['mongodb']['replSet']
         cls.src = sabio_rk.SabioRk(cache_dirname=cls.cache_dirname,
                                          MongoDB=MongoDB,  db=db,
-                                         verbose=True, max_entries=10, username=username,
+                                         verbose=True, max_entries=20, username=username,
                                          password=password, webservice_batch_size = 10)
         cls.sbml = requests.get('http://sabiork.h-its.org/sabioRestWebServices/kineticLaws', params={
                 'kinlawids': '4096'}).text
@@ -119,10 +119,10 @@ class TestSabioRk(unittest.TestCase):
         ids = [4096]
         self.src.create_kinetic_laws_from_sbml(ids, self.sbml)
         doc = self.src.collection.find_one({'kinlaw_id':ids[0]})
-        test_1 = doc.get('compartments', None)
-        self.assertEqual(test_1, [None])
-        test_2 = doc.get('species', None)
-        self.assertEqual(test_2[1]['_id'], 21128)
+        test_1 = doc.get('enzyme', None)
+        self.assertEqual(test_1[0]['_id'], 141214)
+        test_2 = doc.get('media', None)
+        self.assertEqual(test_2, '25 mM Tris or MOPS, 10 mM MgCl2, 0.04 % sodium azide')
 
     # @unittest.skip('passed')
     def test_load_compounds(self):
@@ -157,6 +157,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertTrue('synonyms' in test_1)
         self.assertTrue(isinstance(test_2['structures'], list))
 
+    # @unittest.skip('passed')
     def test_get_parameter_by_properties(self):
         kinetic_law_mock = {'kinlaw_id': 4096, 'mechanism': 'mock_mechanism',
                             'tissue': 'mock_tissue', 'enzyme_type': 'mock_et',
@@ -188,6 +189,7 @@ class TestSabioRk(unittest.TestCase):
         result = self.src.collection.find_one({'kinlaw_id': 4096})
         self.assertEqual(result.get('mechanism', 'no mechanism filed'), 'no mechanism filed')
 
+    # @unittest.skip('passed')
     def test_infer_compound_structures_from_names(self):
         compound_1 = {
             "_id" : 73,
@@ -269,6 +271,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(result[1], compound_2)
         self.assertTrue('structures' in result[0])
 
+    # @unittest.skip('passed')
     def test_calc_inchi_formula_connectivity(self):
         s = {'smiles': '[H]O[H]'}
         test_1 = self.src.calc_inchi_formula_connectivity(s)
@@ -285,6 +288,7 @@ class TestSabioRk(unittest.TestCase):
         self.assertEqual(test_3['_value_inchi'], 'InChI=1S/C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7/h1-5,8,10H,6H2,(H,11,12)/t8-/m1/s1')
         self.assertEqual(test_3['_value_inchi_formula_connectivity'], 'C9H10O3/c10-8(9(11)12)6-7-4-2-1-3-5-7')
 
+    # @unittest.skip('passed')
     def test_parse_complex_subunit_structure(self):
         response = requests.get('http://sabiork.h-its.org/kindatadirectiframe.jsp', params={
                                 'kinlawid': 4096, 'newinterface': 'true'})
@@ -305,6 +309,7 @@ class TestSabioRk(unittest.TestCase):
         l = self.file_manager.search_dict_list(test_doc['enzyme'], 'coeffcient')
         self.assertFalse(len(l)>0)
 
+    # @unittest.skip('passed')
     def test_calc_enzyme_molecular_weights(self):
         null = None
         enzyme = [{
@@ -323,7 +328,7 @@ class TestSabioRk(unittest.TestCase):
             ],
             "cross_references" : [ ]
         }]
-        results = self.src.calc_enzyme_molecular_weights(enzyme)
+        results = self.src.calc_enzyme_molecular_weights(enzyme, len(enzyme))
         self.assertTrue(results[0]['molecular_weight'] != None)
 
     @unittest.skip('takes too long')
