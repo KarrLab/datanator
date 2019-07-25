@@ -9,7 +9,6 @@ import libsbml
 import re
 import datetime
 import bs4
-import warnings
 import html
 import csv
 import pubchempy
@@ -17,6 +16,11 @@ import sys
 import Bio.Alphabet
 import Bio.SeqUtils
 import math
+import logging
+logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.DEBUG, 
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger=logging.getLogger()
+
 
 class SabioRk:
 
@@ -32,7 +36,7 @@ class SabioRk:
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_rk')
+            authSource=authSource).con_db('sabio_rk_new')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_compound')
@@ -128,8 +132,6 @@ class SabioRk:
         Returns:
             :obj:`list` of :obj:`int`: list of kinetic law IDs
 
-        Raises:
-            :obj:`Error`: if an HTTP request fails or the expected number of kinetic laws is not returned
         """
         # create session
         response = requests.get(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
@@ -186,8 +188,9 @@ class SabioRk:
         not_loaded_ids = list(set(ids).difference(loaded_ids))
         if not_loaded_ids:
             not_loaded_ids.sort()
-            warnings.warn('Several kinetic laws were not found:\n  {}'.format(
-                '\n  '.join([str(id) for id in not_loaded_ids])), data_source.DataSourceWarning)
+            warning = 'Several kinetic laws were not found:\n  {}'.format(
+                '\n  '.join([str(id) for id in not_loaded_ids]))
+            logging.warning(warning)
         return not_loaded_ids
 
     def create_kinetic_laws_from_sbml(self, ids, sbml):
@@ -249,9 +252,12 @@ class SabioRk:
             reaction_sbml = reactions_sbml.get(i_reaction)
             kinetic_law = self.create_kinetic_law_from_sbml(
                 _id, reaction_sbml, species, specie_properties, functions, units)
-            self.collection.update_one({'kinlaw_id': _id},
-                                       {'$set': kinetic_law},
-                                       upsert=True)
+            try:
+                self.collection.update_one({'kinlaw_id': _id},
+                                           {'$set': kinetic_law},
+                                           upsert=True)
+            except pymongo.errors.WriteError as err:
+                logger.error(err)
             loaded_ids.append(_id)
         return loaded_ids
 
@@ -773,8 +779,9 @@ class SabioRk:
                 else:
                     namespace = html.unescape(node.parent.parent.parent.find_all('td')[
                                               0].get_text()).strip()
-                    warnings.warn('Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
-                                                                                                        namespace))
+                    warning = 'Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
+                                                                                                        namespace)
+                    logging.warning(warning)
                 resource = {namespace: id}
 
                 c['cross_references'].append(resource)
@@ -935,8 +942,9 @@ class SabioRk:
                 param = self.get_parameter_by_properties(law, param_properties)
                 if param is None:
                     if param_properties['type'] != 'concentration':
-                        warnings.warn('Unable to find parameter `{}:{}` for law {}'.format(
-                            param_properties['type'], param_properties['associatedSpecies'], law['kinlaw_id']))
+                        warning = 'Unable to find parameter `{}:{}` for law {}'.format(
+                            param_properties['type'], param_properties['associatedSpecies'], law['kinlaw_id'])
+                        logging.warning(warning)
                     continue
 
                 param['observed_value'] = param_properties['startValue']
