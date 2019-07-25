@@ -17,6 +17,7 @@ import Bio.Alphabet
 import Bio.SeqUtils
 import math
 import logging
+import pymongo
 logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.DEBUG, 
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger=logging.getLogger()
