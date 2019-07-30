@@ -18,7 +18,8 @@ import Bio.SeqUtils
 import math
 import logging
 import pymongo
-logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.DEBUG, 
+import hashlib
+logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.WARNING, 
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger=logging.getLogger()
 
@@ -63,7 +64,7 @@ class SabioRk:
         self.file_manager = file_util.FileUtil()
 
     def load_content(self):
-        """ Download the content of SABIO-RK and store it to a local sqlite database. """
+        """ Download the content of SABIO-RK and store it to a remote mongoDB. """
 
         ##################################
         ##################################
@@ -1244,6 +1245,59 @@ class SabioRk:
             results.append(enzyme)
         return results
 
+
+    def add_inchi_hash(self):
+        query = {}
+        projection = {'products': 1, 'reactants':1, 'kinlaw_id': 1}
+        cursor = self.collection.find({}, projection = projection)
+
+        def get_inchi_structure(chem):
+            '''Given subsrate or product subdocument from sabio_rk
+               find the corresponding inchi
+               Args:
+                    chem (:obj: `dict`)
+                Returns:
+                    (:obj: `str`): inchi string
+            '''
+            try:
+                return chem['structures'][0].get('_value_inchi', None)
+            except IndexError:
+                return chem['structures'].append({})
+
+        def iter_rxnp_subdoc(rxnp):
+            '''Given a reactant or product array from sabio_rk
+                append fields of hashed inchi
+                Args:
+                    rxnp (:obj: `list` of :obj: `dict`)
+            '''
+            for i in range(len(rxnp)):
+                substrate_inchi = get_inchi_structure(rxnp[i])
+                try:
+                    hashed_inchi = hashlib.sha224(substrate_inchi.encode()).hexdigest()
+                    rxnp[i]['structures'][0]['hashed_inchi'] = hashed_inchi
+                except AttributeError:
+                    rxnp[i]['structures'][0]['hashed_inchi'] = None
+
+            return rxnp
+
+        j = 0
+        for doc in cursor:
+            if j > self.max_entries:
+                break
+            if self.verbose == True and j % 100 == 0:
+                print(j)
+            substrates = doc['reactants']
+            products = doc['products']
+            new_subsrates = iter_rxnp_subdoc(substrates)
+            new_products = iter_rxnp_subdoc(products)
+
+            doc['reactants'] = new_subsrates
+            doc['products'] = new_products
+
+            self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
+                            {'$set': {'reactants': doc['reactants'],
+                                      'products': doc['products']} })
+            j += 1
 
 def main():
         db = 'datanator'

@@ -334,3 +334,11 @@ class TestSabioRk(unittest.TestCase):
     @unittest.skip('takes too long')
     def test_load_content(self):
         self.src.load_content()
+
+    def test_add_inchi_hash(self):
+        result = self.src.add_inchi_hash()
+        query = {}
+        projection = {'products': 1, 'kinlaw_id': 1, 'reactants': 1, '_id': 0}
+        col = self.src.collection.find(filter=query, projection=projection)
+        for doc in col:
+            self.assertTrue('hashed_inchi' in doc['products'][0]['structures'][0] )
