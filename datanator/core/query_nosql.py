@@ -332,7 +332,7 @@ class QuerySabio(DataQuery):
     '''
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 collection_str='sabio_rk', verbose=False, max_entries=float('inf'), username=None,
+                 collection_str='sabio_rk_new', verbose=False, max_entries=float('inf'), username=None,
                  password=None, authSource='admin'):
         self.collection_str = collection_str
         super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
@@ -347,16 +347,17 @@ class QuerySabio(DataQuery):
     def find_reaction_participants(self, kinlaw_id):
         ''' Find the reaction participants defined in sabio_rk using kinetic law id
             Args:
-                kinlaw_id: list of kinlaw_id to search for
+                kinlaw_id (:obj: `list` of :obj: `int`) list of kinlaw_id to search for
             Return:
-                rxns: list of dictionaries containing names of reaction participants
+                rxns (:obj: `list` of :obj: `dict`) list of dictionaries containing names of reaction participants
                 [{'substrates': [], 'products': [] }, ... {} ]
         '''
+        projection = {'products': 1, 'reactants': 1, '_id': 0, 'kinlaw_id':1}
         if isinstance(kinlaw_id, list):
             query = {'kinlaw_id': {'$in': kinlaw_id}}
         else:
             query = {'kinlaw_id': kinlaw_id}
-        docs = self.doc_feeder(collection_str=self.collection_str, query=query)
+        docs = self.collection.find(filter=query, projection=projection)
         rxns = []
         i = 0
         for doc in docs:
@@ -365,22 +366,10 @@ class QuerySabio(DataQuery):
             if i % 10 == 0:
                 print('Finding reaction participants for kinlaw_id {} ...'.format(
                     doc['kinlaw_id']))
-            doc.pop('_id', None)
-            doc_flat = self.file_manager.flatten_json(doc)
 
-            substrates = []
-            products = []
-            substrate_identifier = [
-                'reaction_participant', 'substrate', 'name']
-            product_identifier = ['reaction_participant', 'product', 'name']
+            substrates = self.file_manager.get_val_from_dict_list(doc.get('reactants',), 'name')
+            products = self.file_manager.get_val_from_dict_list(doc.get('products',), 'name')
 
-            for k, v in doc_flat.items():
-                if all(x in k for x in substrate_identifier) and 'compartment' not in k:
-                    substrates.append(v)
-                elif all(x in k for x in product_identifier) and 'compartment' not in k:
-                    products.append(v)
-                else:
-                    continue
             rxn = {'substrates': substrates, 'products': products}
 
             rxns.append(rxn)
@@ -388,47 +377,19 @@ class QuerySabio(DataQuery):
 
         return rxns
 
-    def get_kinlawid_by_inchi_slow(self, inchi):
-        ''' Find the kinlaw_id defined in sabio_rk using 
-            rxn participants' inchi string
-            Args:
-                inchi: list of inchi, all in one rxn
-            Return:
-                rxns: list of kinlaw_ids that satisfy the condition
-                [id0, id1, id2,...,  ]
-        '''
-        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
-        inchi_exp = ['\"' + s + '\"' for s in short_inchi]
-        inchi_str = ''
-        for s in inchi_exp:
-            inchi_str = inchi_str + s + ' '
-        condition = {'$text': {'$search': inchi_str}}
-        projection = {'kinlaw_id': 1, '_id': 0}
-        col = self.db_obj[self.collection_str]
-        if self.verbose:
-            print("\nQuerying text {} in collection {} ...".format(
-                inchi_str, self.collection_str))
-        cursor = col.find(filter=condition, projection=projection)
-        _id = []
-        for doc in cursor:
-            _id.append(doc['kinlaw_id'])
-
-        return _id
-
     def get_kinlawid_by_inchi(self, inchi):
         ''' Find the kinlaw_id defined in sabio_rk using 
             rxn participants' inchi string
             Args:
-                inchi: list of inchi, all in one rxn
+                inchi (:obj: `list` of :obj: `str`): list of inchi, all in one rxn
             Return:
-                rxns: list of kinlaw_ids that satisfy the condition
+                rxns (:obj: `list` of :obj: `int`): list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
         hashed_inchi = [hashlib.sha224(s.encode()).hexdigest()
-                        for s in short_inchi]
-        substrate = 'reaction_participant.substrate.hashed_inchi'
-        product = 'reaction_participant.product.hashed_inchi'
+                        for s in inchi]
+        substrate = 'reactants.structures.hashed_inchi'
+        product = 'products.structures.hashed_inchi'
         projection = {'kinlaw_id': 1}
 
         id_tally = []
@@ -462,12 +423,11 @@ class QuerySabio(DataQuery):
                     rxns: list of kinlaw_ids that satisfy the condition
                     [id0, id1, id2,...,  ]
             '''
-            short_inchi = [self.chem_manager.simplify_inchi(s) for s in inchi]
             hashed_inchi = [hashlib.sha224(
-                s.encode()).hexdigest() for s in short_inchi]
+                s.encode()).hexdigest() for s in inchi]
 
-            substrate = 'reaction_participant.substrate.hashed_inchi'
-            product = 'reaction_participant.product.hashed_inchi'
+            substrate = 'reactants.structures.hashed_inchi'
+            product = 'products.structures.hashed_inchi'
             projection = {'kinlaw_id': 1, '_id': 0}
 
             id_tally = []

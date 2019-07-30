@@ -39,6 +39,13 @@ class TestFileUtil(unittest.TestCase):
         values = self.src.extract_values(dic, 'g')
         self.assertEqual([2], values)
 
+    def test_get_val_from_dict_list(self):
+        dict_list = [{'a':1, 'b': 2, 'c':3}, {'a':10, 'b': 20, 'c':30},
+            {'a':100, 'b': 200, 'd':300}]
+        key = 'c'
+        result = self.src.get_val_from_dict_list(dict_list, key)
+        self.assertEqual(result, [3, 30, 'no such key'])
+
     # @unittest.skip('passed')
     def test_unpack_list(self):
         _list = [ [1], [2], [3, 4] ]

@@ -24,6 +24,21 @@ class FileUtil:
 
         return results
 
+    def get_val_from_dict_list(self, dict_list, key):
+        '''
+            Get values for key from a list of dictionaries
+            Args:
+                dict_list (:obj: `list` of :obj: `dict`): list of dictionary 
+                                                        to query
+                key (:obj: `str`): key for which to get the value
+            Returns:
+                results (:obj: `list` of :obj:): list of values
+        '''
+        result = []
+        for dic in dict_list:
+            result.append(dic.get(key, 'no such key'))
+        return result
+
     def flatten_json(self, nested_json):
         '''
             Flatten json object with nested keys into a single level.
