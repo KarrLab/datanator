@@ -1250,6 +1250,7 @@ class SabioRk:
         query = {}
         projection = {'products': 1, 'reactants':1, 'kinlaw_id': 1}
         cursor = self.collection.find({}, projection = projection)
+        count = self.collection.count_documents({})
 
         def get_inchi_structure(chem):
             '''Given subsrate or product subdocument from sabio_rk
@@ -1285,7 +1286,7 @@ class SabioRk:
             if j > self.max_entries:
                 break
             if self.verbose == True and j % 100 == 0:
-                print(j)
+                print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reactants']
             products = doc['products']
             new_subsrates = iter_rxnp_subdoc(substrates)
@@ -1315,6 +1316,7 @@ def main():
                                  verbose=True, username=username,
                                  password=password)
         manager.load_content()
+        manager.add_inchi_hash()
 
 if __name__ == '__main__':
     main()
