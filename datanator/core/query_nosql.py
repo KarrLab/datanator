@@ -137,7 +137,7 @@ class QueryMetabolitesMeta(DataQuery):
                  password=None, authSource='admin'):
         self.collection_str = collection_str
         self.verbose = verbose
-        super(query_nosql.DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
+        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
                                         replicaSet=replicaSet, db=db,
                                         verbose=verbose, max_entries=max_entries, username=username,
                                         password=password, authSource=authSource)

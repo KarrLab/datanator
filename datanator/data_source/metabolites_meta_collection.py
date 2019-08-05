@@ -72,9 +72,19 @@ class MetabolitesMeta(query_nosql.QuerySabio):
 
     def replace_key_in_similar_compounds(self):
         query = {}
-        projetion = {'similar_compounds': 1}
+        projection = {'similar_compounds': 1}
         _, _, col = self.con_db('metabolites_meta')
         docs = col.find(filter=query, projection=projection)
+        for doc in docs:
+            result = []
+            _list = doc['similar_compounds']
+            for dic in _list:
+                old_key = list(dic.keys())[0]
+                new_key = col.find_one(filter={'inchi': old_key}, 
+                    projection={'InChI_Key':1})['InChI_Key']
+                result.append( {new_key: dic[old_key]})
+            col.update_one({'_id': doc['_id']},
+                {'$set': {'similar_compounds': result} })
         
 
     def fill_metabolite_fields(self, fields=None, collection_src=None, collection_des = None):

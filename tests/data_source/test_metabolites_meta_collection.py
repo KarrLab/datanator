@@ -47,3 +47,6 @@ class TestMetabolitesMeta(unittest.TestCase):
         self.assertEqual(cursor['InChI_Key'], 'DBXBTMSZEOQQDU-UHFFFAOYSA-N')
         
         client.close()
+
+    def test_replace_key_in_similar_compounds(self):
+        self.src.replace_key_in_similar_compounds()

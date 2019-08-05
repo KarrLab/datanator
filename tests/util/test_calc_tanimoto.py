@@ -11,7 +11,7 @@ class TestCalcTanimoto(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'datanator'
+        cls.db = 'test'
         cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         cls.server = datanator.config.core.get_config()['datanator']['mongodb']['server']
@@ -19,7 +19,7 @@ class TestCalcTanimoto(unittest.TestCase):
         replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
         cls.src = calc_tanimoto.CalcTanimoto(
             cache_dirname=cls.cache_dirname, MongoDB=cls.server, replicaSet=replSet, db=cls.db,
-            verbose=True, max_entries=5, password=cls.password, username=cls.username)
+            verbose=True, max_entries=20, password=cls.password, username=cls.username)
 
     @classmethod
     def tearDownClass(cls):
@@ -37,18 +37,22 @@ class TestCalcTanimoto(unittest.TestCase):
 
     # @unittest.skip('passed')
     def test_one_to_many(self):
-        inchi = 'InChI=1S/C6H8O6/c7-1-2(8)5-3(9)4(10)6(11)12-5'
-        coeff, hashes = self.src.one_to_many(inchi)
+        inchi = 'InChI=1S/C5H8O3/c1-3(2)4(6)5(7)8/h3H,1-2H3,(H,7,8)'
+        coeff, hashes = self.src.one_to_many(inchi, collection_str='metabolites_meta',
+                    field='inchi', lookup='inchi', num=10)
+        print(len(hashes))
         client, _, col = mongo_util.MongoUtil(db = self.db, MongoDB = self.server,
                                         username = self.username, password = self.password).con_db('metabolites_meta')
-        inchi1 = col.find_one({'inchi_hashed': hashes[5]})['inchi_deprot']
-        inchi2 = col.find_one({'inchi_hashed': hashes[10]})['inchi_deprot']
+        inchi1 = col.find_one({'inchi': hashes[5]})['inchi']
+        inchi2 = col.find_one({'inchi': hashes[9]})['inchi']
         self.assertEqual(coeff[5], self.src.get_tanimoto(inchi, inchi1))
-        self.assertEqual(coeff[10], self.src.get_tanimoto(inchi, inchi2))
-        client.close()
+        self.assertEqual(coeff[9], self.src.get_tanimoto(inchi, inchi2))
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_many_to_many(self):
         client, _, col = mongo_util.MongoUtil(db = self.db, MongoDB = self.server,
                                         username = self.username, password = self.password).con_db('metabolites_meta')
-        self.src.many_to_many()
+        self.src.many_to_many(collection_str1='metabolites_meta',
+                     collection_str2='metabolites_meta', field1='inchi',
+                     field2='inchi', lookup1='inchi',
+                     lookup2='inchi', num=10)

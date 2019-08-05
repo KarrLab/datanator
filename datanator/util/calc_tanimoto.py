@@ -49,7 +49,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
             return -1
 
     def one_to_many(self, inchi, collection_str='metabolites_meta',
-                    field='inchi_deprot', lookup='inchi_hashed', num=100):
+                    field='inchi', lookup='InChI_Key', num=100):
         ''' Calculate tanimoto coefficients between one
                 metabolite and the rest of the 'collection_str'
                 Args:
@@ -74,7 +74,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
         total = min(count, self.max_entries)
 
         i = 0
-        while (np_size < num):  # fill in first 100 tanimoto coefficients
+        while (np_size < num):  # fill in first num tanimoto coefficients
             mol2 = cursor[i][field]
             hash2 = cursor[i][lookup]
             tanimoto = self.get_tanimoto(inchi, mol2)
@@ -120,9 +120,9 @@ class CalcTanimoto(mongo_util.MongoUtil):
         return sorted_coeff, sorted_inchi
 
     def many_to_many(self, collection_str1='metabolites_meta',
-                     collection_str2='metabolites_meta', field1='inchi_deprot',
-                     field2='inchi_deprot', lookup1='inchi_hashed',
-                     lookup2='inchi_hashed', num=100):
+                     collection_str2='metabolites_meta', field1='inchi',
+                     field2='inchi', lookup1='InChI_Key',
+                     lookup2='InChI_Key', num=100):
         ''' Go through collection_str and assign each
                 compound top 'num' amount of most similar 
                 compounds
@@ -155,11 +155,11 @@ class CalcTanimoto(mongo_util.MongoUtil):
         def process_doc(doc, final, i, total = total, collection_str1 = collection_str1,
                         field1 = field1, lookup1 = lookup1, collection_str2 = collection_str2,
                         field2 = field2, lookup2 = lookup2):
-            if 'similar_compounds_corrected' in doc:
-                if self.verbose and i % 10 ==0:
-                    print('Skipping document {} out of {} in collection {}'.format(
-                        i, total, collection_str1))
-                return 
+            # if 'similar_compounds_corrected' in doc:
+            #     if self.verbose and i % 10 ==0:
+            #         print('Skipping document {} out of {} in collection {}'.format(
+            #             i, total, collection_str1))
+            #     return 
             if i > self.max_entries:
                 return 
             if self.verbose and i % 1 == 0:
@@ -180,7 +180,7 @@ class CalcTanimoto(mongo_util.MongoUtil):
                              upsert=False)
  
         limit = 100    # number of documents from the cursor to be stuffed into a list
-        sorted_field = 'inchi_hashed' # indexed field used to sort cursor
+        sorted_field = lookup1 # indexed field used to sort cursor
         i = 0
 
         documents = list(col.find({}, projection = projection).sort(sorted_field, pymongo.ASCENDING).limit(limit))

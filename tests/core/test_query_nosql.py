@@ -48,7 +48,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
         port = datanator.config.core.get_config()['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
-        cls.src = query_metabolites_meta.QueryMetabolitesMeta(
+        cls.src = query_nosql.QueryMetabolitesMeta(
             cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=replSet, db=cls.db,
                  verbose=True, max_entries=20, username = username, password = password)
 
