@@ -1,6 +1,6 @@
 import datanator.config.core
 from datanator.util import mongo_util
-from datanator.util import file_util
+from datanator.util import file_util, chem_util
 from datanator.util import molecule_util
 import six
 import requests
@@ -18,7 +18,6 @@ import Bio.SeqUtils
 import math
 import logging
 import pymongo
-import hashlib
 logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.WARNING, 
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger=logging.getLogger()
@@ -62,6 +61,7 @@ class SabioRk:
         self.PUBCHEM_TRY_DELAY = 0.25
         self.webservice_batch_size = webservice_batch_size
         self.file_manager = file_util.FileUtil()
+        self.chem_manager = chem_util.ChemUtil()
 
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a remote mongoDB. """
@@ -1247,6 +1247,9 @@ class SabioRk:
 
 
     def add_inchi_hash(self):
+        '''
+            Add sha224 hashed values of _value_inchi in sabio_rk collection
+        '''
         query = {}
         projection = {'products': 1, 'reactants':1, 'kinlaw_id': 1}
         cursor = self.collection.find({}, projection = projection)
@@ -1273,11 +1276,13 @@ class SabioRk:
             '''
             for i in range(len(rxnp)):
                 substrate_inchi = get_inchi_structure(rxnp[i])
-                try:
-                    hashed_inchi = hashlib.sha224(substrate_inchi.encode()).hexdigest()
-                    rxnp[i]['structures'][0]['hashed_inchi'] = hashed_inchi
-                except AttributeError:
-                    rxnp[i]['structures'][0]['hashed_inchi'] = None
+
+                # try:
+                hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
+                print(hashed_inchi)
+                rxnp[i]['structures'][0]['InChI_Key'] = hashed_inchi
+                # except AttributeError:
+                #     rxnp[i]['structures'][0]['InChI_Key'] = None
 
             return rxnp
 
@@ -1300,6 +1305,7 @@ class SabioRk:
                                       'products': doc['products']} })
             j += 1
 
+
 def main():
         db = 'datanator'
         username = datanator.config.core.get_config()[
@@ -1315,8 +1321,9 @@ def main():
         manager = SabioRk(MongoDB=MongoDB,  db=db,
                                  verbose=True, username=username,
                                  password=password)
-        manager.load_content()
+        # manager.load_content()
         manager.add_inchi_hash()
+
 
 if __name__ == '__main__':
     main()
