@@ -42,7 +42,7 @@ class MetabolitesMeta(query_nosql.QuerySabio):
 
         _, _, collection = self.con_db(collection_name)
         k = 0
-        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi'}):
+        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi':1}):
             if k > self.max_entries:
                 break
             kinlaw_id = self.get_kinlawid_by_inchi([doc['inchi']])
@@ -93,11 +93,12 @@ class MetabolitesMeta(query_nosql.QuerySabio):
                 break
             if i % self.frequency == 0:
                 print('Getting fields of interest from {} document in {}'.format(i, collection_src))
-            doc['inchi_deprot'] = self.chem_manager.simplify_inchi(inchi = doc['inchi'])
-            doc['inchi_hashed'] = self.chem_manager.hash_inchi(inchi = doc['inchi'])
-            doc['inchi_hashed_deprot'] = self.chem_manager.hash_inchi(inchi = doc['inchi_deprot'])
+            doc['InChI_Key'] = self.chem_manager.inchi_to_inchikey(doc['inchi'])
             col_des.update_one({'inchi': doc['inchi']},
-                                  { '$set': doc},
+                                  { '$set': { fields[0]: doc[fields[0]],
+                                              fields[1]: doc[fields[1]],
+                                              'synonyms': doc['synonyms']['synonym'],
+                                              'InChI_Key': doc['InChI_Key']}},
                                   upsert=True)
             i += 1
 

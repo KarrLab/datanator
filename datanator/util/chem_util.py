@@ -47,6 +47,7 @@ class ChemUtil:
         flagproto = 'N'
         pplus = "OPQRSTUVWXYZ"
         pminus = "MLKJIHGFEDCB"
+        bStdFormat = 0
 
         if not szINCHISource:
             return None

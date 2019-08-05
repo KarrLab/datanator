@@ -1277,12 +1277,11 @@ class SabioRk:
             for i in range(len(rxnp)):
                 substrate_inchi = get_inchi_structure(rxnp[i])
 
-                # try:
-                hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
-                print(hashed_inchi)
-                rxnp[i]['structures'][0]['InChI_Key'] = hashed_inchi
-                # except AttributeError:
-                #     rxnp[i]['structures'][0]['InChI_Key'] = None
+                try:
+                    hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
+                    rxnp[i]['structures'][0]['InChI_Key'] = hashed_inchi
+                except AttributeError:
+                    rxnp[i]['structures'][0]['InChI_Key'] = None
 
             return rxnp
 

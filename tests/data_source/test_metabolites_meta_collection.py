@@ -11,8 +11,8 @@ class TestMetabolitesMeta(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
-        cls.db = 'datanator'
-        cls.meta_loc = 'datanator'
+        cls.db = 'test'
+        cls.meta_loc = 'test'
         cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         cls.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
@@ -43,7 +43,7 @@ class TestMetabolitesMeta(unittest.TestCase):
             password = self.password)
         meta_db = client[self.meta_loc]
         collection = meta_db['metabolites_meta']
-        cursor = collection.find_one({'inchi': 'InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2/h2-11H,1H2'})
-        self.assertEqual(cursor['inchi_hashed'], '2b24980b46fd11b024dce40fef6ff4453f0e30682adb1cb2b3fb60e1')
+        cursor = collection.find_one({'inchi': 'InChI=1S/C4H8O3/c1-3(2-5)4(6)7/h3,5H,2H2,1H3,(H,6,7)'})
+        self.assertEqual(cursor['InChI_Key'], 'DBXBTMSZEOQQDU-UHFFFAOYSA-N')
         
         client.close()

@@ -161,15 +161,15 @@ class QueryMetabolitesMeta(DataQuery):
 
         def find_synonyms_of_str(c):
             if len(c) != 0:
-                query = {'synonyms.synonym': c}
-                projection = {'synonyms.synonym': 1, '_id': -1, 'kinlaw_id': 1}
+                query = {'synonyms': c}
+                projection = {'synonyms': 1, '_id': -1, 'kinlaw_id': 1}
                 collation = {'locale': 'en', 'strength': 2}
                 doc = self.collection.find_one(
                     filter=query, projection=projection, collation=collation)
                 synonym = {}
                 rxn = {}
                 try:
-                    synonym[c] = doc['synonyms']['synonym']
+                    synonym[c] = doc['synonyms']
                     rxn[c] = doc['kinlaw_id']
                 except TypeError as e:
                     synonym[c] = (c + ' does not exist in ' +
@@ -205,7 +205,7 @@ class QueryMetabolitesMeta(DataQuery):
         projection = {'_id': 0, 'inchi': 1, 'm2m_id': 1, 'ymdb_id': 1}
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
-            cursor = self.collection.find_one({'synonyms.synonym': compound},
+            cursor = self.collection.find_one({'synonyms': compound},
                                               projection=projection, collation=collation)
             inchi.append(
                 {"inchi": cursor['inchi'], "m2m_id": cursor.get('m2m_id', None),
@@ -221,7 +221,7 @@ class QueryMetabolitesMeta(DataQuery):
                 result: dictionary of ids and their keys
                     {'m2m_id': ..., 'ymdb_id': ...}
         '''
-        query = {'inchi_hashed': hashed_inchi}
+        query = {'InChI_Key': hashed_inchi}
         projection = {'_id': 0}
         doc = self.collection.find_one(filter=query, projection=projection)
         result = {}
@@ -239,12 +239,12 @@ class QueryMetabolitesMeta(DataQuery):
                 hashed_inchi: ['3e23df....', '7666ffa....']
         '''
         hashed_inchi = []
-        projection = {'_id': 0, 'inchi_hashed': 1}
+        projection = {'_id': 0, 'InChI_Key': 1}
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
-            cursor = self.collection.find_one({'synonyms.synonym': compound},
+            cursor = self.collection.find_one({'synonyms': compound},
                                               projection=projection, collation=collation)
-            hashed_inchi.append(cursor['inchi_hashed'])
+            hashed_inchi.append(cursor['InChI_Key'])
         return hashed_inchi
 
     def get_metabolite_name_by_hash(self, compounds):
@@ -258,15 +258,14 @@ class QueryMetabolitesMeta(DataQuery):
                     [name, name, name]
         '''
         result = []
-        projection = {'_id': 0, 'synonyms.synonym': 1}
+        projection = {'_id': 0, 'synonyms': 1}
         for compound in compounds:
-            cursor = self.collection.find_one({'inchi_hashed': compound},
+            cursor = self.collection.find_one({'InChI_Key': compound},
                                               projection=projection)
             try:
                 result.append(cursor['synonyms'])
-                if not isinstance(cursor['synonyms']['synonym'], list):
-                    cursor['synonyms']['synonym'] = [
-                        cursor['synonyms']['synonym']]
+                if not isinstance(cursor['synonyms'], list):
+                    cursor['synonyms'] = [cursor['synonyms']]
             except KeyError:
                 result.append({'synonym': ['None']})
         return [x['synonym'][-1] for x in result]
@@ -297,7 +296,7 @@ class QueryMetabolitesMeta(DataQuery):
         projection = {'_id': 0, 'similar_compounds': 1}
 
         for item in hashed_inchi:
-            cursor = self.collection.find_one({'inchi_hashed': item},
+            cursor = self.collection.find_one({'InChI_Key': item},
                                               projection=projection)
             compounds = cursor['similar_compounds']
             scores = [list(dic.values()) for dic in compounds]
@@ -386,10 +385,10 @@ class QuerySabio(DataQuery):
                 rxns (:obj: `list` of :obj: `int`): list of kinlaw_ids that satisfy the condition
                 [id0, id1, id2,...,  ]
         '''
-        hashed_inchi = [hashlib.sha224(s.encode()).hexdigest()
+        hashed_inchi = [self.chem_manager.inchi_to_inchikey(s)
                         for s in inchi]
-        substrate = 'reactants.structures.hashed_inchi'
-        product = 'products.structures.hashed_inchi'
+        substrate = 'reactants.structures.InChI_Key'
+        product = 'products.structures.InChI_Key'
         projection = {'kinlaw_id': 1}
 
         id_tally = []
@@ -423,11 +422,11 @@ class QuerySabio(DataQuery):
                     rxns: list of kinlaw_ids that satisfy the condition
                     [id0, id1, id2,...,  ]
             '''
-            hashed_inchi = [hashlib.sha224(
-                s.encode()).hexdigest() for s in inchi]
+            hashed_inchi = [self.chem_manager.inchi_to_inchikey(s)
+                        for s in inchi]
 
-            substrate = 'reactants.structures.hashed_inchi'
-            product = 'products.structures.hashed_inchi'
+            substrate = 'reactants.structures.InChI_Key'
+            product = 'products.structures.InChI_Key'
             projection = {'kinlaw_id': 1, '_id': 0}
 
             id_tally = []
