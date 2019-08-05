@@ -9,7 +9,6 @@
 """
 
 from datanator.core import data_model, query_nosql
-from datanator.core.render_form import render_html_from_schema
 from datanator.data_source import *
 from datanator.util import molecule_util
 from datanator.util import taxonomy_util
