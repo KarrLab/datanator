@@ -94,10 +94,14 @@ class MetabolitesMeta(query_nosql.QuerySabio):
             if i % self.frequency == 0:
                 print('Getting fields of interest from {} document in {}'.format(i, collection_src))
             doc['InChI_Key'] = self.chem_manager.inchi_to_inchikey(doc['inchi'])
+            try:
+                synonyms = doc.get('synonyms', None).get('synonym')
+            except AttributeError:
+                synonyms = None
             col_des.update_one({'inchi': doc['inchi']},
                                   { '$set': { fields[0]: doc[fields[0]],
                                               fields[1]: doc[fields[1]],
-                                              'synonyms': doc['synonyms']['synonym'],
+                                              'synonyms': synonyms,
                                               'InChI_Key': doc['InChI_Key']}},
                                   upsert=True)
             i += 1
