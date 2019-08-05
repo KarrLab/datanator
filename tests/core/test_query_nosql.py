@@ -48,7 +48,7 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
         port = datanator.config.core.get_config()['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
-        cls.src = query_nosql.QueryMetabolitesMeta(
+        cls.src = query_metabolites_meta.QueryMetabolitesMeta(
             cache_dirname=cls.cache_dirname, MongoDB=MongoDB, replicaSet=replSet, db=cls.db,
                  verbose=True, max_entries=20, username = username, password = password)
 
@@ -86,20 +86,20 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         self.assertEqual(inchi[0]['m2m_id'], 'M2MDB001173')
 
     def test_get_ids_from_hash(self):
-        hashed_inchi_1 = '09fab91d3708097484215d419c9326290150f37e7c1bcc48a1bb4c7b'
-        hasehd_inchi_2 = 'cc46a6b3360bd6a51da1ec1b3da746456c7c05ed8ff63f930452bf9f'
+        hashed_inchi_1 = 'HHLFWLYXYJOTON-UHFFFAOYSA-N'
+        hasehd_inchi_2 = 'OVBPIULPVIDEAO-LBPRGKRZSA-N'
         result_1 = self.src.get_ids_from_hash(hashed_inchi_1)
         result_2 = self.src.get_ids_from_hash(hasehd_inchi_2)
-        self.assertEqual(result_1, {'m2m_id': 'M2MDB000016', 'ymdb_id': 'YMDB00058'})
-        self.assertEqual(result_2, {'m2m_id': 'M2MDB000006', 'ymdb_id': None})
+        self.assertEqual(result_1, {'m2m_id': 'M2MDB000043', 'ymdb_id': 'YMDB00033'})
+        self.assertEqual(result_2, {'m2m_id': 'M2MDB000044', 'ymdb_id': None})
 
     # @unittest.skip('passed')
     def test_get_metabolite_name_by_hash(self):
-        compounds = ['f56e0c2c16f3a2549c65be52179ed860b7cb375e4037061d238e433d',
-                    'afaca8d9351843f37d9d010c8eb15601eb385121c988ca671ac0db31']
+        compounds = ['HHLFWLYXYJOTON-UHFFFAOYSA-N',
+                    'OVBPIULPVIDEAO-LBPRGKRZSA-N']
         result = self.src.get_metabolite_name_by_hash(compounds)
-        self.assertEqual(result[0], 'Unispheres Q 10')
-        self.assertEqual(result[1], 'Guanosine diphosphoric acid fucose')
+        self.assertEqual(result[0], 'α-ketoacetic acid')
+        self.assertEqual(result[1], 'Vitamin M')
 
     # @unittest.skip('passed')
     def test_get_metabolite_hashed_inchi(self):
@@ -124,7 +124,6 @@ class TestQueryMetabolitesMeta(unittest.TestCase):
         compound = ['β-D-Ribopyranose']
         raw4, result4 = self.src.get_metabolite_similar_compounds(compound, num = 30, threshold = 0.6)
         self.assertTrue('d' not in list(result4[0].keys()))
-        # self.assertTrue('Auto inducer 2' in list(result4[0].keys()))
 
 class TestQuerySabio(unittest.TestCase):
 

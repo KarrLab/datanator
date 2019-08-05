@@ -137,7 +137,7 @@ class QueryMetabolitesMeta(DataQuery):
                  password=None, authSource='admin'):
         self.collection_str = collection_str
         self.verbose = verbose
-        super(DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
+        super(query_nosql.DataQuery, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB,
                                         replicaSet=replicaSet, db=db,
                                         verbose=verbose, max_entries=max_entries, username=username,
                                         password=password, authSource=authSource)
@@ -239,12 +239,12 @@ class QueryMetabolitesMeta(DataQuery):
                 hashed_inchi: ['3e23df....', '7666ffa....']
         '''
         hashed_inchi = []
-        projection = {'_id': 0, 'InChI_Key': 1}
+        projection = {'_id': 0, 'inchi_hashed': 1}
         collation = {'locale': 'en', 'strength': 2}
         for compound in compounds:
             cursor = self.collection.find_one({'synonyms': compound},
                                               projection=projection, collation=collation)
-            hashed_inchi.append(cursor['InChI_Key'])
+            hashed_inchi.append(cursor['inchi_hashed'])
         return hashed_inchi
 
     def get_metabolite_name_by_hash(self, compounds):
@@ -265,10 +265,11 @@ class QueryMetabolitesMeta(DataQuery):
             try:
                 result.append(cursor['synonyms'])
                 if not isinstance(cursor['synonyms'], list):
-                    cursor['synonyms'] = [cursor['synonyms']]
-            except KeyError:
-                result.append({'synonym': ['None']})
-        return [x['synonym'][-1] for x in result]
+                    cursor['synonyms'] = [
+                        cursor['synonyms']]
+            except TypeError:
+                result.append(['None'])
+        return [x[-1] for x in result]
 
     def get_metabolite_similar_compounds(self, compounds, num=0, threshold=0):
         ''' Given a list of compound names
@@ -296,7 +297,7 @@ class QueryMetabolitesMeta(DataQuery):
         projection = {'_id': 0, 'similar_compounds': 1}
 
         for item in hashed_inchi:
-            cursor = self.collection.find_one({'InChI_Key': item},
+            cursor = self.collection.find_one(filter={'inchi_hashed': item},
                                               projection=projection)
             compounds = cursor['similar_compounds']
             scores = [list(dic.values()) for dic in compounds]

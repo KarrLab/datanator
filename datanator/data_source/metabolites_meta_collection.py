@@ -69,6 +69,12 @@ class MetabolitesMeta(query_nosql.QuerySabio):
         #                          {'$set': {'similar_compounds': replacement}},
         #                         upsert=False)
         #     i += 1
+
+    def replace_key_in_similar_compounds(self):
+        query = {}
+        projetion = {'similar_compounds': 1}
+        _, _, col = self.con_db('metabolites_meta')
+        docs = col.find(filter=query, projection=projection)
         
 
     def fill_metabolite_fields(self, fields=None, collection_src=None, collection_des = None):

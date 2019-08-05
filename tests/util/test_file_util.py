@@ -65,6 +65,15 @@ class TestFileUtil(unittest.TestCase):
         result = self.src.replace_dict_key(_dict, replacements)
         self.assertEqual({'d':0, 'e':1, 'f':2}, result)
 
+    def test_replace_list_dict_key(self):
+        _list_0 = [{'a': 0}, {'b': 1}, {'c': 2}]
+        replacement_0 = ['d', 'e', 'f']
+        replacement_1 = ['g', 'h']
+        result_0 = self.src.replace_list_dict_key(_list_0, replacement_0)
+        result_1 = self.src.replace_list_dict_key(_list_0, replacement_1)
+        self.assertEqual(result_0, [{'d': 0}, {'e': 1}, {'f': 2}])
+        self.assertEqual(result_1, 'two lists must be of the same length')
+
     def test_distance_to_common(self):
         list1 = ['a', 'b', 'c'] 
         list2 = ['a', 'b', 'd']

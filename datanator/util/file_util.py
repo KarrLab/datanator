@@ -119,6 +119,28 @@ class FileUtil:
             i += 1
         return result
 
+    def replace_list_dict_key(self, _list, replacements):
+        ''' Replace keys in a dictionary with the order
+            in replacements e.g.,
+            [{'a': 0}, {'b': 1}, {'c': 2}], ['d', 'e', 'f'] =>
+            [{'d': 0}, {'e': 1}, {'f': 2}]            
+            Args:
+                _list (:obj: `list` of :obj: `dict`): list of dictionaries whose keys are to be replaced
+                replacement (:obj: `list`): list of replacement keys
+
+            Return:
+                result (:obj: `list` of :obj: `dict`): dictionary with replaced keys
+        '''
+        result = []
+        if len(_list) != len(replacements):
+            return 'two lists must be of the same length'
+
+        for a, b in zip(_list, replacements):
+            a[b] = a.pop(list(a.keys())[0])
+            result.append(a)
+
+        return result
+
     def get_common(self, list1, list2):
         ''' Given two lists, find the closest
             common ancestor
@@ -156,7 +178,7 @@ class FileUtil:
             key/value pair in a list of dictionaries
 
             Args:
-                dict_list (:obj: `list`): list of dictionaries
+                dict_list (:obj: `list` of :obj: `dict`): list of dictionaries
                 key (:obj: `string`): key in the dictionary
                 value (:obj: ``): value to be matched
                                 if value==None, then only search for key
