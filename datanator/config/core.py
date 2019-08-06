@@ -28,10 +28,27 @@ def get_config(extra=None):
         user=(
             'datanator.cfg',
             os.path.expanduser('~/.wc/datanator.cfg'),
-        ),
+        )
     )
 
     return wc_utils.config.core.ConfigManager(paths).get_config(extra=extra)
+def get_mongo_config():
+    """ Get a configuration to pass directly into the mongo client
+    Args:
+        extra (:obj: 'dict', optional): override the Mongo information loaded from the config file
+    Returns: 
+        :obj:'dict': dictionary containing parameters to pass into the MongoDB util constructor
+    """
+    config=get_config()
+    username =config['datanator']['mongodb']['user']
+    password =config['datanator']['mongodb']['password']
+    port = config['datanator']['mongodb']['port']
+    MongoDB = config['datanator']['mongodb']['server']
+    replSet = config['datanator']['mongodb']['replSet']
+    mongo_config = {"MongoDB":MongoDB,"username":username, "password": password, "port": port, "replSet": replSet}
+    return mongo_config
+
+
 
 
 def get_debug_logs_config(extra=None):
