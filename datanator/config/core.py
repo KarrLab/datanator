@@ -26,7 +26,7 @@ def get_config(extra=None):
         default=pkg_resources.resource_filename('datanator', 'config/core.default.cfg'),
         schema=pkg_resources.resource_filename('datanator', 'config/core.schema.cfg'),
         user=(
-            'datanator.cfg',
+            'datanator.ini',
             os.path.expanduser('~/.wc/datanator.cfg'),
         )
     )
@@ -45,7 +45,7 @@ def get_mongo_config():
     port = config['datanator']['mongodb']['port']
     MongoDB = config['datanator']['mongodb']['server']
     replSet = config['datanator']['mongodb']['replSet']
-    mongo_config = {"MongoDB":MongoDB,"username":username, "password": password, "port": port, "replSet": replSet}
+    mongo_config = {"MongoDB":MongoDB,"username":username, "password": password, "replicaSet": replSet}
     return mongo_config
 
 
