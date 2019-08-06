@@ -80,9 +80,12 @@ class MetabolitesMeta(query_nosql.QuerySabio):
             _list = doc['similar_compounds']
             for dic in _list:
                 old_key = list(dic.keys())[0]
-                new_key = col.find_one(filter={'inchi': old_key}, 
-                    projection={'InChI_Key':1})['InChI_Key']
-                result.append( {new_key: dic[old_key]})
+                try:
+                    new_key = col.find_one(filter={'inchi': old_key}, 
+                        projection={'InChI_Key':1})['InChI_Key']
+                    result.append( {new_key: dic[old_key]})
+                except TypeError:
+                    result.append( {'NoStructure': -1} )
             col.update_one({'_id': doc['_id']},
                 {'$set': {'similar_compounds': result} })
         
@@ -110,10 +113,12 @@ class MetabolitesMeta(query_nosql.QuerySabio):
             if i % self.frequency == 0:
                 print('Getting fields of interest from {} document in {}'.format(i, collection_src))
             doc['InChI_Key'] = self.chem_manager.inchi_to_inchikey(doc['inchi'])
+            if isinstance(doc.get('synonyms'), list):
+                continue
             try:
                 synonyms = doc.get('synonyms', None).get('synonym')
             except AttributeError:
-                synonyms = None
+                synonyms = doc.get('synonyms', None)
             col_des.update_one({'inchi': doc['inchi']},
                                   { '$set': { fields[0]: doc[fields[0]],
                                               fields[1]: doc[fields[1]],
@@ -136,8 +141,14 @@ def main():
                                 verbose=True, max_entries=float('inf'), 
                                 username = username, password = password, meta_loc = meta_loc)
 
-    manager.load_content()
+    # manager.load_content()
+    collection_name = 'metabolites_meta'
+    manager.fill_metabolite_fields(fields=['m2m_id', 'inchi', 'synonyms.synonym'],
+        collection_src='ecmdb', collection_des = collection_name)
 
+    manager.fill_metabolite_fields(fields=['ymdb_id', 'inchi', 'synonyms.synonym'], 
+        collection_src='ymdb', 
+        collection_des = collection_name)
 
 if __name__ == '__main__':
     main()
