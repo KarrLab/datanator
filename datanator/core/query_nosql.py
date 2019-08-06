@@ -252,7 +252,7 @@ class QueryMetabolitesMeta(DataQuery):
             return a list of name (one of the synonyms)
             for each compound
             Args:
-                compounds: list of compounds in hashed_inchi format
+                compounds: list of compounds in inchikey format
             Return:
                 result: list of names
                     [name, name, name]
@@ -262,13 +262,11 @@ class QueryMetabolitesMeta(DataQuery):
         for compound in compounds:
             cursor = self.collection.find_one({'InChI_Key': compound},
                                               projection=projection)
-            try:
-                result.append(cursor['synonyms'])
-                if not isinstance(cursor['synonyms'], list):
-                    cursor['synonyms'] = [
-                        cursor['synonyms']]
-            except TypeError:
-                result.append(['None'])
+            if not isinstance(cursor['synonyms'], list):
+                cursor['synonyms'] = [cursor['synonyms']]
+            result.append(cursor.get('synonyms', ['None']))
+            # except TypeError:
+            #     result.append(['None'])
         return [x[-1] for x in result]
 
     def get_metabolite_similar_compounds(self, compounds, num=0, threshold=0):

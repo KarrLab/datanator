@@ -18,9 +18,6 @@ import Bio.SeqUtils
 import math
 import logging
 import pymongo
-logging.basicConfig(filename='./logs/sabiork_parser.log', level=logging.WARNING, 
-                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
-logger=logging.getLogger()
 
 
 class SabioRk:
