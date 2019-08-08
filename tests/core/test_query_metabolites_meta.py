@@ -1,5 +1,5 @@
 import unittest
-from datanator.query import query_metabolites_meta
+from datanator.core import query_metabolites_meta
 import tempfile
 import shutil
 import configparser

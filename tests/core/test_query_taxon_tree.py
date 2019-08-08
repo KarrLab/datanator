@@ -1,5 +1,5 @@
 import unittest
-from datanator.query import query_taxon_tree
+from datanator.core import query_taxon_tree
 import tempfile
 import shutil
 import configparser

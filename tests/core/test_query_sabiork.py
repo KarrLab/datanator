@@ -1,5 +1,5 @@
 import unittest
-from datanator.query import query_sabiork
+from datanator.core import query_sabiork
 import tempfile
 import shutil
 import configparser
