@@ -1,4 +1,4 @@
-from datanator.core import qeury_sabiork
+from datanator.core import query_sabiork
 from datanator.util import chem_util
 from datanator.util import file_util
 from datanator.util import index_collection
@@ -6,7 +6,7 @@ import datanator.config.core
 import pymongo
 import re
 
-class MetabolitesMeta(qeury_sabiork.QuerySabio):
+class MetabolitesMeta(query_sabiork.QuerySabio):
     ''' meta_loc: database location to save the meta collection
     '''
 
