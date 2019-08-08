@@ -1,5 +1,5 @@
 import unittest
-from datanator_flask_REST.query import query_metabolites_meta
+from datanator.query import query_metabolites_meta
 import tempfile
 import shutil
 import configparser

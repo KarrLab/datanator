@@ -1,5 +1,5 @@
 import unittest
-from datanator_flask_REST.query import query_taxon_tree
+from datanator.query import query_taxon_tree
 import tempfile
 import shutil
 import configparser

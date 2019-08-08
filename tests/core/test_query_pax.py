@@ -1,5 +1,5 @@
 import unittest
-from datanator_flask_REST.query import query_pax
+from datanator.query import query_pax
 import tempfile
 import shutil
 import configparser

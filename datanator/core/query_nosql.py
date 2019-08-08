@@ -1,4 +1,4 @@
-from datanator_flask_REST.util import mongo_util, chem_util, file_util
+from datanator.util import mongo_util, chem_util, file_util
 import time
 
 class DataQuery(mongo_util.MongoUtil):

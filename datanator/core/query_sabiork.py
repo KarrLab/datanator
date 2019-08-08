@@ -1,4 +1,4 @@
-from datanator_flask_REST.util import mongo_util, chem_util, file_util
+from datanator.util import mongo_util, chem_util, file_util
 from . import query_nosql
 import json
 

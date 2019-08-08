@@ -45,3 +45,4 @@ ftputil
 elasticsearch
 genson
 quilt
+jsonpickle

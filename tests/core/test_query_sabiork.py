@@ -1,5 +1,5 @@
 import unittest
-from datanator_flask_REST.query import query_sabiork
+from datanator.query import query_sabiork
 import tempfile
 import shutil
 import configparser

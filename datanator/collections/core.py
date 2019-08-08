@@ -4,17 +4,20 @@ import json
 import jsonpickle
 
 
-json.load()
+# json.load()
 
 
 class collection_entry_meta(object):
     """ Contains information regarding the creation of the datbase entry"""
 
     def __init__(self, Author=None, Date=None, Title=None, Version=None, About=None, type=None):
+        pass
 
 
 class collection_entry(object):
-	pass
+
+    def __init__(self):
+        pass
 
 
 def get_mongo_connection(collection='test'):

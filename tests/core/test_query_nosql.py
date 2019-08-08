@@ -1,5 +1,5 @@
 import unittest
-from datanator_flask_REST.query import query_nosql
+from datanator.core import query_nosql
 import tempfile
 import shutil
 import configparser
