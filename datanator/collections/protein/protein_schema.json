@@ -1,1 +1,37 @@
-{"test": "test"}
+{
+	"$jsonSchema": {
+		"required": ["uniprot_id", "ec_number", "abundances",
+		"protein_name"],
+		"properties":{
+			"uniprot_id": {
+				"bsonType": "string",
+				"description": "must be string and is required"
+			},
+			"ec_number": {
+				"bsonType": "string",
+				"description": "must be string and is required"
+			},
+			"protein_name": {
+				"bsonType": "string",
+				"description": "must be string and is required"
+			},
+			"abundances": {
+				"bsonType": "object",
+				"required": ["protein_id", "abundance", "ncbi_taxonomy_id",
+					"species_name"],
+				"properties": {
+					"protein_id": {
+						"bsonType": "object",
+						"required": ["ec_number", "pax_id"],
+						"properties": {
+							"ec_number": { "bsonType": "string" },
+							"pax_id": { "bsonType": "string" }
+						}
+					},
+					"abundance": { "bsonType": "int" },
+					"ncbi_taxonomy_id": { "bsonType": "int" }
+				}
+			}			
+		}
+	}
+}

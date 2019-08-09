@@ -3,11 +3,13 @@ import requests
 import os
 from datanator.util import mongo_util
 from datanator.util import file_util
+import datanator.config.core
+import tempfile
 
 
 class KeggOrthology(mongo_util.MongoUtil):
 
-    def __init__(self, cache_dirname, MongoDB, db, replicaSet=None, 
+    def __init__(self, cache_dirname=None, MongoDB=None, db=None, replicaSet='', 
         verbose=False, max_entries=float('inf'), username = None,
         password = None, authSource = 'admin'):
         self.ENDPOINT_DOMAINS = {
@@ -18,7 +20,7 @@ class KeggOrthology(mongo_util.MongoUtil):
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection = 'kegg_orthology'
+        self.collection = 'kegg_orthology_new'
         self.path = os.path.join(self.cache_dirname, self.collection)
         super(KeggOrthology, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                                             verbose=verbose, max_entries=max_entries, username = username,
@@ -50,8 +52,7 @@ class KeggOrthology(mongo_util.MongoUtil):
 
         file_format = '.txt'
 
-        i = 0
-        for name in names:
+        for i, name in enumerate(names):
             if i == self.max_entries:
                 break
             if self.verbose and i % 100 == 0:
@@ -63,7 +64,6 @@ class KeggOrthology(mongo_util.MongoUtil):
                 collection.replace_one(
                     {'kegg_orthology_id': doc['kegg_orthology_id']}, doc, upsert=True)
 
-            i += 1
 
     def parse_definition(self, line):
         '''Definition line could be something as follows:
@@ -74,7 +74,6 @@ class KeggOrthology(mongo_util.MongoUtil):
             head_tail_clean = line.strip().replace('\n', '')
             head_tail_clean = head_tail_clean[11:]
             sep_name = head_tail_clean.split('/')  # list
-
             name_sans_last = sep_name[:-1]  # list
             last_name = sep_name[-1].split('[')[0].strip()  # string
             name_list = [item.strip() for item in name_sans_last] + [last_name]
@@ -192,3 +191,24 @@ class KeggOrthology(mongo_util.MongoUtil):
             with open(log_file, 'a') as f:
                 f.write(str(e) + '\n')
             pass
+
+def main():
+    db = 'datanator'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config(
+    )['datanator']['mongodb']['port']
+    replSet = datanator.config.core.get_config(
+    )['datanator']['mongodb']['replSet']
+    cache_dirname = tempfile.mkdtemp()
+    manager = KeggOrthology(MongoDB=MongoDB,  db=db, cache_dirname=cache_dirname,
+                            verbose=True, username=username,
+                            password=password)
+    manager.load_content()
+
+if __name__ == '__main__':
+    main()

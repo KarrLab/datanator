@@ -74,14 +74,14 @@ class TestKeggOrthology(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
     
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_download_ko(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')
         path_to_file = os.path.join(self.cache_dirname, self.collection_str)
         self.assertTrue(os.path.exists(path_to_file+'/'+file_name+'.txt'))
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_parse_ko_txt(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')
@@ -108,8 +108,8 @@ class TestKeggOrthology(unittest.TestCase):
         doc = col.find_one({'kegg_orthology_id': 'K00001'})
         self.assertEqual(doc['gene_name'],  ["E1.1.1.1", "adh"])
 
-    def tets_parse_definition(self):
-        line = 'fructose-bisphosphate aldolase, class II [EC:4.1.2.13]'
+    def test_parse_definition(self):
+        line = 'Definition fructose-bisphosphate aldolase, class II [EC:4.1.2.13]'
         name_list, ec_list = self.src.parse_definition(line)
-        print(name_list)
-        print(ec_list)
+        self.assertEqual(['fructose-bisphosphate aldolase, class II'], name_list)
+        self.assertEqual(['4.1.2.13'], ec_list)
