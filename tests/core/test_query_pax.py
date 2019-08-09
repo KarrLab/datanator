@@ -1,5 +1,6 @@
 import unittest
-from datanator.core import query_pax
+from datanator.query import query_pax
+from datanator.util import file_util
 import tempfile
 import shutil
 import configparser
@@ -21,6 +22,7 @@ class TestQueryPax(unittest.TestCase):
         cls.MongoDB = MongoDB
         cls.username = username
         cls.password = password
+        cls.file_manager = file_util.FileUtil()
         cls.src = query_pax.QueryPax(
             cache_dirname=cls.cache_dirname, MongoDB=cls.MongoDB, db=cls.db,
                  verbose=True, max_entries=20, username = cls.username, password = cls.password)
@@ -32,3 +34,10 @@ class TestQueryPax(unittest.TestCase):
     def test_get_all_species(self):
         result = self.src.get_all_species()
         self.assertTrue('Synechocystis.sp. 6803' in result)
+
+    def test_get_abundance_from_uniprot(self):
+        uniprot_id = 'F4KDK1'
+        result = self.src.get_abundance_from_uniprot(uniprot_id)
+        dic = self.file_manager.search_dict_list(result, 'abundance', '15.2')
+        exp = [{'ncbi_taxonomy_id': 3702, 'species_name': 'A.thaliana', 'organ': 'COTYLEDON', 'abundance': '15.2'}]
+        self.assertEqual(dic, exp)

@@ -15,6 +15,8 @@ class QueryPax(query_nosql.DataQuery):
                                                     password=password, authSource=authSource)
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
+        self.max_entries = max_entries
+        self.verbose = verbose
         self.client, self.db_obj, self.collection = self.con_db(collection_str)
 
     def get_all_species(self):
@@ -31,3 +33,34 @@ class QueryPax(query_nosql.DataQuery):
         for doc in docs:
             results.append(doc['species_name'])
         return list(set(results))
+
+    def get_abundance_from_uniprot(self, uniprot_id):
+        '''
+            Get all abundance data for uniprot_id
+            Args:
+                    uniprot_id (:obj: `str`) protein uniprot_id
+            Return:
+                    result (:obj: `list` of :obj: `dict`): result containing
+                    [{'ncbi_taxonomy_id': , 'species_name': ,
+                    'organ': , 'abundance'}]
+        '''
+        query = {'observation.protein_id.uniprot_id': uniprot_id}
+        projection = {'ncbi_id': 1, 'species_name': 1,
+                      'observation.$': 1, 'organ': 1}
+        docs = self.collection.find(filter=query, projection=projection)
+        count = self.collection.count_documents(query)
+        result = []
+        for i, doc in enumerate(docs):
+            if i > self.max_entries:
+                break
+            if self.verbose and i % 50 == 0:
+                print('Processing document {} out of {}'.format(i, count))
+            ncbi_taxonomy_id = doc['ncbi_id']
+            species_name = doc['species_name']
+            organ = doc['organ']
+            abundance = doc['observation'][0]['abundance']
+            dic = {'ncbi_taxonomy_id': ncbi_taxonomy_id,
+            'species_name': species_name, 'organ': organ,
+            'abundance': abundance}
+            result.append(dic)
+        return result

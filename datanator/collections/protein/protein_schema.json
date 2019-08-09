@@ -18,11 +18,12 @@
 			"abundances": {
 				"bsonType": "object",
 				"required": ["organ", "ncbi_taxonomy_id",
-					"species_name"],
+					"species_name", "abundance"],
 				"properties": {
 					"organ": { "bsonType": "string" },
 					"ncbi_taxonomy_id": { "bsonType": "int" },
-					"species_name": { "bsonType": "string" }
+					"species_name": { "bsonType": "string" },
+					"abundance": { "bsonType": "int" }
 					}
 				},
 			"gene_name": {"bsonType": "string"}
