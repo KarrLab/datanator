@@ -1,7 +1,7 @@
 {
 	"$jsonSchema": {
 		"required": ["uniprot_id", "ec_number", "abundances",
-		"protein_name"],
+		"protein_name", "gene_name"],
 		"properties":{
 			"uniprot_id": {
 				"bsonType": "string",
@@ -17,21 +17,15 @@
 			},
 			"abundances": {
 				"bsonType": "object",
-				"required": ["protein_id", "abundance", "ncbi_taxonomy_id",
+				"required": ["organ", "ncbi_taxonomy_id",
 					"species_name"],
 				"properties": {
-					"protein_id": {
-						"bsonType": "object",
-						"required": ["ec_number", "pax_id"],
-						"properties": {
-							"ec_number": { "bsonType": "string" },
-							"pax_id": { "bsonType": "string" }
-						}
-					},
-					"abundance": { "bsonType": "int" },
-					"ncbi_taxonomy_id": { "bsonType": "int" }
-				}
-			}			
-		}
+					"organ": { "bsonType": "string" },
+					"ncbi_taxonomy_id": { "bsonType": "int" },
+					"species_name": { "bsonType": "string" }
+					}
+				},
+			"gene_name": {"bsonType": "string"}
+		}			
 	}
 }
