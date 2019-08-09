@@ -99,7 +99,7 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(doc3['gene_ortholog'][-1], {'organism': 'LOKI', 'gene_id': ['Lokiarch_08040(pgi_1)', 'Lokiarch_21890(pgi_2)']})
         self.assertEqual(doc3['reference'][0], {'namespace': 'PMID', 'id': '2387591'})
 
-    # @unittest.skip('hold up a min')
+    @unittest.skip('hold up a min')
     def test_load_content(self):
         self.src.load_content()
         col = self.collection
@@ -107,3 +107,9 @@ class TestKeggOrthology(unittest.TestCase):
         self.assertEqual(col.count_documents({'kegg_orthology_id': 'K00001'}), 1)
         doc = col.find_one({'kegg_orthology_id': 'K00001'})
         self.assertEqual(doc['gene_name'],  ["E1.1.1.1", "adh"])
+
+    def tets_parse_definition(self):
+        line = 'fructose-bisphosphate aldolase, class II [EC:4.1.2.13]'
+        name_list, ec_list = self.src.parse_definition(line)
+        print(name_list)
+        print(ec_list)
