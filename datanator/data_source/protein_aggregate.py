@@ -42,7 +42,7 @@ class ProteinAggregate:
         projection = {'status': 0, '_id': 0}
         docs = col_uniprot.find(filter=query, projection=projection)
         count = col_uniprot.count_documents({})
-        for i, doc in enumerate(docs):
+        for i, doc in enumerate(docs[:32010]):
             if i == self.max_entries:
                 break
             if self.verbose and i % 10 == 0:

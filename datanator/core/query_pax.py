@@ -1,5 +1,6 @@
 from datanator.util import chem_util, file_util
 from . import query_nosql
+from pymongo.collation import Collation, CollationStrength
 
 
 class QueryPax(query_nosql.DataQuery):
@@ -47,7 +48,8 @@ class QueryPax(query_nosql.DataQuery):
         query = {'observation.protein_id.uniprot_id': uniprot_id}
         projection = {'ncbi_id': 1, 'species_name': 1,
                       'observation.$': 1, 'organ': 1}
-        docs = self.collection.find(filter=query, projection=projection)
+        collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+        docs = self.collection.find(filter=query, projection=projection, collation=collation)
         count = self.collection.count_documents(query)
         try:
             result = [{'ncbi_taxonomy_id': docs[0]['ncbi_id'], 
