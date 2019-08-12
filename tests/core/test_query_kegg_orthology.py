@@ -1,5 +1,5 @@
 import unittest
-from datanator.query import query_kegg_orthology
+from datanator.core import query_kegg_orthology
 from datanator.util import file_util
 import tempfile
 import shutil
