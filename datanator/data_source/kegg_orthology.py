@@ -184,7 +184,7 @@ class KeggOrthology(mongo_util.MongoUtil):
             info = requests.get("http://rest.kegg.jp/get/ko:{}".format(address))
             info.raise_for_status()
             file_name = os.path.join(self.path, name)
-            with open(file_name, 'w') as f:
+            with open(file_name, 'w+') as f:
                 f.write(info.text)
         except requests.exceptions.HTTPError as e:
             log_file = os.path.join(self.path, 'kegg_orthology_log.txt')

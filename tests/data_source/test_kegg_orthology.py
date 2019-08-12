@@ -17,7 +17,7 @@ class TestKeggOrthology(unittest.TestCase):
         cls.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
         port = datanator.config.core.get_config()['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
-        cls.collection_str = 'kegg_orthology'
+        cls.collection_str = 'kegg_orthology_new'
         cls.src = kegg_orthology.KeggOrthology(
                                     cls.cache_dirname, cls.MongoDB, cls.db, 
                                     replicaSet=replSet, verbose=True, max_entries=20,
