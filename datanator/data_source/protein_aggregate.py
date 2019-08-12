@@ -2,6 +2,7 @@ import json
 from datanator.util import mongo_util
 from datanator.core import (query_pax, query_kegg_orthology,
                            query_taxon_tree)
+import datanator.config.core
 
 
 class ProteinAggregate:
@@ -99,3 +100,25 @@ class ProteinAggregate:
             self.col.update_one({'uniprot_id': doc['uniprot_id']},
             					{'$set': {'ancestor_name': anc_name[0],
             							'ancestor_taxon_id': anc_id[0]} })
+
+def main():
+    src_db = 'datanator'
+    des_db = 'datanator'
+    collection_str = 'protein'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config(
+    )['datanator']['mongodb']['port']        
+    manager = ProteinAggregate(username=username, password=password, server=server, 
+                               authSource='admin', src_database=src_db,
+                               verbose=True, collection=collection_str, destination_database=des_db)
+    manager.load_abundance()
+    manager.load_ko()
+    manager.load_taxon()
+
+if __name__ == '__main__':
+	main()

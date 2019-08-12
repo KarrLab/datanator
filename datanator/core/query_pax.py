@@ -58,7 +58,7 @@ class QueryPax(query_nosql.DataQuery):
             if i > self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
-                print('Processing document {} out of {}'.format(i, count))
+                print('Processing pax document {} out of {}'.format(i, count))
             organ = doc['organ']
             abundance = doc['observation'][0]['abundance']
             dic = {'organ': organ,
