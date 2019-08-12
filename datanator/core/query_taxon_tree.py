@@ -73,7 +73,7 @@ class QueryTaxonTree(query_nosql.DataQuery):
         ''' Get organism's ancestor ids by
             using organism's ids
             Args:
-                ids: list of organism's ids e.g. Candidatus Diapherotrites
+                ids: list of organism's ids e.g. 12345
             Return:
                 result: list of ancestors in order of the farthest to the closest
         '''

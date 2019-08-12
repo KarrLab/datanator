@@ -74,14 +74,14 @@ class TestKeggOrthology(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.client.close()
     
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_download_ko(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')
         path_to_file = os.path.join(self.cache_dirname, self.collection_str)
         self.assertTrue(os.path.exists(path_to_file+'/'+file_name+'.txt'))
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_parse_ko_txt(self):
         file_name = 'K03014'
         self.src.download_ko(file_name + '.txt')

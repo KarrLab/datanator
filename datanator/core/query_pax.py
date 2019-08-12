@@ -41,26 +41,27 @@ class QueryPax(query_nosql.DataQuery):
                     uniprot_id (:obj: `str`) protein uniprot_id
             Return:
                     result (:obj: `list` of :obj: `dict`): result containing
-                    [{'ncbi_taxonomy_id': , 'species_name': ,
-                    'organ': , 'abundance'}]
+                    [{'ncbi_taxonomy_id': , 'species_name': },
+                    {'organ': , 'abundance'}, {'organ': , 'abundance'}]
         '''
         query = {'observation.protein_id.uniprot_id': uniprot_id}
         projection = {'ncbi_id': 1, 'species_name': 1,
                       'observation.$': 1, 'organ': 1}
         docs = self.collection.find(filter=query, projection=projection)
         count = self.collection.count_documents(query)
-        result = []
+        try:
+            result = [{'ncbi_taxonomy_id': docs[0]['ncbi_id'], 
+            'species_name': docs[0]['species_name']}]
+        except IndexError:
+            return []
         for i, doc in enumerate(docs):
             if i > self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
                 print('Processing document {} out of {}'.format(i, count))
-            ncbi_taxonomy_id = doc['ncbi_id']
-            species_name = doc['species_name']
             organ = doc['organ']
             abundance = doc['observation'][0]['abundance']
-            dic = {'ncbi_taxonomy_id': ncbi_taxonomy_id,
-            'species_name': species_name, 'organ': organ,
+            dic = {'organ': organ,
             'abundance': abundance}
             result.append(dic)
         return result
