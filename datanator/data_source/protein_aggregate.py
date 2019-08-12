@@ -1,6 +1,6 @@
 import json
 from datanator.util import mongo_util
-from datanator.core import query_pax
+from datanator.core import query_pax, query_kegg_orthology
 
 
 class ProteinAggregate:
