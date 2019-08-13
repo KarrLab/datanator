@@ -32,11 +32,11 @@ class TestProteinAggregate(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    # @unittest.skip('passed')
-    def test_copy_uniprot(self):
-        self.src.copy_uniprot()
-        doc = self.src.col.find_one(filter={'uniprot_id': 'A1AU17'})
-        self.assertTrue('ec_number' in doc.keys())
+    # # @unittest.skip('passed')
+    # def test_copy_uniprot(self):
+    #     self.src.copy_uniprot()
+    #     doc = self.src.col.find_one(filter={'uniprot_id': 'A1AU17'})
+    #     self.assertTrue('ec_number' in doc.keys())
 
     # @unittest.skip('passed')
     def test_load_abundance_from_pax(self):

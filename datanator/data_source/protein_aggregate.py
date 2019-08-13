@@ -43,16 +43,7 @@ class ProteinAggregate:
         projection = {'status': 0, '_id': 0}
         docs = col_uniprot.find(filter=query, projection=projection)
         count = col_uniprot.count_documents({})
-        for i, doc in enumerate(docs):
-            if i == self.max_entries:
-                break
-            if self.verbose and i % 10 == 0:
-                print('Copying uniprot info {} of {} ...'.format(
-                    i, min(count, self.max_entries)))
-            # doc['abundacnes'] = []
-            self.col.update_one({'uniprot_id': doc['uniprot_id']},
-                                {'$set': doc},
-                                upsert=True)
+        self.col.insert_many(docs)
         collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.col.create_index([("uniprot_id", pymongo.ASCENDING)], background=True, collation=collation)
 
@@ -78,7 +69,7 @@ class ProteinAggregate:
             for j, obs in enumerate(doc['observation']):
                 if j == self.max_entries:
                     break
-                if self.verbose and j % 100 == 0 and i % 10 == 0:
+                if self.verbose and j % 100 == 0 and i % 1 == 0:
                     print('  Loading observation info {} of {} ...'.format(
                         j, len(doc['observation'])))
                 try:
@@ -153,8 +144,8 @@ def main():
     manager = ProteinAggregate(username=username, password=password, server=server, 
                                authSource='admin', src_database=src_db,
                                verbose=True, collection=collection_str, destination_database=des_db)
-    manager.copy_uniprot()
-    maanger.load_abundance_from_pax()
+    # manager.copy_uniprot()
+    manager.load_abundance_from_pax()
     manager.load_ko()
     manager.load_taxon()
 
