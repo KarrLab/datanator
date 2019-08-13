@@ -32,12 +32,22 @@ class TestProteinAggregate(unittest.TestCase):
         shutil.rmtree(cls.cache_dirname)
         cls.src.client.close()
 
-    @unittest.skip('passed')
-    def test_load_abundance(self):
-        self.src.load_abundance()
-        entrez_id = self.src.col.find_one(filter={'uniprot_id': 'Q62433'})['entrez_id']
-        self.assertEqual(entrez_id, '17988')
+    # @unittest.skip('passed')
+    def test_copy_uniprot(self):
+        self.src.copy_uniprot()
+        doc = self.src.col.find_one(filter={'uniprot_id': 'A1AU17'})
+        self.assertTrue('ec_number' in doc.keys())
 
+    # @unittest.skip('passed')
+    def test_load_abundance_from_pax(self):
+        self.src.col.update_one({'uniprot_id': 'Q72DI0'},
+            {'$set': {'gene_name': 'a_mock_value'} }, upsert=True)
+        self.src.load_abundance_from_pax()
+        doc = self.src.col.find_one(filter={'uniprot_id': 'Q72DI0'})
+        self.assertTrue('abundances' in doc.keys())
+        self.assertTrue('ncbi_taxonomy_id' in doc.keys())
+
+    # @unittest.skip('passed')
     def test_load_ko(self):
         self.src.col.update_one({'uniprot_id': 'a_mock_value'},
             {'$set': {'gene_name': 'gdh'} }, upsert=True) #insert a mock document
@@ -45,7 +55,8 @@ class TestProteinAggregate(unittest.TestCase):
         doc = self.src.col.find_one(filter={'uniprot_id': 'a_mock_value'})
         self.assertTrue('ko_number' in doc.keys())
 
+    # @unittest.skip('passed')
     def test_load_taxon(self):
         self.src.load_taxon()
-        doc = self.src.col.find_one(filter={'uniprot_id': 'O88425'})
+        doc = self.src.col.find_one(filter={'uniprot_id': 'Q72DI0'})
         self.assertTrue('ancestor_name' in doc.keys())

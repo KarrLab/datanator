@@ -3,7 +3,8 @@ from datanator.util import mongo_util
 from datanator.core import (query_pax, query_kegg_orthology,
                            query_taxon_tree)
 import datanator.config.core
-
+from pymongo.collation import Collation, CollationStrength
+import pymongo
 
 class ProteinAggregate:
 
@@ -33,31 +34,67 @@ class ProteinAggregate:
                                                               password=password, authSource=authSource,
                                                               db=destination_database).con_db(collection)
 
-    def load_abundance(self):
+    def copy_uniprot(self):
         '''
-                Load protein abundance data from paxDB
+            Copy relevant information from uniprot collection
         '''
         _, _, col_uniprot = self.mongo_manager.con_db('uniprot')
         query = {}
         projection = {'status': 0, '_id': 0}
         docs = col_uniprot.find(filter=query, projection=projection)
         count = col_uniprot.count_documents({})
-        for i, doc in enumerate(docs[:32010]):
+        for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
             if self.verbose and i % 10 == 0:
-                print('Loading abundance info {} of {} ...'.format(
+                print('Copying uniprot info {} of {} ...'.format(
                     i, min(count, self.max_entries)))
-            uniprot_id = doc['uniprot_id']
-            abundances = self.pax_manager.get_abundance_from_uniprot(
-                uniprot_id)
-            if abundances != []:
-                doc['abundances'] = abundances[1:]
-                doc['ncbi_taxonomy_id'] = abundances[0]['ncbi_taxonomy_id']
-                doc['species_name'] = abundances[0]['species_name']
+            # doc['abundacnes'] = []
             self.col.update_one({'uniprot_id': doc['uniprot_id']},
                                 {'$set': doc},
                                 upsert=True)
+        collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+        self.col.create_index([("uniprot_id", pymongo.ASCENDING)], background=True, collation=collation)
+
+    def load_abundance_from_pax(self):
+        '''
+            Load protein abundance data but interating from pax collection.
+        '''
+        _, _, col_pax = self.mongo_manager.con_db('pax')
+        query = {}
+        projection = {'ncbi_id': 1, 'species_name': 1,
+                    'observation': 1, 'organ': 1}
+        docs = col_pax.find(filter=query, projection=projection)
+        count = col_pax.count_documents(query)
+        for i, doc in enumerate(docs):            
+            species_name = doc['species_name']
+            taxon_id = doc['ncbi_id']
+            organ = doc['organ']
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 1 == 0:
+                print('Loading abundance info {} of {} ...'.format(
+                    i, min(count, self.max_entries)))
+            for j, obs in enumerate(doc['observation']):
+                if j == self.max_entries:
+                    break
+                if self.verbose and j % 100 == 0 and i % 10 == 0:
+                    print('  Loading observation info {} of {} ...'.format(
+                        j, len(doc['observation'])))
+                try:
+                    uniprot_id = obs['protein_id']['uniprot_id']
+                    ordered_locus_name = obs['protein_id']['string_id']
+                    abundance = obs['abundance']
+                    dic = {'organ': organ, 'abundance': abundance}
+                    self.col.update_one({'uniprot_id': uniprot_id},
+                                        {'$set': {'ncbi_taxonomy_id': taxon_id,
+                                                  'species_name': species_name,
+                                                  'ordered_locus_name': ordered_locus_name},
+                                         '$push': {'abundances': dic} })
+                except TypeError:
+                    continue
+
+
 
     def load_ko(self):
         '''
@@ -69,7 +106,7 @@ class ProteinAggregate:
         docs = self.col.find(filter=query, projection=projection)
         count = self.col.count_documents(query)
         for i, doc in enumerate(docs):
-            if i == self.max_entries + 1:  # for testing script
+            if i == self.max_entries + 2:  # for testing script
                 break
             if self.verbose and i % 10 == 0:
                 print('Loading KO info {} of {} ...'.format(
@@ -116,7 +153,8 @@ def main():
     manager = ProteinAggregate(username=username, password=password, server=server, 
                                authSource='admin', src_database=src_db,
                                verbose=True, collection=collection_str, destination_database=des_db)
-    manager.load_abundance()
+    manager.copy_uniprot()
+    maanger.load_abundance_from_pax()
     manager.load_ko()
     manager.load_taxon()
 
