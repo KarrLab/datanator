@@ -55,9 +55,10 @@ class ProteinAggregate:
         query = {}
         projection = {'ncbi_id': 1, 'species_name': 1,
                     'observation': 1, 'organ': 1}
-        docs = col_pax.find(filter=query, projection=projection)
+        docs = col_pax.find(filter=query, projection=projection, batch_size=5)
         count = col_pax.count_documents(query)
-        for i, doc in enumerate(docs):            
+        progress = 57
+        for i, doc in enumerate(docs[progress:]):            
             species_name = doc['species_name']
             taxon_id = doc['ncbi_id']
             organ = doc['organ']
@@ -65,7 +66,7 @@ class ProteinAggregate:
                 break
             if self.verbose and i % 1 == 0:
                 print('Loading abundance info {} of {} ...'.format(
-                    i, min(count, self.max_entries)))
+                    i + progress, min(count, self.max_entries)))
             for j, obs in enumerate(doc['observation']):
                 if j == self.max_entries:
                     break
@@ -148,6 +149,12 @@ def main():
     manager.load_abundance_from_pax()
     manager.load_ko()
     manager.load_taxon()
+
+    collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+    manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
+                           ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
+    manager.collection.create_index([("ko_number", pymongo.ASCENDING),
+                           ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
 
 if __name__ == '__main__':
 	main()
