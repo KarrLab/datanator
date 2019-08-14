@@ -57,7 +57,7 @@ class ProteinAggregate:
                     'observation': 1, 'organ': 1}
         docs = col_pax.find(filter=query, projection=projection, batch_size=5)
         count = col_pax.count_documents(query)
-        progress = 57
+        progress = 193
         for i, doc in enumerate(docs[progress:]):            
             species_name = doc['species_name']
             taxon_id = doc['ncbi_id']
@@ -95,14 +95,15 @@ class ProteinAggregate:
         '''
         query = {}
         projection = {'uniprot_id': 1, 'gene_name': 1}
-        docs = self.col.find(filter=query, projection=projection)
+        docs = self.col.find(filter=query, projection=projection, batch_size=1000)
         count = self.col.count_documents(query)
-        for i, doc in enumerate(docs):
+        progress = 228330
+        for i, doc in enumerate(docs[progress:]):
             if i == self.max_entries + 2:  # for testing script
                 break
             if self.verbose and i % 10 == 0:
                 print('Loading KO info {} of {} ...'.format(
-                    i, min(count, self.max_entries)))
+                    i + progress, min(count, self.max_entries)))
 
             gene_name = doc['gene_name']
             ko_number = self.kegg_manager.get_ko_by_name(gene_name)
@@ -116,7 +117,7 @@ class ProteinAggregate:
         '''
         query = {'ncbi_taxonomy_id': {'$exists': True}}
         projection = {'ncbi_taxonomy_id': 1, 'uniprot_id': 1}
-        docs = self.col.find(filter=query, projection=projection)
+        docs = self.col.find(filter=query, projection=projection, batch_size=1000)
         count = self.col.count_documents(query)
         for i, doc in enumerate(docs):
             if i == self.max_entries:
@@ -146,15 +147,15 @@ def main():
                                authSource='admin', src_database=src_db,
                                verbose=True, collection=collection_str, destination_database=des_db)
     # manager.copy_uniprot()
-    manager.load_abundance_from_pax()
+    # manager.load_abundance_from_pax()
     manager.load_ko()
     manager.load_taxon()
 
-    collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
-    manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
-                           ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
-    manager.collection.create_index([("ko_number", pymongo.ASCENDING),
-                           ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
+    # collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+    # manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
+    #                        ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
+    # manager.collection.create_index([("ko_number", pymongo.ASCENDING),
+    #                        ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
 
 if __name__ == '__main__':
 	main()

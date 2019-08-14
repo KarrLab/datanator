@@ -2,6 +2,8 @@ from datanator.util import mongo_util, chem_util, file_util
 from . import query_nosql
 import os
 import json
+from pymongo.collation import Collation, CollationStrength
+import pymongo
 
 class QueryTaxonTree(query_nosql.DataQuery):
     '''Queries specific to taxon_tree collection
@@ -18,6 +20,7 @@ class QueryTaxonTree(query_nosql.DataQuery):
         self.file_manager = file_util.FileUtil()
         self.client, self.db_obj, self.collection = self.con_db(
             self.collection_str)
+        self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
 
     def get_all_species(self):
         ''' Get all organisms in taxon_tree collection
@@ -38,12 +41,10 @@ class QueryTaxonTree(query_nosql.DataQuery):
                 names: organisms' names
         '''
         names = []
-        collation = {'locale': 'en', 'strength': 2}
         projection = {'_id': 0, 'tax_name': 1}
         for _id in ids:
             query = {'tax_id': _id}
-            cursor = self.collection.find_one(query, collation=collation,
-                                              projection=projection)
+            cursor = self.collection.find_one(filter=query, projection=projection)
             names.append(cursor['tax_name'])
         return names
 
@@ -59,11 +60,10 @@ class QueryTaxonTree(query_nosql.DataQuery):
         result_id = []
         result_name = []
 
-        collation = {'locale': 'en', 'strength': 2}
         projection = {'_id': 0, 'anc_id': 1, 'anc_name': 1}
         for name in names:
             query = {'tax_name': name}
-            cursor = self.collection.find_one(query, collation=collation,
+            cursor = self.collection.find_one(query, collation=self.collation,
                                               projection=projection)
             result_id.append(cursor['anc_id'])
             result_name.append(cursor['anc_name'])
