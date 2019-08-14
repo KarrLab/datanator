@@ -42,7 +42,7 @@ class QueryPax(query_nosql.DataQuery):
                     uniprot_id (:obj: `str`) protein uniprot_id
             Return:
                     result (:obj: `list` of :obj: `dict`): result containing
-                    [{'ncbi_taxonomy_id': , 'species_name': },
+                    [{'ncbi_taxonomy_id': , 'species_name': , 'ordered_locus_name': },
                     {'organ': , 'abundance'}, {'organ': , 'abundance'}]
         '''
         query = {'observation.protein_id.uniprot_id': uniprot_id}
@@ -63,6 +63,8 @@ class QueryPax(query_nosql.DataQuery):
                 print('Processing pax document {} out of {}'.format(i, count))
             organ = doc['organ']
             abundance = doc['observation'][0]['abundance']
+            ordered_locus_name = doc['observation'][0]['string_id']
+            result[0]['ordered_locus_name'] = ordered_locus_name
             dic = {'organ': organ,
             'abundance': abundance}
             result.append(dic)

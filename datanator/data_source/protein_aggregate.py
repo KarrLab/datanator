@@ -57,7 +57,7 @@ class ProteinAggregate:
                     'observation': 1, 'organ': 1}
         docs = col_pax.find(filter=query, projection=projection, batch_size=5)
         count = col_pax.count_documents(query)
-        progress = 193
+        progress = 0
         for i, doc in enumerate(docs[progress:]):            
             species_name = doc['species_name']
             taxon_id = doc['ncbi_id']
@@ -82,7 +82,7 @@ class ProteinAggregate:
                                         {'$set': {'ncbi_taxonomy_id': taxon_id,
                                                   'species_name': species_name,
                                                   'ordered_locus_name': ordered_locus_name},
-                                         '$push': {'abundances': dic} })
+                                         '$push': {'abundances': dic} }, upsert=True)
                 except TypeError:
                     continue
 
@@ -97,7 +97,7 @@ class ProteinAggregate:
         projection = {'uniprot_id': 1, 'gene_name': 1}
         docs = self.col.find(filter=query, projection=projection, batch_size=1000)
         count = self.col.count_documents(query)
-        progress = 228330
+        progress = 0
         for i, doc in enumerate(docs[progress:]):
             if i == self.max_entries + 2:  # for testing script
                 break
@@ -131,6 +131,44 @@ class ProteinAggregate:
             					{'$set': {'ancestor_name': anc_name[0],
             							'ancestor_taxon_id': anc_id[0]} })
 
+    def load_unreviewed_abundance(self):
+        '''
+            Load abundance info for proteins that are not reviewed in uniprot
+        '''
+        query_uniprot = {'abundances': {'$exists': True}}
+        projection = {'uniprot_id': 1}
+        reviewed = []
+        docs = self.col.find(filter=query_uniprot, projection=projection)
+        count = self.col.count_documents(query_uniprot)
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                pass
+            if self.verbose and i % 1000 == 0:
+                print('Getting reviewed protein with abundance {} of {} ...'.format(
+                    i, min(count, self.max_entries)))
+            reviewed.append(doc['uniprot_id'])
+
+        total = self.pax_manager.collection.distinct('observation.protein_id.uniprot_id')
+        unreviewed = list(set(total) - set(reviewed))
+
+        count = len(unreviewed)
+        for i, _id in enumerate(unreviewed):
+            doc = {}            
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 100 == 0:
+                print('Loading unreviewed protein abundance info {} of {} ...'.format(
+                    i, min(count, self.max_entries)))
+            abundances = self.pax_manager.get_abundance_from_uniprot(_id)
+            if abundances != []:
+                doc['abundances'] = abundances[1:]
+                doc['ncbi_taxonomy_id'] = abundances[0]['ncbi_taxonomy_id']
+                doc['species_name'] = abundances[0]['species_name']
+                doc['ordered_locus_name'] = abundances[0]['ordered_locus_name']
+
+            self.col.update_one({'uniprot_id': _id},
+                                {'$set': doc}, upsert=True)            
+
 def main():
     src_db = 'datanator'
     des_db = 'datanator'
@@ -146,16 +184,17 @@ def main():
     manager = ProteinAggregate(username=username, password=password, server=server, 
                                authSource='admin', src_database=src_db,
                                verbose=True, collection=collection_str, destination_database=des_db)
-    # manager.copy_uniprot()
-    # manager.load_abundance_from_pax()
+    manager.copy_uniprot()
+    manager.load_abundance_from_pax()
     manager.load_ko()
     manager.load_taxon()
+    # manager.load_unreviewed_abundance()
 
-    # collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
-    # manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
-    #                        ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
-    # manager.collection.create_index([("ko_number", pymongo.ASCENDING),
-    #                        ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
+    collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+    manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
+                           ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
+    manager.collection.create_index([("ko_number", pymongo.ASCENDING),
+                           ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
 
 if __name__ == '__main__':
 	main()

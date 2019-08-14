@@ -41,7 +41,7 @@ class TestQueryPax(unittest.TestCase):
         dic = self.file_manager.search_dict_list(result, 'abundance', '15.2')
         exp = [{'organ': 'COTYLEDON', 'abundance': '15.2'}]
         self.assertEqual(dic, exp)
-        self.assertEqual({'ncbi_taxonomy_id': 3702, 'species_name': 'A.thaliana'}, result[0] )
+        self.assertEqual({'ncbi_taxonomy_id': 3702, 'species_name': 'A.thaliana', 'ordered_locus_name': '3702.AT5G58200.2'}, result[0] )
         uniprot_id_1 = 'asdfasdf'
         result_1 = self.src.get_abundance_from_uniprot(uniprot_id_1)
         self.assertEqual(result_1, [])
