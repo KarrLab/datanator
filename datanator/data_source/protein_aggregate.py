@@ -1,16 +1,17 @@
 import json
 from datanator.util import mongo_util
 from datanator.core import (query_pax, query_kegg_orthology,
-                           query_taxon_tree)
+                           query_taxon_tree, query_protein)
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 import pymongo
+import os
 
 class ProteinAggregate:
 
     def __init__(self, username=None, password=None, server=None, authSource='admin',
                  src_database='datanator', max_entries=float('inf'), verbose=True,
-                 collection='protein', destination_database='datanator'):
+                 collection='protein', destination_database='datanator', cache_dir=None):
         '''
                 Args:
                         src_database (:obj: `str`): name of database in which source collections reside
@@ -19,6 +20,7 @@ class ProteinAggregate:
 
         self.max_entries = max_entries
         self.verbose = verbose
+        self.cache_dir = cache_dir
         self.mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                   password=password, authSource=authSource, db=src_database)
         self.pax_manager = query_pax.QueryPax(MongoDB=server, db=src_database,
@@ -30,6 +32,8 @@ class ProteinAggregate:
         self.taxon_manager = query_taxon_tree.QueryTaxonTree(collection_str='taxon_tree', 
                 verbose=verbose, max_entries=max_entries, username=username, MongoDB=server, 
                 password=password, db=src_database, authSource=authSource)
+        self.protein_manager = query_protein.QueryProtein(username=username, password=password, 
+            server=server, collection_str='protein', max_entries=max_entries, database=src_database)
         self.client, self.db, self.col = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                               password=password, authSource=authSource,
                                                               db=destination_database).con_db(collection)
@@ -62,8 +66,6 @@ class ProteinAggregate:
             species_name = doc['species_name']
             taxon_id = doc['ncbi_id']
             organ = doc['organ']
-            if i == self.max_entries:
-                break
             if self.verbose and i % 1 == 0:
                 print('Loading abundance info {} of {} ...'.format(
                     i + progress, min(count, self.max_entries)))
@@ -167,7 +169,61 @@ class ProteinAggregate:
                 doc['ordered_locus_name'] = abundances[0]['ordered_locus_name']
 
             self.col.update_one({'uniprot_id': _id},
-                                {'$set': doc}, upsert=True)            
+                                {'$set': doc}, upsert=True) 
+
+    def load_kinlaw_from_sabio(self):
+        '''
+            load kinlaw_id from sabio_rk collection based on uniprot_id or
+            protein name if uniprot_id information is not present
+        '''
+        _, _, col_sabio = self.mongo_manager.con_db('sabio_rk_new')
+        projection = {'enzyme': 1, 'kinlaw_id': 1, 'taxon': 1}
+        docs = col_sabio.find({}, projection=projection)
+        count = col_sabio.count_documents({})
+        collation = Collation('en', strength=CollationStrength.SECONDARY)
+        progress = 2900
+        for i, doc in enumerate(docs[progress:]):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 50 == 0:
+                print('Processing Kinetics information doc {} out of {}'.format(i+progress,min(count, self.max_entries)))
+
+            enzyme = doc.get('enzyme')
+            if enzyme == None or len(enzyme) > 1 :
+                with open(self.cache_dir, 'a+') as f:
+                    f.write('\n  There are more than 1 or enzyme in kinetic law {}'.format(kinlaw_id))
+                continue
+
+            subunits = enzyme[0]['subunits']
+            kinlaw_id = doc['kinlaw_id']
+
+            if len(subunits) == 0:
+                with open(self.cache_dir, 'a+') as f:
+                    f.write('\nEnzyme in kinetic law with ID {} has no uniprot ID'.format(kinlaw_id))
+
+                name = enzyme[0]['name']
+                if name != None:
+                    results = self.protein_manager.get_id_by_name(name)
+                    for result in results:
+                        query = {'uniprot_id': result['uniprot_id']}
+                        self.col.update_one(query, {'$addToSet': {'kinetics': kinlaw_id } }, collation=collation)
+                else:
+                    with open(self.cache_dir, 'a+') as f:
+                        f.write('\n  Enzyme in kinetic law with ID {} has no name'.format(kinlaw_id))                    
+
+            else:
+                proteins = []
+                for subunit in subunits:
+                    proteins.append(subunit['uniprot'])
+                query = {'uniprot_id': {'$in': proteins}}
+                projection = {'uniprot_id': 1}
+                protein_docs = self.col.find(filter=query, projection=projection, collation=collation)
+                for protein_doc in protein_docs:
+                    self.col.update_one({'uniprot_id': protein_doc['uniprot_id']},
+                                        {'$push': {'kinetics': kinlaw_id } }, upsert=True, collation=collation)
+
+
+
 
 def main():
     src_db = 'datanator'
@@ -180,21 +236,27 @@ def main():
     server = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']
     port = datanator.config.core.get_config(
-    )['datanator']['mongodb']['port']        
+    )['datanator']['mongodb']['port'] 
+    path = os.path.join(os.path.dirname(__file__), "../../logs/protein_aggregate.txt")   
     manager = ProteinAggregate(username=username, password=password, server=server, 
                                authSource='admin', src_database=src_db,
-                               verbose=True, collection=collection_str, destination_database=des_db)
-    manager.copy_uniprot()
-    manager.load_abundance_from_pax()
-    manager.load_ko()
-    manager.load_taxon()
-    # manager.load_unreviewed_abundance()
+                               verbose=True, collection=collection_str, destination_database=des_db,
+                               cache_dir=path)
 
-    collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
-    manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
-                           ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
-    manager.collection.create_index([("ko_number", pymongo.ASCENDING),
-                           ("ncbi_taxonomy_id", pymongo.ASCENDING)], background=True, collation=collation)
+    # manager.copy_uniprot()
+    # manager.load_abundance_from_pax()
+    # manager.load_ko()
+    # manager.load_taxon()
+    # manager.load_unreviewed_abundance()
+    manager.load_kinlaw_from_sabio()
+
+    collation = Collation('en', strength=CollationStrength.SECONDARY)
+    # manager.collection.create_index([("ncbi_taxonomy_id", pymongo.ASCENDING),
+    #                        ("ancestor_taxon_id", pymongo.ASCENDING), ("ko_number", pymongo.ASCENDING)], 
+    #                        background=True)
+    # manager.collection.create_index([("uniprot_id", pymongo.ASCENDING),
+    #                        ("ancestor_taxon_id", pymongo.ASCENDING)], background=True, collation=collation)
+    # manager.collection.create_index([("kinetics", pymongo.ASCENDING)], background=True)
 
 if __name__ == '__main__':
 	main()
