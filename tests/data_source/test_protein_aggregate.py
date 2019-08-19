@@ -78,7 +78,7 @@ class TestProteinAggregate(unittest.TestCase):
         self.src.load_kinlaw_from_sabio()
         result_0 = self.src.col.find_one({'uniprot_id': 'P20932'})
         self.assertTrue('kinetics' in result_0.keys())
-        self.assertTrue(17 in result_0['kinetics'])
+        self.assertTrue({'kinlaw_id': 17, 'ncbi_taxonomy_id': 303} in result_0['kinetics'])
         result_1 = self.src.col.find_one({'uniprot_id': 'P16064'})
-        self.assertTrue(1 in result_1['kinetics'])
+        self.assertTrue({'kinlaw_id': 1, 'ncbi_taxonomy_id': 1467} in result_1['kinetics'])
 

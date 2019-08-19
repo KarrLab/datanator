@@ -181,7 +181,7 @@ class ProteinAggregate:
         docs = col_sabio.find({}, projection=projection)
         count = col_sabio.count_documents({})
         collation = Collation('en', strength=CollationStrength.SECONDARY)
-        progress = 2900
+        progress = 0
         for i, doc in enumerate(docs[progress:]):
             if i == self.max_entries:
                 break
@@ -191,11 +191,12 @@ class ProteinAggregate:
             enzyme = doc.get('enzyme')
             if enzyme == None or len(enzyme) > 1 :
                 with open(self.cache_dir, 'a+') as f:
-                    f.write('\n  There are more than 1 or enzyme in kinetic law {}'.format(kinlaw_id))
+                    f.write('\n  There are more than 1 or no enzyme in kinetic law {}'.format(kinlaw_id))
                 continue
 
             subunits = enzyme[0]['subunits']
             kinlaw_id = doc['kinlaw_id']
+            taxon = doc['taxon']
 
             if len(subunits) == 0:
                 with open(self.cache_dir, 'a+') as f:
@@ -206,7 +207,8 @@ class ProteinAggregate:
                     results = self.protein_manager.get_id_by_name(name)
                     for result in results:
                         query = {'uniprot_id': result['uniprot_id']}
-                        self.col.update_one(query, {'$addToSet': {'kinetics': kinlaw_id } }, collation=collation)
+                        self.col.update_one(query, {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
+                            collation=collation)
                 else:
                     with open(self.cache_dir, 'a+') as f:
                         f.write('\n  Enzyme in kinetic law with ID {} has no name'.format(kinlaw_id))                    
@@ -220,7 +222,8 @@ class ProteinAggregate:
                 protein_docs = self.col.find(filter=query, projection=projection, collation=collation)
                 for protein_doc in protein_docs:
                     self.col.update_one({'uniprot_id': protein_doc['uniprot_id']},
-                                        {'$push': {'kinetics': kinlaw_id } }, upsert=True, collation=collation)
+                                        {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
+                                        upsert=True, collation=collation)
 
 
 
