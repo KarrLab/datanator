@@ -37,6 +37,7 @@ class ProteinAggregate:
         self.client, self.db, self.col = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                               password=password, authSource=authSource,
                                                               db=destination_database).con_db(collection)
+        self.bad_kinlawid = [24416,24417,24418,24419,24420,24421,24422,24423]
 
     def copy_uniprot(self):
         '''
@@ -188,6 +189,10 @@ class ProteinAggregate:
             if self.verbose and i % 50 == 0:
                 print('Processing Kinetics information doc {} out of {}'.format(i+progress,min(count, self.max_entries)))
 
+            kinlaw_id = doc['kinlaw_id']
+            if kinlaw_id in self.bad_kinlawid:
+                continue
+
             enzyme = doc.get('enzyme')
             if enzyme == None or len(enzyme) > 1 :
                 with open(self.cache_dir, 'a+') as f:
@@ -195,13 +200,10 @@ class ProteinAggregate:
                 continue
 
             subunits = enzyme[0]['subunits']
-            kinlaw_id = doc['kinlaw_id']
+            
             taxon = doc['taxon']
 
             if len(subunits) == 0:
-                with open(self.cache_dir, 'a+') as f:
-                    f.write('\nEnzyme in kinetic law with ID {} has no uniprot ID'.format(kinlaw_id))
-
                 name = enzyme[0]['name']
                 if name != None:
                     results = self.protein_manager.get_id_by_name(name)
@@ -211,7 +213,7 @@ class ProteinAggregate:
                             collation=collation)
                 else:
                     with open(self.cache_dir, 'a+') as f:
-                        f.write('\n  Enzyme in kinetic law with ID {} has no name'.format(kinlaw_id))                    
+                        f.write('\n  Enzyme in kinetic law with ID {} has no name or uniprot_id'.format(kinlaw_id))                    
 
             else:
                 proteins = []
@@ -225,6 +227,13 @@ class ProteinAggregate:
                                         {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
                                         upsert=True, collation=collation)
 
+    def load_bad_kinlaw(self):
+        '''
+            Load kinlaw IDs whose enzymes have names as "1" or "2"
+        '''
+        for _id in self.bad_kinlawid:
+            self.col.update_many({'$and': [{'$text': {'$search': "\"lipopolysaccharide\""}}, {'ncbi_taxonomy_id': 10116}]}, 
+                {'$push': {'kinetics': {'kinlaw_id': _id, 'ncbi_taxonomy_id': 10116}}})
 
 
 
@@ -251,9 +260,9 @@ def main():
     # manager.load_ko()
     # manager.load_taxon()
     # manager.load_unreviewed_abundance()
-    manager.load_kinlaw_from_sabio()
+    # manager.load_kinlaw_from_sabio()
 
-    collation = Collation('en', strength=CollationStrength.SECONDARY)
+    # collation = Collation('en', strength=CollationStrength.SECONDARY)
     # manager.collection.create_index([("ncbi_taxonomy_id", pymongo.ASCENDING),
     #                        ("ancestor_taxon_id", pymongo.ASCENDING), ("ko_number", pymongo.ASCENDING)], 
     #                        background=True)
