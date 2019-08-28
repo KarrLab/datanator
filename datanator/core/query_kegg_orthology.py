@@ -30,3 +30,25 @@ class QueryKO:
         	return docs['kegg_orthology_id']
         else:
         	return None
+
+    def get_def_by_ko(self, ko):
+        '''
+            Get the definition of kegg orthology id
+            Args:
+                ko (:obj: `list` of :obj: `string`): list of ko id
+            Returns:
+                result (:obj: `list` of :obj: `dict`): list of information
+                [{'ko_number': ..., 'name': [ ...]},
+                 {'ko_number': ..., 'name': [ ...]}]
+        '''
+        result = []
+        query = {'kegg_orthology_id': {'$in': ko}}
+        projection = {'_id': 0, 'definition.name': 1, 'kegg_orthology_id': 1}
+        docs = self.collection.find(filter=query, projection=projection)
+        for doc in docs:
+            ko_number = doc['kegg_orthology_id']
+            names = doc['definition']['name']
+            dic = {'ko_number': ko_number, 'ko_name': names}
+            result.append(dic)
+        return result
+

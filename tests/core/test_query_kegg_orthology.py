@@ -38,3 +38,9 @@ class TestQueryKO(unittest.TestCase):
         self.assertEqual(result_1, result_0)
         result_2 = self.src.get_ko_by_name('yuyyyyyy')
         self.assertEqual(None, result_2)
+
+    def test_get_def_by_ko(self):
+        ko = ['K00001', 'K00002']
+        result = self.src.get_def_by_ko(ko)
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]['ko_name'], ['alcohol dehydrogenase'])

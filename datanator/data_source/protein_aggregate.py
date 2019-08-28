@@ -38,12 +38,13 @@ class ProteinAggregate:
                                                               password=password, authSource=authSource,
                                                               db=destination_database).con_db(collection)
         self.bad_kinlawid = [24416,24417,24418,24419,24420,24421,24422,24423]
+        self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
 
     def copy_uniprot(self):
         '''
             Copy relevant information from uniprot collection
         '''
-        _, _, col_uniprot = self.mongo_manager.con_db('uniprot')
+        _, _, col_uniprot = self.mongo_manager.con_db('uniprot_new')
         query = {}
         projection = {'status': 0, '_id': 0}
         docs = col_uniprot.find(filter=query, projection=projection)
@@ -110,9 +111,13 @@ class ProteinAggregate:
 
             gene_name = doc['gene_name']
             ko_number = self.kegg_manager.get_ko_by_name(gene_name)
+
             if ko_number != None:
+                ko_name_list = self.kegg_manager.get_def_by_ko([ko_number])
+                ko_name = ko_name_list[0]['ko_name']
                 self.col.update_one({'uniprot_id': doc['uniprot_id']},
-                                    {'$set': {'ko_number': ko_number}})
+                                    {'$set': {'ko_number': ko_number,
+                                             'ko_name': ko_name}})
 
     def load_taxon(self):
         '''
@@ -122,6 +127,7 @@ class ProteinAggregate:
         projection = {'ncbi_taxonomy_id': 1, 'uniprot_id': 1}
         docs = self.col.find(filter=query, projection=projection, batch_size=1000)
         count = self.col.count_documents(query)
+        collation = Collation('en', strength=CollationStrength.SECONDARY)
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
@@ -132,7 +138,7 @@ class ProteinAggregate:
             anc_id, anc_name = self.taxon_manager.get_anc_by_id([taxon_id])
             self.col.update_one({'uniprot_id': doc['uniprot_id']},
             					{'$set': {'ancestor_name': anc_name[0],
-            							'ancestor_taxon_id': anc_id[0]} })
+            							'ancestor_taxon_id': anc_id[0]} }, collation=collation)
 
     def load_unreviewed_abundance(self):
         '''
@@ -235,6 +241,48 @@ class ProteinAggregate:
             self.col.update_many({'$and': [{'$text': {'$search': "\"lipopolysaccharide\""}}, {'ncbi_taxonomy_id': 10116}]}, 
                 {'$push': {'kinetics': {'kinlaw_id': _id, 'ncbi_taxonomy_id': 10116}}})
 
+    # def load_taxon_info(self):
+    #     '''
+    #         Load uniprot ncbi information (one-shot)
+    #     '''
+    #     _, _, col_uniprot = self.mongo_manager.con_db('uniprot_new')
+    #     collation = Collation('en', strength=CollationStrength.SECONDARY)
+    #     query = {}
+    #     projection = {'uniprot_id': 1}
+    #     docs = self.col.find(filter=query, projection=projection, batch_size=500)
+    #     count = self.col.count_documents(query)
+    #     progress = 356700
+    #     for i, doc in enumerate(docs[progress:]):
+    #         if i % 100 == 0 and self.verbose:
+    #             print('Proceessing taxon information {} out of {}.'.format(i+progress, count))
+    #         _id = doc['uniprot_id']
+    #         try:
+    #             taxon_id = col_uniprot.find_one({'uniprot_id': _id}, projection={'ncbi_taxonomy_id': 1}).get('ncbi_taxonomy_id')
+    #         except AttributeError:
+    #             self.col.update_one({'uniprot_id': _id},
+    #                                 {'$set': {'review_status': 'unreviewed'} }, collation=collation)
+    #             continue
+    #         self.col.update_one({'uniprot_id': _id},
+    #                             {'$set': {'ncbi_taxonomy_id': taxon_id} }, collation=collation)
+
+    # def load_ko_number(self):
+    #     '''
+    #         load ko_number, one shot
+    #     '''
+    #     query = {'ko_number': {'$exists': True}}
+    #     projection = {'_id': 0, 'ko_number': 1, 'uniprot_id': 1}
+    #     docs = self.col.find(filter=query, projection=projection, batch_size=5000)
+    #     count = self.col.count_documents(query)
+    #     progress = 279700
+    #     for i, doc in enumerate(docs[progress:]):
+    #         if i == self.max_entries:
+    #             break
+    #         if self.verbose and i % 100 == 0:
+    #             print('Loading KO number document {} of {}'.format(i + progress, min(count, self.max_entries)))
+    #         ko_number = doc['ko_number']
+    #         ko_name = self.kegg_manager.get_def_by_ko([ko_number])[0]['ko_name']
+    #         self.col.update_one({'uniprot_id': doc['uniprot_id']},
+    #                             {'$set': {'ko_name': ko_name}}, collation=self.collation)
 
 
 def main():
