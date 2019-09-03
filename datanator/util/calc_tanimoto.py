@@ -4,6 +4,7 @@ import pymongo
 import numpy as np
 import multiprocessing as mp
 import datanator.config.core
+from datanator.util import chem_util
 
 
 class CalcTanimoto(mongo_util.MongoUtil):
@@ -209,7 +210,17 @@ def main():
     manager = CalcTanimoto(
         MongoDB=server, replicaSet=replSet, db=db,
         verbose=True, password=password, username=username)
-    manager.many_to_many(field1 = 'inchi', field2 = 'inchi')
+    chem_manager = chem_util.ChemUtil()
+    # manager.many_to_many(field1 = 'inchi', field2 = 'inchi')
+    # one-time update for adp
+    inchi = 'InChI=1S/C10H15N5O10P2/c11-8-5-9(13-2-12-8)15(3-14-5)10-7(17)6(16)4(24-10)1-23-27(21,22)25-26(18,19)20/h2-4,6-7,10,16-17H,1H2,(H,21,22)(H2,11,12,13)(H2,18,19,20)/t4-,6-,7-,10-/m1/s1'
+    sorted_coeff, sorted_inchi = manager.one_to_many(inchi)
+    _, _, collection = manager.con_db('metabolites_meta')
+    for key, val in zip(sorted_inchi, sorted_coeff):
+        dic = {key: val}
+        collection.update_one({'inchi': inchi},
+                            {'$push': {'similar_compounds': dic} })
+
 
 
 if __name__ == '__main__':
