@@ -1,6 +1,6 @@
 '''
-	Generates uniprot_swiss (reviewed) NoSQL documents
-	load documents into MongoDB collections
+    Generates uniprot_swiss (reviewed) NoSQL documents
+    load documents into MongoDB collections
 
 :Author: Zhouyang Lian <zhouyang.lian@familian.life>
 :Author: Jonathan <jonrkarr@gmail.com>
@@ -16,29 +16,30 @@ import pandas
 import requests
 from datanator.util import mongo_util
 import datanator.config.core
- 
- class UniprotNoSQL(mongo_util.MongoUtil):
-    def __init__(self, MongoDB = None, db = None, max_entries = 2000000, verbose = False,
-         username = None, password = None, authSource = 'admin', replicaSet = None, collection_str='uniprot'):
+
+
+class UniprotNoSQL(mongo_util.MongoUtil):
+    def __init__(self, MongoDB=None, db=None, max_entries=2000000, verbose=False,
+         username=None, password=None, authSource='admin', replicaSet=None, collection_str='uniprot'):
         self.url = 'http://www.uniprot.org/uniprot/?fil=reviewed:yes'
-         self.MongoDB = MongoDB
+        self.MongoDB = MongoDB
         self.db = db
-         s elf.max_entries = max_entries
+        self.max_entries = max_entries
         self.collection_str = collection_str
-         super(UniprotNoSQL, self).__init__(MongoDB = MongoDB, db = db, username = username,
-                                 password = password, authSource = authSource, replicaSet = replicaSet,
-                                 verbose = verbose)
-  
+        super(UniprotNoSQL, self).__init__(MongoDB=MongoDB, db=db, username=username,
+                                 password=password, authSource=authSource, replicaSet=replicaSet,
+                                 verbose=verbose)
+
       # build dataframe for uniprot_swiss for loading into mongodb
     def get_uniprot(self):
-        url = self.url + \ 
+        url = self.url + \
             '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id'
-         url += '&format=tab' 
-         url += '&compress=no' 
+        url += '&format=tab'
+        url += '&compress=no'
         if not math.isnan(self.max_entries):
-            url += '&limit={}'.format(self.max_entries)
-  
-          response = requests.get(url)
+           url += '&limit={}'.format(self.max_entries)
+
+        response = requests.get(url)
         response.raise_for_status()
 
         data = pandas.read_csv(io.BytesIO(response.content),
