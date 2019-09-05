@@ -2,43 +2,43 @@ version: '3'
 
 services:
   datanator:
-    image: lzy7071/karrlabdatanator:latest
+    image: karrlab/wc_env
     restart: always
     stdin_open: true
     tty: true
     ports:
-      - "10001:5000"
+      - "10001:5002"
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
     # command: ["python3", "/root/host/karr_lab/datanator/datanator/rest/__init__.py"]
 
-  mongo:
-    image: mongo:4.0.10
-    restart: always
-    volumes:
-      - ./datanator/data_source/cache/mongo:/data/db
-      - ../:/root/host/karr_lab
-    ports:
-      - "27017:27017"
-    depends_on:
-      - datanator
+  # mongo:
+  #   image: mongo:4.0.10
+  #   restart: always
+  #   volumes:
+  #     - ./datanator/data_source/cache/mongo:/data/db
+  #     - ../:/root/host/karr_lab
+  #   ports:
+  #     - "27017:27017"
+  #   depends_on:
+  #     - datanator
 
-  mongosetup:
-    image: lzy7071/mongo-curl:latest
-    volumes:
-      - ../:/root/host/karr_lab
-    entrypoint: [ "bash", "/root/host/karr_lab/datanator/scripts/mongorestore.sh" ]
-    restart: on-failure
-    depends_on:
-      - mongo
+  # mongosetup:
+  #   image: lzy7071/mongo-curl:latest
+  #   volumes:
+  #     - ../:/root/host/karr_lab
+  #   entrypoint: [ "bash", "/root/host/karr_lab/datanator/scripts/mongorestore.sh" ]
+  #   restart: on-failure
+  #   depends_on:
+  #     - mongo
 
-  mongoexpress:
-    image: mongo-express:0.49.0
-    restart: always
-    ports:
-      - "8081:8081"
-    depends_on:
-      - mongo
-    restart: always
-    command: sh -c 'sleep 10 && tini -- node app'
+  # mongoexpress:
+  #   image: mongo-express:0.49.0
+  #   restart: always
+  #   ports:
+  #     - "8081:8081"
+  #   depends_on:
+  #     - mongo
+  #   restart: always
+  #   command: sh -c 'sleep 10 && tini -- node app'

@@ -39,7 +39,7 @@ jobs:
             fi
       - run:
           name: Install package (Python 3)
-          command: pip3 install -U -e .[all]
+          command: pip3 install -U -e .
 
       # Save packages to cache
       - save_cache:
