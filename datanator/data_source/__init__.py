@@ -6,3 +6,4 @@ from . import corum_nosql
 from . import kegg_reaction_class
 from . import kegg_orthology
 from . import sabio_rk
+from . import protein_aggregate
