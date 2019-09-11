@@ -509,7 +509,7 @@ class Genetics(obj_model.core.Model):
     """ Represents a taxon
 
     Attributes:
-        taxon (obj:`str`): taxon name
+        taxon (:obj:`str`): taxon name
         variation (:obj:`str`): the genetic variation from the wildtype taxon
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
