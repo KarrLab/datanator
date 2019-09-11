@@ -13,4 +13,5 @@ BACKUP_NAME="$BACKUPS_DIR/$APP_NAME"
  
 $MONGODUMP_PATH -d $MONGO_DATABASE -u $user -p $password --authenticationDatabase admin -o $BACKUP_NAME
 aws s3 cp $BACKUP_NAME s3://mongo-dbdump/ --recursive
+aws s3 cp --profile quilt3-s3 $BACKUP_NAME s3://karrlab/datanator-nosql/ --recursive
 rm -rf $BACKUPS_DIR
