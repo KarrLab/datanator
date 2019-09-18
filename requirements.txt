@@ -19,7 +19,7 @@ gunicorn
 jxmlease
 marshmallow_sqlalchemy
 numpy
-obj_model
+obj_tables
 openbabel
 openpyxl
 pandas
