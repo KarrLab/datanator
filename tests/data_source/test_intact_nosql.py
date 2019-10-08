@@ -28,7 +28,7 @@ class TestCorumNoSQL(unittest.TestCase):
     # @unittest.skip("loading everything")
     def test_load_complex(self):
         int_complex = self.src.collection_complex
-        self.assertEqual(int_complex.find().count(), 20)
+        self.assertEqual(int_complex.find().count(), 21)
         cursor = int_complex.find({'identifier': 'CPX-1928'})
         self.assertEqual(cursor.count(), 1)
         self.assertEqual(cursor[0]['ncbi_id'], 83333)
@@ -37,7 +37,7 @@ class TestCorumNoSQL(unittest.TestCase):
     # @unittest.skip('loaded')
     def test_load_interaction(self):
         int_int = self.src.collection_interaction
-        self.assertEqual(int_int.count(), 21)
+        self.assertEqual(int_int.count(), 20)
         cursor = int_int.find({'interaction_id': 'intact:EBI-526288'})
         self.assertEqual(cursor.count(), 1)
         self.assertEqual(cursor[0]['method'], 'anti tag coimmunoprecipitation')
