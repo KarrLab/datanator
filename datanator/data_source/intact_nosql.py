@@ -73,12 +73,8 @@ class IntActNoSQL(mongo_util.MongoUtil):
         relabeled_columns = ['identifier', 'name', 'ncbi_id', 'subunits', 'evidence', 'go_annotation', 'go_description', 'source']
 
         filenames = glob.glob(os.path.join(self.cache_dirname, 'intact', 'complextab', '*.tsv'))
-        i = 0
+        total_operations = 0
         for filename in filenames:
-            if i == self.max_entries:
-                break
-            if self.verbose and i%20 ==0:
-                print ('Inserting {} of {} complex document'.format(i+1, min(self.max_entries,len(filenames))))
             raw_data = pandas.read_csv(filename, delimiter='\t', encoding='utf-8')
             relabeled_data = raw_data.loc[:, raw_columns]
             relabeled_data.columns = relabeled_columns
@@ -86,31 +82,40 @@ class IntActNoSQL(mongo_util.MongoUtil):
 
             relabeled_data_json = json.loads(relabeled_data.to_json(orient = 'records'))
             # separate string of subunits
-            subunit_info = []
-            subunit_list_with_count = relabeled_data_json[0]['subunits'].split('|')
-            subunit_list = [item[:6] for item in subunit_list_with_count] 
-            count_list = [item[7] for item in subunit_list_with_count]
-            for unit, count in zip(subunit_list, count_list):
-                subunit_info.append( {'uniprot_id': unit, 'count': count} )
-            relabeled_data_json[0]['subunits'] = subunit_info
+            for j in range(len(relabeled_data_json)):
+                if total_operations == self.max_entries:
+                    break
+                if self.verbose and total_operations%1 ==0:
+                    print ('Inserting {} of {} complex document'.format(total_operations+1, min(self.max_entries,len(relabeled_data_json))))
 
-            # separate string of go_annotation
-            annotation_list = []
-            go_anno_after_split = relabeled_data_json[0]['go_annotation'].split('|')
-            go_id = [item[3:10] for item in go_anno_after_split]
-            go_term = [item[11:-1] for item in go_anno_after_split]
-            for _id, term in zip(go_id, go_term):
-                annotation_list.append( {'go_id': _id, 'go_term': term} )
-            relabeled_data_json[0]['go_annotation'] = annotation_list
+                # separate string of subunits
+                subunit_info = []
+                if relabeled_data_json[j]['subunits'] is not None:
+                    subunit_list_with_count = relabeled_data_json[j]['subunits'].split('|')
+                    subunit_list = [item.split('(')[0] for item in subunit_list_with_count] 
+                    count_list = [item.split('(')[1].split(')')[0] for item in subunit_list_with_count]
+                    for unit, count in zip(subunit_list, count_list):
+                        subunit_info.append( {'uniprot_id': unit, 'count': count} )
+                    relabeled_data_json[j]['subunits'] = subunit_info
 
-            self.collection_complex.replace_one({'identifier': relabeled_data_json[0]['identifier']},
-                    relabeled_data_json[0],
-                    upsert=True
-                    )
-            i += 1
+                # separate string of go_annotation
+                annotation_list = []
+                if relabeled_data_json[j]['go_annotation'] is not None:
+                    go_anno_after_split = relabeled_data_json[j]['go_annotation'].split('|')
+                    go_id = [item[3:10] for item in go_anno_after_split]
+                    go_term = [item[11:-1] for item in go_anno_after_split]
+                    for _id, term in zip(go_id, go_term):
+                        annotation_list.append( {'go_id': _id, 'go_term': term} )
+                    relabeled_data_json[j]['go_annotation'] = annotation_list
+
+                self.collection_complex.replace_one({'identifier': relabeled_data_json[j]['identifier']},
+                        relabeled_data_json[j],
+                        upsert=True
+                        )
+                total_operations += 1 
 
     def add_interactions(self):
-        """ Parse interactions from data and add interactions to SQLite database """
+        """ Parse interactions from data and add interactions to mongodb database """
         data = pandas.read_csv(os.path.join(self.cache_dirname, 'intact', 'psimitab', 'intact_negative.txt'),
                                delimiter='\t', encoding='utf-8')
         for index, row in data.iterrows():
