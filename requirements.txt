@@ -46,3 +46,4 @@ elasticsearch
 genson
 quilt
 jsonpickle
+datanator_query_python

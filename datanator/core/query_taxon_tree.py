@@ -1,5 +1,5 @@
 from datanator.util import mongo_util, chem_util, file_util
-from . import query_nosql
+from datanator_query_python.query import query_nosql
 import os
 import json
 from pymongo.collation import Collation, CollationStrength

@@ -1,4 +1,4 @@
-from datanator.core import query_sabiork
+from datanator_query_python.query import query_sabiork
 from datanator.util import chem_util
 from datanator.util import file_util
 from datanator.util import index_collection

@@ -1,6 +1,6 @@
 import json
 from datanator.util import mongo_util
-from datanator.core import (query_pax, query_kegg_orthology,
+from datanator_query_python.query import (query_pax, query_kegg_orthology,
                            query_taxon_tree, query_protein)
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength

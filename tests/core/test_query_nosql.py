@@ -1,5 +1,5 @@
 import unittest
-from datanator.core import query_nosql
+from datanator_query_python.query import query_nosql
 import tempfile
 import shutil
 import configparser

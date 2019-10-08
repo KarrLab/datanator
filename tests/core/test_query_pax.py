@@ -1,5 +1,5 @@
 import unittest
-from datanator.core import query_pax
+from datanator_query_python.query import query_pax
 from datanator.util import file_util
 import tempfile
 import shutil
