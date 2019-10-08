@@ -34,9 +34,9 @@ class TestCorumNoSQL(unittest.TestCase):
     #@unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(self.MongoDB, self.db, replicaSet=self.replSet, cache_dirname = self.cache_dirname,
-            verbose = True, max_entries = 20, username = self.username, password = self.password)
+            verbose = True, max_entries=20, username = self.username, password = self.password)
         collection = src.load_content()
-        self.assertEqual(collection.find().count(), 20)
+        self.assertTrue(collection.find().count() == 21)
         cursor = collection.find({'subunits_uniprot_id': 'P41182'}).limit(3)
         self.assertEqual(cursor.count(), 3)
         self.assertEqual(cursor[1]['complex_id'], 2)
