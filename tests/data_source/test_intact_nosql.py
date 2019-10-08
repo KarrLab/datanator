@@ -9,7 +9,7 @@ class TestCorumNoSQL(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cache_dirname = './datanator/data_source/cache'
+        cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
         cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
@@ -37,7 +37,7 @@ class TestCorumNoSQL(unittest.TestCase):
     def test_load_complex(self):
         self.src.add_complexes()
         int_complex = self.src.collection_complex
-        self.assertEqual(int_complex.find().count(), 20)
+        self.assertTrue(int_complex.find().count() > 11)
         cursor = int_complex.find({'identifier': 'CPX-3140'})
         self.assertEqual(cursor.count(), 1)
         self.assertEqual(cursor[0]['ncbi_id'], 7227)

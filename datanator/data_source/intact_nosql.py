@@ -85,7 +85,7 @@ class IntActNoSQL(mongo_util.MongoUtil):
             for j in range(len(relabeled_data_json)):
                 if total_operations == self.max_entries:
                     break
-                if self.verbose and total_operations%1 ==0:
+                if self.verbose and total_operations%50 ==0:
                     print ('Inserting {} of {} complex document'.format(total_operations+1, min(self.max_entries,len(relabeled_data_json))))
 
                 # separate string of subunits
