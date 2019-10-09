@@ -4,6 +4,7 @@
 
 :Author: Balazs Szigeti <balazs.szigeti@mssm.edu>
 :Author: Saahith Pochiraju <saahith116@gmail.com>
+:Author: Zhouyang Lian <zhouyang.lian@familian.life>
 :Author: Jonathan Karr <jonrkarr@gmail.com>
 :Date: 2018-08-13
 :Copyright: 2017-2018, Karr Lab
@@ -31,7 +32,7 @@ class TestCorumNoSQL(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.cache_dirname)
 
-    #@unittest.skip("loading everything")
+    # @unittest.skip("loading everything")
     def test_load_some_content(self):
         src = corum_nosql.CorumNoSQL(self.MongoDB, self.db, replicaSet=self.replSet, cache_dirname = self.cache_dirname,
             verbose = True, max_entries=20, username = self.username, password = self.password)
@@ -41,20 +42,18 @@ class TestCorumNoSQL(unittest.TestCase):
         self.assertEqual(cursor.count(), 3)
         self.assertEqual(cursor[1]['complex_id'], 2)
         self.assertEqual(cursor[2]['subunits_protein_name'], ['B-cell lymphoma 6 protein', 'Histone deacetylase 7'])
-        
-    @unittest.skip("will not work on circle ci due to file directory setting")
+        src.client.close()
+
+    @unittest.skip(" loading all contents")
     def test_load_all_content(self):
         db = 'datanator'
         src = corum_nosql.CorumNoSQL(self.MongoDB, db, verbose = True, username = self.username, password = self.password,
                                     cache_dirname = self.cache_dirname)
         collection = src.load_content()
+        collection = src.load_content(endpoint='splice')
 
-        c = collection.find_one({'ComplexID':80})
-        self.assertEqual(c['ComplexName'], 'Ubiquitin E3 ligase (SKP1A, SKP2, CUL1, RBX1)')
-
-        s = collection.find_one({'subunits(UniProt IDs)':'Q9UQL6'})
-        self.assertEqual(s['subunits(Protein name)'][1], 'Histone deacetylase 5')
-        client.close()
+        c = collection.find_one({'ComplexID':'6620'})
+        self.assertEqual(c['ComplexName'], 'MGAT1-SLC35A2(splice variant 2) complex')
 
 
     def test_parse_list(self):
@@ -116,3 +115,12 @@ class TestCorumNoSQL(unittest.TestCase):
             'Set1/Ash2 histone methyltransferase complex subunit ASH2;'
             'RuvB-like 1;'
             'Ribosomal biogenesis protein LAS1L'))), 27)
+
+    def test_parse_subunits(self):
+        subunits = ['P78381-2', "P01234"]
+        result = corum_nosql.parse_subunits(subunits)
+        exp = ['P78381', 'P01234']
+        self.assertEqual(result, exp)
+        subunits = [None]
+        result = corum_nosql.parse_subunits(subunits)
+        self.assertEqual(result, [None])

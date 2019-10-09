@@ -15,6 +15,7 @@ class CorumNoSQL(mongo_util.MongoUtil):
         authSource = 'admin', cache_dirname = None):
         self.ENDPOINT_DOMAINS = {
             'corum': 'https://mips.helmholtz-muenchen.de/corum/download/allComplexes.txt.zip',
+            'splice': 'https://mips.helmholtz-muenchen.de/corum/download/spliceComplexes.txt.zip'
         }
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
@@ -26,11 +27,10 @@ class CorumNoSQL(mongo_util.MongoUtil):
                     verbose=verbose, max_entries=max_entries, username = username, password = password,
                     authSource = authSource)
 
-    def load_content(self):
+    def load_content(self, endpoint='corum'):
         """ Collect and parse all data from CORUM website into JSON files and add to NoSQL database """
-        database_url = self.ENDPOINT_DOMAINS['corum']
+        database_url = self.ENDPOINT_DOMAINS[endpoint]
         _, _, collection = self.con_db(self.collection)
-        collection.delete_many({})
         os.makedirs(os.path.join(
             self.cache_dirname, self.collection), exist_ok=True)
 
@@ -48,7 +48,10 @@ class CorumNoSQL(mongo_util.MongoUtil):
 
         z = zipfile.ZipFile(BytesIO(response.content))
         z.extractall(self.cache_dirname)
-        cwd = os.path.join(self.cache_dirname, 'allComplexes.txt')
+        if endpoint == 'corum':
+            cwd = os.path.join(self.cache_dirname, 'allComplexes.txt')
+        else:
+            cwd = os.path.join(self.cache_dirname, 'spliceComplexes.txt')
 
         # create object to find NCBI taxonomy IDs
         ncbi_taxa = ete3.NCBITaxa()
@@ -97,7 +100,9 @@ class CorumNoSQL(mongo_util.MongoUtil):
                 # Split the semicolon-separated lists of subunits into protein components,
                 # ignoring semicolons inside square brackets
                 su_uniprot_list = parse_list(su_uniprot)
-                entry['subunits_uniprot_id'] = su_uniprot_list
+                entry['subunits_isoform_id'] = su_uniprot_list
+                parsed_su_uniprot_list = parse_subunits(su_uniprot_list)
+                entry['subunits_uniprot_id'] = parsed_su_uniprot_list
                 del entry['subunits(UniProt IDs)']
                 
                 su_entrez_list = parse_list(su_entrez)
@@ -165,8 +170,8 @@ class CorumNoSQL(mongo_util.MongoUtil):
                     f.write(json.dumps(entry, indent=4))
 
                 
-                collection.replace_one({'ComplexID': entry['ComplexID']},
-                    entry,
+                collection.update_one({'ComplexID': entry['ComplexID']},
+                    {'$set': entry},
                     upsert=True
                     )
                     
@@ -205,6 +210,24 @@ def parse_list(str_lst):
         return lst
     else:
         return [None]
+
+def parse_subunits(subunits):
+    """Given enzyme subunits list, separate uniprot_id
+    and variant. e.g. ["P78381-2"] -> ["P78381-2", "P78381"]
+    
+    Args:
+        subunits (list): corum enzyme subunit string representation
+    """
+    if subunits == [None]:
+        return [None]
+    result = []
+    for unit in subunits:
+        if '-' in unit:
+            root = unit.split('-')[0]
+            result.append(root)
+        else:
+            result.append(unit)
+    return result
 
 
 def correct_protein_name_list(lst):
