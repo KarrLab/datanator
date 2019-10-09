@@ -26,7 +26,7 @@ def get_config(extra=None):
         default=pkg_resources.resource_filename('datanator', 'config/core.default.cfg'),
         schema=pkg_resources.resource_filename('datanator', 'config/core.schema.cfg'),
         user=(
-            'datanator.ini',
+            'datanator.cfg',
             os.path.expanduser('~/.wc/datanator.cfg'),
         )
     )
