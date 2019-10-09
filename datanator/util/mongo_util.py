@@ -37,26 +37,26 @@ class MongoUtil:
         except ServerSelectionTimeoutError:
             return ('Server timeout')
 
-    def fill_db(self, collection_str, sym_link=False):
+    def fill_db(self, collection_str):
         '''Check if collection is already in MongoDB 
-            if already in:
-                do nothing
-            else:
-                load data into db from quiltdata (karrlab/datanator_nosql)
+        
+        If already in MongoDB:
+            Do nothing
+        Else:
+            Load data into db from quiltdata (karrlab/datanator)
 
-            Attributes:
-                collection_str: name of collection (e.g. 'ecmdb', 'pax', etc)
-                sym_link: whether download should be a sym link
+        Args:
+            collection_str: name of collection (e.g. 'ecmdb', 'pax', etc)
         '''
         _, _, collection = self.con_db(collection_str)
         if collection.find({}).count() != 0:
             return collection
         else:
             manager = wc_utils.quilt.QuiltManager(
-                self.cache_dirname, 'datanator_nosql')
-            file = collection_str+'.bson'
-            manager.download(file, sym_link)
-            with open((self.cache_dirname + '/'+file), 'rb') as f:
+                path=self.cache_dirname, package='datanator')
+            filename = collection_str + '.bson'
+            manager.download_package(filename)
+            with open((self.cache_dirname + '/' + filename), 'rb') as f:
                 collection.insert(decode_all(f.read()))
             return collection
 

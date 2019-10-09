@@ -2,18 +2,17 @@ import wc_utils.quilt
 
 
 def main():
-    '''Backup or download data from/to Quiltdata
+    '''Backup or download data from/to Quilt
     '''
-    path = input("BSON file location: \n")
-    pakcage = 'datanator_nosql'
-    token = 'eyJpZCI6ICJiNGZkOWUzZS03ZWIyLTQ2NzAtYjdkNy02MTgyNjE2ZWI4ZTIiLCAiY29kZSI6ICI1MTUwZDU2Zi1iYTY2LTRmZWQtODM5Yi0zMzg5NTBiN2Q1ZTUifQ=='
-    manager = wc_utils.quilt.QuiltManager(path, pakcage, token=token,verbose=True)
-    print(manager.token)
-    backup = input("Backup or Download (choose 'backup' or 'download')?\n")
+    path = input("BSON file location:\n")
+    package = 'datanator'
+    manager = wc_utils.quilt.QuiltManager(path=path, package=package)
+    backup = input("Backup or Download (choose 'backup' or 'download')?\n")    
     if backup.lower() == 'backup':
-        manager.upload()
+        message = input("Optionally, enter a commit message:\n")
+        manager.upload_package(message=message or None)
     else:
-        manager.download()
+        manager.download_package()
 
 
 if __name__ == '__main__':
