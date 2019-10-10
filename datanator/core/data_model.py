@@ -10,8 +10,8 @@ from datanator.util import molecule_util
 import copy
 import enum
 import numpy
-import obj_model.core
-import obj_model.bio
+import obj_tables
+import obj_tables.bio
 import six.moves
 
 
@@ -26,7 +26,7 @@ class ConsensusMethod(enum.Enum):
     weighted_mode = 6
 
 
-class Consensus(obj_model.core.Model):
+class Consensus(obj_tables.Model):
     """ Represents a consensus of one or more observed values of an attribute of a component of a model
 
     Attributes:
@@ -40,17 +40,17 @@ class Consensus(obj_model.core.Model):
         user (:obj:`str`): user who generated the consensus
         date (:obj:`datetime.datetime`): date and time when the consensus was generated
     """
-    observable = obj_model.core.ManyToOneAttribute('Observable', related_name='consensus')
-    value = obj_model.core.FloatAttribute()
-    error = obj_model.core.FloatAttribute()
-    units = obj_model.core.StringAttribute()
-    evidence = obj_model.core.ManyToManyAttribute('Evidence', related_name='consensus')
-    method = obj_model.core.EnumAttribute(ConsensusMethod)
-    user = obj_model.core.StringAttribute()
-    date = obj_model.core.DateTimeAttribute()
+    observable = obj_tables.ManyToOneAttribute('Observable', related_name='consensus')
+    value = obj_tables.FloatAttribute()
+    error = obj_tables.FloatAttribute()
+    units = obj_tables.StringAttribute()
+    evidence = obj_tables.ManyToManyAttribute('Evidence', related_name='consensus')
+    method = obj_tables.EnumAttribute(ConsensusMethod)
+    user = obj_tables.StringAttribute()
+    date = obj_tables.DateTimeAttribute()
 
 
-class Evidence(obj_model.core.Model):
+class Evidence(obj_tables.Model):
     """ Represents the observed values and their relevance which support a consensus
 
     Attributes:
@@ -58,11 +58,11 @@ class Evidence(obj_model.core.Model):
         relevance (:obj:`float`): numeric score which indicates the relevance of the observed value to the
             consensus
     """
-    value = obj_model.core.ManyToOneAttribute('ObservedValue', related_name='evidence')
-    relevance = obj_model.core.FloatAttribute()
+    value = obj_tables.ManyToOneAttribute('ObservedValue', related_name='evidence')
+    relevance = obj_tables.FloatAttribute()
 
 
-class ObservedResultMetadata(obj_model.core.Model):
+class ObservedResultMetadata(obj_tables.Model):
     """ Represents an observation (one or more observed values) about a biological system
 
     Attributes:
@@ -71,13 +71,13 @@ class ObservedResultMetadata(obj_model.core.Model):
         values (:obj:`list` of :obj:`ObservedValue`): observed values
         reference (:obj:`Reference`): reference to the reference
     """
-    genetics = obj_model.core.ManyToOneAttribute('Genetics', related_name='observations')
-    environment = obj_model.core.ManyToOneAttribute('Environment', related_name='observations')
-    cross_references = obj_model.core.ManyToManyAttribute('Resource', related_name='observations')
-    method = obj_model.core.ManyToOneAttribute('Method', related_name='observations')
-    synonym = obj_model.core.ManyToManyAttribute('Synonym', related_name='observations')
+    genetics = obj_tables.ManyToOneAttribute('Genetics', related_name='observations')
+    environment = obj_tables.ManyToOneAttribute('Environment', related_name='observations')
+    cross_references = obj_tables.ManyToManyAttribute('Resource', related_name='observations')
+    method = obj_tables.ManyToOneAttribute('Method', related_name='observations')
+    synonym = obj_tables.ManyToManyAttribute('Synonym', related_name='observations')
 
-class ObservedResult(obj_model.core.Model):
+class ObservedResult(obj_tables.Model):
     """ Represents a base dataset for a queried response
 
     Attributes:
@@ -85,7 +85,7 @@ class ObservedResult(obj_model.core.Model):
         method (:obj:`str`): method that was used to make the observation
     """
 
-    metadata = obj_model.core.ManyToOneAttribute('ObservedResultMetadata', related_name='observed_result')
+    metadata = obj_tables.ManyToOneAttribute('ObservedResultMetadata', related_name='observed_result')
 
 
 class ObservedInteraction(ObservedResult):
@@ -95,7 +95,7 @@ class ObservedInteraction(ObservedResult):
         interaction (:obj:`Interaction`): observed interaction
     """
 
-    interaction = obj_model.core.ManyToOneAttribute('Interaction', related_name='observed_interaction')
+    interaction = obj_tables.ManyToOneAttribute('Interaction', related_name='observed_interaction')
 
 class ObservedSpecie(ObservedResult):
     """ Represents an observed interaction of a biological system
@@ -104,7 +104,7 @@ class ObservedSpecie(ObservedResult):
         specie (:obj:`Specie`): observed specie
     """
 
-    specie = obj_model.core.ManyToOneAttribute('Specie', related_name='observed_specie')
+    specie = obj_tables.ManyToOneAttribute('Specie', related_name='observed_specie')
 
 class ObservedValue(ObservedResult):
     """ Represents an observed value of a biological system
@@ -115,13 +115,13 @@ class ObservedValue(ObservedResult):
         error (:obj:`float`): uncertainty of the observed value
         units (:obj:`units`): SI units of the observed value
     """
-    observable = obj_model.core.ManyToOneAttribute('Observable', related_name='observed_values')
-    value = obj_model.core.FloatAttribute()
-    error = obj_model.core.FloatAttribute()
-    units = obj_model.core.StringAttribute()
+    observable = obj_tables.ManyToOneAttribute('Observable', related_name='observed_values')
+    value = obj_tables.FloatAttribute()
+    error = obj_tables.FloatAttribute()
+    units = obj_tables.StringAttribute()
 
 
-class Observable(obj_model.core.Model):
+class Observable(obj_tables.Model):
     """ Represents an observable of a biological system
 
     Attributes:
@@ -130,13 +130,13 @@ class Observable(obj_model.core.Model):
         compartment (:obj:`Compartment`): compartment that the spcies/interaction was observed in
         property (:obj:`str`): property that was observed
     """
-    interaction = obj_model.core.ManyToOneAttribute('Interaction', related_name='observed_values')
-    specie = obj_model.core.ManyToOneAttribute('Specie', related_name='observed_values')
-    compartment = obj_model.core.ManyToOneAttribute('Compartment', related_name='observed_values')
-    property = obj_model.core.StringAttribute()
+    interaction = obj_tables.ManyToOneAttribute('Interaction', related_name='observed_values')
+    specie = obj_tables.ManyToOneAttribute('Specie', related_name='observed_values')
+    compartment = obj_tables.ManyToOneAttribute('Compartment', related_name='observed_values')
+    property = obj_tables.StringAttribute()
 
 
-class EntityInteractionOrProperty(obj_model.core.Model):
+class EntityInteractionOrProperty(obj_tables.Model):
     """ Represents an observable of a biological system
 
     Attributes:
@@ -144,9 +144,9 @@ class EntityInteractionOrProperty(obj_model.core.Model):
         name (:obj:`str`): name
         cross_references (:obj:`list` of :obj:`Resource`): list of cross references to external resources
     """
-    id = obj_model.core.StringAttribute()
-    name = obj_model.core.StringAttribute()
-    cross_references = obj_model.core.ManyToManyAttribute('Resource', related_name='observables')
+    id = obj_tables.StringAttribute()
+    name = obj_tables.StringAttribute()
+    cross_references = obj_tables.ManyToManyAttribute('Resource', related_name='observables')
 
 
 class Compartment(EntityInteractionOrProperty):
@@ -160,7 +160,7 @@ class Specie(EntityInteractionOrProperty):
     Attributes:
         structure (:obj:`str`): structure
     """
-    structure = obj_model.core.LongStringAttribute()
+    structure = obj_tables.LongStringAttribute()
 
     def to_inchi(self, only_formula_and_connectivity=False):
         """ Get the structure in InChi format
@@ -232,7 +232,7 @@ class PolymerSpecie(Specie):
     Attributes:
         sequence (:obj:`str`): sequence
     """
-    sequence = obj_model.core.LongStringAttribute()
+    sequence = obj_tables.LongStringAttribute()
 
 
 class DnaSpecie(PolymerSpecie):
@@ -241,7 +241,7 @@ class DnaSpecie(PolymerSpecie):
     Attributes:
         binding_matrix (:obj:`Bio.motifs.matrix.FrequencyPositionMatrix`): Binding motif
     """
-    binding_matrix = obj_model.bio.FrequencyPositionMatrixAttribute()
+    binding_matrix = obj_tables.bio.FrequencyPositionMatrixAttribute()
 
 
 class RnaSpecie(PolymerSpecie):
@@ -260,11 +260,11 @@ class ProteinSpecie(PolymerSpecie):
         mass (:obj:`int`): Mass of the protein in KDa
 
     """
-    uniprot_id  = obj_model.core.StringAttribute()
-    entrez_id = obj_model.core.IntegerAttribute()
-    gene_name = obj_model.core.StringAttribute()
-    length = obj_model.core.IntegerAttribute()
-    mass = obj_model.core.IntegerAttribute()
+    uniprot_id  = obj_tables.StringAttribute()
+    entrez_id = obj_tables.IntegerAttribute()
+    gene_name = obj_tables.StringAttribute()
+    length = obj_tables.IntegerAttribute()
+    mass = obj_tables.IntegerAttribute()
 
 class ProteinComplexSpecie(ProteinSpecie):
     """ Represents a protein interaction
@@ -273,16 +273,16 @@ class ProteinComplexSpecie(ProteinSpecie):
 
     """
 
-    go_id = obj_model.core.StringAttribute()
-    go_dsc = obj_model.core.StringAttribute()
-    funcat_id = obj_model.core.StringAttribute()
-    funcat_dsc = obj_model.core.StringAttribute()
-    su_cmt = obj_model.core.StringAttribute()
-    complex_cmt = obj_model.core.StringAttribute()
-    disease_cmt = obj_model.core.StringAttribute()
-    class_name = obj_model.core.StringAttribute()
-    family_name = obj_model.core.StringAttribute()
-    molecular_weight = obj_model.core.FloatAttribute()
+    go_id = obj_tables.StringAttribute()
+    go_dsc = obj_tables.StringAttribute()
+    funcat_id = obj_tables.StringAttribute()
+    funcat_dsc = obj_tables.StringAttribute()
+    su_cmt = obj_tables.StringAttribute()
+    complex_cmt = obj_tables.StringAttribute()
+    disease_cmt = obj_tables.StringAttribute()
+    class_name = obj_tables.StringAttribute()
+    family_name = obj_tables.StringAttribute()
+    molecular_weight = obj_tables.FloatAttribute()
 
 
 
@@ -294,9 +294,9 @@ class Interaction(EntityInteractionOrProperty):
             score (:obj:`float`): ranking of the response of the interaction
     """
     #TODO: Assess difference between score and confidence
-    position = obj_model.core.IntegerAttribute()
-    score = obj_model.core.FloatAttribute(default=0)
-    confidence = obj_model.core.StringAttribute()
+    position = obj_tables.IntegerAttribute()
+    score = obj_tables.FloatAttribute(default=0)
+    confidence = obj_tables.StringAttribute()
 
 class SpecieInteraction(Interaction):
     """ Represents a protein interaction
@@ -310,15 +310,15 @@ class SpecieInteraction(Interaction):
         loc_b (:obj:`str`):
     """
 
-    specie_a = obj_model.core.OneToOneAttribute('Specie', related_name='specie_interaction')
-    specie_b = obj_model.core.OneToOneAttribute('Specie', related_name='specie_interaction')
-    stoichiometry_a = obj_model.core.IntegerAttribute()
-    stoichiometry_b = obj_model.core.IntegerAttribute()
-    loc_a = obj_model.core.StringAttribute()
-    loc_b = obj_model.core.StringAttribute()
-    type_a = obj_model.core.StringAttribute()
-    type_b = obj_model.core.StringAttribute()
-    interaction_type = obj_model.core.StringAttribute()
+    specie_a = obj_tables.OneToOneAttribute('Specie', related_name='specie_interaction')
+    specie_b = obj_tables.OneToOneAttribute('Specie', related_name='specie_interaction')
+    stoichiometry_a = obj_tables.IntegerAttribute()
+    stoichiometry_b = obj_tables.IntegerAttribute()
+    loc_a = obj_tables.StringAttribute()
+    loc_b = obj_tables.StringAttribute()
+    type_a = obj_tables.StringAttribute()
+    type_b = obj_tables.StringAttribute()
+    interaction_type = obj_tables.StringAttribute()
 
 
 
@@ -329,9 +329,9 @@ class Reaction(Interaction):
         participants (:obj:`list` of :obj:`ReactionParticipant`): list of participants
         reversible (:obj:`bool`): :obj:`True` if the reaction is reversible
     """
-    kinetic_law_id = obj_model.core.IntegerAttribute()
-    participants = obj_model.core.ManyToManyAttribute('ReactionParticipant', related_name='reactions')
-    reversible = obj_model.core.BooleanAttribute()
+    kinetic_law_id = obj_tables.IntegerAttribute()
+    participants = obj_tables.ManyToManyAttribute('ReactionParticipant', related_name='reactions')
+    reversible = obj_tables.BooleanAttribute()
 
     def get_reactants(self):
         """ Get the reactants
@@ -490,7 +490,7 @@ class Reaction(Interaction):
         return max_id
 
 
-class ReactionParticipant(obj_model.core.Model):
+class ReactionParticipant(obj_tables.Model):
     """ Represents a participant in a reaction
 
     Attributes:
@@ -499,13 +499,13 @@ class ReactionParticipant(obj_model.core.Model):
         coefficient (:obj:`float`): coefficient
         order (:obj:`int`): order in the list of participants
     """
-    specie = obj_model.core.ManyToOneAttribute(Specie, related_name='reaction_participants')
-    compartment = obj_model.core.ManyToOneAttribute(Compartment, related_name='reaction_participants')
-    coefficient = obj_model.core.FloatAttribute()
-    order = obj_model.core.IntegerAttribute()
+    specie = obj_tables.ManyToOneAttribute(Specie, related_name='reaction_participants')
+    compartment = obj_tables.ManyToOneAttribute(Compartment, related_name='reaction_participants')
+    coefficient = obj_tables.FloatAttribute()
+    order = obj_tables.IntegerAttribute()
 
 
-class Genetics(obj_model.core.Model):
+class Genetics(obj_tables.Model):
     """ Represents a taxon
 
     Attributes:
@@ -514,8 +514,8 @@ class Genetics(obj_model.core.Model):
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
-    taxon = obj_model.core.StringAttribute()
-    variation = obj_model.core.StringAttribute()
+    taxon = obj_tables.StringAttribute()
+    variation = obj_tables.StringAttribute()
 
     def is_wildtype(self):
         """ Determine if the taxon is the wildtype taxon
@@ -534,7 +534,7 @@ class Genetics(obj_model.core.Model):
         return not self.is_wildtype()
 
 
-class Environment(obj_model.core.Model):
+class Environment(obj_tables.Model):
     """ Represents the environment (temperature, pH, media chemical composition) of an observation
 
     Attributes:
@@ -544,14 +544,14 @@ class Environment(obj_model.core.Model):
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
-    temperature = obj_model.core.FloatAttribute()
-    ph = obj_model.core.FloatAttribute()
-    media = obj_model.core.LongStringAttribute()
-    growth_status = obj_model.core.LongStringAttribute()
-    growth_system = obj_model.core.LongStringAttribute()
+    temperature = obj_tables.FloatAttribute()
+    ph = obj_tables.FloatAttribute()
+    media = obj_tables.LongStringAttribute()
+    growth_status = obj_tables.LongStringAttribute()
+    growth_system = obj_tables.LongStringAttribute()
 
 
-class Method(obj_model.core.Model):
+class Method(obj_tables.Model):
     """ Represents a method used to generate an observation
 
     Attributes:
@@ -560,13 +560,13 @@ class Method(obj_model.core.Model):
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
-    name = obj_model.core.StringAttribute()
-    description = obj_model.core.LongStringAttribute()
-    performer = obj_model.core.StringAttribute()
-    hardware = obj_model.core.StringAttribute()
-    software = obj_model.core.StringAttribute()
+    name = obj_tables.StringAttribute()
+    description = obj_tables.LongStringAttribute()
+    performer = obj_tables.StringAttribute()
+    hardware = obj_tables.StringAttribute()
+    software = obj_tables.StringAttribute()
 
-class Synonym(obj_model.core.Model):
+class Synonym(obj_tables.Model):
     """
     Represents a synonym of a given physical entity or property
 
@@ -574,7 +574,7 @@ class Synonym(obj_model.core.Model):
         name (:obj:`str`): Name of the Synonym
 
     """
-    name = obj_model.core.StringAttribute()
+    name = obj_tables.StringAttribute()
 
 
 class ExperimentalMethod(Method):
@@ -589,8 +589,8 @@ class ComputationalMethod(Method):
         version (:obj:`str`): version
         arguments (:obj:`str`): string representation of the arguments to the method
     """
-    version = obj_model.core.StringAttribute()
-    arguments = obj_model.core.LongStringAttribute()
+    version = obj_tables.StringAttribute()
+    arguments = obj_tables.LongStringAttribute()
 
 
 class ResourceAssignmentMethod(enum.Enum):
@@ -599,7 +599,7 @@ class ResourceAssignmentMethod(enum.Enum):
     predicted = 1
 
 
-class Resource(obj_model.core.Model):
+class Resource(obj_tables.Model):
     """ Represents an object in an external resource
 
     Attributes:
@@ -608,13 +608,13 @@ class Resource(obj_model.core.Model):
         relevance (:obj:`float`): numerical indicator relevance of the external resource to the observable
         assignment_method (:obj:`ResourceAssignmentMethod`): method used to assign the cross reference to the observable
     """
-    namespace = obj_model.core.StringAttribute()
-    id = obj_model.core.StringAttribute()
-    relevance = obj_model.core.FloatAttribute()
-    assignment_method = obj_model.core.EnumAttribute(ResourceAssignmentMethod)
+    namespace = obj_tables.StringAttribute()
+    id = obj_tables.StringAttribute()
+    relevance = obj_tables.FloatAttribute()
+    assignment_method = obj_tables.EnumAttribute(ResourceAssignmentMethod)
 
 
-class Reference(obj_model.core.Model):
+class Reference(obj_tables.Model):
     """ Represent a reference for an observation
 
     Attributes:
@@ -631,13 +631,13 @@ class Reference(obj_model.core.Model):
 
         observations (:obj:`list` of :obj:`Observation`): list of observations
     """
-    title = obj_model.core.StringAttribute()
-    editor = obj_model.core.StringAttribute()
-    author = obj_model.core.StringAttribute()
-    year = obj_model.core.IntegerAttribute()
-    publication = obj_model.core.StringAttribute()
-    volume = obj_model.core.StringAttribute()
-    number = obj_model.core.StringAttribute()
-    chapter = obj_model.core.StringAttribute()
-    pages = obj_model.core.StringAttribute()
-    url = obj_model.core.StringAttribute()
+    title = obj_tables.StringAttribute()
+    editor = obj_tables.StringAttribute()
+    author = obj_tables.StringAttribute()
+    year = obj_tables.IntegerAttribute()
+    publication = obj_tables.StringAttribute()
+    volume = obj_tables.StringAttribute()
+    number = obj_tables.StringAttribute()
+    chapter = obj_tables.StringAttribute()
+    pages = obj_tables.StringAttribute()
+    url = obj_tables.StringAttribute()
