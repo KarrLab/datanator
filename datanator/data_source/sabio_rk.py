@@ -34,10 +34,10 @@ class SabioRk:
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_rk_new')
+            authSource=authSource).con_db('sabio_rk')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_compound')
+            authSource=authSource).con_db('sabio_compound_new')
         self.excel_batch_size = excel_batch_size
         self.ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
@@ -256,7 +256,7 @@ class SabioRk:
                                            {'$set': kinetic_law},
                                            upsert=True)
             except pymongo.errors.WriteError as err:
-                logger.error(err)
+                logging.error(err)
             loaded_ids.append(_id)
         return loaded_ids
 
@@ -1317,8 +1317,8 @@ def main():
         manager = SabioRk(MongoDB=MongoDB,  db=db,
                                  verbose=True, username=username,
                                  password=password)
-        # manager.load_content()
-        manager.add_inchi_hash()
+        manager.load_content()
+        # manager.add_inchi_hash()
 
 
 if __name__ == '__main__':
