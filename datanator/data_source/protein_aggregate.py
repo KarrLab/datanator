@@ -44,7 +44,7 @@ class ProteinAggregate:
         '''
             Copy relevant information from uniprot collection
         '''
-        _, _, col_uniprot = self.mongo_manager.con_db('uniprot_new')
+        _, _, col_uniprot = self.mongo_manager.con_db('uniprot')
         query = {}
         projection = {'status': 0, '_id': 0}
         docs = col_uniprot.find(filter=query, projection=projection)
@@ -90,12 +90,9 @@ class ProteinAggregate:
                 except TypeError:
                     continue
 
-
-
     def load_ko(self):
-        '''
-                Load ko number for uniprot_id if such information
-                exists
+        '''Load ko number for uniprot_id if such information
+           exists
         '''
         query = {}
         projection = {'uniprot_id': 1, 'gene_name': 1}
@@ -113,11 +110,38 @@ class ProteinAggregate:
             ko_number = self.kegg_manager.get_ko_by_name(gene_name)
 
             if ko_number != None:
-                ko_name_list = self.kegg_manager.get_def_by_ko([ko_number])
-                ko_name = ko_name_list[0]['ko_name']
+                ko_name_list = self.kegg_manager.get_def_by_kegg_id([ko_number])
+                ko_name = ko_name_list
                 self.col.update_one({'uniprot_id': doc['uniprot_id']},
                                     {'$set': {'ko_number': ko_number,
                                              'ko_name': ko_name}})
+
+    def load_ko_from_uniprot(self):
+        """loading ko number from uniprot collection into
+        aggregate collection (one shot after building new uniprot collection)
+        """
+        query = {'ko_number': {'$exists': False}}
+        projection = {'uniprot_id': 1, '_id': 0}
+        _, _, col_uniprot = self.mongo_manager.con_db('uniprot')
+        docs = self.col.find(filter=query, projection=projection)
+        count = self.col.count_documents(query)
+        collation = Collation('en', strength=CollationStrength.SECONDARY)
+        for i, doc in enumerate(docs):
+            if self.verbose and i % 50 == 0:
+                print("Adding kegg info {} of {}".format(i, count))
+            uniprot_id = doc['uniprot_id']
+            doc = col_uniprot.find_one({'uniprot_id': uniprot_id})
+            if doc is None:
+                continue
+            ko_number = doc.get('ko_number')
+            if ko_number is not None:
+                ko_name = self.kegg_manager.get_def_by_kegg_id(ko_number)
+                self.col.update_one({'uniprot_id': doc['uniprot_id']},
+                                    {'$set': {'ko_number': ko_number,
+                                             'ko_name': ko_name}},
+                                    collation=collation)
+            else:
+                continue
 
     def load_taxon(self):
         '''
@@ -309,6 +333,7 @@ def main():
     # manager.load_taxon()
     # manager.load_unreviewed_abundance()
     # manager.load_kinlaw_from_sabio()
+    manager.load_ko_from_uniprot()
 
     # collation = Collation('en', strength=CollationStrength.SECONDARY)
     # manager.collection.create_index([("ncbi_taxonomy_id", pymongo.ASCENDING),

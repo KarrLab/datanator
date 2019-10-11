@@ -34,7 +34,7 @@ class SabioRk:
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_rk')
+            authSource=authSource).con_db('sabio_rk_new')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_compound_new')
@@ -66,64 +66,64 @@ class SabioRk:
         ##################################
         ##################################
         # determine ids of kinetic laws
-        if self.verbose:
-            print('Downloading the IDs of the kinetic laws ...')
+        # if self.verbose:
+        #     print('Downloading the IDs of the kinetic laws ...')
 
-        ids = self.load_kinetic_law_ids()
+        # ids = self.load_kinetic_law_ids()
 
-        if self.verbose:
-            print('  Downloaded {} IDs'.format(len(ids)))
+        # if self.verbose:
+        #     print('  Downloaded {} IDs'.format(len(ids)))
 
-        ##################################
-        ##################################
-        # remove bad IDs
-        ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
+        # ##################################
+        # ##################################
+        # # remove bad IDs
+        # ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
 
-        # sort ids
-        ids.sort()
+        # # sort ids
+        # ids.sort()
 
-        # load only `max_entries` IDs
-        if len(ids) > self.max_entries:
-            ids = ids[0:self.max_entries]
+        # # load only `max_entries` IDs
+        # if len(ids) > self.max_entries:
+        #     ids = ids[0:self.max_entries]
 
         ##################################
         ##################################
         # download kinetic laws
         exisitng_ids = self.collection.distinct('kinlaw_id')
-        new_ids = list(set(ids).difference(set(exisitng_ids)))
-        new_ids.sort()
+        # new_ids = list(set(ids).difference(set(exisitng_ids)))
+        # new_ids.sort()
 
-        if self.verbose:
-            print('Downloading {} kinetic laws ...'.format(len(new_ids)))
+        # if self.verbose:
+        #     print('Downloading {} kinetic laws ...'.format(len(new_ids)))
 
-        missing_ids = self.load_kinetic_laws(new_ids)
+        # missing_ids = self.load_kinetic_laws(new_ids)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
-        # fill in missing information from Excel export
-        exisitng_ids = self.collection.distinct('kinlaw_id')
-        loaded_new_ids = list(set(new_ids).intersection(exisitng_ids))
-        loaded_new_ids.sort()
+        # # fill in missing information from Excel export
+        # exisitng_ids = self.collection.distinct('kinlaw_id')
+        # loaded_new_ids = list(set(new_ids).intersection(exisitng_ids))
+        # loaded_new_ids.sort()
 
-        if self.verbose:
-            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        # if self.verbose:
+        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
+        # self.load_missing_kinetic_law_information_from_tsv(exisitng_ids)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
-        ##################################
-        ##################################
-        # fill in missing information from HTML pages
-        if self.verbose:
-            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        # ##################################
+        # ##################################
+        # # fill in missing information from HTML pages
+        # if self.verbose:
+        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        self.load_missing_enzyme_information_from_html(exisitng_ids, start=14603)
 
-        if self.verbose:
-            print('  done')
+        # if self.verbose:
+        #     print('  done')
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -1081,11 +1081,12 @@ class SabioRk:
 
         return result
 
-    def load_missing_enzyme_information_from_html(self, ids):
+    def load_missing_enzyme_information_from_html(self, ids, start=0):
         """ Loading enzyme subunit information from html
 
         Args:
             ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+            start (:obj:`int`): starting point for iterator
         """
         query = {'$and': [{'kinlaw_id': {'$in': ids}},
                           {'enzyme._id': {'$exists': True}}]}
@@ -1094,17 +1095,19 @@ class SabioRk:
             filter=query, projection=projection)
         total_count = self.collection.count_documents(query)
 
-        for i_kinetic_law, kinetic_law in enumerate(kinetic_laws):
+        for i_kinetic_law, kinetic_law in enumerate(kinetic_laws[start:]):
             if self.verbose and (i_kinetic_law % 100 == 0):
                 print('  Loading enzyme information for {} of {} kinetic laws'.format(
-                    i_kinetic_law + 1, total_count))
+                    i_kinetic_law + 1 + start, total_count))
 
             response = requests.get(self.ENDPOINT_KINETIC_LAWS_PAGE, params={
                                     'kinlawid': kinetic_law['kinlaw_id'], 'newinterface': 'true'})
             response.raise_for_status()
 
             enzyme = kinetic_law['enzyme'][0]
-            subunits = enzyme['subunits']
+            subunits = enzyme.get('subunits')
+            if subunits is None:
+                continue
             for subunit in subunits:
                 subunit['coefficient'] = None
 
@@ -1271,16 +1274,18 @@ class SabioRk:
                 Args:
                     rxnp (:obj: `list` of :obj: `dict`)
             '''
+            aggregate = []
             for i in range(len(rxnp)):
                 substrate_inchi = get_inchi_structure(rxnp[i])
 
                 try:
                     hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
                     rxnp[i]['structures'][0]['InChI_Key'] = hashed_inchi
+                    aggregate.append(hashed_inchi)
                 except AttributeError:
                     rxnp[i]['structures'][0]['InChI_Key'] = None
 
-            return rxnp
+            return rxnp, aggregate
 
         j = 0
         for doc in cursor:
@@ -1290,11 +1295,13 @@ class SabioRk:
                 print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reactants']
             products = doc['products']
-            new_subsrates = iter_rxnp_subdoc(substrates)
-            new_products = iter_rxnp_subdoc(products)
+            new_subsrates, s_aggregate = iter_rxnp_subdoc(substrates)
+            new_products, p_aggregate = iter_rxnp_subdoc(products)
 
             doc['reactants'] = new_subsrates
+            doc['reactants']['aggregate'] = s_aggregate
             doc['products'] = new_products
+            doc['products']['aggregate'] = p_aggregate
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                             {'$set': {'reactants': doc['reactants'],

@@ -33,7 +33,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
       # build dataframe for uniprot_swiss for loading into mongodb
     def get_uniprot(self):
         url = self.url + \
-            '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id'
+            '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO)'
         url += '&format=tab'
         url += '&compress=no'
         if not math.isnan(self.max_entries):
@@ -43,13 +43,14 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         response.raise_for_status()
 
         data = pandas.read_csv(io.BytesIO(response.content),
-                               delimiter='\t', encoding='utf-8', nrows = 2000000)
+                               delimiter='\t', encoding='utf-8', nrows = 700000)
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
-            'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id'
+            'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number'
         ]
         data['entrez_id'] = data['entrez_id'].str.replace(';', '')
         data['mass'] = data['mass'].str.replace(',', '')
+        data['ko_number'] = data['ko_number'].str.replace(';', '')
         return data
 
     # load uniprot into MongoDB
@@ -64,7 +65,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
 
 def main():
     db = 'datanator'
-    collection_str = 'uniprot_new'
+    collection_str = 'uniprot'
     username = datanator.config.core.get_config()[
         'datanator']['mongodb']['user']
     password = datanator.config.core.get_config(
@@ -74,7 +75,7 @@ def main():
     port = datanator.config.core.get_config(
     )['datanator']['mongodb']['port'] 
     manager=UniprotNoSQL(MongoDB = server, db = db, 
-        username = username, password = password, collection_str='uniprot_new')
+        username = username, password = password, collection_str=collection_str)
     manager.load_uniprot()
 
 if __name__ == '__main__':
