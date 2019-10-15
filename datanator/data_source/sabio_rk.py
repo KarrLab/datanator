@@ -973,8 +973,6 @@ class SabioRk:
 
         # match observed name and compound
         def func(parameter):
-            if parameter.get('observed_type') is None:
-                return []
             return parameter['observed_type'] == parameter_properties['type_code'] and \
                 ((parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or
                  (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies']))
@@ -984,8 +982,6 @@ class SabioRk:
 
         # match observed name
         def func(parameter):
-            if parameter.get('observed_type') is None:
-                return []
             return parameter['observed_type'] == parameter_properties['type_code']
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
@@ -993,8 +989,6 @@ class SabioRk:
 
         # match compound
         def func(parameter):
-            if parameter.get('compound') is None:
-                return []
             return (parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or \
                 (parameter['compound'] is not None and parameter['compound']
                  ['name'] == parameter_properties['associatedSpecies'])
@@ -1004,8 +998,6 @@ class SabioRk:
 
         # match value
         def func(parameter):
-            if parameter.get('observed_value') is None:
-                return []
             return parameter['observed_value'] == parameter_properties['startValue']
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
@@ -1308,9 +1300,9 @@ class SabioRk:
             new_products, p_aggregate = iter_rxnp_subdoc(products)
 
             doc['reactants'] = new_subsrates
-            doc['reactants']['aggregate'] = s_aggregate
+            doc['reactants'][0]['reactants_aggregate'] = s_aggregate
             doc['products'] = new_products
-            doc['products']['aggregate'] = p_aggregate
+            doc['products'][0]['products_aggregate'] = p_aggregate
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                             {'$set': {'reactants': doc['reactants'],
