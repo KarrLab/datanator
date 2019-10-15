@@ -37,7 +37,7 @@ class SabioRk:
             authSource=authSource).con_db('sabio_rk_new')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_compound_new')
+            authSource=authSource).con_db('sabio_compound')
         self.excel_batch_size = excel_batch_size
         self.ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
@@ -65,7 +65,7 @@ class SabioRk:
 
         ##################################
         ##################################
-        # determine ids of kinetic laws
+        # # determine ids of kinetic laws
         # if self.verbose:
         #     print('Downloading the IDs of the kinetic laws ...')
 
@@ -109,19 +109,18 @@ class SabioRk:
         # if self.verbose:
         #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        # self.load_missing_kinetic_law_information_from_tsv(exisitng_ids)
+        self.load_missing_kinetic_law_information_from_tsv(exisitng_ids[43601:])
 
         # if self.verbose:
         #     print('  done')
 
-        # ##################################
-        # ##################################
+        ##################################
+        ##################################
         # # fill in missing information from HTML pages
         # if self.verbose:
         #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_enzyme_information_from_html(exisitng_ids, start=14603)
-
+        # self.load_missing_enzyme_information_from_html(not_loaded_ids)
         # if self.verbose:
         #     print('  done')
 
@@ -801,6 +800,7 @@ class SabioRk:
 
         Args:
             ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+            start (:obj:`int`): starting row
         """
         batch_size = self.excel_batch_size
 
@@ -836,7 +836,7 @@ class SabioRk:
             self.load_missing_kinetic_law_information_from_tsv_helper(
                 response.text)
 
-    def load_missing_kinetic_law_information_from_tsv_helper(self, tsv):
+    def load_missing_kinetic_law_information_from_tsv_helper(self, tsv, start=0):
         """ Update the properties of kinetic laws in the mongodb based on content downloaded
         from SABIO in TSV format.
 
@@ -845,6 +845,7 @@ class SabioRk:
 
         Args:
             tsv (:obj:`str`): TSV-formatted table
+            start (:obj:`int`): starting row
 
         Raises:
             :obj:`ValueError`: if a kinetic law or compartment is not contained in the local sqlite database
@@ -972,6 +973,8 @@ class SabioRk:
 
         # match observed name and compound
         def func(parameter):
+            if parameter.get('observed_type') is None:
+                return []
             return parameter['observed_type'] == parameter_properties['type_code'] and \
                 ((parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or
                  (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies']))
@@ -981,6 +984,8 @@ class SabioRk:
 
         # match observed name
         def func(parameter):
+            if parameter.get('observed_type') is None:
+                return []
             return parameter['observed_type'] == parameter_properties['type_code']
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
@@ -988,6 +993,8 @@ class SabioRk:
 
         # match compound
         def func(parameter):
+            if parameter.get('compound') is None:
+                return []
             return (parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or \
                 (parameter['compound'] is not None and parameter['compound']
                  ['name'] == parameter_properties['associatedSpecies'])
@@ -997,6 +1004,8 @@ class SabioRk:
 
         # match value
         def func(parameter):
+            if parameter.get('observed_value') is None:
+                return []
             return parameter['observed_value'] == parameter_properties['startValue']
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
