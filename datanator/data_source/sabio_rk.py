@@ -24,8 +24,8 @@ class SabioRk:
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                  verbose=False, max_entries=float('inf'), username=None,
-                 password=None, authSource='admin', webservice_batch_size=100,
-                 excel_batch_size=100):
+                 password=None, authSource='admin', webservice_batch_size=50,
+                 excel_batch_size=50):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.replicaSet = replicaSet
@@ -34,7 +34,7 @@ class SabioRk:
         self.max_entries = max_entries
         self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_rk_new')
+            authSource=authSource).con_db('sabio_rk')
         self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
             MongoDB=MongoDB, db=db, username=username, password=password,
             authSource=authSource).con_db('sabio_compound')
@@ -63,66 +63,109 @@ class SabioRk:
     def load_content(self):
         """ Download the content of SABIO-RK and store it to a remote mongoDB. """
 
+        def ids_to_process(total_ids, query):
+            exisitng_ids = self.collection.distinct('kinlaw_id', filter=query)
+            exisitng_ids.sort()
+            loaded_new_ids = list(set(total_ids).intersection(exisitng_ids))
+            loaded_new_ids.sort()
+            return loaded_new_ids
+
         ##################################
         ##################################
-        # # determine ids of kinetic laws
-        # if self.verbose:
-        #     print('Downloading the IDs of the kinetic laws ...')
+        # determine ids of kinetic laws
+        if self.verbose:
+            print('Downloading the IDs of the kinetic laws ...')
 
-        # ids = self.load_kinetic_law_ids()
+        ids = self.load_kinetic_law_ids()
 
-        # if self.verbose:
-        #     print('  Downloaded {} IDs'.format(len(ids)))
+        if self.verbose:
+            print('  Downloaded {} IDs'.format(len(ids)))
 
-        # ##################################
-        # ##################################
-        # # remove bad IDs
-        # ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
+        ##################################
+        ##################################
+        # remove bad IDs
+        ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
 
-        # # sort ids
-        # ids.sort()
+        # sort ids
+        ids.sort()
 
-        # # load only `max_entries` IDs
-        # if len(ids) > self.max_entries:
-        #     ids = ids[0:self.max_entries]
+        # load only `max_entries` IDs
+        if len(ids) > self.max_entries:
+            ids = ids[0:self.max_entries]
 
         ##################################
         ##################################
         # download kinetic laws
         exisitng_ids = self.collection.distinct('kinlaw_id')
-        # new_ids = list(set(ids).difference(set(exisitng_ids)))
-        # new_ids.sort()
+        exisitng_ids.sort()
+        if exisitng_ids is None:
+            exisitng_ids = []
+        new_ids = list(set(ids).difference(set(exisitng_ids)))
+        if len(exisitng_ids) != 0:
+            new_ids.append(exisitng_ids[-1])
+        new_ids.sort()
 
-        # if self.verbose:
-        #     print('Downloading {} kinetic laws ...'.format(len(new_ids)))
+        if self.verbose:
+            print('Downloading {} kinetic laws ...'.format(len(new_ids)))
 
-        # missing_ids = self.load_kinetic_laws(new_ids)
+        missing_ids = self.load_kinetic_laws(new_ids)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
-        # # fill in missing information from Excel export
-        # exisitng_ids = self.collection.distinct('kinlaw_id')
-        # loaded_new_ids = list(set(new_ids).intersection(exisitng_ids))
-        # loaded_new_ids.sort()
+        # fill in missing information from Excel export
+        query = {'mechanism': {'$exists': False}}
+        loaded_new_ids = ids_to_process(ids, query)
 
-        # if self.verbose:
-        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_kinetic_law_information_from_tsv(exisitng_ids[43601:])
+        self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
 
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('  done')
 
         ##################################
         ##################################
-        # # fill in missing information from HTML pages
-        # if self.verbose:
-        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        # fill in missing information from HTML pages
+        constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
+        constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
+        query = {'$and':[constraint_0, constraint_1]}
+        loaded_new_ids = ids_to_process(ids, query)
 
-        # self.load_missing_enzyme_information_from_html(not_loaded_ids)
-        # if self.verbose:
-        #     print('  done')
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+
+        self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
+        query = {'parameters.norm_value': {'$exists': False}}
+        loaded_new_ids = ids_to_process(ids, query)
+
+        if self.verbose:
+            print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
+
+        self.normalize_kinetic_laws(loaded_new_ids)
+
+        if self.verbose:
+            print('  done')
+
+        ##################################
+        ##################################
+        constraint_0 = {'products.structures._value_inchi': {'$exists': True}}
+        constraint_1 = {'products.structures.InChI_Key': {'$exists': False}}
+        query = {'$and': [constraint_0, constraint_1]}
+        loaded_new_ids = ids_to_process(ids, query)
+        if self.verbose:
+            print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
+
+        self.add_inchi_hash(loaded_new_ids)
+
+        if self.verbose:
+            print('  Completed')
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -779,7 +822,6 @@ class SabioRk:
                                               0].get_text()).strip()
                     warning = 'Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
                                                                                                         namespace)
-                    logging.warning(warning)
                 resource = {namespace: id}
 
                 c['cross_references'].append(resource)
@@ -921,8 +963,8 @@ class SabioRk:
             law = q
 
             # mechanism
-            print('KineticMechanismType: ' + properties['KineticMechanismType'])
-            print('Tissue: ' + properties['Tissue'])
+            # print('KineticMechanismType: ' + properties['KineticMechanismType'])
+            # print('Tissue: ' + properties['Tissue'])
             if properties['KineticMechanismType'] == 'unknown':
                 law['mechanism'] = None
             else:
@@ -955,7 +997,9 @@ class SabioRk:
             # updated
             law['modified'] = datetime.datetime.utcnow()
             self.collection.update_one({'kinlaw_id': id},
-                                       {'$set': law, '$set': {'parameters': parameters} },
+                                       {'$set': {'parameters': parameters,
+                                                'tissue': law['tissue'],
+                                                'mechanism': law['mechanism']} },
                                        upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
@@ -1247,14 +1291,15 @@ class SabioRk:
         return results
 
 
-    def add_inchi_hash(self):
+    def add_inchi_hash(self, ids):
         '''
             Add sha224 hashed values of _value_inchi in sabio_rk collection
         '''
         query = {}
         projection = {'products': 1, 'reactants':1, 'kinlaw_id': 1}
-        cursor = self.collection.find({}, projection = projection)
-        count = self.collection.count_documents({})
+        query = {'kinlaw_id': {'$in': ids}}
+        cursor = self.collection.find(filter=query, projection=projection)
+        count = self.collection.count_documents(query)
 
         def get_inchi_structure(chem):
             '''Given subsrate or product subdocument from sabio_rk
@@ -1267,7 +1312,7 @@ class SabioRk:
             try:
                 return chem['structures'][0].get('_value_inchi', None)
             except IndexError:
-                return chem['structures'].append({})
+                return None
 
         def iter_rxnp_subdoc(rxnp):
             '''Given a reactant or product array from sabio_rk
@@ -1276,8 +1321,8 @@ class SabioRk:
                     rxnp (:obj: `list` of :obj: `dict`)
             '''
             aggregate = []
-            for i in range(len(rxnp)):
-                substrate_inchi = get_inchi_structure(rxnp[i])
+            for i, rxn in enumerate(rxnp):
+                substrate_inchi = get_inchi_structure(rxn)
 
                 try:
                     hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
@@ -1285,6 +1330,8 @@ class SabioRk:
                     aggregate.append(hashed_inchi)
                 except AttributeError:
                     rxnp[i]['structures'][0]['InChI_Key'] = None
+                except IndexError:
+                    rxnp[i]['structures'] = []
 
             return rxnp, aggregate
 
@@ -1309,9 +1356,137 @@ class SabioRk:
                                       'products': doc['products']} })
             j += 1
 
+    def normalize_kinetic_laws(self, new_ids):
+        """ Normalize parameter values.
+
+        Args:
+            new_ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to normalize
+        """
+        query = {'kinlaw_id': {'$in': new_ids}}
+        docs = self.collection.find(filter=query, projection={'_id': 0, 'parameters': 1, 'enzyme': 1, 'kinlaw_id': 1})
+        for i_law, law in enumerate(docs):
+            if self.verbose and (i_law % 100 == 0):
+                print('  Normalizing kinetic law {} of {}'.format(i_law + 1, len(new_ids)))
+
+            if law.get('enzyme') is None:
+                self.collection.update_one({'kinlaw_id': law['kinlaw_id']},
+                                        {'$set': {'enzyme': []} })
+                enzyme_molecular_weight = None
+            else:
+                enzyme_molecular_weight = law['enzyme'][0].get('molecular_weight')
+
+            for p in law['parameters']:
+                p['norm_name'], p['norm_type'], p['norm_value'], p['norm_error'], p['norm_units'] = self.normalize_parameter_value(
+                    p.get('observed_name'), p.get('observed_type'), p.get('observed_value'), 
+                    p.get('observed_error'), p.get('observed_units'), enzyme_molecular_weight)
+
+            self.collection.update_one({'kinlaw_id': law['kinlaw_id']},
+                                        {'$set': {'parameters': p} })
+
+
+    def normalize_parameter_value(self, name, type, value, error, units, enzyme_molecular_weight):
+        """
+        Args:
+            name (:obj:`str`): parameter name
+            type (:obj:`int`) parameter type (SBO term id)
+            value (:obj:`float`): observed value
+            error (:obj:`float`): observed error
+            units (:obj:`str`): observed units
+            enzyme_molecular_weight (:obj:`float`): enzyme molecular weight
+        Returns:
+            :obj:`tuple` of :obj:`str`, :obj:`int`, :obj:`float`, :obj:`float`, :obj:`str`: normalized name and
+                its type (SBO term), value, error, and units
+        Raises:
+            :obj:`ValueError`: if :obj:`units` is not a supported unit of :obj:`type`
+        """
+        types = {25: 'k_cat', 27: 'k_m', 186: 'v_max', 261: 'k_i'}
+        if type not in [25, 27, 186, 261]:
+            return (None, None, None, None, None)
+
+        if value is None:
+            return (None, None, None, None, None)
+
+        type_name = types[type]
+
+        if type_name == 'k_cat':
+            if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['katal', 'katal_base']:
+                # cannot be converted without knowing the enzyme amount in the measurement
+                return (None, None, None, None, None)
+
+            if units in ['M^(-1)*s^(-1)']:
+                # off by mol^(2) * liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['s^(-1)*g^(-1)', 'mol*s^(-1)*g^(-1)', 'M']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_m':
+            if units in ['M']:
+                return ('k_m', 27, value, error, 'M')
+
+            if units in ['mol']:
+                # off by liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['mg/ml', 'M^2', 'mol/mol', 'katal*g^(-1)', 's^(-1)', 'mol*s^(-1)*g^(-1)',
+                'l*g^(-1)*s^(-1)', 'M^(-1)*s^(-1)', 'M^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'v_max':
+            if units in ['mol*s^(-1)*g^(-1)', 'katal*g^(-1)']:
+                if enzyme_molecular_weight:
+                    f = enzyme_molecular_weight
+                    return ('k_cat', 25, value * float(f) if value else None, error * float(f) if error else None, 's^(-1)')
+                else:
+                    return ('v_max', 186, value, error, 'mol*s^(-1)*g^(-1)')
+
+            if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['mol/s', 'katal', 'katal_base']:
+                # cannot be converted without knowing the enzyme amount in the measurement
+                return (None, None, None, None, None)
+
+            if units in ['M*s^(-1)*g^(-1)']:
+                # has incorrect dimensionality from v_max by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['M*s^(-1)', 'katal*l^(-1)']:
+                # has incorrect dimensionality from k_cat by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['mol*s^(-1)*m^(-1)', 'M', 'g', 'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml',
+                         'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)', 'mol*s^',
+                         's^(-1)*g^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_i':
+            if units in ['M']:
+                return ('k_i', 261, value, error, 'M')
+
+            if units in ['mol/mol', 'M^2', 'g', 'M^(-1)*s^(-1)', 'mol*s^(-1)*g^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
+
 
 def main():
-        db = 'datanator'
+        db = 'test'
         username = datanator.config.core.get_config()[
             'datanator']['mongodb']['user']
         password = datanator.config.core.get_config(
@@ -1322,11 +1497,10 @@ def main():
         )['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config(
         )['datanator']['mongodb']['replSet']
-        manager = SabioRk(MongoDB=MongoDB,  db=db,
-                                 verbose=True, username=username,
-                                 password=password)
+        manager = SabioRk(MongoDB=MongoDB, db=db,
+                          verbose=True, username=username,
+                          password=password, max_entries=150)
         manager.load_content()
-        # manager.add_inchi_hash()
 
 
 if __name__ == '__main__':
