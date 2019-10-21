@@ -96,25 +96,41 @@ class SabioRk:
         ##################################
         ##################################
         # download kinetic laws
-        exisitng_ids = self.collection.distinct('kinlaw_id')
-        exisitng_ids.sort()
-        if exisitng_ids is None:
-            exisitng_ids = []
-        new_ids = list(set(ids).difference(set(exisitng_ids)))
-        if len(exisitng_ids) != 0:
-            new_ids.append(exisitng_ids[-1])
-        new_ids.sort()
+        # exisitng_ids = self.collection.distinct('kinlaw_id')
+        # query = {'parameters.norm_units': {'$exists': False}}
+        # docs = self.collection.find(filter=query, projection={'kinlaw_id': 1})
+        # exisitng_ids = []
+        # for doc in docs:
+        #     exisitng_ids.append(doc['kinlaw_id'])
+        # exisitng_ids.sort()
+        # if exisitng_ids is None:
+        #     exisitng_ids = []
+        # new_ids = list(set(ids).difference(set(exisitng_ids)))
+        # if len(exisitng_ids) != 0:
+        #     new_ids.append(exisitng_ids[-1])
+        # new_ids.sort()
+        new_ids = []
+        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
+        print(doc['kinlaw_id'])
+        last_modified = doc['parameters'][0]['modified']
+        query = {'parameters.modified': {'$lte': last_modified}}
+        loaded_new_ids = ids_to_process(ids, query)        
 
         if self.verbose:
-            print('Downloading {} kinetic laws ...'.format(len(new_ids)))
+            print('Downloading {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        missing_ids = self.load_kinetic_laws(new_ids)
-
+        missing_ids = self.load_kinetic_laws(loaded_new_ids)
         if self.verbose:
             print('  done')
 
+        ###################################
+        ###################################
+
         # fill in missing information from Excel export
-        query = {'mechanism': {'$exists': False}}
+        # query = {'mechanism': {'$exists': False}}
+        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
+        last_modified = doc['parameters'][0]['modified']
+        query = {'parameters.modified': {'$lte': last_modified}}
         loaded_new_ids = ids_to_process(ids, query)
 
         if self.verbose:
@@ -125,20 +141,20 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        # fill in missing information from HTML pages
-        constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
-        constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
-        query = {'$and':[constraint_0, constraint_1]}
-        loaded_new_ids = ids_to_process(ids, query)
+        # ##################################
+        # ##################################
+        # # fill in missing information from HTML pages
+        # constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
+        # constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
+        # query = {'$and':[constraint_0, constraint_1]}
+        # loaded_new_ids = ids_to_process(ids, query)
 
-        if self.verbose:
-            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        # if self.verbose:
+        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        self.load_missing_enzyme_information_from_html(loaded_new_ids)
-        if self.verbose:
-            print('  done')
+        # self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        # if self.verbose:
+        #     print('  done')
 
         ##################################
         ##################################
@@ -153,19 +169,20 @@ class SabioRk:
         if self.verbose:
             print('  done')
 
-        ##################################
-        ##################################
-        constraint_0 = {'products.structures._value_inchi': {'$exists': True}}
-        constraint_1 = {'products.structures.InChI_Key': {'$exists': False}}
-        query = {'$and': [constraint_0, constraint_1]}
-        loaded_new_ids = ids_to_process(ids, query)
-        if self.verbose:
-            print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
+        # ##################################
+        # ##################################
+        # constraint_0 = {'products.structures': {'$exists': True}}
+        # # constraint_1 = {'products.structures.InChI_Key': {'$exists': True}}
+        # constraint_1 = {'reactants.structures': {'$exists': True}}
+        # query = {'$or': [constraint_0, constraint_1]}
+        # loaded_new_ids = ids_to_process(ids, query)
+        # if self.verbose:
+        #     print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
 
-        self.add_inchi_hash(loaded_new_ids)
+        # self.add_inchi_hash(loaded_new_ids)
 
-        if self.verbose:
-            print('  Completed')
+        # if self.verbose:
+        #     print('  Completed')
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -217,11 +234,12 @@ class SabioRk:
             response = session.get(self.ENDPOINT_WEBSERVICE, params={
                 'kinlawids': ','.join(str(id) for id in batch_ids),
             })
-
-            response.raise_for_status()
+            
             if not response.text:
                 raise Exception('Unable to download kinetic laws with ids {}'.format(
                     ', '.join([str(id) for id in batch_ids])))
+            
+            response.raise_for_status()
 
             loaded_ids += self.create_kinetic_laws_from_sbml(batch_ids,
                                                             response.content if six.PY2 else response.text)
@@ -291,14 +309,21 @@ class SabioRk:
         loaded_ids = []
         for i_reaction, _id in enumerate(ids):
             reaction_sbml = reactions_sbml.get(i_reaction)
+            if reaction_sbml is None:
+                print("No reactions parsed from kinlaw_id {}".format(_id))
             kinetic_law = self.create_kinetic_law_from_sbml(
                 _id, reaction_sbml, species, specie_properties, functions, units)
             try:
+                # self.collection.update_one({'kinlaw_id': _id},
+                #                            {'$set': kinetic_law},
+                #                            upsert=True)
                 self.collection.update_one({'kinlaw_id': _id},
-                                           {'$set': kinetic_law},
-                                           upsert=True)
+                                           {'$set': {'parameters': kinetic_law['parameters']}},
+                                           upsert=False)
             except pymongo.errors.WriteError as err:
                 logging.error(err)
+            except TypeError:
+                print('Issue loading kinlaw_id {}'.format(_id))
             loaded_ids.append(_id)
         return loaded_ids
 
@@ -423,87 +448,87 @@ class SabioRk:
             }
             kinetic_law['parameters'].append(parameter)
 
-        # modifiers to kinetic law
-        kinetic_law['modifiers'] = []
-        modifiers = sbml.getListOfModifiers()
-        for i_modifier in range(modifiers.size()):
-            modifier = modifiers.get(i_modifier)
-            modifier_id = modifier.getSpecies()
-            specie, compartment = self.get_specie_reference_from_sbml(
-                modifier_id, root_species)
-            type = specie_properties[modifier.getSpecies()]['modifier_type']
-            if modifier_id[0:3] == 'SPC':
-                part = {
-                    'compartment': compartment,
-                    'type': type
-                }  # ReactionParticipant
-                modif = {**specie[0], **part}
-                kinetic_law['modifiers'].append(modif)
-            elif modifier_id[0:3] == 'ENZ':
-                kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(
-                    modifier_id, root_species)
-                kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies(
-                )]['modifier_type']
-                kinetic_law['taxon_wildtype'] = specie_properties[modifier_id]['is_wildtype']
-                kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
+        # # modifiers to kinetic law
+        # kinetic_law['modifiers'] = []
+        # modifiers = sbml.getListOfModifiers()
+        # for i_modifier in range(modifiers.size()):
+        #     modifier = modifiers.get(i_modifier)
+        #     modifier_id = modifier.getSpecies()
+        #     specie, compartment = self.get_specie_reference_from_sbml(
+        #         modifier_id, root_species)
+        #     type = specie_properties[modifier.getSpecies()]['modifier_type']
+        #     if modifier_id[0:3] == 'SPC':
+        #         part = {
+        #             'compartment': compartment,
+        #             'type': type
+        #         }  # ReactionParticipant
+        #         modif = {**specie[0], **part}
+        #         kinetic_law['modifiers'].append(modif)
+        #     elif modifier_id[0:3] == 'ENZ':
+        #         kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(
+        #             modifier_id, root_species)
+        #         kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies(
+        #         )]['modifier_type']
+        #         kinetic_law['taxon_wildtype'] = specie_properties[modifier_id]['is_wildtype']
+        #         kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
 
-        # taxon
-        taxon = self.file_manager.search_dict_list(reaction_x_refs, 'taxonomy')
-        if len(taxon) > 0:
-            kinetic_law['taxon'] = int(taxon[0]['taxonomy'])
-        else:
-            kinetic_law['taxon'] = None
+        # # taxon
+        # taxon = self.file_manager.search_dict_list(reaction_x_refs, 'taxonomy')
+        # if len(taxon) > 0:
+        #     kinetic_law['taxon'] = int(taxon[0]['taxonomy'])
+        # else:
+        #     kinetic_law['taxon'] = None
 
-        """ conditions """
-        conditions = law \
-            .getAnnotation() \
-            .getChild('sabiork') \
-            .getChild('experimentalConditions')
+        # """ conditions """
+        # conditions = law \
+        #     .getAnnotation() \
+        #     .getChild('sabiork') \
+        #     .getChild('experimentalConditions')
 
-        # temperature
-        if conditions.hasChild('temperature'):
-            temperature = conditions \
-                .getChild('temperature') \
-                .getChild('startValueTemperature') \
-                .getChild(0) \
-                .getCharacters()
-            temperature = float(temperature)
-            temperature_units = conditions \
-                .getChild('temperature') \
-                .getChild('temperatureUnit') \
-                .getChild(0) \
-                .getCharacters()
-            if temperature_units not in ['°C', '��C']:
-                raise ValueError(
-                    'Unsupported temperature units: {}'.format(temperature_units))
-            kinetic_law['temperature'] = temperature
+        # # temperature
+        # if conditions.hasChild('temperature'):
+        #     temperature = conditions \
+        #         .getChild('temperature') \
+        #         .getChild('startValueTemperature') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     temperature = float(temperature)
+        #     temperature_units = conditions \
+        #         .getChild('temperature') \
+        #         .getChild('temperatureUnit') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     if temperature_units not in ['°C', '��C']:
+        #         raise ValueError(
+        #             'Unsupported temperature units: {}'.format(temperature_units))
+        #     kinetic_law['temperature'] = temperature
 
-        # pH
-        if conditions.hasChild('pH'):
-            ph = conditions \
-                .getChild('pH') \
-                .getChild('startValuepH') \
-                .getChild(0) \
-                .getCharacters()
-            kinetic_law['ph'] = float(ph)
+        # # pH
+        # if conditions.hasChild('pH'):
+        #     ph = conditions \
+        #         .getChild('pH') \
+        #         .getChild('startValuepH') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     kinetic_law['ph'] = float(ph)
 
-        # media
-        if conditions.hasChild('buffer'):
-            media = conditions \
-                .getChild('buffer') \
-                .getChild(0) \
-                .getCharacters() \
-                .strip()
-            if six.PY2:
-                media = unicode(media.decode('utf-8'))
-            kinetic_law['media'] = media
+        # # media
+        # if conditions.hasChild('buffer'):
+        #     media = conditions \
+        #         .getChild('buffer') \
+        #         .getChild(0) \
+        #         .getCharacters() \
+        #         .strip()
+        #     if six.PY2:
+        #         media = unicode(media.decode('utf-8'))
+        #     kinetic_law['media'] = media
 
-        """ references """
-        kinetic_law['references'] = list(
-            filter(lambda x_ref: list(x_ref.keys())[0] != 'sabiork.kineticrecord', x_refs))
+        # """ references """
+        # kinetic_law['references'] = list(
+        #     filter(lambda x_ref: list(x_ref.keys())[0] != 'sabiork.kineticrecord', x_refs))
 
-        """ updated """
-        kinetic_law['modified'] = datetime.datetime.utcnow()
+        # """ updated """
+        # kinetic_law['modified'] = datetime.datetime.utcnow()
 
         return kinetic_law
 
@@ -963,8 +988,6 @@ class SabioRk:
             law = q
 
             # mechanism
-            # print('KineticMechanismType: ' + properties['KineticMechanismType'])
-            # print('Tissue: ' + properties['Tissue'])
             if properties['KineticMechanismType'] == 'unknown':
                 law['mechanism'] = None
             else:
@@ -999,7 +1022,8 @@ class SabioRk:
             self.collection.update_one({'kinlaw_id': id},
                                        {'$set': {'parameters': parameters,
                                                 'tissue': law['tissue'],
-                                                'mechanism': law['mechanism']} },
+                                                'mechanism': law['mechanism'],
+                                                'modified': datetime.datetime.utcnow()} },
                                        upsert=False)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
@@ -1181,7 +1205,8 @@ class SabioRk:
                 enzyme['subunits'].append(subunit)
             enzyme = self.calc_enzyme_molecular_weights([enzyme], 1)
             self.collection.update_one({'kinlaw_id': kinetic_law['kinlaw_id']},
-                                       {'$set': {'enzyme': enzyme}})
+                                       {'$set': {'enzyme': enzyme,
+                                                'modified': datetime.datetime.utcnow()}})
 
     def parse_complex_subunit_structure(self, text):
         """ Parse the subunit structure of complex into a dictionary of subunit coefficients
@@ -1347,13 +1372,14 @@ class SabioRk:
             new_products, p_aggregate = iter_rxnp_subdoc(products)
 
             doc['reactants'] = new_subsrates
-            doc['reactants'][0]['reactants_aggregate'] = s_aggregate
+            doc['reactants'].append({'reactants_aggregate': s_aggregate})
             doc['products'] = new_products
-            doc['products'][0]['products_aggregate'] = p_aggregate
+            doc['products'].append({'products_aggregate': p_aggregate})
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                             {'$set': {'reactants': doc['reactants'],
-                                      'products': doc['products']} })
+                                      'products': doc['products'],
+                                      'modified': datetime.datetime.utcnow()} })
             j += 1
 
     def normalize_kinetic_laws(self, new_ids):
@@ -1375,13 +1401,16 @@ class SabioRk:
             else:
                 enzyme_molecular_weight = law['enzyme'][0].get('molecular_weight')
 
+            final_p = []
             for p in law['parameters']:
                 p['norm_name'], p['norm_type'], p['norm_value'], p['norm_error'], p['norm_units'] = self.normalize_parameter_value(
                     p.get('observed_name'), p.get('observed_type'), p.get('observed_value'), 
                     p.get('observed_error'), p.get('observed_units'), enzyme_molecular_weight)
+                p['modified'] = datetime.datetime.utcnow()
+                final_p.append(p)
 
             self.collection.update_one({'kinlaw_id': law['kinlaw_id']},
-                                        {'$set': {'parameters': p} })
+                                        {'$set': {'parameters': final_p} })
 
 
     def normalize_parameter_value(self, name, type, value, error, units, enzyme_molecular_weight):
@@ -1409,7 +1438,7 @@ class SabioRk:
         type_name = types[type]
 
         if type_name == 'k_cat':
-            if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)']:
+            if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)', 's^(-1']:
                 return ('k_cat', 25, value, error, 's^(-1)')
 
             if units in ['katal', 'katal_base']:
@@ -1466,7 +1495,7 @@ class SabioRk:
 
             if units in ['mol*s^(-1)*m^(-1)', 'M', 'g', 'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml',
                          'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)', 'mol*s^',
-                         's^(-1)*g^(-1)']:
+                         's^(-1)*g^(-1)', "katal*g^("]:
                 return (None, None, None, None, None)
 
             if units is None:
@@ -1486,7 +1515,7 @@ class SabioRk:
 
 
 def main():
-        db = 'test'
+        db = 'datanator'
         username = datanator.config.core.get_config()[
             'datanator']['mongodb']['user']
         password = datanator.config.core.get_config(
@@ -1499,7 +1528,7 @@ def main():
         )['datanator']['mongodb']['replSet']
         manager = SabioRk(MongoDB=MongoDB, db=db,
                           verbose=True, username=username,
-                          password=password, max_entries=150)
+                          password=password)
         manager.load_content()
 
 
