@@ -572,6 +572,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 Args:
                     rxnp (:obj: `list` of :obj: `dict`)
             '''
+            aggregate = []
             if side == 'substrate':
                 key = 'substrate_structure'
             else:
@@ -581,12 +582,13 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 try:
                     hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
                     rxnp[i][key][0]['InChI_Key'] = hashed_inchi
+                    aggregate.append(hashed_inchi)
                 except AttributeError:
                     rxnp[i][key][0]['InChI_Key'] = None
                 except IndexError:
                     rxnp[i][key] = []
 
-            return rxnp
+            return rxnp, aggregate
 
         j = 0
         for doc in cursor:
@@ -596,15 +598,19 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reaction_participant'][0]['substrate']
             products = doc['reaction_participant'][1]['product']
-            new_subsrates = iter_rxnp_subdoc(substrates)
-            new_products = iter_rxnp_subdoc(products, side='product')
+            new_subsrates, s_agg = iter_rxnp_subdoc(substrates[:-1])
+            new_products, p_agg = iter_rxnp_subdoc(products[:-1], side='product')
 
             doc['reaction_participant'][0]['substrate'] = new_subsrates
+            doc['reaction_participant'].append({'substrate_aggregate': s_agg})
             doc['reaction_participant'][1]['product'] = new_products
+            doc['reaction_participant'].append({'product_aggregate': p_agg})
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                         {'$set': {'reaction_participant.0.substrate': doc['reaction_participant'][0]['substrate'],
                                 'reaction_participant.1.product': doc['reaction_participant'][1]['product'],
+                                'reaction_participant.3.substrate_aggregate': doc['reaction_participant'][3]['substrate_aggregate'],
+                                'reaction_participant.4.product_aggregate': doc['reaction_participant'][4]['product_aggregate'],
                                 'modified': datetime.datetime.utcnow()} })
             j += 1
 
