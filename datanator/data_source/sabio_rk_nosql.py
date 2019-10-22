@@ -16,7 +16,7 @@ from datanator.util import chem_util
 from pathlib import Path
 import re
 import os
-import hashlib
+import datetime
 
 
 class SabioRkNoSQL(mongo_util.MongoUtil):
@@ -72,7 +72,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         has_structure = list(item['compound__id']
                              for item in compound_compound_structure_list)
         
-        for i in range(min(len(kinetic_law_list), self.max_entries)):
+        for i in range(34170, min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(
@@ -532,33 +532,60 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 upsert=True
                 )
 
-    def add_deprot_inchi(self):
-        query = {}
-        projection = {'reaction_participant': 1, 'kinlaw_id': 1}
-        cursor = self.collection.find({}, projection = projection)
+    def add_inchi_hash(self, ids=None):
+        '''
+            Add inchi key values of _value_inchi in sabio_rk collection
+        '''
+        
+        projection = {'reaction_participant.product': 1, 'reaction_participant.substrate':1, 
+                     'kinlaw_id': 1}
+        if ids is None:
+            query = {}
+        else:
+            query = {'kinlaw_id': {'$in': ids}}
+        cursor = self.collection.find(filter=query, projection=projection)
+        count = self.collection.count_documents(query)
 
         def get_inchi_structure(chem):
             '''Given subsrate or product subdocument from sabio_rk
                find the corresponding inchi
+               Args:
+                    chem (:obj:`dict`)
+                Returns:
+                    (:obj:`str`): inchi string
             '''
             try:
-                return chem['structure'][0]['inchi']
-            except IndexError:
-                return 'inchi=null'
-
-        def iter_rxnp_subdoc(rxnp):
-            '''Given a subsrate or product array from sabio_rk
-                append fields of deprotonated inchi
-            '''
-            for i in range(len(rxnp)):
-                substrate_inchi = get_inchi_structure(rxnp[i])
-                inchi_deprot = self.chem_manager.simplify_inchi(inchi = substrate_inchi)
-                rxnp[i]['inchi_deprot'] = inchi_deprot
+                x = chem['substrate_structure'][0].get('inchi_structure', None)
+                return x
+            except KeyError:
                 try:
-                    hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()
-                    rxnp[i]['hashed_inchi'] = hashed_inchi
+                    x = chem['product_structure'][0].get('inchi_structure', None)
+                    return x
+                except IndexError:
+                    return None
+            except IndexError:
+                return None
+
+        def iter_rxnp_subdoc(rxnp, side='substrate'):
+            '''Given a substrate or product array from sabio_rk
+                append fields of hashed inchi
+                Args:
+                    rxnp (:obj: `list` of :obj: `dict`)
+            '''
+            if side == 'substrate':
+                key = 'substrate_structure'
+            else:
+                key = 'product_structure'
+            for i, rxn in enumerate(rxnp):
+                substrate_inchi = get_inchi_structure(rxn)
+                try:
+                    hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
+                    rxnp[i][key][0]['InChI_Key'] = hashed_inchi
                 except AttributeError:
-                    rxnp[i]['hashed_inchi'] = None
+                    rxnp[i][key][0]['InChI_Key'] = None
+                except IndexError:
+                    rxnp[i][key] = []
+
             return rxnp
 
         j = 0
@@ -566,17 +593,19 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             if j > self.max_entries:
                 break
             if self.verbose == True and j % 100 == 0:
-                print(j)
+                print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reaction_participant'][0]['substrate']
             products = doc['reaction_participant'][1]['product']
             new_subsrates = iter_rxnp_subdoc(substrates)
-            new_products = iter_rxnp_subdoc(products)
+            new_products = iter_rxnp_subdoc(products, side='product')
 
             doc['reaction_participant'][0]['substrate'] = new_subsrates
             doc['reaction_participant'][1]['product'] = new_products
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
-                            {'$set': {'reaction_participant': doc['reaction_participant']}})
+                        {'$set': {'reaction_participant.0.substrate': doc['reaction_participant'][0]['substrate'],
+                                'reaction_participant.1.product': doc['reaction_participant'][1]['product'],
+                                'modified': datetime.datetime.utcnow()} })
             j += 1
 
 
@@ -588,11 +617,11 @@ def main():
     )['datanator']['mongodb']['password']
     MongoDB = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']
-    manager = SabioRkNoSQL(username=username, password=password, 
+    manager = SabioRkNoSQL(username=username, password=password, verbose=True,
                            db=db, MongoDB=MongoDB, cache_directory='./cache/')
-    file_names, file_dict = manager.load_json()
-    manager.make_doc(file_names, file_dict)
-    # manager.add_deprot_inchi()
+    # file_names, file_dict = manager.load_json()
+    # manager.make_doc(file_names, file_dict)
+    manager.add_inchi_hash()
 
 if __name__ == '__main__':
     main()
