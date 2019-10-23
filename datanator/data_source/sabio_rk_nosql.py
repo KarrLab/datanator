@@ -493,7 +493,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
 
                     sabio_doc['parameter'].append({
                         # 'id': cur_entry_dict['id'],
-                        'name': cur_entry_dict['name'],
+                        'name': compound_name,
                         # 'type': _type,
                         'sabio_compound_id': entry_compound_id,
                         'compound_name': compound_name,
@@ -579,6 +579,8 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 key = 'product_structure'
             for i, rxn in enumerate(rxnp):
                 substrate_inchi = get_inchi_structure(rxn)
+                if substrate_inchi == 'InChI=1S/O':
+                    substrate_inchi = 'InChI=1S/O2/c1-2'
                 try:
                     hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
                     rxnp[i][key][0]['InChI_Key'] = hashed_inchi
@@ -598,13 +600,13 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reaction_participant'][0]['substrate']
             products = doc['reaction_participant'][1]['product']
-            new_subsrates, s_agg = iter_rxnp_subdoc(substrates[:-1])
-            new_products, p_agg = iter_rxnp_subdoc(products[:-1], side='product')
+            new_subsrates, s_agg = iter_rxnp_subdoc(substrates)
+            new_products, p_agg = iter_rxnp_subdoc(products, side='product')
 
             doc['reaction_participant'][0]['substrate'] = new_subsrates
-            doc['reaction_participant'].append({'substrate_aggregate': s_agg})
+            doc['reaction_participant'][3]['substrate_aggregate'] = s_agg
             doc['reaction_participant'][1]['product'] = new_products
-            doc['reaction_participant'].append({'product_aggregate': p_agg})
+            doc['reaction_participant'][4]['product_aggregate'] = p_agg
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                         {'$set': {'reaction_participant.0.substrate': doc['reaction_participant'][0]['substrate'],
