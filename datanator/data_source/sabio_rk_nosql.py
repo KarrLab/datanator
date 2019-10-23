@@ -72,7 +72,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         has_structure = list(item['compound__id']
                              for item in compound_compound_structure_list)
         
-        for i in range(34170, min(len(kinetic_law_list), self.max_entries)):
+        for i in range(14000, min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(
@@ -468,10 +468,10 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                             item for item in entry_list if item['_id'] == compartment_id)['name']
                     else:
                         para_compartment = None
-
                     value = cur_parameter_list[j]['value']
                     error = cur_parameter_list[j]['error']
                     units = cur_parameter_list[j]['units']
+                    _type = cur_parameter_list[j]['type']
                     observed_name = cur_parameter_list[j]['observed_name']
                     observed_type = cur_parameter_list[j]['observed_type']
                     observed_value = cur_parameter_list[j]['observed_value']
@@ -492,9 +492,8 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                         compound_modified = cur_entry_dict['modified']
 
                     sabio_doc['parameter'].append({
-                        # 'id': cur_entry_dict['id'],
-                        'name': compound_name,
-                        # 'type': _type,
+                        'name': cur_entry_dict['name'],
+                        'type': _type,
                         'sabio_compound_id': entry_compound_id,
                         'compound_name': compound_name,
                         'compound_structure': compound_structure,
@@ -526,9 +525,9 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             with open(json_name, 'w') as f:
                 f.write(json.dumps(sabio_doc, indent=4))
             
-            self.collection.replace_one(
+            self.collection.update_one(
                 {'kinlaw_id': sabio_doc['kinlaw_id']},
-                sabio_doc,
+                {'$set': {'parameter': sabio_doc['parameter']}},
                 upsert=True
                 )
 
@@ -618,7 +617,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
 
 
 def main():
-    db = 'datanator'
+    db = 'test'
     username = datanator.config.core.get_config()[
         'datanator']['mongodb']['user']
     password = datanator.config.core.get_config(
@@ -627,9 +626,9 @@ def main():
     )['datanator']['mongodb']['server']
     manager = SabioRkNoSQL(username=username, password=password, verbose=True,
                            db=db, MongoDB=MongoDB, cache_directory='./cache/')
-    # file_names, file_dict = manager.load_json()
-    # manager.make_doc(file_names, file_dict)
-    manager.add_inchi_hash()
+    file_names, file_dict = manager.load_json()
+    manager.make_doc(file_names, file_dict)
+    # manager.add_inchi_hash()
 
 if __name__ == '__main__':
     main()
