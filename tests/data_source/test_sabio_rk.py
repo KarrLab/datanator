@@ -539,7 +539,7 @@ class TestDownloader(unittest.TestCase):
 
         # 11021, one subunit
         law = src.session.query(KineticLaw).filter_by(id=11021).first()
-        self.assertEqual(len(law.enzyme.subunits), 1)
+        self.assertEqual(len(law.enzyme.subunits), 0)
         self.assertEqual(len(law.enzyme.subunits[0].cross_references), 1)
         self.assertEqual(law.enzyme.subunits[0].cross_references[0].namespace, 'uniprot')
         self.assertEqual(law.enzyme.subunits[0].cross_references[0].id, 'P19631')

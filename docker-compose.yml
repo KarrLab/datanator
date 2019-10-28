@@ -11,7 +11,7 @@ services:
     volumes: 
       - "../:/root/host/karr_lab"
       - "~/.wc:/root/.wc"
-    # command: ["python3", "/root/host/karr_lab/datanator/datanator/rest/__init__.py"]
+    # command: ["pip3", "install", "-e", "/root/host/karr_lab/datanator"]
 
   # mongo:
   #   image: mongo:4.0.10
