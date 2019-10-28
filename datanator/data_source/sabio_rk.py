@@ -456,7 +456,7 @@ class SabioRk(data_source.HttpDataSource):
     PUBCHEM_TRY_DELAY = 0.25
 
     def __init__(self, name=None, cache_dirname=None, clear_content=False, load_content=False, max_entries=float('inf'),
-                 commit_intermediate_results=False, download_backups=True, verbose=False,
+                 commit_intermediate_results=False, download_backups=False, verbose=False,
                  clear_requests_cache=False, download_request_backup=False,
                  webservice_batch_size=1, excel_batch_size=100,quilt_owner=None, quilt_package=None): #
         """
