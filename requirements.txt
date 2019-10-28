@@ -37,4 +37,4 @@ quilt
 jsonpickle
 datanator_query_python
 pyarrow >= 0.14.1
-urllib3==1.24.1
+urllib3==1.24.2
