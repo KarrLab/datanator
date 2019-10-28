@@ -1,547 +1,1328 @@
-'''Parse SabioRk json files into MongoDB documents
-    (json files acquired by running sqlite_to_json.py)
-:Author: Zhouyang Lian <zhouyang.lian@familian.life>
-:Author: Jonathan <jonrkarr@gmail.com>
-:Date: 2019-04-02
-:Copyright: 2019, Karr Lab
-:License: MIT
-'''
-
-import json
-import pymongo
 import datanator.config.core
-from pymongo import MongoClient
 from datanator.util import mongo_util
-from datanator.util import chem_util
-from pathlib import Path
+from datanator.util import file_util, chem_util
+from datanator.util import molecule_util
+import six
+import requests
+from xml import etree
+import libsbml
 import re
-import os
 import datetime
+import bs4
+import html
+import csv
+import pubchempy
+import sys
+import Bio.Alphabet
+import Bio.SeqUtils
+import math
+import logging
+import pymongo
 
 
-class SabioRkNoSQL(mongo_util.MongoUtil):
+class SabioRk:
 
-    def __init__(self, db = None, MongoDB = None, cache_directory=None, 
-                verbose=False, max_entries=float('inf'), replicaSet = None,
-                username = None, password = None, authSource = 'admin'):
-        '''
-                Attributes:
-                        cache_directory: JSON file (converted from sqlite) directory
-                        db: mongodb database name
-                        MongoDB: MongoDB server address and login e.g. 'mongodb://mongo:27017/'
-        '''
-        self.db = db
+    def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
+                 verbose=False, max_entries=float('inf'), username=None,
+                 password=None, authSource='admin', webservice_batch_size=50,
+                 excel_batch_size=50):
+        self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
-        self.cache_directory = cache_directory
+        self.replicaSet = replicaSet
+        self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection_str = 'sabio_rk_old'
-        super(SabioRkNoSQL, self).__init__(cache_dirname=cache_directory, MongoDB=MongoDB, replicaSet=replicaSet, 
-                                    db=db, verbose=verbose, max_entries=max_entries, username = username, 
-                                    password = password, authSource = authSource)
-
-        self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
+            MongoDB=MongoDB, db=db, username=username, password=password,
+            authSource=authSource).con_db('sabio_rk')
+        self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
+            MongoDB=MongoDB, db=db, username=username, password=password,
+            authSource=authSource).con_db('sabio_compound')
+        self.excel_batch_size = excel_batch_size
+        self.ENDPOINT_DOMAINS = {
+            'sabio_rk': 'http://sabiork.h-its.org',
+            'uniprot': 'http://www.uniprot.org',
+        }
+        self.ENDPOINT_KINETIC_LAWS_SEARCH = self.ENDPOINT_DOMAINS['sabio_rk'] + \
+            '/sabioRestWebServices/searchKineticLaws/entryIDs'
+        self.ENDPOINT_WEBSERVICE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
+            '/sabioRestWebServices/kineticLaws'
+        self.ENDPOINT_EXCEL_EXPORT = self.ENDPOINT_DOMAINS['sabio_rk'] + \
+            '/entry/exportToExcelCustomizable'
+        self.ENDPOINT_COMPOUNDS_PAGE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
+            '/compdetails.jsp'
+        self.ENDPOINT_KINETIC_LAWS_PAGE = self.ENDPOINT_DOMAINS['sabio_rk'] + \
+            '/kindatadirectiframe.jsp'
+        self.SKIP_KINETIC_LAW_IDS = (51286,)
+        self.PUBCHEM_MAX_TRIES = 10
+        self.PUBCHEM_TRY_DELAY = 0.25
+        self.webservice_batch_size = webservice_batch_size
+        self.file_manager = file_util.FileUtil()
         self.chem_manager = chem_util.ChemUtil()
 
-    # load json files
-    def load_json(self):
-        file_names = []
-        file_dict = {}
-        directory = '../../datanator/data_source/cache/SabioRk'
-        pathlist = Path(directory).glob('**/*.json')
-        for path in pathlist:
-            path_in_str = str(path)
-            name = re.findall(r'[^\/]+(?=\.json$)', path_in_str)[0]
-            file_names.append(name)
-            with open(path_in_str) as f:
-                file_dict[name] = json.load(f)
-        return (file_names, file_dict)
+    def load_content(self):
+        """ Download the content of SABIO-RK and store it to a remote mongoDB. """
 
-    def make_doc(self, file_names, file_dict):
+        def ids_to_process(total_ids, query):
+            exisitng_ids = self.collection.distinct('kinlaw_id', filter=query)
+            exisitng_ids.sort()
+            loaded_new_ids = list(set(total_ids).intersection(exisitng_ids))
+            loaded_new_ids.sort()
+            return loaded_new_ids
 
-        os.makedirs(os.path.dirname(
-          self.cache_directory + 'docs/'), exist_ok=True)
-        null = None
-        for key, value in file_dict.items():
-            # might not be a good idea
-            globals()[key + '_list'] = value
+        ##################################
+        ##################################
+        # determine ids of kinetic laws
+        if self.verbose:
+            print('Downloading the IDs of the kinetic laws ...')
 
-        # list of entrie ids that have synonyms
-        has_synonym = list(item['entry__id'] for item in entry_synonym_list)
-        # list of entrie ids that have compound structure information
-        has_structure = list(item['compound__id']
-                             for item in compound_compound_structure_list)
-        
-        for i in range(14000, min(len(kinetic_law_list), self.max_entries)):
+        ids = self.load_kinetic_law_ids()
 
-            cur_kinlaw_dict = kinetic_law_list[i]
-            kinlaw_id = next(
-                item['id'] for item in entry_list if item['_id'] == cur_kinlaw_dict['_id'])
-            json_name = self.cache_directory+'docs/' + \
-                'kinlaw_id_' + str(kinlaw_id) + '.json'
+        if self.verbose:
+            print('  Downloaded {} IDs'.format(len(ids)))
 
-            if self.verbose and (i % 100 == 0):
-                print('  Downloading kinlaw_id {} of {}'.format(
-                    kinlaw_id, min(len(kinetic_law_list), self.max_entries)))
+        ##################################
+        ##################################
+        # remove bad IDs
+        ids = list(filter(lambda id: id not in self.SKIP_KINETIC_LAW_IDS, ids))
 
-            sabio_doc = {}
-            sabio_doc['kinlaw_id'] = kinlaw_id
-            sabio_doc['resource'] = []
-            sabio_doc['enzymes'] = [{'enzyme': []}, {
-                'compartment': []}, {'subunit': []}]
-            sabio_doc['parameter'] = []
-            sabio_doc['reaction_participant'] = [
-                {'substrate': []}, {'product': []}, {'modifier': []}]
+        # sort ids
+        ids.sort()
 
-            # every kinlaw entry has no more than one enzyme
-            enzyme_id = cur_kinlaw_dict['enzyme_id']
-            if enzyme_id != null:
-                cur_enzyme_dict = next(
-                    item for item in enzyme_list if item['_id'] == enzyme_id)
-                cur_enzyme_entry_dict = next(
-                    item for item in entry_list if item['_id'] == enzyme_id)
-            else:
-                sabio_doc['enzymes'][0]['enzyme'].append({
-                    'molecular_weight': None,
-                    'enzyme_id': None,
-                    'enzyme_name': None,
-                    'enzyme_type': None,
-                    'enzyme_synonym': None,
-                    'created': None,
-                    'modified': None})
+        # load only `max_entries` IDs
+        if len(ids) > self.max_entries:
+            ids = ids[0:self.max_entries]
 
-            cur_enzyme_subunit_list = list(
-                item for item in enzyme_subunit_list if item['enzyme_id'] == enzyme_id)  # enzyme_id == entry_id
-            enzyme_compartment_id = cur_kinlaw_dict['enzyme_compartment_id']
-            # enzyme_compartment_id = compartment_id = entry_id
-            cur_compartment_list = list(
-                item for item in entry_list if item['_id'] == enzyme_compartment_id)
+        ##################################
+        ##################################
+        # download kinetic laws
+        # exisitng_ids = self.collection.distinct('kinlaw_id')
+        # query = {'parameters.norm_units': {'$exists': False}}
+        # docs = self.collection.find(filter=query, projection={'kinlaw_id': 1})
+        # exisitng_ids = []
+        # for doc in docs:
+        #     exisitng_ids.append(doc['kinlaw_id'])
+        # exisitng_ids.sort()
+        # if exisitng_ids is None:
+        #     exisitng_ids = []
+        # new_ids = list(set(ids).difference(set(exisitng_ids)))
+        # if len(exisitng_ids) != 0:
+        #     new_ids.append(exisitng_ids[-1])
+        # new_ids.sort()
+        new_ids = []
+        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
+        print(doc['kinlaw_id'])
+        last_modified = doc['parameters'][0]['modified']
+        query = {'parameters.modified': {'$lte': last_modified}}
+        loaded_new_ids = ids_to_process(ids, query)        
 
-            enzyme_synonym = []
-            if enzyme_id in has_synonym:
-                synonym_id_list = list(
-                    item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == enzyme_id)
-                for synonym_id in synonym_id_list:
-                    enzyme_synonym.append(synonym_list[synonym_id - 1]['name'])
+        if self.verbose:
+            print('Downloading {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-            sabio_doc['enzymes'][0]['enzyme'].append({
-                'molecular_weight': cur_enzyme_dict['molecular_weight'],
-                'enzyme_id': cur_enzyme_entry_dict['id'],
-                'enzyme_name': cur_enzyme_entry_dict['name'],
-                'enzyme_type': cur_kinlaw_dict['enzyme_type'],
-                'enzyme_synonym': enzyme_synonym,
-                'created': cur_enzyme_entry_dict['created'],
-                'modified': cur_enzyme_entry_dict['modified']})
+        missing_ids = self.load_kinetic_laws(loaded_new_ids)
+        if self.verbose:
+            print('  done')
 
-            if len(cur_enzyme_subunit_list) == 0:
-                sabio_doc['enzymes'][2]['subunit'].append({
-                    'subunit_id': None,
-                    'subunit_name': None,
-                    'uniprot_id': None,
-                    'subunit_coefficient': None,
-                    'canonical_sequence': None,
-                    'molecular_weight': None,
-                    'created': None,
-                    'modified': None
-                })
-            else:
-                for j in range(len(cur_enzyme_subunit_list)):
-                    cur_enzyme_subunit_dict = cur_enzyme_subunit_list[j]
-                    entry_id = cur_enzyme_subunit_dict['_id']
-                    resource_id = next(
-                        item['resource__id'] for item in entry_resource_list if item['entry__id'] == entry_id)
-                    uniprot_id = next(
-                        item['id'] for item in resource_list if item['_id'] == resource_id)
-                    cur_entry_dict = next(
-                        item for item in entry_list if item['_id'] == entry_id)
+        ###################################
+        ###################################
 
-                    sabio_doc['enzymes'][2]['subunit'].append({
-                        'subunit_id': cur_entry_dict['id'],
-                        'subunit_name': cur_entry_dict['name'],
-                        'uniprot_id': uniprot_id,
-                        'subunit_coefficient': cur_enzyme_subunit_dict['coefficient'],
-                        'canonical_sequence': cur_enzyme_subunit_dict['sequence'],
-                        'molecular_weight': cur_enzyme_subunit_dict['molecular_weight'],
-                        'created': cur_entry_dict['created'],
-                        'modified': cur_entry_dict['modified']
-                    })
+        # fill in missing information from Excel export
+        # query = {'mechanism': {'$exists': False}}
+        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
+        last_modified = doc['parameters'][0]['modified']
+        query = {'parameters.modified': {'$lte': last_modified}}
+        loaded_new_ids = ids_to_process(ids, query)
 
-            if len(cur_compartment_list) == 0:
-                sabio_doc['enzymes'][1]['compartment'].append({
-                    'compartment_id': None,
-                    'compartment_name': None,
-                    'created': None,
-                    'modified': None
-                })
-            else:
-                for j in range(len(cur_compartment_list)):
-                    cur_compartment_dict = cur_compartment_list[j]
-                    sabio_doc['enzymes'][1]['compartment'].append({
-                        'compartment_id': cur_compartment_dict['id'],
-                        'compartment_name': cur_compartment_dict['name'],
-                        'created': cur_compartment_dict['created'],
-                        'modified': cur_compartment_dict['modified']
-                    })
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-            # kinetic_law_resource many-to-one
-            cur_kinlaw_resource_list = list(
-                item for item in kinetic_law_resource_list if item['kinetic_law__id'] == cur_kinlaw_dict['_id'])
-            # entry_resource: same entry id can have multiple resource_id
-            cur_entry_resource_list = list(
-                item for item in entry_resource_list if item['entry__id'] == cur_kinlaw_dict['_id'])
+        self.load_missing_kinetic_law_information_from_tsv(loaded_new_ids)
 
-            if len(cur_kinlaw_resource_list) != 0:
-                resource_id = cur_kinlaw_resource_list[0]['resource__id']
-                cur_resource_dict = next(
-                    item for item in resource_list if item['_id'] == resource_id)
-                sabio_doc['resource'].append({
-                    'namespace': cur_resource_dict['namespace'],
-                    'id': cur_resource_dict['id']
-                })
+        if self.verbose:
+            print('  done')
 
-            if len(cur_entry_resource_list) != 0:
-                for j in range(len(cur_entry_resource_list)):
-                    resource__id = cur_entry_resource_list[j]['resource__id']
-                    cur_resource_dict = next(
-                        item for item in resource_list if item['_id'] == resource__id)
-                    sabio_doc['resource'].append({
-                        'namespace': cur_resource_dict['namespace'],
-                        'id': cur_resource_dict['id']
-                    })
+        # ##################################
+        # ##################################
+        # # fill in missing information from HTML pages
+        # constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
+        # constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
+        # query = {'$and':[constraint_0, constraint_1]}
+        # loaded_new_ids = ids_to_process(ids, query)
 
-            '''Handling reaction_participant document
-                substrate, product, modifier
-            '''
-            cur_reaction_reactant_list = list(
-                item for item in reaction_participant_list if item['reactant_kinetic_law_id'] == cur_kinlaw_dict['_id'])
-            cur_reaction_product_list = list(
-                item for item in reaction_participant_list if item['product_kinetic_law_id'] == cur_kinlaw_dict['_id'])
-            cur_reaction_modifier_list = list(
-                item for item in reaction_participant_list if item['modifier_kinetic_law_id'] == cur_kinlaw_dict['_id'])
+        # if self.verbose:
+        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-            # substrates
-            for j in range(len(cur_reaction_reactant_list)):
-                cur_reactant_dict = cur_reaction_reactant_list[j]
-                cur_reactant_compound_entry_id = cur_reactant_dict['compound_id']
+        # self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        # if self.verbose:
+        #     print('  done')
 
-                resource__id = list(
-                    item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                resources = {
-                    resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+        ##################################
+        ##################################
+        query = {'parameters.norm_value': {'$exists': False}}
+        loaded_new_ids = ids_to_process(ids, query)
 
-                # standardize across collections
-                resources['kegg_id'] = resources.pop('kegg.compound', None)
-                resources['pubchem_substance_id'] = resources.pop(
-                    'pubchem.substance', None)
-                resources['pubchem_compound_id'] = resources.pop(
-                    'pubchem.compound', None)
-                # compound synonym if there is any
-                cur_reactant_synonym_id_list = list(
-                    item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                if len(cur_reactant_synonym_id_list) != 0:
-                    reactant_synonyms = [synonym_list[x-1]['name']
-                                         for x in cur_reactant_synonym_id_list]
-                else:
-                    reactant_synonyms = []
+        if self.verbose:
+            print('Normalizing {} parameter values ...'.format(len(loaded_new_ids)))
 
-                # compound structure if there is any
-                cur_compound_structure = []
-                if cur_reactant_compound_entry_id in has_structure:
-                    structure_id_list = list(
-                        item['compound_structure__id'] for item in compound_compound_structure_list if item['compound__id'] == cur_reactant_compound_entry_id)
-                    for structure_id in structure_id_list:
-                        cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
-                                                       'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
-                                                       'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
+        self.normalize_kinetic_laws(loaded_new_ids)
 
-                cur_reactant_compartment_id = cur_reactant_dict.get(
-                    'compartment_id')
-                if cur_reactant_compartment_id != None:
-                    cur_entry_dict = next(
-                        item for item in entry_list if item['_id'] == cur_reactant_compartment_id)
-                    compartment_name = cur_entry_dict['name']
-                    compartment_created = cur_entry_dict['created']
-                    compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'compartment_name': compartment_name,
-                                            'created': compartment_created,
-                                            'modified': compartment_modified}
-                else:
-                    reactant_compartment = {}
+        if self.verbose:
+            print('  done')
 
-                cur_reactant_coefficient = cur_reactant_dict['coefficient']
-                cur_reactant_type = cur_reactant_dict['type']
-                cur_entry_dict = next(
-                    item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][0]['substrate'].append({**{
-                    'sabio_compound_id': cur_entry_dict['id'],
-                    'substrate_name': cur_entry_dict['name'],
-                    'substrate_synonym': reactant_synonyms,
-                    'substrate_structure': cur_compound_structure,
-                    'substrate_compartment': reactant_compartment,
-                    'substrate_coefficient': cur_reactant_dict['coefficient'],
-                    'substrate_type': cur_reactant_dict['type'],
-                    'created': cur_entry_dict['created'],
-                    'modified': cur_entry_dict['modified']
-                }, **resources})
+        # ##################################
+        # ##################################
+        # constraint_0 = {'products.structures': {'$exists': True}}
+        # # constraint_1 = {'products.structures.InChI_Key': {'$exists': True}}
+        # constraint_1 = {'reactants.structures': {'$exists': True}}
+        # query = {'$or': [constraint_0, constraint_1]}
+        # loaded_new_ids = ids_to_process(ids, query)
+        # if self.verbose:
+        #     print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
 
-            # product
-            for j in range(len(cur_reaction_product_list)):
-                cur_reactant_dict = cur_reaction_product_list[j]
-                cur_reactant_compound_entry_id = cur_reactant_dict['compound_id']
+        # self.add_inchi_hash(loaded_new_ids)
 
-                resource__id = list(
-                    item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                resources = {
-                    resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+        # if self.verbose:
+        #     print('  Completed')
 
-                # standardize across collections
-                resources['kegg_id'] = resources.pop('kegg.compound', None)
-                resources['pubchem_compound_id'] = resources.pop(
-                    'pubchem.substance', None)
-                resources['pubchem_compound_id'] = resources.pop(
-                    'pubchem.compound', None)
-                # compound synonym if there is any
-                cur_reactant_synonym_id_list = list(
-                    item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                if len(cur_reactant_synonym_id_list) != 0:
-                    reactant_synonyms = [synonym_list[x-1]['name']
-                                         for x in cur_reactant_synonym_id_list]
-                else:
-                    reactant_synonyms = []
+    def load_kinetic_law_ids(self):
+        """ Download the IDs of all of the kinetic laws stored in SABIO-RK
 
-                # compound structure if there is any
-                cur_compound_structure = []
-                if cur_reactant_compound_entry_id in has_structure:
-                    structure_id_list = list(
-                        item['compound_structure__id'] for item in compound_compound_structure_list if item['compound__id'] == cur_reactant_compound_entry_id)
-                    for structure_id in structure_id_list:
-                        cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
-                                                       'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
-                                                       'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
+        Returns:
+            :obj:`list` of :obj:`int`: list of kinetic law IDs
 
-                cur_reactant_compartment_id = cur_reactant_dict.get(
-                    'compartment_id')
-                if cur_reactant_compartment_id != None:
-                    cur_entry_dict = next(
-                        item for item in entry_list if item['_id'] == cur_reactant_compartment_id)
-                    compartment_name = cur_entry_dict['name']
-                    compartment_created = cur_entry_dict['created']
-                    compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'compartment_name': compartment_name,
-                                            'created': compartment_created,
-                                            'modified': compartment_modified}
-                else:
-                    reactant_compartment = {}
+        """
+        # create session
+        response = requests.get(self.ENDPOINT_KINETIC_LAWS_SEARCH, params={
+            'q': 'DateSubmitted:01/01/2000',
+        })
+        response.raise_for_status()
 
-                cur_reactant_coefficient = cur_reactant_dict['coefficient']
-                cur_reactant_type = cur_reactant_dict['type']
-                cur_entry_dict = next(
-                    item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][1]['product'].append({**{
-                    'sabio_compound_id': cur_entry_dict['id'],
-                    'product_name': cur_entry_dict['name'],
-                    'product_synonym': reactant_synonyms,
-                    'product_structure': cur_compound_structure,
-                    'product_compartment': reactant_compartment,
-                    'product_coefficient': cur_reactant_dict['coefficient'],
-                    'product_type': cur_reactant_dict['type'],
-                    'created': cur_entry_dict['created'],
-                    'modified': cur_entry_dict['modified']
-                }, **resources})
+        # get IDs of kinetic laws
+        root = etree.ElementTree.fromstring(response.text)
+        ids = [int(float(node.text)) for node in root.findall('SabioEntryID')]
 
-            # modifier
-            for j in range(len(cur_reaction_modifier_list)):
-                cur_modifier_dict = cur_reaction_modifier_list[j]
-                cur_reactant_compound_entry_id = cur_modifier_dict['compound_id']
+        # sort ids
+        ids.sort()
 
-                resource__id = list(
-                    item['resource__id'] for item in entry_resource_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                resources = {
-                    resource_list[x-1]['namespace']: resource_list[x-1]['id'] for x in resource__id}
+        # return IDs
+        return ids
 
-                # standardize across collections
-                resources['kegg_id'] = resources.pop('kegg.compound', None)
-                resources['pubchem_compound_id'] = resources.pop(
-                    'pubchem.substance', None)
-                resources['pubchem_compound_id'] = resources.pop(
-                    'pubchem.compound', None)
-                # compound synonym if there is any
-                cur_reactant_synonym_id_list = list(
-                    item['synonym__id'] for item in entry_synonym_list if item['entry__id'] == cur_reactant_compound_entry_id)
-                if len(cur_reactant_synonym_id_list) != 0:
-                    reactant_synonyms = [synonym_list[x-1]['name']
-                                         for x in cur_reactant_synonym_id_list]
-                else:
-                    reactant_synonyms = []
+    def load_kinetic_laws(self, ids):
+        """ Download kinetic laws from SABIO-RK
 
-                cur_reactant_compartment_id = cur_modifier_dict.get(
-                    'compartment_id')
-                if cur_reactant_compartment_id != None:
-                    cur_entry_dict = next(
-                        item for item in entry_list if item['_id'] == cur_reactant_compartment_id)
-                    compartment_name = cur_entry_dict['name']
-                    compartment_created = cur_entry_dict['created']
-                    compartment_modified = cur_entry_dict['modified']
-                    reactant_compartment = {'compartment_name': compartment_name,
-                                            'created': compartment_created,
-                                            'modified': compartment_modified}
-                else:
-                    reactant_compartment = {}
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
 
-                # compound structure if there is any
-                cur_compound_structure = []
-                if cur_reactant_compound_entry_id in has_structure:
-                    structure_id_list = list(
-                        item['compound_structure__id'] for item in compound_compound_structure_list if item['compound__id'] == cur_reactant_compound_entry_id)
-                    for structure_id in structure_id_list:
-                        cur_compound_structure.append({'value': compound_structure_list[structure_id - 1]['value'],
-                                                       'format': compound_structure_list[structure_id - 1]['format'],
-                                                       'inchi_structure': compound_structure_list[structure_id - 1]['_value_inchi'],
-                                                       'inchi_connectivity': compound_structure_list[structure_id - 1]['_value_inchi_formula_connectivity']})
+        Raises:
+            :obj:`Error`: if an HTTP request fails
+        """
+        # todo: scrape strain, recombinant, experiment type information from web pages
+        session = requests
 
-                cur_reactant_coefficient = cur_reactant_dict['coefficient']
-                cur_reactant_type = cur_reactant_dict['type']
-                cur_entry_dict = next(
-                    item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][2]['modifier'].append({**{
-                    'sabio_compound_id': cur_entry_dict['id'],
-                    'modifier_name': cur_entry_dict['name'],
-                    'modifier_synonym': reactant_synonyms,
-                    'modifier_structure': cur_compound_structure,
-                    'modifier_compartment': reactant_compartment,
-                    'modifier_coefficient': cur_reactant_dict['coefficient'],
-                    'modifier_type': cur_reactant_dict['type'],
-                    'created': cur_entry_dict['created'],
-                    'modified': cur_entry_dict['modified']
-                }, **resources})
+        batch_size = self.webservice_batch_size
+        loaded_ids = []
 
-            '''Handling parameter
-            '''
-            cur_parameter_list = list(
-                item for item in parameter_list if item['kinetic_law_id'] == cur_kinlaw_dict['_id'])
-            if len(cur_parameter_list) != 0:
-                for j in range(len(cur_parameter_list)):
-                    entry__id = cur_parameter_list[j]['_id']
-                    cur_entry_dict = next(
-                        item for item in entry_list if item['_id'] == entry__id)
+        for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
+            if self.verbose and (i_batch % max(1, 100. / batch_size) == 0):
+                print('  Downloading kinetic laws {}-{} of {} in SBML format'.format(
+                    i_batch * batch_size + 1,
+                    min(len(ids), i_batch * batch_size + max(100, batch_size)),
+                    len(ids)))
 
-                    _type = cur_parameter_list[j]['type']
-
-                    compound_id = cur_parameter_list[j]['compound_id']
-                    cur_compound_list = list(
-                        item for item in compound_list if item['_id'] == compound_id)
-                    if len(cur_compound_list) == 0:
-                        cur_compound_dict = {}
-                    else:
-                        cur_compound_dict = cur_compound_list[0]
-                    compound_structure = []
-                    cur_compound_compound_structure_list = list(
-                        item for item in compound_compound_structure_list if item['compound__id'] == compound_id)
-                    if len(cur_compound_compound_structure_list) != 0:
-                        for k in range(len(cur_compound_compound_structure_list)):
-                            compound_structure__id = cur_compound_compound_structure_list[
-                                k]['compound_structure__id']
-                            cur_compound_structure_dict = next(
-                                item for item in compound_structure_list if item['_id'] == compound_structure__id)
-                            compound_structure.append({
-                                'structure': cur_compound_structure_dict['value'],
-                                'format': cur_compound_structure_dict['format'],
-                                'inchi_structure': cur_compound_structure_dict['_value_inchi'],
-                                'inchi_connectivity': cur_compound_structure_dict['_value_inchi_formula_connectivity']})
-
-                    synonyms = []
-                    cur_entry_synonym_list = list(
-                        item for item in entry_synonym_list if item['entry__id'] == entry__id)
-                    if len(cur_entry_synonym_list) != 0:
-                        for k in range(len(cur_entry_synonym_list)):
-                            cur_entry_synonym_dict = cur_entry_synonym_list[k]
-                            synonym__id = cur_entry_synonym_dict['synonym__id']
-                            synonyms.append(
-                                synonym_list[synonym__id-1]['name'])
-
-                    # enzyme_id = cur_parameter_list[j]['enzyme_id']
-                    if cur_parameter_list[j]['compartment_id'] != None:
-                        compartment_id = cur_parameter_list[j]['compartment_id']
-                        para_compartment = next(
-                            item for item in entry_list if item['_id'] == compartment_id)['name']
-                    else:
-                        para_compartment = None
-                    value = cur_parameter_list[j]['value']
-                    error = cur_parameter_list[j]['error']
-                    units = cur_parameter_list[j]['units']
-                    _type = cur_parameter_list[j]['type']
-                    observed_name = cur_parameter_list[j]['observed_name']
-                    observed_type = cur_parameter_list[j]['observed_type']
-                    observed_value = cur_parameter_list[j]['observed_value']
-                    observed_error = cur_parameter_list[j]['observed_error']
-                    observed_units = cur_parameter_list[j]['observed_units']
-
-                    if compound_id == None:
-                        entry_compound_id = None
-                        compound_name = None
-                        compound_created = None
-                        compound_modified = None
-                    else:
-                        cur_entry_dict = next(
-                            item for item in entry_list if item['_id'] == compound_id)
-                        entry_compound_id = cur_entry_dict['id']
-                        compound_name = cur_entry_dict['name']
-                        compound_created = cur_entry_dict['created']
-                        compound_modified = cur_entry_dict['modified']
-
-                    sabio_doc['parameter'].append({
-                        'name': cur_entry_dict['name'],
-                        'type': _type,
-                        'sabio_compound_id': entry_compound_id,
-                        'compound_name': compound_name,
-                        'compound_structure': compound_structure,
-                        'compound_created': compound_created,
-                        'compound_modified': compound_modified,
-                        'is_name_ambiguous': cur_compound_dict.get('_is_name_ambiguous'),
-                        'compound_synonyms': synonyms,
-                        'compartment': para_compartment,
-                        'value': value,
-                        'error': error,
-                        'units': units,
-                        'observed_name': observed_name,
-                        'sbo_type': observed_type,
-                        'observed_value': observed_value,
-                        'observed_error': observed_error,
-                        'observed_units': observed_units
-                    })
-
-            sabio_doc['tissue'] = cur_kinlaw_dict['tissue']
-            sabio_doc['mechanism'] = cur_kinlaw_dict['mechanism']
-            sabio_doc['equation'] = cur_kinlaw_dict['equation']
-            sabio_doc['taxon_id'] = cur_kinlaw_dict['taxon']
-            sabio_doc['taxon_wildtype'] = cur_kinlaw_dict['taxon_wildtype']
-            sabio_doc['taxon_variant'] = cur_kinlaw_dict['taxon_variant']
-            sabio_doc['temperature'] = cur_kinlaw_dict['temperature']
-            sabio_doc['ph'] = cur_kinlaw_dict['ph']
-            sabio_doc['media'] = cur_kinlaw_dict['media']
-
-            with open(json_name, 'w') as f:
-                f.write(json.dumps(sabio_doc, indent=4))
+            batch_ids = ids[i_batch *
+                            batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            response = session.get(self.ENDPOINT_WEBSERVICE, params={
+                'kinlawids': ','.join(str(id) for id in batch_ids),
+            })
             
-            self.collection.update_one(
-                {'kinlaw_id': sabio_doc['kinlaw_id']},
-                {'$set': {'parameter': sabio_doc['parameter']}},
-                upsert=True
-                )
+            if not response.text:
+                raise Exception('Unable to download kinetic laws with ids {}'.format(
+                    ', '.join([str(id) for id in batch_ids])))
+            
+            response.raise_for_status()
 
-    def add_inchi_hash(self, ids=None):
-        '''
-            Add inchi key values of _value_inchi in sabio_rk collection
-        '''
-        
-        projection = {'reaction_participant.product': 1, 'reaction_participant.substrate':1, 
-                     'kinlaw_id': 1}
-        if ids is None:
-            query = {}
+            loaded_ids += self.create_kinetic_laws_from_sbml(batch_ids,
+                                                            response.content if six.PY2 else response.text)
+
+        not_loaded_ids = list(set(ids).difference(loaded_ids))
+        if not_loaded_ids:
+            not_loaded_ids.sort()
+            warning = 'Several kinetic laws were not found:\n  {}'.format(
+                '\n  '.join([str(id) for id in not_loaded_ids]))
+            logging.warning(warning)
+        return not_loaded_ids
+
+    def create_kinetic_laws_from_sbml(self, ids, sbml):
+        """ Add kinetic laws defined in an SBML file to the local mongodb database
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list kinetic law IDs
+            sbml (:obj:`str`): SBML representation of one or more kinetic laws (root)
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`list` of :obj:`KineticLaw`: list of kinetic laws
+                * :obj:`list` of :obj:`Compound` or :obj:`Enzyme`: list of species (compounds or enzymes)
+                * :obj:`list` of :obj:`Compartment`: list of compartments
+        """
+        reader = libsbml.SBMLReader()
+        doc = reader.readSBMLFromString(sbml)
+        model = doc.getModel()
+
+        functions = {}
+        functions_sbml = model.getListOfFunctionDefinitions()
+        for i_function in range(functions_sbml.size()):
+            function_sbml = functions_sbml.get(i_function)
+            math_sbml = function_sbml.getMath()
+            if math_sbml.isLambda() and math_sbml.getNumChildren():
+                eq = libsbml.formulaToL3String(
+                    math_sbml.getChild(math_sbml.getNumChildren() - 1))
+            else:
+                eq = None
+            if eq in ('', 'NaN'):
+                eq = None
+            functions[function_sbml.getId()] = eq
+
+        units = {}
+        units_sbml = model.getListOfUnitDefinitions()
+        for i_unit in range(units_sbml.size()):
+            unit_sbml = units_sbml.get(i_unit)
+            units[unit_sbml.getId()] = unit_sbml.getName()
+
+        # species
+        specie_properties = {}
+        species_sbml = model.getListOfSpecies()
+        species = []
+        for i_specie in range(species_sbml.size()):
+            specie_sbml = species_sbml.get(i_specie)
+            specie, properties = self.get_specie_from_sbml(specie_sbml)
+            species.append(specie)
+            specie_properties[specie_sbml.getId()] = properties
+
+        # kinetic laws
+        reactions_sbml = model.getListOfReactions()
+        if reactions_sbml.size() != len(ids):
+            raise ValueError('{} reactions {} is different from the expected {}'.format(
+                reaction_sbml.size(), len(ids)))
+        # kinetic_laws = []
+        loaded_ids = []
+        for i_reaction, _id in enumerate(ids):
+            reaction_sbml = reactions_sbml.get(i_reaction)
+            if reaction_sbml is None:
+                print("No reactions parsed from kinlaw_id {}".format(_id))
+            kinetic_law = self.create_kinetic_law_from_sbml(
+                _id, reaction_sbml, species, specie_properties, functions, units)
+            try:
+                # self.collection.update_one({'kinlaw_id': _id},
+                #                            {'$set': kinetic_law},
+                #                            upsert=True)
+                self.collection.update_one({'kinlaw_id': _id},
+                                           {'$set': {'parameters': kinetic_law['parameters']}},
+                                           upsert=False)
+            except pymongo.errors.WriteError as err:
+                logging.error(err)
+            except TypeError:
+                print('Issue loading kinlaw_id {}'.format(_id))
+            loaded_ids.append(_id)
+        return loaded_ids
+
+    def create_kinetic_law_from_sbml(self, id, sbml, root_species, specie_properties, functions, units):
+        """ Make a kinetic law doc for mongoDB
+
+        Args:
+            id (:obj:`int`): identifier
+            sbml (:obj:`libsbml.KineticLaw`): SBML-representation of a reaction (reaction_sbml)
+            species (:obj:`list`): list of species in root sbml
+            specie_properties (:obj:`dict`): additional properties of the compounds/enzymes
+
+                * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
+                * `variant` (:obj:`str`): description of the variant of the eznyme
+                * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
+
+            functions (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of rate law equations (keys = IDs in SBML, values = equations)
+            units (:obj:`dict` of :obj:`str`: :obj:`str`): dictionary of units (keys = IDs in SBML, values = names)
+
+        Returns:
+            :obj:`dictionary`: kinetic law
+
+        Raises:
+            :obj:`ValueError`: if the temperature is expressed in an unsupported unit
+        """
+        law = sbml.getKineticLaw()
+        x_refs = self.create_cross_references_from_sbml(law)
+        reaction_x_refs = self.create_cross_references_from_sbml(sbml)
+        kinetic_law = {}
+        # stop if kinetic law entry is empty
+        if not law.getMetaId():
+            return None
+
+        """ participants """
+        kinetic_law['reactants'] = []
+        reactants = sbml.getListOfReactants()
+        for i_part in range(reactants.size()):
+            part_sbml = reactants.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(
+                part_sbml.getSpecies(), root_species)
+            compound = self.load_compounds(compound)
+            if 'structures' not in compound[0].keys():
+                compound = self.infer_compound_structures_from_names(compound)
+            part = {
+                'compartment': compartment,
+                'coefficient': part_sbml.getStoichiometry()}
+            react = {**compound[0], **part}
+            kinetic_law['reactants'].append(react)
+
+        kinetic_law['products'] = []
+        products = sbml.getListOfProducts()
+        for i_part in range(products.size()):
+            part_sbml = products.get(i_part)
+            compound, compartment = self.get_specie_reference_from_sbml(
+                part_sbml.getSpecies(), root_species)
+            compound = self.load_compounds(compound)
+            if 'structures' not in compound[0].keys():
+                compound = self.infer_compound_structures_from_names(compound)
+            part = {
+                'compartment': compartment,
+                'coefficient': part_sbml.getStoichiometry()}
+            prod = {**compound[0], **part}
+            kinetic_law['products'].append(prod)
+
+        """ cross references """
+        # Note: these are stored KineticLaws rather than under Reactions because this seems to how SABIO-RK stores this information.
+        # For example, kinetic laws 16016 and 28003 are associated with reaction 9930, but they have different EC numbers 1.1.1.52 and
+        # 1.1.1.50, respectively.
+        kinetic_law['cross_references'] = list(
+            filter(lambda x_ref: list(x_ref.keys())[0] not in ['taxonomy'], reaction_x_refs))
+
+        # rate_law
+        kinetic_law['equation'] = functions[law.getMetaId()[5:]]
+
+        # parameters
+        kinetic_law['parameters'] = []
+        params = law.getListOfLocalParameters()
+        for i_param in range(params.size()):
+            param = params.get(i_param)
+
+            match = re.match(
+                r'^(.*?)_((SPC|ENZ)_([0-9]+)_(.*?))$', param.getId(), re.IGNORECASE)
+            if match:
+                observed_name = match.group(1)
+                species, compartment = self.get_specie_reference_from_sbml(
+                    match.group(2), root_species)
+                if 'subunits' in species[0].keys():
+                    compound = None
+                    enzyme = species[0]
+                else:
+                    compound = species[0]
+                    enzyme = None
+            else:
+                observed_name = param.getId()
+                compound = None
+                enzyme = None
+                compartment = None
+            observed_name = observed_name.replace('div', '/')
+
+            observed_type = param.getSBOTerm()
+
+            observed_units_id = param.getUnits()
+            if observed_units_id:
+                if observed_units_id in units:
+                    observed_units = units[observed_units_id]
+                else:
+                    observed_units = observed_units_id
+            else:
+                observed_units = None
+
+            observed_value = param.getValue()
+
+            parameter = {
+                'compound': compound,
+                'enzyme': enzyme,
+                'compartment': compartment,
+                'observed_name': observed_name,
+                'observed_type': observed_type,
+                'observed_value': observed_value,
+                'observed_units': observed_units,
+                'modified': datetime.datetime.utcnow()
+            }
+            kinetic_law['parameters'].append(parameter)
+
+        # # modifiers to kinetic law
+        # kinetic_law['modifiers'] = []
+        # modifiers = sbml.getListOfModifiers()
+        # for i_modifier in range(modifiers.size()):
+        #     modifier = modifiers.get(i_modifier)
+        #     modifier_id = modifier.getSpecies()
+        #     specie, compartment = self.get_specie_reference_from_sbml(
+        #         modifier_id, root_species)
+        #     type = specie_properties[modifier.getSpecies()]['modifier_type']
+        #     if modifier_id[0:3] == 'SPC':
+        #         part = {
+        #             'compartment': compartment,
+        #             'type': type
+        #         }  # ReactionParticipant
+        #         modif = {**specie[0], **part}
+        #         kinetic_law['modifiers'].append(modif)
+        #     elif modifier_id[0:3] == 'ENZ':
+        #         kinetic_law['enzyme'], kinetic_law['enzyme_compartment'] = self.get_specie_reference_from_sbml(
+        #             modifier_id, root_species)
+        #         kinetic_law['enzyme_type'] = specie_properties[modifier.getSpecies(
+        #         )]['modifier_type']
+        #         kinetic_law['taxon_wildtype'] = specie_properties[modifier_id]['is_wildtype']
+        #         kinetic_law['taxon_variant'] = specie_properties[modifier_id]['variant']
+
+        # # taxon
+        # taxon = self.file_manager.search_dict_list(reaction_x_refs, 'taxonomy')
+        # if len(taxon) > 0:
+        #     kinetic_law['taxon'] = int(taxon[0]['taxonomy'])
+        # else:
+        #     kinetic_law['taxon'] = None
+
+        # """ conditions """
+        # conditions = law \
+        #     .getAnnotation() \
+        #     .getChild('sabiork') \
+        #     .getChild('experimentalConditions')
+
+        # # temperature
+        # if conditions.hasChild('temperature'):
+        #     temperature = conditions \
+        #         .getChild('temperature') \
+        #         .getChild('startValueTemperature') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     temperature = float(temperature)
+        #     temperature_units = conditions \
+        #         .getChild('temperature') \
+        #         .getChild('temperatureUnit') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     if temperature_units not in ['°C', '��C']:
+        #         raise ValueError(
+        #             'Unsupported temperature units: {}'.format(temperature_units))
+        #     kinetic_law['temperature'] = temperature
+
+        # # pH
+        # if conditions.hasChild('pH'):
+        #     ph = conditions \
+        #         .getChild('pH') \
+        #         .getChild('startValuepH') \
+        #         .getChild(0) \
+        #         .getCharacters()
+        #     kinetic_law['ph'] = float(ph)
+
+        # # media
+        # if conditions.hasChild('buffer'):
+        #     media = conditions \
+        #         .getChild('buffer') \
+        #         .getChild(0) \
+        #         .getCharacters() \
+        #         .strip()
+        #     if six.PY2:
+        #         media = unicode(media.decode('utf-8'))
+        #     kinetic_law['media'] = media
+
+        # """ references """
+        # kinetic_law['references'] = list(
+        #     filter(lambda x_ref: list(x_ref.keys())[0] != 'sabiork.kineticrecord', x_refs))
+
+        # """ updated """
+        # kinetic_law['modified'] = datetime.datetime.utcnow()
+
+        return kinetic_law
+
+    def get_compartment_from_sbml(self, sbml):
+        """ get compartment from sbml
+
+        Args:
+            sbml (:obj:`libsbml.Compartment`): SBML-representation of a compartment
+
+        Returns:
+            :dictionary: compartment
+        """
+        name = sbml.getName()
+        if name == 'Cell':
+            return None
+
+        modified = datetime.datetime.utcnow()
+        compartment = {'name': name, 'modified': modified}
+
+        return compartment
+
+    def get_specie_reference_from_sbml(self, specie_id, species):
+        """ Get the compound/enzyme associated with an SBML species by its ID
+
+        Args:
+            specie_id (:obj:`str`): ID of an SBML species
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`Compound` or :obj:`Enzyme`: compound or enzyme
+                * :obj:`Compartment`: compartment
+
+        Raises:
+            :obj:`ValueError`: if the species is not a compound or enzyme, no species
+                with `id` = `specie_id` exists, or no compartment with `name` = `compartment_name`
+                exists
+        """
+        tmp = specie_id.split('_')
+        type = tmp[0]
+        specie_id = int(float(tmp[1]))
+        compartment_name = '_'.join(tmp[2:])
+
+        if type == 'SPC':
+            specie = self.file_manager.search_dict_list(
+                species, '_id', value=specie_id)
+            self.collection_compound.update_one({'_id': specie_id},
+                                                {'$set': specie[0]}, upsert=True)
+        elif type == 'ENZ':
+            specie = self.file_manager.search_dict_list(
+                species, '_id', value=specie_id)
         else:
-            query = {'kinlaw_id': {'$in': ids}}
+            raise ValueError('Unsupported species type: {}'.format(type))
+
+        if compartment_name != 'Cell':
+            compartment = compartment_name
+        else:
+            compartment = None
+
+        return (specie, compartment)
+
+    def get_specie_from_sbml(self, sbml):
+        """ get species information from sbml
+
+        Args:
+            sbml (:obj:`libsbml.Species`): SBML-representation of a compound or enzyme
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`Compound`: or :obj:`Enzyme`: compound or enzyme
+                * :obj:`dict`: additional properties of the compound/enzyme
+
+                    * `is_wildtype` (:obj:`bool`): indicates if the enzyme is wildtype or mutant
+                    * `variant` (:obj:`str`): description of the variant of the eznyme
+                    * `modifier_type` (:obj:`str`): type of the enzyme (e.g. Modifier-Catalyst)
+
+        Raises:
+            :obj:`ValueError`: if a species is of an unsupported type (i.e. not a compound or enzyme)
+        """
+        # id, name
+        type_id_compartment = sbml.getId().split('_')
+        type = type_id_compartment[0]
+        id = int(float(type_id_compartment[1]))
+
+        # modifier type
+        modifier_type = ''
+        if sbml.isSetAnnotation() \
+                and sbml.getAnnotation().hasChild('sabiork') \
+                and sbml.getAnnotation().getChild('sabiork').hasChild('modifierType'):
+            modifier_type = sbml \
+                .getAnnotation() \
+                .getChild('sabiork') \
+                .getChild('modifierType') \
+                .getChild(0) \
+                .getCharacters()
+
+        # create object or return existing object
+        if type == 'SPC':
+            name = sbml.getName()
+            properties = {'modifier_type': modifier_type}
+            specie = {'_id': id, 'name': name}
+            self.collection_compound.update_one({'_id': id},
+                                                {'$set': {'name': name}},
+                                                upsert=True)
+        elif type == 'ENZ':
+            name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
+            if six.PY2:
+                variant = unicode(variant.decode('utf-8'))
+            properties = {'is_wildtype': is_wildtype,
+                          'variant': variant, 'modifier_type': modifier_type}
+
+            specie = {'_id': id, 'name': name}
+        else:
+            raise ValueError('Unsupported species type: {}'.format(type))
+
+        # cross references
+        cross_references = self.create_cross_references_from_sbml(sbml)
+        if type == 'SPC':
+            specie['cross_references'] = cross_references
+            self.collection_compound.update_one({'_id': id},
+                                                {'$set': {
+                                                    'cross_references': cross_references}},
+                                                upsert=True)
+        elif type == 'ENZ':
+            specie['subunits'] = []
+            specie['cross_references'] = []
+            for cross_reference in cross_references:
+                if 'uniprot' in cross_reference:
+                    specie['subunits'].append(cross_reference)
+                else:
+                    specie['cross_references'].append(cross_reference)
+
+        # updated
+        specie['modified'] = datetime.datetime.utcnow()
+
+        return (specie, properties)
+
+    def parse_enzyme_name(self, sbml):
+        """ Parse the name of an enzyme in SBML for the enzyme name, wild type status, and variant
+        description that it contains.
+
+        Args:
+            sbml (:obj:`str`): enzyme name in SBML
+
+        Returns:
+            :obj:`tuple`:
+
+                * :obj:`str`: name
+                * :obj:`bool`: if :obj:`True`, the enzyme is wild type
+                * :obj:`str`: variant
+
+        Raises:
+            :obj:`ValueError`: if the enzyme name is formatted in an unsupport format
+        """
+        match = re.match(
+            r'^(.*?)\(Enzyme\) (wildtype|mutant),?(.*?)$', sbml, re.IGNORECASE)
+        if match:
+            name = match.group(1)
+            is_wildtype = match.group(2).lower() == 'wildtype'
+            variant = match.group(3).strip()
+            return (name, is_wildtype, variant)
+
+        match = re.match(
+            r'^Enzyme (wildtype|mutant),?( (.*?))*$', sbml, re.IGNORECASE)
+        if match:
+            if match.group(3):
+                name = match.group(3).strip()
+            else:
+                name = None
+            is_wildtype = match.group(1).lower() == 'wildtype'
+            variant = None
+            return (name, is_wildtype, variant)
+
+        match = re.match(r'^Enzyme - *$', sbml, re.IGNORECASE)
+        if match:
+            name = None
+            is_wildtype = True
+            variant = None
+            return (name, is_wildtype, variant)
+
+        raise ValueError('Cannot parse enzyme name: {}'.format(sbml))
+
+    def create_cross_references_from_sbml(self, sbml):
+        """ Look up cross references from an SBML object to dictionary
+
+        Args:
+            sbml (:obj:`libsbml.SBase`): object in an SBML documentation
+
+        Returns:
+            :obj:`list` of dictionary: list of resources
+        """
+        if not sbml.isSetAnnotation():
+            return []
+
+        xml = sbml.getAnnotation().getChild('RDF').getChild('Description')
+
+        attr = libsbml.XMLTriple(
+            'resource', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf')
+
+        x_refs = []
+        for i_child in range(xml.getNumChildren()):
+            bag = xml.getChild(i_child).getChild('Bag')
+            for i_li in range(bag.getNumChildren()):
+                li = bag.getChild(i_li)
+
+                val = li.getAttrValue(attr)
+                if val.startswith('http://identifiers.org/ec-code/Complex '):
+                    _, _, ids = val.partition(' ')
+                    resources = [('ec-code', id) for id in ids.split('/')]
+                else:
+                    parsed_url = val.split('/')
+                    if len(parsed_url) == 5:
+                        resources = [(parsed_url[3], parsed_url[4])]
+                    else:
+                        resources = [(parsed_url[2], parsed_url[3])]
+
+                for namespace, id in resources:
+                    resource = {namespace: id}
+
+                if resource not in x_refs:
+                    x_refs.append(resource)
+
+        return x_refs
+
+    def load_compounds(self, compounds=None):
+        """ Download information from SABIO-RK about all of the compounds stored sabio_compounds
+                collection
+        Args:
+            compounds (:obj:`list` of :obj:`obj`): list of compounds to download
+
+        Raises:
+            :obj:`Error`: if an HTTP request fails
+        """
+        if compounds is None:
+            compounds = self.collection_compound.find({})
+            n_compounds = self.collection_compound.count_documents({})
+        else:
+            n_compounds = len(compounds)
+        result = []
+
+        for i_compound, c in enumerate(compounds):
+            # print status
+            # if self.verbose and (i_compound % 100 == 0):
+            #     print('  Downloading compound {} of {}'.format(
+            #         i_compound + 1, n_compounds))
+
+            # download info
+            response = requests.get(
+                self.ENDPOINT_COMPOUNDS_PAGE, params={'cid': c['_id']})
+            response.raise_for_status()
+
+            # parse info
+            doc = bs4.BeautifulSoup(response.text, 'html.parser')
+            table = doc.find('table')
+
+            # name
+            node = table.find('span', id='commonName')
+            if node:
+                c['name'] = node.get_text()
+
+            # synonyms
+            c['synonyms'] = []
+            synonym_label_node = table.find('b', text='Synonyms')
+            if synonym_label_node:
+                for node in list(synonym_label_node.parents)[1].find_all('span'):
+                    name = node.get_text()
+                    c['synonyms'].append(name)
+
+            # structure
+            c['structures'] = []
+
+            inchi_label_node = table.find('b', text='InChI')
+            if inchi_label_node:
+                for node in list(inchi_label_node.parents)[1].find_all('span'):
+                    value = node.get_text()
+                    inchi = {'inchi': value}
+                    norm = self.calc_inchi_formula_connectivity(inchi)
+                    c['structures'].append({**inchi, **norm})
+
+            smiles_label_node = table.find('b', text='SMILES')
+            if smiles_label_node:
+                for node in list(smiles_label_node.parents)[1].find_all('span'):
+                    value = node.get_text()
+                    smiles = {'smiles': value}
+                    # norm = self.calc_inchi_formula_connectivity(smiles)
+                    c['structures'].append(smiles)
+
+            # cross references
+            c['cross_references'] = []
+            for node in table.find_all('a'):
+
+                url = node.get('href')
+
+                id = node.get_text()
+
+                if url.startswith('http://www.genome.jp/dbget-bin/www_bget?cpd:'):
+                    namespace = 'kegg.compound'
+                elif url.startswith('http://pubchem.ncbi.nlm.nih.gov/summary/summary.cgi?sid='):
+                    namespace = 'pubchem.substance'
+                elif url.startswith('http://www.ebi.ac.uk/chebi/searchId.do?chebiId='):
+                    namespace = 'chebi'
+                    id = 'CHEBI:' + id
+                elif url.startswith('https://reactome.org/content/detail/'):
+                    namespace = 'reactome'
+                elif url.startswith('https://biocyc.org/compound?orgid=META&id='):
+                    namespace = 'biocyc'
+                elif url.startswith('https://www.metanetx.org/chem_info/'):
+                    namespace = 'metanetx.chemical'
+                elif url.startswith('http://www.chemspider.com/Chemical-Structure.'):
+                    namespace = 'chemspider'
+                elif url.startswith('http://sabiork.h-its.org/newSearch?q=sabiocompoundid:'):
+                    continue
+                else:
+                    namespace = html.unescape(node.parent.parent.parent.find_all('td')[
+                                              0].get_text()).strip()
+                    warning = 'Compound {} has unkonwn cross reference type to namespace {}'.format(c['_id'],
+                                                                                                        namespace)
+                resource = {namespace: id}
+
+                c['cross_references'].append(resource)
+
+            # udated
+            c['modified'] = datetime.datetime.utcnow()
+            self.collection_compound.update_one({'_id': c['_id']},
+                                                {'$set': {'synonyms': c['synonyms'],
+                                                          'structures': c['structures'],
+                                                          'cross_references': c['cross_references']}},
+                                                upsert=True)
+            result.append(c)
+        return result 
+
+    def load_missing_kinetic_law_information_from_tsv(self, ids):
+        """ Update the properties of kinetic laws in mongodb based on content downloaded
+        from SABIO in TSV format.
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+            start (:obj:`int`): starting row
+        """
+        batch_size = self.excel_batch_size
+
+        for i_batch in range(int(math.ceil(float(len(ids)) / batch_size))):
+            if self.verbose:
+                print('  Downloading kinetic laws {}-{} of {} in Excel format'.format(
+                    i_batch * batch_size + 1,
+                    min(len(ids), (i_batch + 1) * batch_size),
+                    len(ids)))
+
+            batch_ids = ids[i_batch *
+                            batch_size:min((i_batch + 1) * batch_size, len(ids))]
+            response = requests.get(self.ENDPOINT_EXCEL_EXPORT, params={
+                'entryIDs[]': batch_ids,
+                'fields[]': [
+                    'EntryID',
+                    'KineticMechanismType',
+                    'Tissue',
+                    'Parameter',
+                ],
+                'preview': False,
+                'format': 'tsv',
+                'distinctRows': 'false',
+            })
+            response.raise_for_status()
+            if not response.text:
+                cache = session.cache
+                key = cache.create_key(response.request)
+                cache.delete(key)
+                raise Exception('Unable to download kinetic laws with ids {}'.format(
+                    ', '.join([str(id) for id in batch_ids])))
+
+            self.load_missing_kinetic_law_information_from_tsv_helper(
+                response.text)
+
+    def load_missing_kinetic_law_information_from_tsv_helper(self, tsv, start=0):
+        """ Update the properties of kinetic laws in the mongodb based on content downloaded
+        from SABIO in TSV format.
+
+        Note: this method is necessary because neither of SABIO's SBML and Excel export methods provide
+        all of the SABIO's content.
+
+        Args:
+            tsv (:obj:`str`): TSV-formatted table
+            start (:obj:`int`): starting row
+
+        Raises:
+            :obj:`ValueError`: if a kinetic law or compartment is not contained in the local sqlite database
+        """
+        # group properties
+        tsv = tsv.split('\n')
+        law_properties = {}
+        for row in csv.DictReader(tsv, delimiter='\t'):
+            entry_id = int(float(row['EntryID']))
+            if entry_id not in law_properties:
+                law_properties[entry_id] = {
+                    'KineticMechanismType': row['KineticMechanismType'],
+                    'Tissue': row['Tissue'],
+                    'Parameters': [],
+                }
+
+            parameter = {}
+
+            # type
+            parameter['type'] = row['parameter.type']
+
+            if row['parameter.type'] == 'kcat':
+                parameter['type_code'] = 25
+            elif row['parameter.type'] == 'Vmax':
+                parameter['type_code'] = 186
+            elif row['parameter.type'] == 'Km':
+                parameter['type_code'] = 27
+            elif row['parameter.type'] == 'Ki':
+                parameter['type_code'] = 261
+            else:
+                parameter['type_code'] = None
+
+            # associatated species
+            if row['parameter.associatedSpecies'] in ['', '-']:
+                parameter['associatedSpecies'] = None
+            else:
+                parameter['associatedSpecies'] = row['parameter.associatedSpecies']
+
+            # start value
+            if row['parameter.startValue'] in ['', '-']:
+                parameter['startValue'] = None
+            else:
+                parameter['startValue'] = float(row['parameter.startValue'])
+
+            # end value
+            if row['parameter.endValue'] in ['', '-']:
+                parameter['endValue'] = None
+            else:
+                parameter['endValue'] = float(row['parameter.endValue'])
+
+            # error
+            if row['parameter.standardDeviation'] in ['', '-']:
+                parameter['standardDeviation'] = None
+            else:
+                parameter['standardDeviation'] = float(
+                    row['parameter.standardDeviation'])
+
+            # units
+            if row['parameter.unit'] in ['', '-']:
+                parameter['unit'] = None
+            else:
+                parameter['unit'] = row['parameter.unit']
+
+            law_properties[entry_id]['Parameters'].append(parameter)
+
+        # update properties
+        for id, properties in law_properties.items():
+            # get kinetic law
+            projection = {'kinlaw_id': 1, 'mechanism': 1, 'tissue': 1, 'parameters': 1}
+            q = self.collection.find_one({'kinlaw_id': id}, projection=projection)
+            if q == None:
+                raise ValueError('No Kinetic Law with id {}'.format(id))
+            law = q
+
+            # mechanism
+            if properties['KineticMechanismType'] == 'unknown':
+                law['mechanism'] = None
+            else:
+                law['mechanism'] = properties['KineticMechanismType']
+
+            # tissue
+            if properties['Tissue'] in ['', '-']:
+                law['tissue'] = None
+                properties.pop('Tissue')
+            else:
+                law['tissue'] = properties['Tissue']
+                properties.pop('Tissue')
+
+            # parameter
+            parameters = []
+            for param_properties in properties['Parameters']:
+                param = self.get_parameter_by_properties(law, param_properties)
+                if param is None:
+                    if param_properties['type'] != 'concentration':
+                        warning = 'Unable to find parameter `{}:{}` for law {}'.format(
+                            param_properties['type'], param_properties['associatedSpecies'], law['kinlaw_id'])
+                        logging.warning(warning)
+                    continue
+
+                param['observed_value'] = param_properties['startValue']
+                param['observed_error'] = param_properties['standardDeviation']
+                param['observed_units'] = param_properties['unit']
+                parameters.append(param)
+
+            # updated
+            law['modified'] = datetime.datetime.utcnow()
+            self.collection.update_one({'kinlaw_id': id},
+                                       {'$set': {'parameters': parameters,
+                                                'tissue': law['tissue'],
+                                                'mechanism': law['mechanism'],
+                                                'modified': datetime.datetime.utcnow()} },
+                                       upsert=False)
+
+    def get_parameter_by_properties(self, kinetic_law, parameter_properties):
+        """ Get the parameter of :obj:`kinetic_law` whose attribute values are 
+                equal to that of :obj:`parameter_properties`
+        Args:
+            kinetic_law (:obj:`KineticLaw`): kinetic law to find parameter of
+            parameter_properties (:obj:`dict`): properties of parameter to find
+
+        Returns:
+            :obj:`Parameter`: parameter with attribute values equal to values of :obj:`parameter_properties`
+        """
+        if parameter_properties['type'] == 'concentration':
+            return parameter_properties
+
+        # match observed name and compound
+        def func(parameter):
+            return parameter['observed_type'] == parameter_properties['type_code'] and \
+                ((parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or
+                 (parameter['compound'] is not None and parameter['compound']['name'] == parameter_properties['associatedSpecies']))
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match observed name
+        def func(parameter):
+            return parameter['observed_type'] == parameter_properties['type_code']
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match compound
+        def func(parameter):
+            return (parameter['compound'] is None and parameter_properties['associatedSpecies'] is None) or \
+                (parameter['compound'] is not None and parameter['compound']
+                 ['name'] == parameter_properties['associatedSpecies'])
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+        # match value
+        def func(parameter):
+            return parameter['observed_value'] == parameter_properties['startValue']
+        parameters = list(filter(func, kinetic_law['parameters']))
+        if len(parameters) == 1:
+            return parameters[0]
+
+    def infer_compound_structures_from_names(self, compounds):
+        """ Try to use PubChem to infer the structure of compounds from their names
+
+        Notes: we don't try look up structures from their cross references because SABIO has already gathered
+        all structures from their cross references to ChEBI, KEGG, and PubChem
+
+        Args:
+            compounds (:obj:`list` of :obj:`dict`): list of compounds
+        """
+        result = []
+        for i_compound, compound in enumerate(compounds):
+            # if self.verbose and (i_compound % 100 == 0):
+            #     print('  Trying to infer the structure of compound {} of {}'.format(
+            #         i_compound + 1, len(compounds)))
+
+            if compound['name'] == 'Unknown':
+                continue
+
+            for i_try in range(self.PUBCHEM_MAX_TRIES):
+                try:
+                    p_compounds = pubchempy.get_compounds(
+                        compound['name'], 'name')
+                    break
+                except pubchempy.PubChemHTTPError:
+                    if i_try < self.PUBCHEM_MAX_TRIES - 1:
+                        # sleep to avoid getting overloading PubChem server and then try again
+                        time.sleep(self.PUBCHEM_TRY_DELAY)
+                    else:
+                        raise
+
+            for p_compound in p_compounds:
+                namespace = 'pubchem.compound'
+                id = str(p_compound.cid)
+                q = self.file_manager.search_dict_list(
+                    compound['cross_references'], namespace)
+                if len(q) == 0:
+                    resource = {namespace: id}
+                    compound['cross_references'].append(resource)
+
+                structure = {'inchi': p_compound.inchi}
+                norm = self.calc_inchi_formula_connectivity(structure)
+                tmp = compound.setdefault('structures', [])
+                tmp.append(norm)
+            self.collection_compound.update_one({'_id': compound['_id']},
+                                                {'$set': compound})
+            result.append(compound)
+
+        return result
+
+    def calc_inchi_formula_connectivity(self, structure):
+        """ Calculate a searchable structures
+
+        * InChI format
+        * Core InChI format
+
+            * Formula layer (without hydrogen)
+            * Connectivity layer
+        """
+
+        # if necessary, convert structure to InChI
+        if 'inchi' in structure:
+            _value_inchi = structure['inchi']
+        else:
+            try:
+                _value_inchi = molecule_util.Molecule(
+                    structure=structure.get('smiles',)).to_inchi() or None
+            except ValueError:
+                _value_inchi = None
+
+        # calculate formula (without hydrogen) and connectivity
+        if _value_inchi:
+            _value_inchi_formula_connectivity = molecule_util.InchiMolecule(_value_inchi) \
+                .get_formula_and_connectivity()
+
+        result = {'_value_inchi': _value_inchi,
+                  '_value_inchi_formula_connectivity': _value_inchi_formula_connectivity}
+
+        return result
+
+    def load_missing_enzyme_information_from_html(self, ids, start=0):
+        """ Loading enzyme subunit information from html
+
+        Args:
+            ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to download
+            start (:obj:`int`): starting point for iterator
+        """
+        query = {'$and': [{'kinlaw_id': {'$in': ids}},
+                          {'enzyme._id': {'$exists': True}}]}
+        projection = {'enzyme': 1, 'kinlaw_id': 1}
+        kinetic_laws = self.collection.find(
+            filter=query, projection=projection)
+        total_count = self.collection.count_documents(query)
+
+        for i_kinetic_law, kinetic_law in enumerate(kinetic_laws[start:]):
+            if self.verbose and (i_kinetic_law % 100 == 0):
+                print('  Loading enzyme information for {} of {} kinetic laws'.format(
+                    i_kinetic_law + 1 + start, total_count))
+
+            response = requests.get(self.ENDPOINT_KINETIC_LAWS_PAGE, params={
+                                    'kinlawid': kinetic_law['kinlaw_id'], 'newinterface': 'true'})
+            response.raise_for_status()
+
+            enzyme = kinetic_law['enzyme'][0]
+            subunits = enzyme.get('subunits')
+            if subunits is None:
+                continue
+            for subunit in subunits:
+                subunit['coefficient'] = None
+
+            doc = bs4.BeautifulSoup(response.text, 'html.parser')
+            td = doc.find('td', text='Modifier-Catalyst')
+            tr = td.parent
+            td = tr.find_all('td')[-1]
+            inner_html = td.decode_contents(formatter='html').strip() + ' '
+            if inner_html == '- ':
+                continue
+            try:
+                subunit_coefficients = self.parse_complex_subunit_structure(
+                    inner_html)
+            except Exception as error:
+                six.reraise(
+                    ValueError,
+                    ValueError('Subunit structure for kinetic law {} could not be parsed: {}\n\t{}'.format(
+                        kinetic_law['kinlaw_id'], inner_html, str(error).replace('\n', '\n\t'))),
+                    sys.exc_info()[2])
+
+            enzyme['subunits'] = []
+            for subunit_id, coefficient in subunit_coefficients.items():
+                xref = {'uniprot': subunit_id}
+                coeff = {'coefficient': coefficient}
+                subunit = {**xref, **coeff}
+                enzyme['subunits'].append(subunit)
+            enzyme = self.calc_enzyme_molecular_weights([enzyme], 1)
+            self.collection.update_one({'kinlaw_id': kinetic_law['kinlaw_id']},
+                                       {'$set': {'enzyme': enzyme,
+                                                'modified': datetime.datetime.utcnow()}})
+
+    def parse_complex_subunit_structure(self, text):
+        """ Parse the subunit structure of complex into a dictionary of subunit coefficients
+
+        Args:
+            text (:obj:`str`): subunit structure described with nested parentheses
+
+        Returns:
+            :obj:`dict` of :obj:`str`, :obj:`int`: dictionary of subunit coefficients
+        """
+        # try adding missing parentheses
+        n_open = text.count('(')
+        n_close = text.count(')')
+        if n_open > n_close:
+            text += ')' * (n_open - n_close)
+        elif n_open < n_close:
+            text = '(' * (n_close - n_open) + text
+
+        # for convenenice, add parenthesis at the beginning and end of the string and before and after each subunit
+        if text[0] != '(':
+            text = '(' + text + ')'
+        text = text.replace('<a ', '(<a ').replace('</a>', '</a>)')
+        text = text.replace('open(', "open ").replace('able=1\')', "able=1\' ")
+        # parse the nested subunit structure
+        i = 0
+        stack = [{'subunits': {}}]
+        while i < len(text):
+            if text[i] == '(':
+                stack.append({'start': i, 'subunits': {}})
+                i += 1
+            elif text[i] == ')':
+                tmp = stack.pop()
+                start = tmp['start']
+                end = i
+
+                subunits = tmp['subunits']
+                if not subunits:
+                    protein_pattern = re.compile('<a href="#" onclick="window\.open \'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\',\'\',\'width=600,height=500,scrollbars=1,resizable=1\' ">.*?</a>')
+                    matches = protein_pattern.findall(text[start+1:end])
+                    for match in matches:
+                        subunits[match] = 1
+
+                match = re.match(r'^\)\*(\d+)', text[i:])
+                if match:
+                    i += len(match.group(0))
+                    coefficient = int(float(match.group(1)))
+                else:
+                    i += 1
+                    coefficient = 1
+
+                for id in subunits.keys():
+                    if id not in stack[-1]['subunits']:
+                        stack[-1]['subunits'][id] = 0
+                    stack[-1]['subunits'][id] += subunits[id] * coefficient
+
+            else:
+                i += 1
+
+        # check that all subunits were extracted
+        protein_pattern = re.compile('<a href="#" onclick="window\.open \'http://sabiork\.h-its\.org/proteindetails\.jsp\?enzymeUniprotID=(.*?)\',\'\',\'width=600,height=500,scrollbars=1,resizable=1\' ">.*?</a>')
+        matches = protein_pattern.findall(text)
+        if len(set(matches)) != len(stack[0]['subunits'].keys()):
+            raise ValueError(
+                'Subunit structure could not be parsed: {}'.format(text))
+
+        return stack[0]['subunits']
+
+    def calc_enzyme_molecular_weights(self, enzymes, length):
+        """ Calculate the molecular weight of each enzyme
+
+        Args:
+            enzymes (:obj:`list` of :obj:`dict`): list of enzymes
+        Returns:
+            enzymes (:obj:`list` of :obj:`dict`): list of enzymes
+        """
+        letters = Bio.Alphabet.IUPAC.IUPACProtein.letters
+        mean_aa_mw = Bio.SeqUtils.molecular_weight(letters, seq_type='protein') / len(letters)
+
+        results = []
+        for i_enzyme, enzyme in enumerate(enzymes):
+            # if self.verbose and i_enzyme % 100 == 0:
+            #     print('    Calculating molecular weight of enzyme {} of {}'.format(i_enzyme + 1, length))
+            enzyme_molecular_weight = 0
+            for subunit in enzyme['subunits']:
+                if 'uniprot' in subunit:
+                    response = requests.get(
+                        self.ENDPOINT_DOMAINS['uniprot'] + '/uniprot/?query={}&columns=id,sequence&format=tab'.format(subunit['uniprot']))
+                    response.raise_for_status()
+                    seqs = list(csv.DictReader(response.text.split('\n'), delimiter='\t'))
+                    if seqs:
+                        subunit['sequence'] = next((seq['Sequence'] for seq in seqs if seq['Entry'] == subunit['uniprot']), seqs[0]['Sequence'])
+                        iupac_seq = re.sub(r'[^' + Bio.Alphabet.IUPAC.IUPACProtein.letters + r']', '', subunit['sequence'])
+                        subunit['molecular_weight'] = \
+                            + Bio.SeqUtils.molecular_weight(iupac_seq, seq_type='protein') \
+                            + (len(subunit['sequence']) - len(iupac_seq)) * mean_aa_mw
+                        enzyme_molecular_weight += (subunit['coefficient'] or float('nan')) * subunit['molecular_weight']
+                    else:
+                        subunit['sequence'] = None
+                        subunit['molecular_weight'] = None
+                        enzyme_molecular_weight = float('nan')
+
+            if not enzyme_molecular_weight or math.isnan(enzyme_molecular_weight):
+                enzyme['molecular_weight'] = None
+            else:
+                enzyme['molecular_weight'] = enzyme_molecular_weight
+            results.append(enzyme)
+        return results
+
+
+    def add_inchi_hash(self, ids):
+        '''
+            Add sha224 hashed values of _value_inchi in sabio_rk collection
+        '''
+        query = {}
+        projection = {'products': 1, 'reactants':1, 'kinlaw_id': 1}
+        query = {'kinlaw_id': {'$in': ids}}
         cursor = self.collection.find(filter=query, projection=projection)
         count = self.collection.count_documents(query)
 
@@ -549,45 +1330,33 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             '''Given subsrate or product subdocument from sabio_rk
                find the corresponding inchi
                Args:
-                    chem (:obj:`dict`)
+                    chem (:obj: `dict`)
                 Returns:
-                    (:obj:`str`): inchi string
+                    (:obj: `str`): inchi string
             '''
             try:
-                x = chem['substrate_structure'][0].get('inchi_structure', None)
-                return x
-            except KeyError:
-                try:
-                    x = chem['product_structure'][0].get('inchi_structure', None)
-                    return x
-                except IndexError:
-                    return None
+                return chem['structures'][0].get('_value_inchi', None)
             except IndexError:
                 return None
 
-        def iter_rxnp_subdoc(rxnp, side='substrate'):
-            '''Given a substrate or product array from sabio_rk
+        def iter_rxnp_subdoc(rxnp):
+            '''Given a reactant or product array from sabio_rk
                 append fields of hashed inchi
                 Args:
                     rxnp (:obj: `list` of :obj: `dict`)
             '''
             aggregate = []
-            if side == 'substrate':
-                key = 'substrate_structure'
-            else:
-                key = 'product_structure'
             for i, rxn in enumerate(rxnp):
                 substrate_inchi = get_inchi_structure(rxn)
-                if substrate_inchi == 'InChI=1S/O':
-                    substrate_inchi = 'InChI=1S/O2/c1-2'
+
                 try:
                     hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
-                    rxnp[i][key][0]['InChI_Key'] = hashed_inchi
+                    rxnp[i]['structures'][0]['InChI_Key'] = hashed_inchi
                     aggregate.append(hashed_inchi)
                 except AttributeError:
-                    rxnp[i][key][0]['InChI_Key'] = None
+                    rxnp[i]['structures'][0]['InChI_Key'] = None
                 except IndexError:
-                    rxnp[i][key] = []
+                    rxnp[i]['structures'] = []
 
             return rxnp, aggregate
 
@@ -597,38 +1366,171 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 break
             if self.verbose == True and j % 100 == 0:
                 print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
-            substrates = doc['reaction_participant'][0]['substrate']
-            products = doc['reaction_participant'][1]['product']
-            new_subsrates, s_agg = iter_rxnp_subdoc(substrates)
-            new_products, p_agg = iter_rxnp_subdoc(products, side='product')
+            substrates = doc['reactants']
+            products = doc['products']
+            new_subsrates, s_aggregate = iter_rxnp_subdoc(substrates)
+            new_products, p_aggregate = iter_rxnp_subdoc(products)
 
-            doc['reaction_participant'][0]['substrate'] = new_subsrates
-            doc['reaction_participant'][3]['substrate_aggregate'] = s_agg
-            doc['reaction_participant'][1]['product'] = new_products
-            doc['reaction_participant'][4]['product_aggregate'] = p_agg
+            doc['reactants'] = new_subsrates
+            doc['reactants'].append({'reactants_aggregate': s_aggregate})
+            doc['products'] = new_products
+            doc['products'].append({'products_aggregate': p_aggregate})
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
-                        {'$set': {'reaction_participant.0.substrate': doc['reaction_participant'][0]['substrate'],
-                                'reaction_participant.1.product': doc['reaction_participant'][1]['product'],
-                                'reaction_participant.3.substrate_aggregate': doc['reaction_participant'][3]['substrate_aggregate'],
-                                'reaction_participant.4.product_aggregate': doc['reaction_participant'][4]['product_aggregate'],
-                                'modified': datetime.datetime.utcnow()} })
+                            {'$set': {'reactants': doc['reactants'],
+                                      'products': doc['products'],
+                                      'modified': datetime.datetime.utcnow()} })
             j += 1
+
+    def normalize_kinetic_laws(self, new_ids):
+        """ Normalize parameter values.
+
+        Args:
+            new_ids (:obj:`list` of :obj:`int`): list of IDs of kinetic laws to normalize
+        """
+        query = {'kinlaw_id': {'$in': new_ids}}
+        docs = self.collection.find(filter=query, projection={'_id': 0, 'parameters': 1, 'enzyme': 1, 'kinlaw_id': 1})
+        for i_law, law in enumerate(docs):
+            if self.verbose and (i_law % 100 == 0):
+                print('  Normalizing kinetic law {} of {}'.format(i_law + 1, len(new_ids)))
+
+            if law.get('enzyme') is None:
+                self.collection.update_one({'kinlaw_id': law['kinlaw_id']},
+                                        {'$set': {'enzyme': []} })
+                enzyme_molecular_weight = None
+            else:
+                enzyme_molecular_weight = law['enzyme'][0].get('molecular_weight')
+
+            final_p = []
+            for p in law['parameters']:
+                p['norm_name'], p['norm_type'], p['norm_value'], p['norm_error'], p['norm_units'] = self.normalize_parameter_value(
+                    p.get('observed_name'), p.get('observed_type'), p.get('observed_value'), 
+                    p.get('observed_error'), p.get('observed_units'), enzyme_molecular_weight)
+                p['modified'] = datetime.datetime.utcnow()
+                final_p.append(p)
+
+            self.collection.update_one({'kinlaw_id': law['kinlaw_id']},
+                                        {'$set': {'parameters': final_p} })
+
+
+    def normalize_parameter_value(self, name, type, value, error, units, enzyme_molecular_weight):
+        """
+        Args:
+            name (:obj:`str`): parameter name
+            type (:obj:`int`) parameter type (SBO term id)
+            value (:obj:`float`): observed value
+            error (:obj:`float`): observed error
+            units (:obj:`str`): observed units
+            enzyme_molecular_weight (:obj:`float`): enzyme molecular weight
+        Returns:
+            :obj:`tuple` of :obj:`str`, :obj:`int`, :obj:`float`, :obj:`float`, :obj:`str`: normalized name and
+                its type (SBO term), value, error, and units
+        Raises:
+            :obj:`ValueError`: if :obj:`units` is not a supported unit of :obj:`type`
+        """
+        types = {25: 'k_cat', 27: 'k_m', 186: 'v_max', 261: 'k_i'}
+        if type not in [25, 27, 186, 261]:
+            return (None, None, None, None, None)
+
+        if value is None:
+            return (None, None, None, None, None)
+
+        type_name = types[type]
+
+        if type_name == 'k_cat':
+            if units in ['s^(-1)', 'mol*s^(-1)*mol^(-1)', 's^(-1']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['katal', 'katal_base']:
+                # cannot be converted without knowing the enzyme amount in the measurement
+                return (None, None, None, None, None)
+
+            if units in ['M^(-1)*s^(-1)']:
+                # off by mol^(2) * liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['s^(-1)*g^(-1)', 'mol*s^(-1)*g^(-1)', 'M']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_m':
+            if units in ['M']:
+                return ('k_m', 27, value, error, 'M')
+
+            if units in ['mol']:
+                # off by liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['mg/ml', 'M^2', 'mol/mol', 'katal*g^(-1)', 's^(-1)', 'mol*s^(-1)*g^(-1)',
+                'l*g^(-1)*s^(-1)', 'M^(-1)*s^(-1)', 'M^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'v_max':
+            if units in ['mol*s^(-1)*g^(-1)', 'katal*g^(-1)']:
+                if enzyme_molecular_weight:
+                    f = enzyme_molecular_weight
+                    return ('k_cat', 25, value * float(f) if value else None, error * float(f) if error else None, 's^(-1)')
+                else:
+                    return ('v_max', 186, value, error, 'mol*s^(-1)*g^(-1)')
+
+            if units in ['katal*mol^(-1)', 'mol*s^(-1)*mol^(-1)', 'Hz', 'M*s^(-1)*M^(-1)', 's^(-1)', 'g/(s*g)']:
+                return ('k_cat', 25, value, error, 's^(-1)')
+
+            if units in ['mol/s', 'katal', 'katal_base']:
+                # cannot be converted without knowing the enzyme amount in the measurement
+                return (None, None, None, None, None)
+
+            if units in ['M*s^(-1)*g^(-1)']:
+                # has incorrect dimensionality from v_max by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['M*s^(-1)', 'katal*l^(-1)']:
+                # has incorrect dimensionality from k_cat by factor of liter^(-1)
+                return (None, None, None, None, None)
+
+            if units in ['mol*s^(-1)*m^(-1)', 'M', 'g', 'g/(l*s)', 'M^2', 'katal*s^(-1)', 'mol*g^(-1)', 'mol/(sec*m^2)', 'mg/ml',
+                         'l*g^(-1)*s^(-1)', 'mol/(s*M)', 'katal*M^(-1)*g^(-1)', 'M^(-1)*s^(-1)', 'mol*s^',
+                         's^(-1)*g^(-1)', "katal*g^("]:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        elif type_name == 'k_i':
+            if units in ['M']:
+                return ('k_i', 261, value, error, 'M')
+
+            if units in ['mol/mol', 'M^2', 'g', 'M^(-1)*s^(-1)', 'mol*s^(-1)*g^(-1)']:
+                return (None, None, None, None, None)
+
+            if units is None:
+                return (None, None, None, None, None)
+
+        raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
 
 
 def main():
-    db = 'test'
-    username = datanator.config.core.get_config()[
-        'datanator']['mongodb']['user']
-    password = datanator.config.core.get_config(
-    )['datanator']['mongodb']['password']
-    MongoDB = datanator.config.core.get_config(
-    )['datanator']['mongodb']['server']
-    manager = SabioRkNoSQL(username=username, password=password, verbose=True,
-                           db=db, MongoDB=MongoDB, cache_directory='./cache/')
-    file_names, file_dict = manager.load_json()
-    manager.make_doc(file_names, file_dict)
-    # manager.add_inchi_hash()
+        db = 'datanator'
+        username = datanator.config.core.get_config()[
+            'datanator']['mongodb']['user']
+        password = datanator.config.core.get_config(
+        )['datanator']['mongodb']['password']
+        MongoDB = datanator.config.core.get_config(
+        )['datanator']['mongodb']['server']
+        port = datanator.config.core.get_config(
+        )['datanator']['mongodb']['port']
+        replSet = datanator.config.core.get_config(
+        )['datanator']['mongodb']['replSet']
+        manager = SabioRk(MongoDB=MongoDB, db=db,
+                          verbose=True, username=username,
+                          password=password)
+        manager.load_content()
+
 
 if __name__ == '__main__':
     main()
