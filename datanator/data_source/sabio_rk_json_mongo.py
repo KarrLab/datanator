@@ -1,4 +1,3 @@
-Learn more or give us feedback
 '''Parse SabioRk json files into MongoDB documents
     (json files acquired by running sqlite_to_json.py)
 :Author: Zhouyang Lian <zhouyang.lian@familian.life>
@@ -10,20 +9,19 @@ Learn more or give us feedback
 
 import json
 import pymongo
+import datanator.config.core
 from pymongo import MongoClient
 from datanator.util import mongo_util
-from datanator.util import server_util
 from datanator.util import chem_util
 from pathlib import Path
 import re
 import os
-import wc_utils.quilt
-import hashlib
+import datetime
 
 
 class SabioRkNoSQL(mongo_util.MongoUtil):
 
-    def __init__(self, db = None, MongoDB = None, cache_directory=None, quilt_package=None, 
+    def __init__(self, db = None, MongoDB = None, cache_directory=None, 
                 verbose=False, max_entries=float('inf'), replicaSet = None,
                 username = None, password = None, authSource = 'admin'):
         '''
@@ -31,16 +29,13 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                         cache_directory: JSON file (converted from sqlite) directory
                         db: mongodb database name
                         MongoDB: MongoDB server address and login e.g. 'mongodb://mongo:27017/'
-                        quilt_package: quilt package name (e.g. datanator)
-                        system_path: subdir of quilt package
         '''
         self.db = db
         self.MongoDB = MongoDB
         self.cache_directory = cache_directory
-        self.quilt_package = quilt_package
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection_str = 'sabio_rk'
+        self.collection_str = 'sabio_rk_old'
         super(SabioRkNoSQL, self).__init__(cache_dirname=cache_directory, MongoDB=MongoDB, replicaSet=replicaSet, 
                                     db=db, verbose=verbose, max_entries=max_entries, username = username, 
                                     password = password, authSource = authSource)
@@ -52,27 +47,14 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
     def load_json(self):
         file_names = []
         file_dict = {}
-        if self.cache_directory == None:
-            directory = '../../datanator/data_source/cache/SabioRk'
-            pathlist = Path(directory).glob('**/*.json')
-            for path in pathlist:
-                path_in_str = str(path)
-                name = re.findall(r'[^\/]+(?=\.json$)', path_in_str)[0]
-                file_names.append(name)
-                with open(path_in_str) as f:
-                    file_dict[name] = json.load(f)
-        else:
-            manager = wc_utils.quilt.QuiltManager(
-                self.cache_directory, self.quilt_package)
-            downloads = manager.download()
-            directory = self.cache_directory
-            for (dirpath, dirnames, filenames) in os.walk(directory):
-                [file_names.append(name[:-5])
-                 for name in filenames if name.endswith('json')]
-                break
-            for name in file_names:
-                with open(os.path.join(directory, name + '.json')) as f:
-                    file_dict[name] = json.load(f)
+        directory = '../../datanator/data_source/cache/SabioRk'
+        pathlist = Path(directory).glob('**/*.json')
+        for path in pathlist:
+            path_in_str = str(path)
+            name = re.findall(r'[^\/]+(?=\.json$)', path_in_str)[0]
+            file_names.append(name)
+            with open(path_in_str) as f:
+                file_dict[name] = json.load(f)
         return (file_names, file_dict)
 
     def make_doc(self, file_names, file_dict):
@@ -90,7 +72,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         has_structure = list(item['compound__id']
                              for item in compound_compound_structure_list)
         
-        for i in range(min(len(kinetic_law_list), self.max_entries)):
+        for i in range(14000, min(len(kinetic_law_list), self.max_entries)):
 
             cur_kinlaw_dict = kinetic_law_list[i]
             kinlaw_id = next(
@@ -486,10 +468,10 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                             item for item in entry_list if item['_id'] == compartment_id)['name']
                     else:
                         para_compartment = None
-
                     value = cur_parameter_list[j]['value']
                     error = cur_parameter_list[j]['error']
                     units = cur_parameter_list[j]['units']
+                    _type = cur_parameter_list[j]['type']
                     observed_name = cur_parameter_list[j]['observed_name']
                     observed_type = cur_parameter_list[j]['observed_type']
                     observed_value = cur_parameter_list[j]['observed_value']
@@ -510,9 +492,8 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                         compound_modified = cur_entry_dict['modified']
 
                     sabio_doc['parameter'].append({
-                        # 'id': cur_entry_dict['id'],
                         'name': cur_entry_dict['name'],
-                        # 'type': _type,
+                        'type': _type,
                         'sabio_compound_id': entry_compound_id,
                         'compound_name': compound_name,
                         'compound_structure': compound_structure,
@@ -544,66 +525,110 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             with open(json_name, 'w') as f:
                 f.write(json.dumps(sabio_doc, indent=4))
             
-            self.collection.replace_one(
+            self.collection.update_one(
                 {'kinlaw_id': sabio_doc['kinlaw_id']},
-                sabio_doc,
+                {'$set': {'parameter': sabio_doc['parameter']}},
                 upsert=True
                 )
 
-    def add_deprot_inchi(self):
-        query = {}
-        projection = {'reaction_participant': 1, 'kinlaw_id': 1}
-        cursor = self.collection.find({}, projection = projection)
+    def add_inchi_hash(self, ids=None):
+        '''
+            Add inchi key values of _value_inchi in sabio_rk collection
+        '''
+        
+        projection = {'reaction_participant.product': 1, 'reaction_participant.substrate':1, 
+                     'kinlaw_id': 1}
+        if ids is None:
+            query = {}
+        else:
+            query = {'kinlaw_id': {'$in': ids}}
+        cursor = self.collection.find(filter=query, projection=projection)
+        count = self.collection.count_documents(query)
 
         def get_inchi_structure(chem):
             '''Given subsrate or product subdocument from sabio_rk
                find the corresponding inchi
+               Args:
+                    chem (:obj:`dict`)
+                Returns:
+                    (:obj:`str`): inchi string
             '''
             try:
-                return chem['structure'][0]['inchi']
-            except IndexError:
-                return 'inchi=null'
-
-        def iter_rxnp_subdoc(rxnp):
-            '''Given a subsrate or product array from sabio_rk
-                append fields of deprotonated inchi
-            '''
-            for i in range(len(rxnp)):
-                substrate_inchi = get_inchi_structure(rxnp[i])
-                inchi_deprot = self.chem_manager.simplify_inchi(inchi = substrate_inchi)
-                rxnp[i]['inchi_deprot'] = inchi_deprot
+                x = chem['substrate_structure'][0].get('inchi_structure', None)
+                return x
+            except KeyError:
                 try:
-                    hashed_inchi = hashlib.sha224(inchi_deprot.encode()).hexdigest()
-                    rxnp[i]['hashed_inchi'] = hashed_inchi
+                    x = chem['product_structure'][0].get('inchi_structure', None)
+                    return x
+                except IndexError:
+                    return None
+            except IndexError:
+                return None
+
+        def iter_rxnp_subdoc(rxnp, side='substrate'):
+            '''Given a substrate or product array from sabio_rk
+                append fields of hashed inchi
+                Args:
+                    rxnp (:obj: `list` of :obj: `dict`)
+            '''
+            aggregate = []
+            if side == 'substrate':
+                key = 'substrate_structure'
+            else:
+                key = 'product_structure'
+            for i, rxn in enumerate(rxnp):
+                substrate_inchi = get_inchi_structure(rxn)
+                if substrate_inchi == 'InChI=1S/O':
+                    substrate_inchi = 'InChI=1S/O2/c1-2'
+                try:
+                    hashed_inchi = self.chem_manager.inchi_to_inchikey(substrate_inchi)
+                    rxnp[i][key][0]['InChI_Key'] = hashed_inchi
+                    aggregate.append(hashed_inchi)
                 except AttributeError:
-                    rxnp[i]['hashed_inchi'] = None
-            return rxnp
+                    rxnp[i][key][0]['InChI_Key'] = None
+                except IndexError:
+                    rxnp[i][key] = []
+
+            return rxnp, aggregate
 
         j = 0
         for doc in cursor:
             if j > self.max_entries:
                 break
             if self.verbose == True and j % 100 == 0:
-                print(j)
+                print('Hashing compounds in kinlaw {} out of {}'.format(j, count))
             substrates = doc['reaction_participant'][0]['substrate']
             products = doc['reaction_participant'][1]['product']
-            new_subsrates = iter_rxnp_subdoc(substrates)
-            new_products = iter_rxnp_subdoc(products)
+            new_subsrates, s_agg = iter_rxnp_subdoc(substrates)
+            new_products, p_agg = iter_rxnp_subdoc(products, side='product')
 
             doc['reaction_participant'][0]['substrate'] = new_subsrates
+            doc['reaction_participant'][3]['substrate_aggregate'] = s_agg
             doc['reaction_participant'][1]['product'] = new_products
+            doc['reaction_participant'][4]['product_aggregate'] = p_agg
 
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
-                            {'$set': {'reaction_participant': doc['reaction_participant']}})
+                        {'$set': {'reaction_participant.0.substrate': doc['reaction_participant'][0]['substrate'],
+                                'reaction_participant.1.product': doc['reaction_participant'][1]['product'],
+                                'reaction_participant.3.substrate_aggregate': doc['reaction_participant'][3]['substrate_aggregate'],
+                                'reaction_participant.4.product_aggregate': doc['reaction_participant'][4]['product_aggregate'],
+                                'modified': datetime.datetime.utcnow()} })
             j += 1
 
 
 def main():
-    config_file = '/root/host/karr_lab/datanator/.config/config.ini'
-    username, password, MongoDB, port = server_util.ServerUtil(config_file = config_file).get_user_config()
-    manager = SabioRkNoSQL(username = username, password = password, 
-                        db = 'datanator', MongoDB = MongoDB)
-    manager.add_deprot_inchi()
+    db = 'test'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    manager = SabioRkNoSQL(username=username, password=password, verbose=True,
+                           db=db, MongoDB=MongoDB, cache_directory='./cache/')
+    file_names, file_dict = manager.load_json()
+    manager.make_doc(file_names, file_dict)
+    # manager.add_inchi_hash()
 
 if __name__ == '__main__':
     main()
