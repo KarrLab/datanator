@@ -625,12 +625,17 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         query = {}
         docs = self.collection.find(filter=query, projection=projection)
         count = self.collection.count_documents(query)
-        for i, doc in enumerate(docs):
+        start = 4300
+        for i, doc in enumerate(docs[start:]):
             taxon_id = doc['taxon_id']
+            if taxon_id is None:
+                continue
             name = self.tax_manager.get_name_by_id([taxon_id])
+            if name == []:
+                continue
             anc_id, anc_name = self.tax_manager.get_anc_by_id([taxon_id])
             if self.verbose and i % 100 == 0:
-                print('Processing document {} out of {} ...'.format(i, count))
+                print('Processing document {} out of {} ...'.format(i+start, count))
             self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                                         {'$set': {'taxon_name': name[0],
                                                   'anc_id': anc_id[0],
