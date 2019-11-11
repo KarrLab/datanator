@@ -625,9 +625,9 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         query = {}
         docs = self.collection.find(filter=query, projection=projection)
         count = self.collection.count_documents(query)
-        start = 4300
+        start = 58400
         for i, doc in enumerate(docs[start:]):
-            taxon_id = doc['taxon_id']
+            taxon_id = doc.get('taxon_id')
             if taxon_id is None:
                 continue
             name = self.tax_manager.get_name_by_id([taxon_id])
