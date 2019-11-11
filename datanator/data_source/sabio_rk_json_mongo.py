@@ -13,6 +13,7 @@ import datanator.config.core
 from pymongo import MongoClient
 from datanator.util import mongo_util
 from datanator.util import chem_util
+from datanator_query_python.query import query_taxon_tree
 from pathlib import Path
 import re
 import os
@@ -42,6 +43,8 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
 
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
         self.chem_manager = chem_util.ChemUtil()
+        self.tax_manager = query_taxon_tree.QueryTaxonTree(username=username, MongoDB=MongoDB,
+                                                            password=password)
 
     # load json files
     def load_json(self):
@@ -273,8 +276,8 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 cur_reactant_type = cur_reactant_dict['type']
                 cur_entry_dict = next(
                     item for item in entry_list if item['_id'] == cur_reactant_compound_entry_id)
-                sabio_doc['reaction_participant'][0]['substrate'].append({**{
-                    'sabio_compound_id': cur_entry_dict['id'],
+                sabio_doc['reaction_participant'][0]['substrate'].append({
+                    **{'sabio_compound_id': cur_entry_dict['id'],
                     'substrate_name': cur_entry_dict['name'],
                     'substrate_synonym': reactant_synonyms,
                     'substrate_structure': cur_compound_structure,
@@ -615,9 +618,28 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                                 'modified': datetime.datetime.utcnow()} })
             j += 1
 
+    def add_taxon_info(self):
+        """Fill in taxonomic information
+        """
+        projection = {'_id': 0, 'kinlaw_id': 1, 'taxon_id': 1}
+        query = {}
+        docs = self.collection.find(filter=query, projection=projection)
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(docs):
+            taxon_id = doc['taxon_id']
+            name = self.tax_manager.get_name_by_id([taxon_id])
+            anc_id, anc_name = self.tax_manager.get_anc_by_id([taxon_id])
+            if self.verbose and i % 100 == 0:
+                print('Processing document {} out of {} ...'.format(i, count))
+            self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
+                                        {'$set': {'taxon_name': name[0],
+                                                  'anc_id': anc_id[0],
+                                                  'anc_name': anc_name[0]}})
+        print('Done!')
+
 
 def main():
-    db = 'test'
+    db = 'datanator'
     username = datanator.config.core.get_config()[
         'datanator']['mongodb']['user']
     password = datanator.config.core.get_config(
@@ -626,9 +648,10 @@ def main():
     )['datanator']['mongodb']['server']
     manager = SabioRkNoSQL(username=username, password=password, verbose=True,
                            db=db, MongoDB=MongoDB, cache_directory='./cache/')
-    file_names, file_dict = manager.load_json()
-    manager.make_doc(file_names, file_dict)
+    # file_names, file_dict = manager.load_json()
+    # manager.make_doc(file_names, file_dict)
     # manager.add_inchi_hash()
+    manager.add_taxon_info()
 
 if __name__ == '__main__':
     main()
