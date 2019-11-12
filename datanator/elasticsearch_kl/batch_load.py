@@ -1,5 +1,5 @@
 from datanator_query_python.query import (query_protein, query_metabolites, 
-                                         query_metabolites_meta)
+                                         query_metabolites_meta, query_sabiork_old)
 from datanator_query_python.config import config as config_mongo
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
 
@@ -129,36 +129,69 @@ class MongoToES(es_util.EsUtil):
             doc['similar_compounds'] = tmp
             yield doc     
 
+    def data_from_mongo_sabiork(self, server, db, username, password, verbose=False,
+                                readPreference='nearest', authSource='admin', projection={'_id': 0},
+                                query={}):
+        ''' Acquire documents from protein collection in datanator
 
-# def main():
-#     conf = config_mongo.Config()
-#     username = conf.USERNAME
-#     password = conf.PASSWORD
-#     server = conf.SERVER
-#     authDB = conf.AUTHDB
-#     db = 'datanator'
-#     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
-#                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
+            Args:
+                server (:obj:`str`): mongodb ip address
+                db (:obj:`str`): database name
+                username (:obj:`str`): username for mongodb login
+                password (:obj:`str`): password for mongodb login
+                verbose (:obj:`bool`): display verbose messages
+                readPreference (:obj:`str`): mongodb readpreference
+                authSource (:obj:`str`): database login info is authenticating against
+                projection (:obj:`str`): mongodb query projection
+                query (:obj:`str`): mongodb query filter
+
+            Returns:
+                (:obj:`tuple`): tuple containing:
+
+                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    count (:obj:`int`): number of documents returned
+        '''
+        sabio_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, db=db,
+                 verbose=verbose, username=username, authSource=authSource,
+                 password=password, readPreference=readPreference)
+        docs = sabio_manager.collection.find(filter=query, projection=projection)
+        count = sabio_manager.collection.count_documents(query)
+        return (count, docs)
+
+def main():
+    conf = config_mongo.Config()
+    username = conf.USERNAME
+    password = conf.PASSWORD
+    server = conf.SERVER
+    authDB = conf.AUTHDB
+    db = 'datanator'
+    manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
+                config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
     
-#     # # data from "protein" collection
-#     # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
-#     # status_code = manager.data_to_es_bulk(count, docs, 'protein', _id='uniprot_id')
-#     # manager.index_settings('protein', 0) 
+    # # data from "protein" collection
+    # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
+    # status_code = manager.data_to_es_bulk(count, docs, 'protein', _id='uniprot_id')
+    # manager.index_settings('protein', 0) 
     
-#     # # data from "ecmdb" and "ymdb" collection
-#     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
-#     #                                                 db, username, password, authSource=authDB)
-#     # status_code_0 = manager.data_to_es_bulk(ecmdb_count, ecmdb_docs, 'ecmdb', _id='m2m_id')
-#     # status_code_1 = manager.data_to_es_bulk(ymdb_count, ymdb_docs, 'ymdb', _id='ymdb_id')
-#     # manager.index_settings('ecmdb', 0) 
-#     # manager.index_settings('ymdb', 0) 
+    # # data from "ecmdb" and "ymdb" collection
+    # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
+    #                                                 db, username, password, authSource=authDB)
+    # status_code_0 = manager.data_to_es_bulk(ecmdb_count, ecmdb_docs, 'ecmdb', _id='m2m_id')
+    # status_code_1 = manager.data_to_es_bulk(ymdb_count, ymdb_docs, 'ymdb', _id='ymdb_id')
+    # manager.index_settings('ecmdb', 0) 
+    # manager.index_settings('ymdb', 0) 
 
-#     # data from "metabolites_meta" collection
-#     docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
-#     status_code = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
-#     manager.index_settings('metabolites_meta', 0)
+    # # data from "metabolites_meta" collection
+    # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
+    # status_code = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
+    # manager.index_settings('metabolites_meta', 0)
 
-#     print(status_code)   
+    # # data from "sabio_rk_old" collection
+    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+    # status_code = manager.data_to_es_bulk(docs, index='sabio_rk', count=count, _id='kinlaw_id')
+    # manager.index_settings('sabio_rk', 0)
+
+    # print(status_code)   
 
 # if __name__ == "__main__":
 #     main()

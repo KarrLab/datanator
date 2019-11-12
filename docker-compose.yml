@@ -10,7 +10,7 @@ services:
       - "10001:5002"
     volumes: 
       - "../:/root/host/karr_lab"
-      - "~/.wc:/root/.wc"
+      - "/home/zl/.wc:/root/.wc"
     # command: ["pip3", "install", "-e", "/root/host/karr_lab/datanator"]
 
   # mongo:
