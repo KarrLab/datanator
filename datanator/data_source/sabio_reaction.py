@@ -28,11 +28,11 @@ class RxnAggregate:
         _, _, collection = self.mongo_manager.con_db(collection)
         docs = collection.find({})
 
-    def get_id(self, doc):
+    def get_rxn_id(self, doc):
         resource = doc['resource']
-        sr = search_dict_list(resource, 'sabiork.reaction')
+        sr = self.file_manager.search_dict_list(resource, 'namespace', 'sabiork.reaction')
         _id = sr[0]['id']
-        return _id    
+        return int(_id)    
     
     def create_reactants(self, doc):
         result = {}
