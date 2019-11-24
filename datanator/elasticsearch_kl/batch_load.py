@@ -186,12 +186,12 @@ def main():
     # status_code = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
     # manager.index_settings('metabolites_meta', 0)
 
-    # # data from "sabio_rk_old" collection
-    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
-    # status_code = manager.data_to_es_bulk(docs, index='sabio_rk', count=count, _id='kinlaw_id')
-    # manager.index_settings('sabio_rk', 0)
+#     # data from "sabio_rk_old" collection
+#     count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+#     status_code = manager.data_to_es_bulk(docs, index='sabio_rk', count=count, _id='kinlaw_id')
+#     manager.index_settings('sabio_rk', 0)
 
-    # print(status_code)   
+#     print(status_code)   
 
 # if __name__ == "__main__":
 #     main()
