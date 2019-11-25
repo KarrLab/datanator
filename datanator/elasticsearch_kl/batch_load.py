@@ -1,6 +1,7 @@
 from datanator_query_python.query import (query_protein, query_metabolites, 
                                          query_metabolites_meta, query_sabiork_old)
 from datanator_query_python.config import config as config_mongo
+from datanator.util import mongo_util
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
 
 
@@ -158,6 +159,35 @@ class MongoToES(es_util.EsUtil):
         count = sabio_manager.collection.count_documents(query)
         return (count, docs)
 
+    def data_from_mongo_sabiork_rxn_entries(self, server, db, username, password, verbose=False,
+                                readPreference='nearest', authSource='admin', projection={'_id': 0},
+                                query={}):
+        ''' Acquire documents from protein collection in datanator
+
+            Args:
+                server (:obj:`str`): mongodb ip address
+                db (:obj:`str`): database name
+                username (:obj:`str`): username for mongodb login
+                password (:obj:`str`): password for mongodb login
+                verbose (:obj:`bool`): display verbose messages
+                readPreference (:obj:`str`): mongodb readpreference
+                authSource (:obj:`str`): database login info is authenticating against
+                projection (:obj:`str`): mongodb query projection
+                query (:obj:`str`): mongodb query filter
+
+            Returns:
+                (:obj:`tuple`): tuple containing:
+
+                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    count (:obj:`int`): number of documents returned
+        '''
+        mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
+                                            password=password, authSource=authSource, db=db)
+        _, _, collection = mongo_manager.con_db('sabio_reaction_entries')
+        docs = collection.find(filter=query, projection=projection)
+        count = collection.count_documents(query)
+        return (count, docs)
+
 def main():
     conf = config_mongo.Config()
     username = conf.USERNAME
@@ -191,7 +221,12 @@ def main():
 #     status_code = manager.data_to_es_bulk(docs, index='sabio_rk', count=count, _id='kinlaw_id')
 #     manager.index_settings('sabio_rk', 0)
 
-#     print(status_code)   
+    # # data from "sabio_reaction_entries" collection
+    # count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
+    # status_code = manager.data_to_es_bulk(docs, index='sabio_reaction_entries', count=count, _id='rxn_id')
+    # manager.index_settings('sabio_reaction_entries', 0)
+
+    # print(status_code)   
 
 # if __name__ == "__main__":
 #     main()
