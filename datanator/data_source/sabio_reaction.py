@@ -27,12 +27,12 @@ class RxnAggregate:
         self.max_entries = max_entries
 
     def fill_collection(self):
-        projection = {'_id': 0,'resource': 1, 'reaction_participant.substrate_aggregate': 1,
-                    'reaction_participant.product_aggregate': 1, 'kinlaw_id': 1}
+        projection = {'_id': 0,'resource': 1, 'reaction_participant': 1,
+                    'reaction_participant': 1, 'kinlaw_id': 1, 'enzymes': 1}
         _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
         docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
-        start = 58496
+        start = 2900
         for i, doc in enumerate(docs[start:]):
             if self.verbose and i % 100 == 0:
                 print('Processing document {} out of {}'.format(i+start, count))
@@ -44,12 +44,14 @@ class RxnAggregate:
             rxn_id = self.get_rxn_id(doc)
             reactants = self.create_reactants(doc)
             substrate_names, product_names = self.extract_reactant_names(doc)
+            enzyme_names = self.extract_enzyme_names(doc)
             self.col.update_one({'rxn_id': rxn_id},
                                 {'$addToSet': {'kinlaw_id': kinlaw_id},
                                 '$set': {'substrates': reactants['substrate_aggregate'],
                                         'products': reactants['product_aggregate'],
                                         'substrate_names': substrate_names,
-                                        'product_names': product_names}}, upsert=True)
+                                        'product_names': product_names,
+                                        'enzyme_names': enzyme_names}}, upsert=True)
             if i == 0:
                 self.col.create_index([("rxn_id", ASCENDING)], background=True)
 
@@ -122,12 +124,20 @@ class RxnAggregate:
         Returns:
             (:obj:`list`): list of enzyme names
         """
-        enzymes = doc['enzymes'][0]['enzyme'][0]
+        result = []
+        enzymes = doc['enzymes'][0]['enzyme']
         for enzyme in enzymes:
             enzyme_name = enzyme['enzyme_name']
             syn = enzyme['enzyme_synonym']
-            syn.append(enzyme_name)
-        return syn
+            if syn is None:
+                syn = enzyme_name
+            else:
+                syn.append(enzyme_name)
+            result.append(syn)
+        if len(enzymes) == 1:
+            return syn
+        else:
+            return result
         
 
 def main():

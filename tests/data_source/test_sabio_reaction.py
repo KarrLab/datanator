@@ -60,3 +60,12 @@ class TestProteinAggregate(unittest.TestCase):
         pro_exp_0 = [['c1', 'c2', 'c3', 'c'], ['d1', 'd2', 'd3', 'd'], ['e']]
         self.assertEqual(sub_0, sub_exp_0)
         self.assertEqual(pro_0, pro_exp_0)
+
+    def test_extract_enzyme_names(self):
+        input_0 = {'enzymes': [{'enzyme':[{'enzyme_name': 'a', 'enzyme_synonym': ['a1', 'a2', 'a3']}]}]}
+        input_1 = {'enzymes': [{'enzyme':[{'enzyme_name': 'a', 'enzyme_synonym': ['a1', 'a2', 'a3']},
+                                          {'enzyme_name': 'b', 'enzyme_synonym': ['b1', 'b2', 'b3']}]}]}
+        result_0 = self.src.extract_enzyme_names(input_0)
+        result_1 = self.src.extract_enzyme_names(input_1)
+        self.assertEqual(result_0, ['a1', 'a2', 'a3', 'a']) 
+        self.assertEqual(result_1[0], ['a1', 'a2', 'a3', 'a'])
