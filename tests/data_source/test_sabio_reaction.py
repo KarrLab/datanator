@@ -47,3 +47,16 @@ class TestProteinAggregate(unittest.TestCase):
 
     def test_fill_collection(self):
         self.src.fill_collection()
+
+    def test_extract_reactant_names(self):
+        substrates_0 = {'substrate_name': 'a', 'substrate_synonym': ['a1', 'a2', 'a3']}
+        substrates_1 = {'substrate_name': 'b', 'substrate_synonym': ['b1', 'b2', 'b3']}
+        products_0 = {'product_name': 'c', 'product_synonym': ['c1', 'c2', 'c3']}
+        products_1 = {'product_name': 'd', 'product_synonym': ['d1', 'd2', 'd3']}
+        products_2 = {'product_name': 'e', 'product_synonym': []}
+        input_0 = {'reaction_participant': [{'substrate': [substrates_0, substrates_1]},{'product': [products_0, products_1, products_2]}]}
+        sub_0, pro_0 = self.src.extract_reactant_names(input_0)
+        sub_exp_0 = [['a1', 'a2', 'a3', 'a'], ['b1', 'b2', 'b3', 'b']]
+        pro_exp_0 = [['c1', 'c2', 'c3', 'c'], ['d1', 'd2', 'd3', 'd'], ['e']]
+        self.assertEqual(sub_0, sub_exp_0)
+        self.assertEqual(pro_0, pro_exp_0)

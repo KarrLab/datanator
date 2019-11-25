@@ -30,7 +30,7 @@ class RxnAggregate:
         projection = {'_id': 0,'resource': 1, 'reaction_participant.substrate_aggregate': 1,
                     'reaction_participant.product_aggregate': 1, 'kinlaw_id': 1}
         _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
-        docs = collection.find({})
+        docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
         start = 58496
         for i, doc in enumerate(docs[start:]):
@@ -43,10 +43,13 @@ class RxnAggregate:
             kinlaw_id = doc['kinlaw_id']
             rxn_id = self.get_rxn_id(doc)
             reactants = self.create_reactants(doc)
+            substrate_names, product_names = self.extract_reactant_names(doc)
             self.col.update_one({'rxn_id': rxn_id},
                                 {'$addToSet': {'kinlaw_id': kinlaw_id},
                                 '$set': {'substrates': reactants['substrate_aggregate'],
-                                        'products': reactants['product_aggregate']}}, upsert=True)
+                                        'products': reactants['product_aggregate'],
+                                        'substrate_names': substrate_names,
+                                        'product_names': product_names}}, upsert=True)
             if i == 0:
                 self.col.create_index([("rxn_id", ASCENDING)], background=True)
 
@@ -64,6 +67,68 @@ class RxnAggregate:
         result['product_aggregate'] = product_aggregate
 
         return result
+
+    def extract_reactant_names(self, doc):
+        """Extract compound information from doc dictionary
+        
+        Args:
+            doc (:obj:`dict`): sabio_rk_old document
+
+        Returns:
+            (:obj:`tuple`): substrates and products names [[],[],...,[]], [[],[],...,[]] 
+        """
+        substrates = doc['reaction_participant'][0]['substrate']
+        products = doc['reaction_participant'][1]['product']
+
+        def extract_names(compound, side='substrate'):
+            """Extract names of compound
+            
+            Args:
+                compound (:obj:`dict`): compound information
+                side (:obj:`str`, optional): substrate or product. Defaults to 'substrate'.
+            
+            Returns:
+                (:obj:`list`): list of names for the compound
+            """
+            name = compound[side+'_name']
+            syn = compound[side+'_synonym']
+            syn.append(name)
+            return syn
+
+        def iter_compound(compounds, side='substrate'):
+            """Iterate through compound list
+            
+            Args:
+                compounds (:obj:`list`): a list of compounds
+                side (:obj:`str`, optional): substrate or product. Defaults to 'substrate'.
+            """
+            result = []
+            for compound in compounds:
+                names = extract_names(compound, side=side)
+                result.append(names)
+            return result
+
+        substrate_names = iter_compound(substrates, side='substrate')
+        product_names = iter_compound(products, side='product')
+
+        return substrate_names, product_names
+
+    def extract_enzyme_names(self, doc):
+        """Extract enzyme names
+        
+        Args:
+            doc (:obj:`dict`): sabio_rk_old document
+
+        Returns:
+            (:obj:`list`): list of enzyme names
+        """
+        enzymes = doc['enzymes'][0]['enzyme'][0]
+        for enzyme in enzymes:
+            enzyme_name = enzyme['enzyme_name']
+            syn = enzyme['enzyme_synonym']
+            syn.append(enzyme_name)
+        return syn
+        
 
 def main():
     cache_dirname = tempfile.mkdtemp()
