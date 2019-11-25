@@ -1,6 +1,5 @@
 import pandas as pd
 from datanator.util import mongo_util
-import requests
 import io
 
 
@@ -17,12 +16,17 @@ class Halflife(mongo_util.MongoUtil):
         self.url = "https://static-content.springer.com/esm/art%3A10.1186%2Fs12864-016-3219-8/MediaObjects/12864_2016_3219_MOESM5_ESM.xlsx"
         self.max_entries = max_entries
 
-    def download_xlsx(self):
-        response = requests.get(self.url)
+    def download_xlsx(self, sheet_name):
         if self.max_entries == float('inf'):
             nrows = None
         else:
             nrows = self.max_entries
-        data = pd.read_csv(io.BytesIO(response.content),
-                               delimiter='\t', encoding='utf-8', nrows=nrows)
+        data = pd.read_excel(self.url, sheet_name=sheet_name, nrows=nrows)
+        columns = ['gene_fragment', 'cog_class', 'ar_cog', 'cog', 'function', 'gene_name', 'half_life', 'half_life_std', 'std_avg']
+        data.columns = columns
+        data['half_life'] = data['half_life'].apply(lambda x: x*60)
+        data['half_life_std'] = data['half_life_std'].apply(lambda x: x*60)
         return data
+
+    def load_halflife(self):
+        pass
