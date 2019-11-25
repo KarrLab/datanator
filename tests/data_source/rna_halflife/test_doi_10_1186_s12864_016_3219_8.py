@@ -34,4 +34,13 @@ class TestProteinAggregate(unittest.TestCase):
 
     def test_download_xlsx(self):
         result = self.src.download_xlsx('MeOH')
-        print(result)
+        self.assertEqual(result['gene_fragment'][0], 'MA0001')
+
+    @unittest.skip('passed')
+    def test_load_halflife(self):
+        df = self.src.download_xlsx('MeOH')
+        self.src.load_halflife(df)
+
+    def test_add_to_halflife(self):
+        df = self.src.download_xlsx('TMA')
+        self.src.add_to_halflife(df)

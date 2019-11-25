@@ -1,6 +1,8 @@
 import pandas as pd
 from datanator.util import mongo_util
-import io
+import json
+import datetime
+from pymongo import ASCENDING
 
 
 class Halflife(mongo_util.MongoUtil):
@@ -17,16 +19,62 @@ class Halflife(mongo_util.MongoUtil):
         self.max_entries = max_entries
 
     def download_xlsx(self, sheet_name):
+        """Download supplementary xlsx file
+        
+        Args:
+            sheet_name (:obj:`str`): name of sheet in xlsx
+        
+        Returns:
+            (:obj:`pandas.DataFrame`): xlsx transformed to pandas.DataFrame
+        """
         if self.max_entries == float('inf'):
             nrows = None
         else:
             nrows = self.max_entries
         data = pd.read_excel(self.url, sheet_name=sheet_name, nrows=nrows)
-        columns = ['gene_fragment', 'cog_class', 'ar_cog', 'cog', 'function', 'gene_name', 'half_life', 'half_life_std', 'std_avg']
+        columns = ['gene_fragment', 'cog_class', 'ar_cog', 'cog', 'function', 'gene_name', 'half_life', 'half_life_std', 'std_over_avg']
         data.columns = columns
         data['half_life'] = data['half_life'].apply(lambda x: x*60)
         data['half_life_std'] = data['half_life_std'].apply(lambda x: x*60)
         return data
 
-    def load_halflife(self):
-        pass
+    def load_halflife(self, df, growth_medium='MeOH'):
+        df_json = json.loads(df.to_json(orient='records'))
+        row_count = len(df.index)
+        for i, doc in enumerate(df_json):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 10 == 0:
+                print('Processing row {} out of {}'.format(i, row_count))
+            doc['halflives'] = [{'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
+                                'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}]
+            doc['modified'] = datetime.datetime.utcnow()
+            doc['organism'] = 'Methanosarcina acetivorans'
+            doc['ncbi_taxonomy_id'] = 2214
+            del doc['half_life']
+            del doc['half_life_std']
+            del doc['std_over_avg']
+            self.collection.update_one({'gene_fragment': doc['gene_fragment']},
+                                       {'$set': doc}, upsert=True)
+            if i == 0:
+                self.collection.create_index([("gene_fragment", ASCENDING)], background=True)
+
+    def add_to_halflife(self, df, growth_medium='TMA'):
+        """Add df to existing rna_halflife collection
+        
+        Args:
+            df (:obj:`pandas.DataFrame`): dataframe to be added.
+            growth_medium (:obj:`str`): medium in which the cells were grown. Defaults to TMA.
+        """
+        df_json = json.loads(df.to_json(orient='records'))
+        row_count = len(df.index)
+        for i, doc in enumerate(df_json):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 10 == 0:
+                print('Processing row {} out of {}'.format(i, row_count))
+            to_add = {'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
+                      'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}
+            self.collection.update_one({'gene_fragment': doc['gene_fragment']},
+                                       {'$addToSet': {'halflives': to_add},
+                                        '$set': {'modified': datetime.datetime.utcnow()}}, upsert=True)
