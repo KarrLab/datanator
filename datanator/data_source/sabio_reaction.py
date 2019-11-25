@@ -1,6 +1,7 @@
 from datanator.util import mongo_util, file_util
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
+from pymongo import ASCENDING
 import os
 import tempfile
 
@@ -45,7 +46,7 @@ class RxnAggregate:
                                 '$set': {'substrates': reactants['substrate_aggregate'],
                                         'products': reactants['product_aggregate']}}, upsert=True)
             if i == 0:
-                self.col.create_index([("rxn_id", pymongo.ASCENDING)], background=True)
+                self.col.create_index([("rxn_id", ASCENDING)], background=True)
 
     def get_rxn_id(self, doc):
         resource = doc['resource']
