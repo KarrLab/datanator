@@ -15,7 +15,7 @@ class TestProteinAggregate(unittest.TestCase):
         cache_dir = os.path.join(cls.cache_dirname, 'logs.txt')
         src_db = 'datanator'
         des_db = 'test'
-        cls.collection_str = 'test_protein_aggregate'
+        cls.collection_str = 'sabio_reaction'
         username = datanator.config.core.get_config()[
             'datanator']['mongodb']['user']
         password = datanator.config.core.get_config(
@@ -44,3 +44,6 @@ class TestProteinAggregate(unittest.TestCase):
         input_0 = {'reaction_participant': [{}, {}, {}, {'substrate_aggregate': '123'}, {'product_aggregate': '456'}]}
         result_0 = self.src.create_reactants(input_0)
         self.assertEqual(result_0, {'substrate_aggregate': '123', 'product_aggregate': '456'})
+
+    def test_fill_collection(self):
+        self.src.fill_collection()

@@ -2,13 +2,14 @@ from datanator.util import mongo_util, file_util
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 import os
+import tempfile
 
 
 class RxnAggregate:
 
     def __init__(self, username=None, password=None, server=None, authSource='admin',
                  src_database='datanator', max_entries=float('inf'), verbose=True,
-                 collection='sabio_rk_old', destination_database='datanator', cache_dir=None):
+                 collection='sabio_reaction', destination_database='datanator', cache_dir=None):
         '''
                 Args:
                         src_database (:obj: `str`): name of database in which source collections reside
@@ -21,12 +22,30 @@ class RxnAggregate:
                                                   password=password, authSource=authSource, db=src_database)
         self.file_manager = file_util.FileUtil()
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+        self.verbose = verbose
+        self.max_entries = max_entries
 
     def fill_collection(self):
         projection = {'_id': 0,'resource': 1, 'reaction_participant.substrate_aggregate': 1,
                     'reaction_participant.product_aggregate': 1, 'kinlaw_id': 1}
-        _, _, collection = self.mongo_manager.con_db(collection)
+        _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
         docs = collection.find({})
+        count = collection.count_documents({})
+        start = 0
+        for i, doc in enumerate(docs[start:]):
+            if self.verbose and i % 100 == 0:
+                print('Processing document {} out of {}'.format(i+start, count))
+            if i == self.max_entries:
+                break
+            rxn_id = self.get_rxn_id(doc)
+            kinlaw_id = doc['kinlaw_id']
+            reactants = self.create_reactants(doc)
+            self.col.update_one({'rxn_id': rxn_id},
+                                {'$addToSet': {'kinlaw_id': kinlaw_id},
+                                '$set': {'substrates': reactants['substrate_aggregate'],
+                                        'products': reactants['product_aggregate']}}, upsert=True)
+            if i == 0:
+                self.col.create_index([("rxn_id", pymongo.ASCENDING)], background=True)
 
     def get_rxn_id(self, doc):
         resource = doc['resource']
@@ -42,3 +61,26 @@ class RxnAggregate:
         result['product_aggregate'] = product_aggregate
 
         return result
+
+def main():
+    cache_dirname = tempfile.mkdtemp()
+    cache_dir = os.path.join(cache_dirname, 'logs.txt')
+    src_db = 'datanator'
+    des_db = 'datanator'
+    collection_str = 'sabio_reaction_entries'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config(
+    )['datanator']['mongodb']['port']        
+    src = RxnAggregate(username=username, password=password, server=server, 
+                        authSource='admin', src_database=src_db,
+                        verbose=True, collection=collection_str, destination_database=des_db,
+                        cache_dir=cache_dir)
+    src.fill_collection()
+
+if __name__ == '__main__':
+    main()
