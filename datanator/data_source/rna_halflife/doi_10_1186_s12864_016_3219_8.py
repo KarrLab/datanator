@@ -3,6 +3,7 @@ from datanator.util import mongo_util
 import json
 import datetime
 from pymongo import ASCENDING
+import datanator.config.core
 
 
 class Halflife(mongo_util.MongoUtil):
@@ -44,8 +45,8 @@ class Halflife(mongo_util.MongoUtil):
         for i, doc in enumerate(df_json):
             if i == self.max_entries:
                 break
-            if self.verbose and i % 10 == 0:
-                print('Processing row {} out of {}'.format(i, row_count))
+            if self.verbose and i % 100 == 0:
+                print('Processing {} row {} out of {}'.format(growth_medium, i, row_count))
             doc['halflives'] = [{'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
                                 'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}]
             doc['modified'] = datetime.datetime.utcnow()
@@ -71,10 +72,32 @@ class Halflife(mongo_util.MongoUtil):
         for i, doc in enumerate(df_json):
             if i == self.max_entries:
                 break
-            if self.verbose and i % 10 == 0:
-                print('Processing row {} out of {}'.format(i, row_count))
+            if self.verbose and i % 100 == 0:
+                print('Processing {} row {} out of {}'.format(growth_medium, i, row_count))
             to_add = {'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
                       'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}
             self.collection.update_one({'gene_fragment': doc['gene_fragment']},
                                        {'$addToSet': {'halflives': to_add},
                                         '$set': {'modified': datetime.datetime.utcnow()}}, upsert=True)
+
+def main():
+    src_db = 'datanator'
+    collection_str = 'rna_halflife'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']       
+    src = Halflife(username=username, password=password, server=server, 
+                    authDB='admin', db=src_db,
+                    verbose=True, collection_str=collection_str)
+    df = src.download_xlsx('MeOH')
+    src.load_halflife(df)
+    df = src.download_xlsx('TMA')
+    src.add_to_halflife(df, growth_medium='TMA')
+    df = src.download_xlsx('Acetate')
+    src.add_to_halflife(df, growth_medium='Acetate')
+
+if __name__ == '__main__':
+    main()
