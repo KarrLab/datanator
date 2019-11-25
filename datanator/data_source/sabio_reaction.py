@@ -32,14 +32,16 @@ class RxnAggregate:
         _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
         docs = collection.find({})
         count = collection.count_documents({})
-        start = 0
+        start = 58496
         for i, doc in enumerate(docs[start:]):
             if self.verbose and i % 100 == 0:
                 print('Processing document {} out of {}'.format(i+start, count))
+            if doc.get('resource') is None:
+                continue
             if i == self.max_entries:
                 break
-            rxn_id = self.get_rxn_id(doc)
             kinlaw_id = doc['kinlaw_id']
+            rxn_id = self.get_rxn_id(doc)
             reactants = self.create_reactants(doc)
             self.col.update_one({'rxn_id': rxn_id},
                                 {'$addToSet': {'kinlaw_id': kinlaw_id},
