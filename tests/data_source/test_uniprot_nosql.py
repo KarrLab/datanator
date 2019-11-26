@@ -13,13 +13,13 @@ class TestUniprotNoSQL(unittest.TestCase):
         username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
-        cls.src = uniprot_nosql.UniprotNoSQL(MongoDB=MongoDB, db=db, max_entries=10000,
+        cls.src = uniprot_nosql.UniprotNoSQL(MongoDB=MongoDB, db=db, max_entries=20,
                                             username=username, password=password, collection_str='test_uniprot')
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        # cls.src.db.drop_collection(cls.src.collection_str)
+        cls.src.db.drop_collection(cls.src.collection_str)
 
     # @unittest.skip('large single file download')
     def test_proper_loading(self):
