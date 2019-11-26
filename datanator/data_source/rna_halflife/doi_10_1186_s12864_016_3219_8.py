@@ -60,8 +60,16 @@ class Halflife(mongo_util.MongoUtil):
             del doc['ar_cog']
             del doc['cog']
             del doc['cog_class']
-            self.collection.update_one({'halflives.gene_position': doc['gene_fragment']},
+
+            if doc['gene_name'] != '-':
+                self.collection.update_one({'gene_name': doc['gene_name']},
                                     {'$set': doc}, upsert=True, collation=self.collation)
+            elif doc['function'] != '-':
+                self.collection.update_one({'function': doc['function']},
+                                           {'$set': doc}, upsert=True, collation=self.collation)
+            else:
+                self.collection.update_one({'halflives.gene_position': doc['gene_fragment']},
+                                        {'$set': doc}, upsert=True, collation=self.collation)
             if i == 0:
                 self.collection.create_index([("gene_name", ASCENDING)], background=True,
                                             collation=self.collation)

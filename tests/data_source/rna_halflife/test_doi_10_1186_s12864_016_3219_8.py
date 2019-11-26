@@ -22,7 +22,7 @@ class TestProteinAggregate(unittest.TestCase):
         server = datanator.config.core.get_config(
         )['datanator']['mongodb']['server']       
         cls.src = doi_10_1186_s12864_016_3219_8.Halflife(username=username, password=password, server=server, 
-                                                authDB='admin',max_entries=20, 
+                                                authDB='admin',max_entries=100, 
                                                 verbose=True, collection_str=cls.collection_str, db=des_db,
                                                 cache_dir=cache_dir)
 
