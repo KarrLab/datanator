@@ -3,6 +3,7 @@ from datanator.util import mongo_util
 import json
 import datetime
 from pymongo import ASCENDING
+from pymongo.collation import Collation, CollationStrength
 import datanator.config.core
 
 
@@ -18,6 +19,7 @@ class Halflife(mongo_util.MongoUtil):
         self.client, self.db, self.collection = self.con_db(collection_str)
         self.url = "https://static-content.springer.com/esm/art%3A10.1186%2Fs12864-016-3219-8/MediaObjects/12864_2016_3219_MOESM5_ESM.xlsx"
         self.max_entries = max_entries
+        self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
 
     def download_xlsx(self, sheet_name):
         """Download supplementary xlsx file
@@ -48,17 +50,27 @@ class Halflife(mongo_util.MongoUtil):
             if self.verbose and i % 100 == 0:
                 print('Processing {} row {} out of {}'.format(growth_medium, i, row_count))
             doc['halflives'] = [{'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
-                                'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}]
+                                'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium,
+                                'gene_position': doc['gene_fragment'], 'ar_cog': doc['ar_cog'], 'cog_class': doc['cog_class'],
+                                'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 2214}]
             doc['modified'] = datetime.datetime.utcnow()
-            doc['organism'] = 'Methanosarcina acetivorans'
-            doc['ncbi_taxonomy_id'] = 2214
             del doc['half_life']
             del doc['half_life_std']
             del doc['std_over_avg']
-            self.collection.update_one({'gene_fragment': doc['gene_fragment']},
-                                       {'$set': doc}, upsert=True)
+            del doc['ar_cog']
+            del doc['cog']
+            del doc['cog_class']
+            self.collection.update_one({'halflives.gene_position': doc['gene_fragment']},
+                                    {'$set': doc}, upsert=True, collation=self.collation)
             if i == 0:
-                self.collection.create_index([("gene_fragment", ASCENDING)], background=True)
+                self.collection.create_index([("gene_name", ASCENDING)], background=True,
+                                            collation=self.collation)
+                self.collection.create_index([("halflives.gene_position", ASCENDING)], background=True,
+                                            collation=self.collation)
+                self.collection.create_index([("function", ASCENDING)], background=True,
+                                            collation=self.collation)
+
+        self.collection.update_many({'gene_fragment':{'$exists': True}}, {'$unset': {'gene_fragment': ""}})
 
     def add_to_halflife(self, df, growth_medium='TMA'):
         """Add df to existing rna_halflife collection
@@ -75,10 +87,39 @@ class Halflife(mongo_util.MongoUtil):
             if self.verbose and i % 100 == 0:
                 print('Processing {} row {} out of {}'.format(growth_medium, i, row_count))
             to_add = {'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
-                      'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium}
-            self.collection.update_one({'gene_fragment': doc['gene_fragment']},
-                                       {'$addToSet': {'halflives': to_add},
-                                        '$set': {'modified': datetime.datetime.utcnow()}}, upsert=True)
+                    'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium,
+                    'gene_position': doc['gene_fragment'], 'ar_cog': doc['ar_cog'], 'cog_class': doc['cog_class'],
+                    'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 2214}
+            if doc['gene_name'] != '-':
+                self.collection.update_one({'gene_name': doc['gene_name']},
+                                        {'$addToSet': {'halflives': to_add},
+                                        '$set': {'modified': datetime.datetime.utcnow()}}, 
+                                        upsert=True, collation=self.collation)
+            elif doc['function'] != '-':
+                self.collection.update_one({'function': doc['function']},
+                                        {'$addToSet': {'halflives': to_add},
+                                        '$set': {'modified': datetime.datetime.utcnow()}}, 
+                                        upsert=True, collation=self.collation)
+            else:
+                query = {'halflives.gene_position': doc['gene_fragment']}
+                result = self.collection.find_one(filter=query, collation=self.collation)
+                if result is not None:
+                    self.collection.update_one(query,
+                                            {'$addToSet': {'halflives': to_add},
+                                            '$set': {'modified': datetime.datetime.utcnow()}}, 
+                                            upsert=True, collation=self.collation)
+                else:
+                    doc['halflives'] = [to_add]
+                    doc['modified'] = datetime.datetime.utcnow()
+                    del doc['half_life']
+                    del doc['half_life_std']
+                    del doc['std_over_avg']
+                    del doc['ar_cog']
+                    del doc['cog']
+                    del doc['cog_class']
+                    self.collection.update_one(query, {'$set': doc}, upsert=True, collation=self.collation)
+        self.collection.update_many({'gene_fragment':{'$exists': True}}, {'$unset': {'gene_fragment': ""}})        
+
 
 def main():
     src_db = 'datanator'
