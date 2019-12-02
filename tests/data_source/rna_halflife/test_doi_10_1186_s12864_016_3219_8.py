@@ -29,8 +29,8 @@ class TestProteinAggregate(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        # cls.src.db.drop_collection(cls.collection_str)
-        # cls.src.uniprot_col_manager.db.drop_collection('uniprot')
+        cls.src.db.drop_collection(cls.collection_str)
+        cls.src.uniprot_col_manager.db.drop_collection('uniprot')
         cls.src.client.close()
 
     def test_download_xlsx(self):
@@ -44,7 +44,7 @@ class TestProteinAggregate(unittest.TestCase):
         df = self.src.download_xlsx('TMA')
         self.src.add_to_halflife(df)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_fill_gene_protein_name(self):
         self.src.fill_gene_protein_name()
         result = self.src.collection.find_one({'gene_name': '-'})
@@ -58,5 +58,6 @@ class TestProteinAggregate(unittest.TestCase):
                                                    {'gene_name': {'$exists': True}}]})
         self.assertIsNone(result)
 
+    @unittest.skip('passed')
     def test_fill_uniprot_by_oln(self):
         self.src.fill_uniprot_by_oln('MA0002')

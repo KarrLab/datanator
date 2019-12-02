@@ -47,7 +47,6 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             url = self.query_url + msg + '&sort=score' + fields
         url += '&format=tab'
         url += '&compress=no'
-        print(url)
         if not math.isnan(self.max_entries):
            url += '&limit={}'.format(self.max_entries)
         
@@ -55,19 +54,19 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         response.raise_for_status()
 
         data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8')
-
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number', 'gene_name_alt',
             'gene_name_orf', 'gene_name_oln'
         ]
-        if isinstance(data['entrez_id'], str):
-            data['entrez_id'] = data['entrez_id'].str.replace(';', '')
+        data['entrez_id'] = data['entrez_id'].astype(str).str.replace(';', '')
 
         data['mass'] = data['mass'].str.replace(',', '')
 
-        if isinstance(data['ko_number'], str):
-            data['ko_number'] = data['ko_number'].str.replace(';', '')
+        data['ko_number'] = data['ko_number'].astype(str).str.replace(';', '')
+        data['gene_name_oln'] = data['gene_name_oln'].astype(str).str.split(' ')
+        data['gene_name_orf'] = data['gene_name_orf'].astype(str).str.split(' ')
+        data['gene_name_alt'] = data['gene_name_alt'].astype(str).str.split(' ')
         self.load_df(data)
 
     # load pandas.DataFrame into MongoDB

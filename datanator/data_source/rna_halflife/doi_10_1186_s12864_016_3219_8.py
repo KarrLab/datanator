@@ -26,6 +26,11 @@ class Halflife(mongo_util.MongoUtil):
                                             server=server, database='datanator', collection_str='uniprot')
         self.uniprot_col_manager = uniprot_nosql.UniprotNoSQL(MongoDB=server, db=uniprot_col_db, max_entries=max_entries,
                                                               username=username, password=password, collection_str='uniprot')
+        self.username = username
+        self.password = password
+        self.server = server
+        self.max_entries = max_entries
+        self.db = db
 
     def download_xlsx(self, sheet_name):
         """Download supplementary xlsx file
@@ -58,7 +63,7 @@ class Halflife(mongo_util.MongoUtil):
             doc['halflives'] = [{'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
                                 'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium,
                                 'ordered_locus_name': doc['gene_fragment'], 'ar_cog': doc['ar_cog'], 'cog_class': doc['cog_class'],
-                                'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 2214}]
+                                'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 188937}]
             doc['modified'] = datetime.datetime.utcnow()
             del doc['half_life']
             del doc['half_life_std']
@@ -71,9 +76,11 @@ class Halflife(mongo_util.MongoUtil):
                 self.collection.update_one({'gene_name': doc['gene_name']},
                                     {'$set': doc}, upsert=True, collation=self.collation)
             elif doc['function'] != '-':
+                self.fill_uniprot_by_oln(doc['gene_fragment'])
                 self.collection.update_one({'function': doc['function']},
                                            {'$set': doc}, upsert=True, collation=self.collation)
             else:
+                self.fill_uniprot_by_oln(doc['gene_fragment'])
                 self.collection.update_one({'halflives.ordered_locus_name': doc['gene_fragment']},
                                         {'$set': doc}, upsert=True, collation=self.collation)
             if i == 0:
@@ -103,7 +110,7 @@ class Halflife(mongo_util.MongoUtil):
             to_add = {'halflife': doc['half_life'], 'std': doc['half_life_std'], 'std_over_avg': doc['std_over_avg'],
                     'unit': 's', 'reference': [{'doi': '10.1186/s12864-016-3219-8'}], 'growth_medium': growth_medium,
                     'ordered_locus_name': doc['gene_fragment'], 'ar_cog': doc['ar_cog'], 'cog_class': doc['cog_class'],
-                    'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 2214}
+                    'cog': doc['cog'], 'species': 'Methanosarcina acetivorans', 'ncbi_taxonomy_id': 188937}
             if doc['gene_name'] != '-':
                 self.collection.update_one({'gene_name': doc['gene_name']},
                                         {'$addToSet': {'halflives': to_add},
@@ -153,18 +160,6 @@ class Halflife(mongo_util.MongoUtil):
                 protein_name = ""
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {'protein_name': protein_name}})
-    
-    def fill_uniprot_by_oln(self, oln):
-        """Fill uniprot collection using ordered locus name
-        
-        Args:
-            oln (:obj:`str`): Ordered locus name
-        """
-        gene_name, _ = self.uniprot_manager.get_gene_protein_name_by_oln(oln)
-        if gene_name == "": # no such entry in uniprot collection
-            self.uniprot_col_manager.load_uniprot(query=True, msg=oln)
-        else:
-            return
 
     def fill_gene_protein_name(self):
         """Fill 'gene_name' field where 'gene_name' has value of '-' and create
@@ -175,12 +170,27 @@ class Halflife(mongo_util.MongoUtil):
         gene_name = ''
         protein_name = ''
         docs = self.collection.find(filter=query, projection=projection, collation=self.collation)
+        uniprot_manager = query_uniprot.QueryUniprot(username=self.username, password=self.password,
+                                            server=self.server, database=self.db, collection_str='uniprot')
         for doc in docs:
             oln = doc['halflives'][0]['ordered_locus_name']
-            gene_name, protein_name = self.uniprot_manager.get_gene_protein_name_by_oln(oln)
+            oln = 'MA_' + oln.split('MA')[1]
+            gene_name, protein_name = uniprot_manager.get_gene_protein_name_by_oln(oln, species=188937)
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {'gene_name': gene_name,
                                                  'protein_name': protein_name}})
+
+    def fill_uniprot_by_oln(self, oln):
+        """Fill uniprot collection using ordered locus name
+        
+        Args:
+            oln (:obj:`str`): Ordered locus name
+        """
+        gene_name, protein_name = self.uniprot_manager.get_gene_protein_name_by_oln(oln, species=188937)
+        if gene_name is None and protein_name is None: # no such entry in uniprot collection
+            self.uniprot_col_manager.load_uniprot(query=True, msg=oln)
+        else:
+            return
 
     def uniprot_names(self, results, count):
         """Extract protein_name and gene_name from returned
@@ -211,7 +221,7 @@ def main():
     server = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']       
     src = Halflife(username=username, password=password, server=server, 
-                    authDB='admin', db=src_db,
+                    authDB='admin', db=src_db, uniprot_col_db=src_db,
                     verbose=True, collection_str=collection_str)
     df = src.download_xlsx('MeOH')
     src.load_halflife(df)
