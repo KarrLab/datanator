@@ -22,6 +22,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
     def __init__(self, MongoDB=None, db=None, max_entries=float('inf'), verbose=False,
          username=None, password=None, authSource='admin', replicaSet=None, collection_str='uniprot'):
         self.url = 'http://www.uniprot.org/uniprot/?fil=reviewed:yes'
+        self.query_url = 'https://www.uniprot.org/uniprot/?query='
         self.MongoDB = MongoDB
         self.db = db
         self.max_entries = max_entries
@@ -31,12 +32,22 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                  verbose=verbose, max_entries=max_entries)
         self.client, self.db, self.collection = self.con_db(collection_str)
 
-      # build dataframe for uniprot_swiss for loading into mongodb
-    def load_uniprot(self, batch_size=5000):
-        url = self.url + \
-            '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN)'
+    # build dataframe for uniprot_swiss for loading into mongodb
+    def load_uniprot(self, query=False, msg=''):
+        """Build dataframe
+        
+        Args:
+            query (:obj:`bool`, optional): Whether download all reviewed entries of perform individual queries. Defaults to False.
+            msg (:obj:`str`, optional): Query message. Defaults to ''.
+        """
+        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN)'
+        if not query:
+            url = self.url + fields
+        else:
+            url = self.query_url + msg + '&sort=score' + fields
         url += '&format=tab'
         url += '&compress=no'
+        print(url)
         if not math.isnan(self.max_entries):
            url += '&limit={}'.format(self.max_entries)
         
@@ -50,9 +61,13 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number', 'gene_name_alt',
             'gene_name_orf', 'gene_name_oln'
         ]
-        data['entrez_id'] = data['entrez_id'].str.replace(';', '')
+        if isinstance(data['entrez_id'], str):
+            data['entrez_id'] = data['entrez_id'].str.replace(';', '')
+
         data['mass'] = data['mass'].str.replace(',', '')
-        data['ko_number'] = data['ko_number'].str.replace(';', '')
+
+        if isinstance(data['ko_number'], str):
+            data['ko_number'] = data['ko_number'].str.replace(';', '')
         self.load_df(data)
 
     # load pandas.DataFrame into MongoDB
