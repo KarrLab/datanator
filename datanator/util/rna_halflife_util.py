@@ -10,8 +10,9 @@ class RnaHLUtil(mongo_util.MongoUtil):
     def __init__(self, server=None, username=None, password=None, src_db=None,
                 des_db=None, protein_col=None, rna_col=None, authDB='admin', readPreference=None,
                 max_entries=float('inf'), verbose=False):
-        super().__init__(self, MongoDB=server, db=des_db, verbose=verbose, max_entries=max_entries,
+        super().__init__(MongoDB=server, db=des_db, verbose=verbose, max_entries=max_entries,
         username=username, password=password, authSource=authDB, readPreference=readPreference)
+        _, _, self.rna_hl_collection = self.con_db(rna_col)
         self.max_entries = max_entries
         self.uniprot_query_manager = query_uniprot.QueryUniprot(username=username, password=password,
                                                                 server=server, authSource=authDB,
