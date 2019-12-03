@@ -35,18 +35,20 @@ class Halflife(rna_halflife_util.RnaHLUtil):
         self.max_entries = max_entries
         self.verbose = verbose
 
-    def fill_uniprot(self, url, sheet_name):
+    def fill_uniprot(self, url, sheet_name, usercols='B:D', skiprows=[0,1,2]):
         """Fill uniprot colleciton with ordered_locus_name
         from excel sheet
         
         Args:
             url (:obj:`str`): URL for Excel sheet.
             sheet_name (:obj:`str`): sheet name within Excel.
+            usecols (:obj:`int` or :obj:`list` or :obj:`str`): Return a subset of the columns.
+            skiprows (:obj:`list`): rows to skip (0-indexed)
 
         Return:
             (:obj:`pandas.DataFrame`): Dataframe
         """
-        df = self.make_df(url, sheet_name, usecols='B:D', skiprows=[0,1,2],
+        df = self.make_df(url, sheet_name, usecols=usercols, skiprows=skiprows,
         names=['ordered_locus_name', 'half_life', 'r_squared'])
         row_count = len(df.index)
         for index, row in df.iterrows():
@@ -110,3 +112,28 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                     doc = {'halflives': [halflives], 'modified': datetime.datetime.utcnow(),
                             'gene_name': gene_name, 'protein_name': protein_name}
                     self.rna_hl_collection.insert_one(doc)
+
+
+def main():
+    src_db = 'datanator'
+    des_db = 'datanator'
+    rna_col = 'rna_halflife'
+    protein_col = 'uniprot'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    src = Halflife(server=server, src_db=src_db,
+        protein_col=protein_col, authDB='admin', readPreference='nearest',
+        username=username, password=password, verbose=True, max_entries=float('inf'),
+        des_db=des_db, rna_col=rna_col)
+    url = 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/nar/41/1/10.1093/nar/gks1019/2/gks1019-nar-00676-a-2012-File003.xlsx?Expires=1578425844&Signature=ZRFUxLdn4-vaBt5gQci~0o56KqyR9nJj9i32ig5X6YcfqiJeV3obEq8leHGdDxx6w~KABgewiQ66HTB7gmuG~2GL-YgxPKYSjt17WrYMkc-0ibw6TMlTvWZZfvw-lPe~wvpmVfNEXnTbP7jHyNLu9jeJ6yhoXvgIyQtzA5PbEI1fyXEgeZzOKMltmITqL3g3APsPsagCTC66rwrBT23Aghh6D314uilT2DZHCc68MH2nyV~qAhFqIQiOj-7VTEKqkDPvPYvuE2KNKXdvW23gk100YV~58ozbt8ijRz5Gr5gPtE~f1Ab5l260EIbWHJNabMRleInJQqUIDPFN4C38PQ__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA'
+    df = src.fill_uniprot(url, 'Supplementary Table 1')
+    src.fill_rna_halflife(df, ['Mycobacterium tuberculosis H37Rv', 83332])
+    df = src.fill_uniprot(url, 'Supplementary Table 2', skiprows=list(range(0,5)))
+    src.fill_rna_halflife(df, ['Mycolicibacterium smegmatis MC2 155', 246196])
+
+if __name__ == '__main__':
+    main()
