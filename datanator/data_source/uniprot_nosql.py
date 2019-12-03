@@ -53,7 +53,10 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         response = requests.get(url, stream=False)
         response.raise_for_status()
 
-        data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8')
+        try:
+            data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8')
+        except pandas.errors.EmptyDataError:
+            return
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number', 'gene_name_alt',
