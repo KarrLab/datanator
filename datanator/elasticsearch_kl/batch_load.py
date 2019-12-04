@@ -226,7 +226,7 @@ def main():
     # status_code = manager.data_to_es_bulk(docs, index='sabio_reaction_entries', count=count, _id='rxn_id')
     # manager.index_settings('sabio_reaction_entries', 0)
 
-    # print(status_code)   
+#     print(status_code)   
 
 # if __name__ == "__main__":
 #     main()

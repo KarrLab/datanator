@@ -1,10 +1,12 @@
-from datanator_query_python.query import query_sabiork
+from datanator_query_python.query import query_sabiork, query_xmdb
 from datanator.util import chem_util
 from datanator.util import file_util
 from datanator.util import index_collection
 import datanator.config.core
 import pymongo
 import re
+from pymongo.collation import Collation, CollationStrength
+
 
 class MetabolitesMeta(query_sabiork.QuerySabio):
     ''' meta_loc: database location to save the meta collection
@@ -28,6 +30,12 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
         self.frequency = 50
         self.chem_manager = chem_util.ChemUtil()
         self.file_manager = file_util.FileUtil()
+        self.ymdb_query = query_xmdb.QueryXmdb(username=username, password=password, server=MongoDB, authSource=authSource,
+                                        database=db, collection_str='ymdb', readPreference='nearest')
+        self.ecmdb_query = query_xmdb.QueryXmdb(username=username, password=password, server=MongoDB, authSource=authSource,
+                                        database=db, collection_str='ecmdb', readPreference='nearest')
+        self.collation = Collation('en', strength=CollationStrength.SECONDARY)
+        self.client, self.db, self.collection = self.con_db('metabolites_meta')
 
     def load_content(self):
         collection_name = 'metabolites_meta'
@@ -128,6 +136,24 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
             i += 1
 
 
+    def fill_names(self):
+        """Fill names of metabolites in 'name' field
+        """
+        docs = self.collection.find({})
+        count = self.collection.count_documents({})
+        for i, doc in enumerate(docs):
+            name = ''
+            inchi_key = doc['InChI_Key']
+            if i == self.max_entries:
+                break
+            if i % 100 == 0 and self.verbose:
+                print('Adding name to document {} out of {}.'.format(i, count))
+            if doc.get('ymdb_id') is None:
+                name = self.ecmdb_query.get_name_by_inchikey(inchi_key)
+            else:
+                name = self.ymdb_query.get_name_by_inchikey(inchi_key)
+            self.collection.update_one({'_id': doc['_id']},
+                                        {'$set': {'name': name}}, upsert=False)
 
 def main():
     db = 'datanator'
@@ -135,20 +161,19 @@ def main():
     username = datanator.config.core.get_config()['datanator']['mongodb']['user']
     password = datanator.config.core.get_config()['datanator']['mongodb']['password']
     MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
-    port = datanator.config.core.get_config()['datanator']['mongodb']['port']
-    replSet = datanator.config.core.get_config()['datanator']['mongodb']['replSet']
-    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, replicaSet = replSet, db=db, 
+    manager = MetabolitesMeta(cache_dirname=None, MongoDB=MongoDB, db=db, 
                                 verbose=True, max_entries=float('inf'), 
                                 username = username, password = password, meta_loc = meta_loc)
 
-    # manager.load_content()
-    collection_name = 'metabolites_meta'
-    manager.fill_metabolite_fields(fields=['m2m_id', 'inchi', 'synonyms.synonym'],
-        collection_src='ecmdb', collection_des = collection_name)
+    # # manager.load_content()
+    # collection_name = 'metabolites_meta'
+    # manager.fill_metabolite_fields(fields=['m2m_id', 'inchi', 'synonyms.synonym'],
+    #     collection_src='ecmdb', collection_des = collection_name)
 
-    manager.fill_metabolite_fields(fields=['ymdb_id', 'inchi', 'synonyms.synonym'], 
-        collection_src='ymdb', 
-        collection_des = collection_name)
+    # manager.fill_metabolite_fields(fields=['ymdb_id', 'inchi', 'synonyms.synonym'], 
+    #     collection_src='ymdb', 
+    #     collection_des = collection_name)
+    manager.fill_names()
 
 if __name__ == '__main__':
     main()
