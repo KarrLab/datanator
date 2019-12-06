@@ -1,6 +1,7 @@
 import unittest
 from datanator.util import rna_halflife_util
 from datanator_query_python.config import config
+import pandas as pd
 
 
 class TestRnaHlUtil(unittest.TestCase):
@@ -36,3 +37,6 @@ class TestRnaHlUtil(unittest.TestCase):
         df_0 = self.src.make_df(url_0, 'Supplementary Table 1', usecols='B:D', skiprows=[0,1,2],
         names=['ordered_locus_name', 'half_life', 'r_squared'])
         self.assertEqual(df_0.iloc[0]['ordered_locus_name'], 'Rv0002')
+
+    def test_fill_uniprot_with_df(self):
+        pass

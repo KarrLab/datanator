@@ -33,40 +33,26 @@ class Halflife(rna_halflife_util.RnaHLUtil):
         self.max_entries = max_entries
         self.verbose = verbose
 
-    def fill_uniprot(self, url, sheet_name, usercols='B:D', skiprows=[0,1,2],
-                    insertion=True):
-        """Fill uniprot colleciton with ordered_locus_name
-        from excel sheet
-        
-        Args:
-            url (:obj:`str`): URL for Excel sheet.
-            sheet_name (:obj:`str`): sheet name within Excel.
-            usecols (:obj:`int` or :obj:`list` or :obj:`str`): Return a subset of the columns.
-            skiprows (:obj:`list`): rows to skip (0-indexed)
-            insertion (:obj:`bool`): whether to insert new records to uniprot collection.
-
-        Return:
-            (:obj:`pandas.DataFrame`): Dataframe
+    def load_uniprot(self):
+        """Load new loci into uniprot collection
         """
-        df = self.make_df(url, sheet_name, usecols=usercols, skiprows=skiprows,
-        names=['ordered_locus_name', 'half_life', 'r_squared'])
-        row_count = len(df.index)
-        if insertion:
-            for index, row in df.iterrows():
-                if index == self.max_entries:
-                    break
-                if index % 10 == 0 and self.verbose:
-                    print("Inserting locus {} out of {} into uniprot collection.".format(index, row_count))
-                oln = row['ordered_locus_name']
-                self.fill_uniprot_by_oln(oln)
-        return df
+        url = """https://static-content.springer.com/esm/art%3A10.1186%2Fgb-2012-13-4-r30/MediaObjects/13059_2011_2880_MOESM3_ESM.XLSX"""
+        names = ['ordered_locus_name']
+        df_10987 = self.make_df(url, 'Bc10987', names=names, usecols='A', skiprows=[0,1], nrows=6014)
+        df_14579 = self.make_df(url, 'Bc14579', names=names, usecols='A', skiprows=[0,1], nrows=5497)
+        self.fill_uniprot_with_df(df_10987, 'ordered_locus_name')
+        self.fill_uniprot_with_df(df_14579, 'ordered_locus_name')
 
-    def fill_rna_halflife(self, df, species):
-        """load data into rna_halflife collection
+    def fill_rna_half_life(self, df, column, species, quantification_method='Illumina GA-II'):
+        """Load df into rna_halflife collection
         
         Args:
-            df (:obj:`pandas.DataFrame`): dataframe to be loaded into the database
-            species (:obj:`list`): species name and ncbi_id
+            df (:obj:`pandas.DataFrame`): dataframe to be loaded
+            column (:obj:`str`): name of column to be used for half-life; this
+            dataset has three half-life values under different methods.
+            species (:obj:`list`): species name and ncbi_id.
+            quantification_method (:obj:`str`): quantification method.
+            'Illumina GA-II', 'RT-qPCR', or 'Roche 454'
         """
         row_count = len(df.index)
         for i, row in df.iterrows():
@@ -74,22 +60,51 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                 break
             if i % 10 == 0 and self.verbose:
                 print("Processing locus {} out {}".format(i, row_count))
+            oln = row['ordered_locus_name']
             halflives = {}
             oln = row['ordered_locus_name']
-            halflives['halflife'] = row['half_life'] * 60
-            halflives['r_sqaured'] = row['r_squared']
+            protein_annotation = row['protein_annotation']
+            if quantification_method == 'Illumina GA-II':
+                if str(row['half_life_ga_2']) == 'nan':
+                    continue
+                else:
+                    halflives['halflife'] = row['half_life_ga_2'] * 60
+                    halflives['expression_reads_per_kb_per_mb'] = row['reads_per_kb_per_mb']
+            elif quantification_method == 'RT-qPCR':
+                if str(row['half_life_qpcr']) == 'nan':
+                    continue
+                else:
+                    halflives['halflife'] = row['half_life_qpcr'] * 60
+            else:
+                if str(row['half_life_454']) == 'nan':
+                    continue
+                else:
+                    halflives['halflife'] = row['half_life_454'] * 60
+            halflives['quantification_method'] = quantification_method
+            halflives['transcriptional_start_sites'] = row['transcriptional_start_sites']
+            halflives['transcriptional_end_sites'] = row['transcriptional_end_sites']
             halflives['unit'] = 's'
-            halflives['reference'] = [{'doi': '10.1093/nar/gks1019', 'pubmed_id': '23125364'}]
-            halflives['growth_medium'] = 'Middlebrook 7H9 with the ADC supplement (Difco) and 0.05% Tween80, at 37 degree celcius.'
+            if isinstance(row['operon'], float):
+                halflives['operon'] = None
+            else:    
+                halflives['operon'] = row['operon'].split(',')
+            halflives['reference'] = [{'doi': '10.1186/gb-2012-13-4-r30', 'pubmed_id': '22537947'}]
+            halflives['growth_medium'] = 'Luria-Bertani (LB) broth (500 ml) at 30 degree celcius, 250 rpm.'
             halflives['ordered_locus_name'] = oln
+            halflives['gene_start'] = row['gene_start']
+            halflives['gene_end'] = row['gene_end']
+            halflives['strand'] = row['strand']
+            halflives['cog'] = row['cog']
             halflives['species'] = species[0]
             halflives['ncbi_taxonomy_id'] = species[1]
+
             gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_oln(oln)
+            
             if gene_name is not None: # record exists in uniprot collection with gene_name
                 self.rna_hl_collection.update_one({'gene_name': gene_name},
                                                   {'$set': {'modified': datetime.datetime.utcnow()},
                                                    '$addToSet': {'halflives': halflives,
-                                                                'protein_synonyms': protein_name}}, 
+                                                                'protein_synonyms': {'$each': [protein_annotation, protein_name]}}}, 
                                                    collation=self.collation, upsert=True)
             elif (gene_name is None and protein_name is not None and 
                   protein_name != 'Uncharacterized protein'): # record exists in uniprot collection with non-filler protein_name
@@ -97,7 +112,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                                                   {'$set': {'modified': datetime.datetime.utcnow(),
                                                             'gene_name': gene_name},
                                                    '$addToSet': {'halflives': halflives,
-                                                                'protein_synonyms': protein_name}}, 
+                                                                'protein_synonyms': {'$each': [protein_annotation, protein_name]}}}, 
                                                    collation=self.collation, upsert=True)
             else:
                 query = {'halflives.ordered_locus_name': oln}
@@ -107,13 +122,12 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                                                     {'$set': {'modified': datetime.datetime.utcnow(),
                                                               'gene_name': gene_name},
                                                     '$addToSet': {'halflives': halflives,
-                                                                  'protein_synonyms': protein_name}}, 
+                                                                  'protein_synonyms': protein_annotation}}, 
                                                     collation=self.collation, upsert=True)
                 else:
                     doc = {'halflives': [halflives], 'modified': datetime.datetime.utcnow(),
                             'gene_name': gene_name, 'protein_name': protein_name}
                     self.rna_hl_collection.insert_one(doc)
-
 
 def main():
     src_db = 'datanator'
@@ -130,11 +144,22 @@ def main():
         protein_col=protein_col, authDB='admin', readPreference='nearest',
         username=username, password=password, verbose=True, max_entries=float('inf'),
         des_db=des_db, rna_col=rna_col)
-    url = 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/nar/41/1/10.1093/nar/gks1019/2/gks1019-nar-00676-a-2012-File003.xlsx?Expires=1578425844&Signature=ZRFUxLdn4-vaBt5gQci~0o56KqyR9nJj9i32ig5X6YcfqiJeV3obEq8leHGdDxx6w~KABgewiQ66HTB7gmuG~2GL-YgxPKYSjt17WrYMkc-0ibw6TMlTvWZZfvw-lPe~wvpmVfNEXnTbP7jHyNLu9jeJ6yhoXvgIyQtzA5PbEI1fyXEgeZzOKMltmITqL3g3APsPsagCTC66rwrBT23Aghh6D314uilT2DZHCc68MH2nyV~qAhFqIQiOj-7VTEKqkDPvPYvuE2KNKXdvW23gk100YV~58ozbt8ijRz5Gr5gPtE~f1Ab5l260EIbWHJNabMRleInJQqUIDPFN4C38PQ__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA'
-    # df = src.fill_uniprot(url, 'Supplementary Table 1', insertion=False)
-    # src.fill_rna_halflife(df, ['Mycobacterium tuberculosis H37Rv', 83332])
-    df = src.fill_uniprot(url, 'Supplementary Table 2', skiprows=list(range(0,6)))
-    src.fill_rna_halflife(df, ['Mycolicibacterium smegmatis MC2 155', 246196])
+    # src.load_uniprot()
+
+    url = 'https://static-content.springer.com/esm/art%3A10.1186%2Fgb-2012-13-4-r30/MediaObjects/13059_2011_2880_MOESM3_ESM.XLSX'
+    names = ['ordered_locus_name', 'half_life_ga_2', 'reads_per_kb_per_mb',
+            'transcriptional_start_sites', 'transcriptional_end_sites', 'operon',
+            'gene_start', 'gene_end', 'strand', 'gene_name', 'protein_annotation',
+            'cog', 'kegg', 'half_life_qpcr', 'half_life_454']
+    df = src.make_df(url, 'Bc10987', names=names, usecols='A:O', skiprows=[0,1], nrows=6014)    
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 10987', 222523])
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 10987', 222523], quantification_method='RT-qPCR')
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 10987', 222523], quantification_method='Roche 454')
+
+    df = src.make_df(url, 'Bc14579', names=names, usecols='A:O', skiprows=[0,1], nrows=5497)
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 14579', 226900])
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 14579', 226900], quantification_method='RT-qPCR')
+    src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 14579', 226900], quantification_method='Roche 454')  
 
 if __name__ == '__main__':
     main()
