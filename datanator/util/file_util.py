@@ -1,4 +1,8 @@
 from itertools import chain
+from pathlib import Path
+import zipfile
+import io
+
 
 class FileUtil:
 
@@ -215,3 +219,13 @@ class FileUtil:
                 result (:obj: `bool`): True or False
         '''
         return k in dictionary and v == dictionary[k]
+
+    def unzip_file(self, zip_file, directory):
+        """Unzip a zip file into directory
+        
+        Args:
+            zip_file (:obj:`bytes`): bytes object of the zipped file
+            directory (:obj:`str`): directory into which files will be unzipped
+        """
+        z = zipfile.ZipFile(io.BytesIO(zip_file))
+        z.extractall(directory)
