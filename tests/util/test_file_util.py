@@ -2,7 +2,6 @@ import unittest
 from datanator.util import file_util
 import tempfile
 import shutil
-import requests
 
 
 class TestFileUtil(unittest.TestCase):
@@ -132,6 +131,4 @@ class TestFileUtil(unittest.TestCase):
 
     def test_unzip_file(self):
         url = 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/nar/42/4/10.1093_nar_gkt1150/1/gkt1150_Supplementary_Data.zip?Expires=1578928721&Signature=ADjsCSaceimzGs6aJ~uG7np88TzHNooAoBabdm-6utYVIZOEwRbzTdiBp~76vM4KEHz9Nir8GNrtA3AwHwGFm0bu~aorTG4xrOChS6UgfBQiUtgr8vfbDIUno1y1nxLGCKIfQrb2Gx-SVnigum2gjcveymK995zadSNZqN~w-vz-Ii0a6fH7kvKN8m9vLWf6fdo0NXSmgnkjj9KPCuS-bmK0y4ZH5Ex0Rl4qi5uCroYmDBNOhXY23pcalbpFwB1-07tA3~756gZN4Mo9uMeSVQKl5UsHzx5amB6WvSCXS8z756YoaaMCg0FQbUCcQ46fRGdHxcvPNcrPo5IMEGmi8g__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA'
-        response = requests.get(url)
-        zip_file = response.content
-        self.src.unzip_file(zip_file, self.cache_dirname)
+        self.src.unzip_file(url, self.cache_dirname)

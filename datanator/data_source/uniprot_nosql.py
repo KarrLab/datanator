@@ -14,6 +14,7 @@ import math
 import json
 import pandas
 import requests
+import pymongo.errors
 from datanator.util import mongo_util
 import datanator.config.core
 
@@ -33,12 +34,13 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         self.client, self.db, self.collection = self.con_db(collection_str)
 
     # build dataframe for uniprot_swiss for loading into mongodb
-    def load_uniprot(self, query=False, msg=''):
+    def load_uniprot(self, query=False, msg='', species=None):
         """Build dataframe
         
         Args:
             query (:obj:`bool`, optional): Whether download all reviewed entries of perform individual queries. Defaults to False.
             msg (:obj:`str`, optional): Query message. Defaults to ''.
+            species (:obj:`list`, optional): species information to extract from df and loaded into uniprot. Defaults to None.
         """
         fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN)'
         if not query:
@@ -70,13 +72,19 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         data['gene_name_oln'] = data['gene_name_oln'].astype(str).str.split(' ')
         data['gene_name_orf'] = data['gene_name_orf'].astype(str).str.split(' ')
         data['gene_name_alt'] = data['gene_name_alt'].astype(str).str.split(' ')
-        self.load_df(data)
+        if species is None:
+            self.load_df(data)
+        else:
+            self.load_df(data.loc[data['ncbi_taxonomy_id'].isin(species)])
 
     # load pandas.DataFrame into MongoDB
     def load_df(self, df):
-        df_json = json.loads(df.to_json(orient='records'))        
-        self.collection.insert(df_json)
-
+        df_json = json.loads(df.to_json(orient='records'))
+        try:        
+            self.collection.insert(df_json)
+        except pymongo.errors.InvalidOperation as e:
+            return(str(e))
+            
 
 def main():
     db = 'datanator'
