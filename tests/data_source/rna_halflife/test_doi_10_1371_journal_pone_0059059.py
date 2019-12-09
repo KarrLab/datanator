@@ -2,10 +2,8 @@ import unittest
 from datanator.data_source.rna_halflife import doi_10_1371_journal_pone_0059059
 import tempfile
 import shutil
-import json
-import os
 from datanator_query_python.config import config
-import pandas as pd
+import tabula
 
 
 class TestProteinAggregate(unittest.TestCase):
@@ -34,3 +32,9 @@ class TestProteinAggregate(unittest.TestCase):
         cls.src.uniprot_collection_manager.client.close()
         cls.src.client.close()
         cls.src.uniprot_query_manager.client.close()
+
+    def test_fill_rna_halflife(self):
+        url = 'https://journals.plos.org/plosone/article/file?type=supplementary&id=info:doi/10.1371/journal.pone.0059059.s002'
+        df = tabula.read_pdf(url, pandas_options={'header': None, 'na_values': 'ND'}, pages='all')
+        df.columns = ['gene_name', 'a', 'b', 'c', 'd', 'e']
+        self.src.fill_rna_half_life(df, ['Lactococcus lactis subsp. lactis Il1403', 272623])

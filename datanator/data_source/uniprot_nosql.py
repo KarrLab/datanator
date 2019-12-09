@@ -46,7 +46,11 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         if not query:
             url = self.url + fields
         else:
-            url = self.query_url + msg + '&sort=score' + fields
+            query_msg = msg
+            if isinstance(species, list):
+                for specie in species:
+                    query_msg += '+'+str(specie)
+            url = self.query_url + query_msg + '&sort=score' + fields
         url += '&format=tab'
         url += '&compress=no'
         if not math.isnan(self.max_entries):
