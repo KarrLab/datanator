@@ -57,6 +57,19 @@ class RnaHLUtil(mongo_util.MongoUtil):
         else:
             return
 
+    def fill_uniprot_by_gn(self, gene_name, species=None):
+        """Fill uniprot collection using gene name
+        
+        Args:
+            gene_name (:obj:`str`): Ordered locus name
+            species (:obj:`list`): NCBI Taxonomy ID of the species 
+        """
+        protein_name = self.uniprot_query_manager.get_protein_name_by_gn(gene_name, species=species)
+        if protein_name is None: # no such entry in uniprot collection
+            self.uniprot_collection_manager.load_uniprot(query=True, msg=gene_name, species=species)
+        else:
+            return
+
     def make_df(self, url, sheet_name, header=None, names=None, usecols=None,
                 skiprows=None, nrows=None, na_values=None, file_type='xlsx',
                 file_name=None):
@@ -85,14 +98,15 @@ class RnaHLUtil(mongo_util.MongoUtil):
                                 names=names, usecols=usecols, skiprows=skiprows, na_values=na_values)
         return data
 
-    def fill_uniprot_with_df(self, df, ordered_locus_name, species=None):
+    def fill_uniprot_with_df(self, df, identifier, identifier_type='oln', species=None):
         """Fill uniprot colleciton with ordered_locus_name
         from excel sheet
         
         Args:
             df (:obj:`pandas.DataFrame`): dataframe to be inserted into uniprot collection.
             Assuming df conforms to the schemas required by load_uniprot function in uniprot.py
-            ordered_locus_name (:obj:`str`): name of column that stores ordered locus name information.
+            identifier (:obj:`str`): name of column that stores ordered locus name information.
+            identifier_type (:obj:`str`): type of identifier, i.e. 'oln', 'gene_name'
             species (:obj:`list`): NCBI Taxonomy ID of the species.
         """
         row_count = len(df.index)
@@ -100,6 +114,9 @@ class RnaHLUtil(mongo_util.MongoUtil):
             if index == self.max_entries:
                 break
             if index % 10 == 0 and self.verbose:
-                print("Inserting locus {}: {} out of {} into uniprot collection.".format(index, row[ordered_locus_name], row_count))
-            oln = row[ordered_locus_name]
-            self.fill_uniprot_by_oln(oln, species=species)    
+                print("Inserting locus {}: {} out of {} into uniprot collection.".format(index, row[identifier], row_count))
+            name = row[identifier]
+            if identifier_type == 'oln':
+                self.fill_uniprot_by_oln(name, species=species)
+            elif identifier_type == 'gene_name':
+                self.fill_uniprot_by_gn(name, species=species)
