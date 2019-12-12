@@ -3,6 +3,8 @@ from datanator_query_python.query import (query_protein, query_metabolites,
 from datanator_query_python.config import config as config_mongo
 from datanator.util import mongo_util
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
+import json
+from pathlib import Path
 
 
 class MongoToES(es_util.EsUtil):
@@ -188,6 +190,36 @@ class MongoToES(es_util.EsUtil):
         count = collection.count_documents(query)
         return (count, docs)
 
+    def data_from_mongo_rna_halflife_entries(self, server, db, username, password, verbose=False,
+                                readPreference='nearest', authSource='admin', projection={'_id': 0},
+                                query={}):
+        ''' Acquire documents from protein collection in datanator
+
+            Args:
+                server (:obj:`str`): mongodb ip address
+                db (:obj:`str`): database name
+                username (:obj:`str`): username for mongodb login
+                password (:obj:`str`): password for mongodb login
+                verbose (:obj:`bool`): display verbose messages
+                readPreference (:obj:`str`): mongodb readpreference
+                authSource (:obj:`str`): database login info is authenticating against
+                projection (:obj:`str`): mongodb query projection
+                query (:obj:`str`): mongodb query filter
+
+            Returns:
+                (:obj:`tuple`): tuple containing:
+
+                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    count (:obj:`int`): number of documents returned
+        '''
+        mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
+                                            password=password, authSource=authSource, db=db)
+        _, _, collection = mongo_manager.con_db('rna_halflife')
+        docs = collection.find(filter=query, projection=projection)
+        count = collection.count_documents(query)
+        return (count, docs)
+
+
 def main():
     conf = config_mongo.Config()
     username = conf.USERNAME
@@ -197,36 +229,63 @@ def main():
     db = 'datanator'
     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
-    
+
+    # old_index = 'sabio_something'
+    # new_index = 'sabio_rk'
+    # _, _, _, = manager.migrate_index(old_index, new_index)
+    # _, _, _, = manager.migrate_index(new_index, old_index)
+
+
     # # data from "protein" collection
     # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
-    # status_code = manager.data_to_es_bulk(count, docs, 'protein', _id='uniprot_id')
-    # manager.index_settings('protein', 0) 
+    # index_name = 'protein'
+    # _ = manager.delete_index(index_name)
+    # _ = manager.create_index(index_name)
+    # _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
     
-    # # data from "ecmdb" and "ymdb" collection
+    # data from "ecmdb" and "ymdb" collection
     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
     #                                                 db, username, password, authSource=authDB)
-    # status_code_0 = manager.data_to_es_bulk(ecmdb_count, ecmdb_docs, 'ecmdb', _id='m2m_id')
-    # status_code_1 = manager.data_to_es_bulk(ymdb_count, ymdb_docs, 'ymdb', _id='ymdb_id')
-    # manager.index_settings('ecmdb', 0) 
-    # manager.index_settings('ymdb', 0) 
+    # ecmdb = 'ecmdb'
+    # ymdb = 'ymdb'
+    # _ = manager.delete_index(ecmdb)
+    # _ = manager.delete_index(ymdb)
+    # _ = manager.create_index(ymdb)
+    # _ = manager.create_index(ecmdb)
+    # _ = manager.data_to_es_bulk(ecmdb_docs, index=ecmdb, count=ecmdb_count, _id='m2m_id')
+    # _ = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
     # # data from "metabolites_meta" collection
+    # index_name = 'metabolites_meta'
+    # _ = manager.delete_index(index_name)
+    # r = manager.create_index(index_name)
     # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
-    # status_code = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
-    # manager.index_settings('metabolites_meta', 0)
+    # _ = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
 
-#     # data from "sabio_rk_old" collection
-#     count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
-#     status_code = manager.data_to_es_bulk(docs, index='sabio_rk', count=count, _id='kinlaw_id')
-#     manager.index_settings('sabio_rk', 0)
+    # data from "sabio_rk_old" collection
+    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+    # index_name = 'sabio_rk'
+    # _ = manager.delete_index(index_name)
+    # _ = manager.create_index(index_name)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
     # # data from "sabio_reaction_entries" collection
+    # index_name = 'sabio_reaction_entries'
+    # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
-    # status_code = manager.data_to_es_bulk(docs, index='sabio_reaction_entries', count=count, _id='rxn_id')
-    # manager.index_settings('sabio_reaction_entries', 0)
+    # r = manager.create_index(index_name)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
-#     print(status_code)   
+    # data from "rna_halflife" collection
+    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB, projection=None)
+    # index_schema_path = str(Path('~/host/karr_lab/datanator/datanator/data_source/schema/rna_halflife.json').expanduser())
+    # with open(index_schema_path) as json_file:
+    #     index_schema = json.load(json_file)
+    # _ = manager.create_index('rna_halflife', mappings=json.dumps(index_schema))
+    # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
-# if __name__ == "__main__":
-#     main()
+    r = manager.index_health_status()
+    print(r.content.decode('utf-8'))
+
+if __name__ == "__main__":
+    main()
