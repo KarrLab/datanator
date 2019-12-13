@@ -191,7 +191,7 @@ class MongoToES(es_util.EsUtil):
         return (count, docs)
 
     def data_from_mongo_rna_halflife_entries(self, server, db, username, password, verbose=False,
-                                readPreference='nearest', authSource='admin', projection={'_id': 0},
+                                readPreference='nearest', authSource='admin',
                                 query={}):
         ''' Acquire documents from protein collection in datanator
 
@@ -215,7 +215,7 @@ class MongoToES(es_util.EsUtil):
         mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                             password=password, authSource=authSource, db=db)
         _, _, collection = mongo_manager.con_db('rna_halflife')
-        docs = collection.find(filter=query, projection=projection)
+        docs = collection.find(filter=query)
         count = collection.count_documents(query)
         return (count, docs)
 
@@ -277,15 +277,17 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
-    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB, projection=None)
+    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
     # index_schema_path = str(Path('~/host/karr_lab/datanator/datanator/data_source/schema/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
-    # _ = manager.create_index('rna_halflife', mappings=json.dumps(index_schema))
-    # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+    # _ = manager.create_index('rna_halflife', mappings=index_schema)
+    # status = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
+    print('Operation status: {}'.format(status.content))
 
 if __name__ == "__main__":
     main()
