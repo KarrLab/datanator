@@ -1,6 +1,7 @@
 from datanator_query_python.query import (query_protein, query_metabolites, 
                                          query_metabolites_meta, query_sabiork_old)
 from datanator_query_python.config import config as config_mongo
+from karr_lab_aws_manager.elasticsearch_kl import index_setting_file
 from datanator.util import mongo_util
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
 import json
@@ -26,7 +27,6 @@ class MongoToES(es_util.EsUtil):
                 config_path=config_path, elastic_path=elastic_path,
                 cache_dir=cache_dir, service_name=service_name, max_entries=max_entries, verbose=verbose)
         self.index = index
-
 
     def data_from_mongo_protein(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin', projection={'_id': 0},
@@ -230,44 +230,62 @@ def main():
     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
 
-    # old_index = 'sabio_something'
-    # new_index = 'sabio_rk'
+    filter_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
+    analyzer_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
+    
+    # old_index = 'protein'
+    # new_index = 'protein_something'
     # _, _, _, = manager.migrate_index(old_index, new_index)
     # _, _, _, = manager.migrate_index(new_index, old_index)
 
 
     # # data from "protein" collection
-    # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
     # index_name = 'protein'
     # _ = manager.delete_index(index_name)
-    # _ = manager.create_index(index_name)
+    # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
+    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
     
     # data from "ecmdb" and "ymdb" collection
     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
     #                                                 db, username, password, authSource=authDB)
     # ecmdb = 'ecmdb'
-    # ymdb = 'ymdb'
     # _ = manager.delete_index(ecmdb)
+    # ecmdb_mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ecmdb.json'
+    # ecmdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ecmdb_mappings_dir)
+    # ecmdb_setting_file = ecmdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(ecmdb, ecmdb_setting_file)
+    # status = manager.data_to_es_bulk(ecmdb_docs, index=ecmdb, count=ecmdb_count, _id='m2m_id')
+
+    # ymdb = 'ymdb'
     # _ = manager.delete_index(ymdb)
-    # _ = manager.create_index(ymdb)
-    # _ = manager.create_index(ecmdb)
-    # _ = manager.data_to_es_bulk(ecmdb_docs, index=ecmdb, count=ecmdb_count, _id='m2m_id')
-    # _ = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
+    # ymdb_mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ymdb.json'
+    # ymdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ymdb_mappings_dir)
+    # ymdb_setting_file = ymdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(ymdb, ymdb_setting_file)    
+    # status = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
     # # data from "metabolites_meta" collection
     # index_name = 'metabolites_meta'
-    # _ = manager.delete_index(index_name)
-    # r = manager.create_index(index_name)
+    # _ = manager.create_index(index_name)
     # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
-    # _ = manager.data_to_es_single(5225, docs, 'metabolites_meta', _id='InChI_Key')
+    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
 
     # data from "sabio_rk_old" collection
-    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
-    # index_name = 'sabio_rk'
-    # _ = manager.delete_index(index_name)
-    # _ = manager.create_index(index_name)
-    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
+    count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+    index_name = 'sabio_rk'
+    mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    _ = manager.create_index_with_file(index_name, setting_file)
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
     # # data from "sabio_reaction_entries" collection
     # index_name = 'sabio_reaction_entries'
@@ -287,7 +305,7 @@ def main():
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
-    print('Operation status: {}'.format(status.content))
+    # print('Operation status: {}'.format(status.content))
 
 if __name__ == "__main__":
     main()

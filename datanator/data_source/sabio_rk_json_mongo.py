@@ -630,7 +630,7 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
             taxon_id = doc.get('taxon_id')
             if taxon_id is None:
                 continue
-            name = self.tax_manager.get_name_by_id([taxon_id])
+            name = self.tax_manager.get_name_by_id([taxon_id])[taxon_id]
             if name == []:
                 continue
             anc_id, anc_name = self.tax_manager.get_anc_by_id([taxon_id])

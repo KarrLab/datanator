@@ -16,6 +16,7 @@ import pandas
 import requests
 import pymongo.errors
 from datanator.util import mongo_util
+from datanator_query_python.query import query_taxon_tree
 import datanator.config.core
 
 
@@ -31,6 +32,8 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         super(UniprotNoSQL, self).__init__(MongoDB=MongoDB, db=db, username=username,
                                  password=password, authSource=authSource, replicaSet=replicaSet,
                                  verbose=verbose, max_entries=max_entries)
+        self.taxon_manager = query_taxon_tree.QueryTaxonTree(username=username, MongoDB=MongoDB, password=password,
+                                                        authSource=authSource)
         self.client, self.db, self.collection = self.con_db(collection_str)
 
     # build dataframe for uniprot_swiss for loading into mongodb
@@ -88,6 +91,18 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             self.collection.insert(df_json)
         except pymongo.errors.InvalidOperation as e:
             return(str(e))
+
+    def fill_species_name(self):
+        ncbi_taxon_ids = self.collection.distinct('ncbi_taxonomy_id')
+        for i, _id in enumerate(ncbi_taxon_ids):
+            if i == self.max_entries:
+                break
+            if i% 50 == 0 and self.verbose:
+                print('Adding taxon name to {} out of {} records.'.format(i, len(ncbi_taxon_ids)))
+            names = self.taxon_manager.get_name_by_id([_id])
+            self.collection.update_many({'ncbi_taxonomy_id': _id},
+                                        {'$set': {'species_name': names[_id]}},
+                                        upsert=False)
             
 
 def main():
@@ -100,8 +115,10 @@ def main():
     server = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']
     manager=UniprotNoSQL(MongoDB = server, db = db, 
-        username = username, password = password, collection_str=collection_str)
-    manager.load_uniprot()
+    username = username, password = password, collection_str=collection_str,
+    verbose=True)
+    # manager.load_uniprot()
+    # manager.fill_species_name()
 
 if __name__ == '__main__':
     main()
