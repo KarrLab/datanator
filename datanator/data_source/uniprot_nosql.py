@@ -94,14 +94,15 @@ class UniprotNoSQL(mongo_util.MongoUtil):
 
     def fill_species_name(self):
         ncbi_taxon_ids = self.collection.distinct('ncbi_taxonomy_id')
-        for i, _id in enumerate(ncbi_taxon_ids):
+        start = 16650
+        for i, _id in enumerate(ncbi_taxon_ids[start:]):
             if i == self.max_entries:
                 break
             if i% 50 == 0 and self.verbose:
-                print('Adding taxon name to {} out of {} records.'.format(i, len(ncbi_taxon_ids)))
+                print('Adding taxon name to {} out of {} records.'.format(i + start, len(ncbi_taxon_ids)))
             names = self.taxon_manager.get_name_by_id([_id])
             self.collection.update_many({'ncbi_taxonomy_id': _id},
-                                        {'$set': {'species_name': names[_id]}},
+                                        {'$set': {'species_name': names.get(_id)}},
                                         upsert=False)
             
 
@@ -118,7 +119,7 @@ def main():
     username = username, password = password, collection_str=collection_str,
     verbose=True)
     # manager.load_uniprot()
-    # manager.fill_species_name()
+    manager.fill_species_name()
 
 if __name__ == '__main__':
     main()

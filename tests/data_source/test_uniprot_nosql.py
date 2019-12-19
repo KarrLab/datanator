@@ -6,6 +6,7 @@ import datanator.config.core
 
 
 class TestUniprotNoSQL(unittest.TestCase):
+    
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
