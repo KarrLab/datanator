@@ -16,8 +16,7 @@ class TestSQLToJSON(unittest.TestCase):
         cls.query = "select * from "
         cls.quilt_package = 'datanator'
         cls.system_path = 'SabioRk.sqlite'
-        cls.src = sqlite_to_json.SQLToJSON(
-            cls.query, cls.cache_dirname, cls.quilt_package, cls.system_path)
+        cls.src = sqlite_to_json.SQLToJSON(cls.query, cache_dirname=cls.cache_dirname)
 
     @classmethod
     def tearDownClass(cls):

@@ -16,7 +16,7 @@ import pandas
 import requests
 import pymongo.errors
 from datanator.util import mongo_util
-from datanator_query_python.query import query_taxon_tree
+from datanator_query_python.query import query_taxon_tree, query_kegg_orthology
 import datanator.config.core
 
 
@@ -34,6 +34,8 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                  verbose=verbose, max_entries=max_entries)
         self.taxon_manager = query_taxon_tree.QueryTaxonTree(username=username, MongoDB=MongoDB, password=password,
                                                         authSource=authSource)
+        self.ko_manager = query_kegg_orthology.QueryKO(username=username, password=password, server=MongoDB,
+        authSource=authSource, verbose=verbose, max_entries=max_entries)
         self.client, self.db, self.collection = self.con_db(collection_str)
 
     # build dataframe for uniprot_swiss for loading into mongodb
@@ -104,7 +106,40 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             self.collection.update_many({'ncbi_taxonomy_id': _id},
                                         {'$set': {'species_name': names.get(_id)}},
                                         upsert=False)
-            
+
+    def fill_ko_name(self):
+        ko_numbers = self.collection.distinct('ko_number')
+        count = len(ko_numbers)
+        start = 0
+        for i, number in enumerate(ko_numbers[start:]):
+            if i == self.max_entries:
+                break
+            if i % 50 == 0 and self.verbose:
+                print('Adding ko name to {} out of {} records.'.format(i + start, count))
+            kegg_name = self.ko_manager.get_def_by_kegg_id(number)
+            self.collection.update_many({'ko_number': number},
+                                        {'$set': {'ko_name': kegg_name}},upsert=False)
+
+    def fill_species_info(self):
+        """Fill ancestor information.
+        """
+        ncbi_taxon_ids = self.collection.distinct('ncbi_taxonomy_id')
+        start = 0
+        count = len(ncbi_taxon_ids)
+        for i, _id in enumerate(ncbi_taxon_ids[start:]):
+            if i == self.max_entries:
+                break
+            if i% 50 == 0 and self.verbose:
+                print('Adding ancestor information to {} out of {} records.'.format(i + start, count))
+            ancestor_taxon_id, ancestor_name = self.taxon_manager.get_anc_by_id([_id])
+            self.collection.update_many({'ncbi_taxonomy_id': _id},
+                                        {'$set': {'ancestor_taxon_id': ancestor_taxon_id[0],
+                                                  'ancestor_name': ancestor_name[0]}},
+                                        upsert=False)
+
+
+
+from multiprocessing import Pool, Process
 
 def main():
     db = 'datanator'
@@ -118,8 +153,20 @@ def main():
     manager=UniprotNoSQL(MongoDB = server, db = db, 
     username = username, password = password, collection_str=collection_str,
     verbose=True)
+
     # manager.load_uniprot()
-    manager.fill_species_name()
+
+    # p = Process(target=manager.fill_species_name())
+    # p.start()
+    # p.join()
+
+    # p = Process(target=manager.fill_ko_name())
+    # p.start()
+    # p.join()
+
+    p = Process(target=manager.fill_species_info())
+    p.start()
+    p.join()
 
 if __name__ == '__main__':
     main()

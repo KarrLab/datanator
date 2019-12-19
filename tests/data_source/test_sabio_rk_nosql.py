@@ -23,7 +23,7 @@ class TestSabioRk(unittest.TestCase):
         )['datanator']['mongodb']['port']
         replSet = datanator.config.core.get_config(
         )['datanator']['mongodb']['replSet']
-        cls.src = sabio_rk.SabioRk(cache_dirname=cls.cache_dirname,
+        cls.src = sabio_rk_nosql.SabioRk(cache_dirname=cls.cache_dirname,
                                          MongoDB=MongoDB,  db=db,
                                          verbose=True, max_entries=20, username=username,
                                          password=password, webservice_batch_size = 10)

@@ -192,7 +192,7 @@ class MongoToES(es_util.EsUtil):
 
     def data_from_mongo_rna_halflife_entries(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin',
-                                query={}):
+                                query={}, collection_str='rna_halflife'):
         ''' Acquire documents from protein collection in datanator
 
             Args:
@@ -214,7 +214,7 @@ class MongoToES(es_util.EsUtil):
         '''
         mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                             password=password, authSource=authSource, db=db)
-        _, _, collection = mongo_manager.con_db('rna_halflife')
+        _, _, collection = mongo_manager.con_db(collection_str)
         docs = collection.find(filter=query)
         count = collection.count_documents(query)
         return (count, docs)
@@ -279,13 +279,13 @@ def main():
     # _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
 
     # data from "sabio_rk_old" collection
-    count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
-    index_name = 'sabio_rk'
-    mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
-    _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
+    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+    # index_name = 'sabio_rk'
+    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
     # # data from "sabio_reaction_entries" collection
     # index_name = 'sabio_reaction_entries'
@@ -302,9 +302,17 @@ def main():
     # _ = manager.create_index('rna_halflife', mappings=index_schema)
     # status = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
+    # data from "taxon_tree" collection
+    # index_name = 'taxon_tree'
+    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/taxon_tree.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='tax_id')
 
-    r = manager.index_health_status()
-    print(r.content.decode('utf-8'))
+    # r = manager.index_health_status()
+    # print(r.content.decode('utf-8'))
     # print('Operation status: {}'.format(status.content))
 
 if __name__ == "__main__":
