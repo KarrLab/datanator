@@ -16,6 +16,7 @@ import pandas
 import requests
 import pymongo.errors
 from datanator.util import mongo_util
+from pymongo.collation import Collation, CollationStrength
 from datanator_query_python.query import query_taxon_tree, query_kegg_orthology
 import datanator.config.core
 
@@ -36,6 +37,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                                         authSource=authSource)
         self.ko_manager = query_kegg_orthology.QueryKO(username=username, password=password, server=MongoDB,
         authSource=authSource, verbose=verbose, max_entries=max_entries)
+        self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.client, self.db, self.collection = self.con_db(collection_str)
 
     # build dataframe for uniprot_swiss for loading into mongodb
@@ -137,6 +139,37 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                                   'ancestor_name': ancestor_name[0]}},
                                         upsert=False)
 
+    def load_abundance_from_pax(self):
+        '''
+            Load protein abundance data but interating from pax collection.
+        '''
+        _, _, col_pax = self.con_db('pax')
+        query = {}
+        projection = {'ncbi_id': 1, 'species_name': 1,
+                    'observation': 1, 'organ': 1}
+        docs = col_pax.find(filter=query, projection=projection, batch_size=5)
+        count = col_pax.count_documents(query)
+        progress = 0
+        for i, doc in enumerate(docs[progress:]):            
+            organ = doc['organ']
+            if self.verbose and i % 1 == 0:
+                print('Loading abundance info {} of {} ...'.format(
+                    i + progress, min(count, self.max_entries)))
+            for j, obs in enumerate(doc['observation']):
+                if j == self.max_entries:
+                    break
+                if self.verbose and j % 100 == 0 and i % 1 == 0:
+                    print('  Loading observation info {} of {} ...'.format(
+                        j, len(doc['observation'])))
+                try:
+                    uniprot_id = obs['protein_id']['uniprot_id']
+                    abundance = obs['abundance']
+                    dic = {'organ': organ, 'abundance': abundance}
+                    self.collection.update_one({'uniprot_id': uniprot_id},
+                                        {'$push': {'abundances': dic} }, upsert=False,
+                                        collation=self.collation)
+                except TypeError:
+                    continue
 
 
 from multiprocessing import Pool, Process

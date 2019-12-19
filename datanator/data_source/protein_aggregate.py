@@ -65,8 +65,6 @@ class ProteinAggregate:
         count = col_pax.count_documents(query)
         progress = 0
         for i, doc in enumerate(docs[progress:]):            
-            species_name = doc['species_name']
-            taxon_id = doc['ncbi_id']
             organ = doc['organ']
             if self.verbose and i % 1 == 0:
                 print('Loading abundance info {} of {} ...'.format(
@@ -79,14 +77,12 @@ class ProteinAggregate:
                         j, len(doc['observation'])))
                 try:
                     uniprot_id = obs['protein_id']['uniprot_id']
-                    ordered_locus_name = obs['protein_id']['string_id']
+                    ordered_locus_name = obs['protein_id']['string_id'].split('.')[1]
                     abundance = obs['abundance']
-                    dic = {'organ': organ, 'abundance': abundance}
+                    dic = {'organ': organ, 'abundance': abundance,
+                           'ordered_locus_name': ordered_locus_name}
                     self.col.update_one({'uniprot_id': uniprot_id},
-                                        {'$set': {'ncbi_taxonomy_id': taxon_id,
-                                                  'species_name': species_name,
-                                                  'ordered_locus_name': ordered_locus_name},
-                                         '$push': {'abundances': dic} }, upsert=True)
+                                        {'$push': {'abundances': dic} }, upsert=True)
                 except TypeError:
                     continue
 

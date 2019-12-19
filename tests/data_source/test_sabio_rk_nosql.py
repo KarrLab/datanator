@@ -1,4 +1,4 @@
-from datanator.data_source import sabio_rk
+from datanator.data_source import sabio_rk_nosql
 from datanator.util import file_util
 import datanator.config.core
 import unittest
