@@ -202,60 +202,60 @@ class ProteinAggregate:
             self.col.update_one({'uniprot_id': _id},
                                 {'$set': doc}, upsert=True) 
 
-    def load_kinlaw_from_sabio(self):
-        '''
-            load kinlaw_id from sabio_rk collection based on uniprot_id or
-            protein name if uniprot_id information is not present
-        '''
-        _, _, col_sabio = self.mongo_manager.con_db('sabio_rk_new')
-        projection = {'enzyme': 1, 'kinlaw_id': 1, 'taxon': 1}
-        docs = col_sabio.find({}, projection=projection)
-        count = col_sabio.count_documents({})
-        collation = Collation('en', strength=CollationStrength.SECONDARY)
-        progress = 0
-        for i, doc in enumerate(docs[progress:]):
-            if i == self.max_entries:
-                break
-            if self.verbose and i % 50 == 0:
-                print('Processing Kinetics information doc {} out of {}'.format(i+progress,min(count, self.max_entries)))
+    # def load_kinlaw_from_sabio(self):
+    #     '''
+    #         load kinlaw_id from sabio_rk collection based on uniprot_id or
+    #         protein name if uniprot_id information is not present
+    #     '''
+    #     _, _, col_sabio = self.mongo_manager.con_db('sabio_rk_new')
+    #     projection = {'enzyme': 1, 'kinlaw_id': 1, 'taxon': 1}
+    #     docs = col_sabio.find({}, projection=projection)
+    #     count = col_sabio.count_documents({})
+    #     collation = Collation('en', strength=CollationStrength.SECONDARY)
+    #     progress = 0
+    #     for i, doc in enumerate(docs[progress:]):
+    #         if i == self.max_entries:
+    #             break
+    #         if self.verbose and i % 50 == 0:
+    #             print('Processing Kinetics information doc {} out of {}'.format(i+progress,min(count, self.max_entries)))
 
-            kinlaw_id = doc['kinlaw_id']
-            if kinlaw_id in self.bad_kinlawid:
-                continue
+    #         kinlaw_id = doc['kinlaw_id']
+    #         if kinlaw_id in self.bad_kinlawid:
+    #             continue
 
-            enzyme = doc.get('enzyme')
-            if enzyme == None or len(enzyme) > 1 :
-                with open(self.cache_dir, 'a+') as f:
-                    f.write('\n  There are more than 1 or no enzyme in kinetic law {}'.format(kinlaw_id))
-                continue
+    #         enzyme = doc.get('enzyme')
+    #         if enzyme == None or len(enzyme) > 1 :
+    #             with open(self.cache_dir, 'a+') as f:
+    #                 f.write('\n  There are more than 1 or no enzyme in kinetic law {}'.format(kinlaw_id))
+    #             continue
 
-            subunits = enzyme[0]['subunits']
+    #         subunits = enzyme[0]['subunits']
             
-            taxon = doc['taxon']
+    #         taxon = doc['taxon']
 
-            if len(subunits) == 0:
-                name = enzyme[0]['name']
-                if name != None:
-                    results = self.protein_manager.get_id_by_name(name)
-                    for result in results:
-                        query = {'uniprot_id': result['uniprot_id']}
-                        self.col.update_one(query, {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
-                            collation=collation)
-                else:
-                    with open(self.cache_dir, 'a+') as f:
-                        f.write('\n  Enzyme in kinetic law with ID {} has no name or uniprot_id'.format(kinlaw_id))                    
+    #         if len(subunits) == 0:
+    #             name = enzyme[0]['name']
+    #             if name != None:
+    #                 results = self.protein_manager.get_id_by_name(name)
+    #                 for result in results:
+    #                     query = {'uniprot_id': result['uniprot_id']}
+    #                     self.col.update_one(query, {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
+    #                         collation=collation)
+    #             else:
+    #                 with open(self.cache_dir, 'a+') as f:
+    #                     f.write('\n  Enzyme in kinetic law with ID {} has no name or uniprot_id'.format(kinlaw_id))                    
 
-            else:
-                proteins = []
-                for subunit in subunits:
-                    proteins.append(subunit['uniprot'])
-                query = {'uniprot_id': {'$in': proteins}}
-                projection = {'uniprot_id': 1}
-                protein_docs = self.col.find(filter=query, projection=projection, collation=collation)
-                for protein_doc in protein_docs:
-                    self.col.update_one({'uniprot_id': protein_doc['uniprot_id']},
-                                        {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
-                                        upsert=True, collation=collation)
+    #         else:
+    #             proteins = []
+    #             for subunit in subunits:
+    #                 proteins.append(subunit['uniprot'])
+    #             query = {'uniprot_id': {'$in': proteins}}
+    #             projection = {'uniprot_id': 1}
+    #             protein_docs = self.col.find(filter=query, projection=projection, collation=collation)
+    #             for protein_doc in protein_docs:
+    #                 self.col.update_one({'uniprot_id': protein_doc['uniprot_id']},
+    #                                     {'$push': {'kinetics': {'kinlaw_id': kinlaw_id, 'ncbi_taxonomy_id': taxon} } }, 
+    #                                     upsert=True, collation=collation)
 
     def load_bad_kinlaw(self):
         '''
