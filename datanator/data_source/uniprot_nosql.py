@@ -149,7 +149,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                     'observation': 1, 'organ': 1}
         docs = col_pax.find(filter=query, projection=projection, batch_size=5)
         count = col_pax.count_documents(query)
-        progress = 0
+        progress = 285
         for i, doc in enumerate(docs[progress:]):            
             organ = doc['organ']
             if self.verbose and i % 1 == 0:
@@ -197,7 +197,11 @@ def main():
     # p.start()
     # p.join()
 
-    p = Process(target=manager.fill_species_info())
+    # p = Process(target=manager.fill_species_info())
+    # p.start()
+    # p.join()
+
+    p = Process(target=manager.load_abundance_from_pax())
     p.start()
     p.join()
 

@@ -41,7 +41,7 @@ Install ``datanator``
 Second, please run the following shell commands to clone and install ``datanator`` from GitHub::
 
     git clone git@github.com:KarrLab/datanator.git
-    pip3 install -e datanator
+    python3 -m pip install -e datanator
 
 Because ``datanator`` is under active development, we recommend regularly pulling the latest revision of ``datanator`` from GitHub.
 
