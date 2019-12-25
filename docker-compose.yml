@@ -24,7 +24,7 @@ services:
   #   restart: always
   #   volumes:
   #     - ./datanator/data_source/cache/mongo:/data/db
-  #     - ../:/root/host/karr_lab
+  #     - ../:/root/karr_lab
   #   ports:
   #     - "27017:27017"
   #   depends_on:
@@ -33,8 +33,8 @@ services:
   # mongosetup:
   #   image: lzy7071/mongo-curl:latest
   #   volumes:
-  #     - ../:/root/host/karr_lab
-  #   entrypoint: [ "bash", "/root/host/karr_lab/datanator/scripts/mongorestore.sh" ]
+  #     - ../:/root/karr_lab
+  #   entrypoint: [ "bash", "/root/karr_lab/datanator/scripts/mongorestore.sh" ]
   #   restart: on-failure
   #   depends_on:
   #     - mongo

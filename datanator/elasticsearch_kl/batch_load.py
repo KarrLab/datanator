@@ -230,8 +230,8 @@ def main():
     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
 
-    filter_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
-    analyzer_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
+    filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
+    analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
     
     # old_index = 'protein'
     # new_index = 'protein_something'
@@ -239,11 +239,11 @@ def main():
     # _, _, _, = manager.migrate_index(new_index, old_index)
 
 
-    # # data from "protein" collection
+    # data from "protein" collection
     # index_name = 'protein'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
-    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
@@ -254,7 +254,7 @@ def main():
     #                                                 db, username, password, authSource=authDB)
     # ecmdb = 'ecmdb'
     # _ = manager.delete_index(ecmdb)
-    # ecmdb_mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ecmdb.json'
+    # ecmdb_mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ecmdb.json'
     # ecmdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ecmdb_mappings_dir)
     # ecmdb_setting_file = ecmdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(ecmdb, ecmdb_setting_file)
@@ -262,7 +262,7 @@ def main():
 
     # ymdb = 'ymdb'
     # _ = manager.delete_index(ymdb)
-    # ymdb_mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ymdb.json'
+    # ymdb_mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/ymdb.json'
     # ymdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ymdb_mappings_dir)
     # ymdb_setting_file = ymdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(ymdb, ymdb_setting_file)    
@@ -272,7 +272,7 @@ def main():
     # index_name = 'metabolites_meta'
     # _ = manager.create_index(index_name)
     # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
-    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
@@ -281,7 +281,7 @@ def main():
     # data from "sabio_rk_old" collection
     # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
     # index_name = 'sabio_rk'
-    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
@@ -305,7 +305,7 @@ def main():
     # data from "taxon_tree" collection
     # index_name = 'taxon_tree'
     # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB, collection_str=index_name)
-    # mappings_dir = '/root/host/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/taxon_tree.json'
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/taxon_tree.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
