@@ -9,9 +9,14 @@ services:
     ports:
       - "10001:5002"
     volumes: 
-      - "../:/root/host/karr_lab"
+      - "../:/root/karr_lab"
       - "/home/zl/.wc:/root/.wc"
-    # command: ["python3 -m pip", "install", "-e", "/root/host/karr_lab/datanator"]
+    entrypoint: >
+      sh -c "python3 -m pip install pkg-utils
+      && python3 -m pip install -e ~/karr_lab/wc_utils/
+      && python3 -m pip install -e ~/karr_lab/karr_lab_aws_manager/
+      && python3 -m pip install -e ~/karr_lab/datanator_query_python/
+      && python3 -m pip install -e ~/karr_lab/datanator/"
 
   # mongo:
   #   image: mongo:4.0.10
