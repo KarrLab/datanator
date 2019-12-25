@@ -12,11 +12,12 @@ services:
       - "../:/root/karr_lab"
       - "/home/zl/.wc:/root/.wc"
     entrypoint: >
-      sh -c "python3 -m pip install pkg-utils
+      bash -c "python3 -m pip install pkg-utils
       && python3 -m pip install -e ~/karr_lab/wc_utils/
       && python3 -m pip install -e ~/karr_lab/karr_lab_aws_manager/
       && python3 -m pip install -e ~/karr_lab/datanator_query_python/
-      && python3 -m pip install -e ~/karr_lab/datanator/"
+      && python3 -m pip install -e ~/karr_lab/datanator/
+      && tail -f /dev/null"
 
   # mongo:
   #   image: mongo:4.0.10
