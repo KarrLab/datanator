@@ -32,7 +32,6 @@ xmltodict
 ftputil
 elasticsearch
 genson
-quilt
 jsonpickle
 datanator_query_python
 karr_lab_aws_manager
