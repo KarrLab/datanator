@@ -5,6 +5,7 @@ bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
 ete3
+flask_migrate
 jxmlease
 marshmallow_sqlalchemy
 numpy
