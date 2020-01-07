@@ -115,7 +115,9 @@ class RnaHLUtil(mongo_util.MongoUtil):
                 break
             if index % 10 == 0 and self.verbose:
                 print("Inserting locus {}: {} out of {} into uniprot collection.".format(index, row[identifier], row_count))
-            name = row[identifier]
+            names = row[identifier].split(',')
+            condition = ' or '
+            name = condition.join(names)
             if identifier_type == 'oln':
                 self.fill_uniprot_by_oln(name, species=species)
             elif identifier_type == 'gene_name':

@@ -49,7 +49,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             msg (:obj:`str`, optional): Query message. Defaults to ''.
             species (:obj:`list`, optional): species information to extract from df and loaded into uniprot. Defaults to None.
         """
-        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN)'
+        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN),database(EMBL),database(RefSeq)'
         if not query:
             url = self.url + fields
         else:
@@ -63,7 +63,10 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         if not math.isnan(self.max_entries):
            url += '&limit={}'.format(self.max_entries)
         
-        response = requests.get(url, stream=False)
+        try:
+            response = requests.get(url, stream=False)
+        except requests.exceptions.ConnectionError:
+            pass 
         response.raise_for_status()
 
         try:
@@ -73,7 +76,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number', 'gene_name_alt',
-            'gene_name_orf', 'gene_name_oln'
+            'gene_name_orf', 'gene_name_oln', 'sequence_embl', 'sequence_refseq'
         ]
         data['entrez_id'] = data['entrez_id'].astype(str).str.replace(';', '')
 
@@ -83,10 +86,25 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         data['gene_name_oln'] = data['gene_name_oln'].astype(str).str.split(' ')
         data['gene_name_orf'] = data['gene_name_orf'].astype(str).str.split(' ')
         data['gene_name_alt'] = data['gene_name_alt'].astype(str).str.split(' ')
+        data['sequence_embl'] = self.embl_helper(data['sequence_embl'].astype(str).str)
+        data['sequence_refseq'] = self.embl_helper(data['sequence_refseq'].astype(str).str)
         if species is None:
             self.load_df(data)
         else:
             self.load_df(data.loc[data['ncbi_taxonomy_id'].isin(species)])
+
+    def embl_helper(self, s):
+        """Processing emble or refseq strings into a list of standard
+        format. "NP_796298.2 [E9PXF8-1];XP_006507989.1 [E9PXF8-2];" ->
+        ['NP_796298.2', 'XP_006507989.1'].
+        
+        Args:
+            s (:obj:`pandas.Dataframe`): object to be processed.
+
+        Return:
+            (:obj:`list` of :obj:`str`): list of processed strings
+        """
+        return s.replace('[', '').str.replace(';',' ').str.replace(']', '').str.split(' ').str[:-1]
 
     # load pandas.DataFrame into MongoDB
     def load_df(self, df):
