@@ -13,7 +13,7 @@ obj_tables
 openbabel
 openpyxl
 pandas
-pint >= 0.9
+pint >= 0.10
 psycopg2_binary
 pubchempy
 python_dateutil
