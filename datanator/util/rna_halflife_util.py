@@ -51,7 +51,7 @@ class RnaHLUtil(mongo_util.MongoUtil):
             oln (:obj:`str`): Ordered locus name
             species (:obj:`list`): NCBI Taxonomy ID of the species 
         """
-        gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_oln(oln, species=species)
+        gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_oln(oln.split(' or '), species=species)
         if gene_name is None and protein_name is None: # no such entry in uniprot collection
             self.uniprot_collection_manager.load_uniprot(query=True, msg=oln, species=species)
         else:
@@ -64,9 +64,22 @@ class RnaHLUtil(mongo_util.MongoUtil):
             gene_name (:obj:`str`): Ordered locus name
             species (:obj:`list`): NCBI Taxonomy ID of the species 
         """
-        protein_name = self.uniprot_query_manager.get_protein_name_by_gn(gene_name, species=species)
+        protein_name = self.uniprot_query_manager.get_protein_name_by_gn(gene_name.split(' or '), species=species)
         if protein_name is None: # no such entry in uniprot collection
             self.uniprot_collection_manager.load_uniprot(query=True, msg=gene_name, species=species)
+        else:
+            return
+
+    def fill_uniprot_by_embl(self, embl, species=None):
+        """Fill uniprot collection using EMBL data
+        
+        Args:
+            embl (:obj:`str`): sequence embl data
+            species (:obj:`list`): NCBI Taxonomy ID of the species 
+        """
+        gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_embl(embl.split(' or '), species=species)
+        if protein_name is None: # no such entry in uniprot collection
+            self.uniprot_collection_manager.load_uniprot(query=True, msg=embl, species=species)
         else:
             return
 
@@ -122,3 +135,5 @@ class RnaHLUtil(mongo_util.MongoUtil):
                 self.fill_uniprot_by_oln(name, species=species)
             elif identifier_type == 'gene_name':
                 self.fill_uniprot_by_gn(name, species=species)
+            elif identifier_type == 'sequence_embl':
+                self.fill_uniprot_by_embl(name, species=species)

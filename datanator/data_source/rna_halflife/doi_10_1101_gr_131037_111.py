@@ -40,8 +40,8 @@ class Halflife(rna_halflife_util.RnaHLUtil):
         """
         url = """https://genome.cshlp.org/content/suppl/2012/02/06/gr.131037.111.DC1/Supp_Table_2.xlsx"""
         names = ['Accession ID']
-        df_10987 = self.make_df(url, 'V1ncodemouse_probe_annotations_', names=names, usecols='B', skiprows=[0,1], nrows=34509)
-        self.fill_uniprot_with_df(df_10987, 'Accession ID')
+        df_10987 = self.make_df(url, 'V1ncodemouse_probe_annotations_', names=names, usecols='B', skiprows=list(range(0,27240)), nrows=34509)
+        self.fill_uniprot_with_df(df_10987, 'Accession ID', identifier_type='sequence_embl', species=[10090])
 
     def fill_rna_half_life(self, df, species):
         """Load df into rna_halflife collection
@@ -58,7 +58,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                 print("Processing locus {} out {}".format(i, row_count))
             halflives = {}
             oln = row['Accession ID']
-            protein_annotation = row['UniGene Symbol']
+            protein_annotation = row['UniGene Name']
 
             halflives['transcript_size'] = row['Transcript Size']
             halflives['cds_size'] = row['CDS Size']
@@ -74,7 +74,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
             halflives['accession_id'] = oln.split(',')
             halflives['ncbi_taxonomy_id'] = species[1]
 
-            gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_oln(oln)
+            gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_embl(oln.split(','), species=[10090])
             
             if gene_name is not None: # record exists in uniprot collection with gene_name
                 self.rna_hl_collection.update_one({'gene_name': gene_name},
@@ -91,10 +91,10 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                                                                 'protein_synonyms': {'$each': [protein_annotation, protein_name]}}}, 
                                                    collation=self.collation, upsert=True)
             else:
-                query = {'halflives.ordered_locus_name': oln}
+                query = {'halflives.accession_id': {'$in': oln}}
                 doc = self.rna_hl_collection.find_one(filter=query, collation=self.collation)
                 if doc is not None:
-                    self.rna_hl_collection.update_one({'halflives.ordered_locus_name': oln},
+                    self.rna_hl_collection.update_one({'halflives.accession_id': halflives['accession_id']},
                                                     {'$set': {'modified': datetime.datetime.utcnow(),
                                                               'gene_name': gene_name},
                                                     '$addToSet': {'halflives': halflives,
@@ -122,13 +122,13 @@ def main():
         username=username, password=password, verbose=True, max_entries=float('inf'),
         des_db=des_db, rna_col=rna_col, cache_dir=cache_dir)
     url = 'https://genome.cshlp.org/content/suppl/2012/02/06/gr.131037.111.DC1/Supp_Table_2.xlsx'
-    src.load_uniprot()
+    # src.load_uniprot()
     # names = ['ordered_locus_name', 'half_life_ga_2', 'reads_per_kb_per_mb',
     #         'transcriptional_start_sites', 'transcriptional_end_sites', 'operon',
     #         'gene_start', 'gene_end', 'strand', 'gene_name', 'protein_annotation',
     #         'cog', 'kegg', 'half_life_qpcr', 'half_life_454']
     # df = src.make_df(url, 'V1ncodemouse_probe_annotations_', names=names, usecols='A:O', skiprows=[0,1], nrows=34509)
-    # src.fill_rna_half_life(df, names, ['Bacillus cereus ATCC 10987', 222523])
+    # src.fill_rna_half_life(df, names, ['Mus musculus', 10090])
     # shutil.rmtree(cache_dir)
 
 if __name__ == '__main__':
