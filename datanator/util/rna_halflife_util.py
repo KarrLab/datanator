@@ -77,13 +77,13 @@ class RnaHLUtil(mongo_util.MongoUtil):
             embl (:obj:`str`): sequence embl data
             species (:obj:`list`): NCBI Taxonomy ID of the species 
         """
-        gene_name, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_embl(embl.split(' or '), species=species)
+        _, protein_name = self.uniprot_query_manager.get_gene_protein_name_by_embl(embl.split(' or '), species=species)
         if protein_name is None: # no such entry in uniprot collection
             self.uniprot_collection_manager.load_uniprot(query=True, msg=embl, species=species)
         else:
             return
 
-    def make_df(self, url, sheet_name, header=None, names=None, usecols=None,
+    def make_df(self, url, sheet_name, header=0, names=None, usecols=None,
                 skiprows=None, nrows=None, na_values=None, file_type='xlsx',
                 file_name=None):
         """Read online excel file as dataframe
