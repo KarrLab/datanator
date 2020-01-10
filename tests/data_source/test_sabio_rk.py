@@ -20,7 +20,6 @@ import math
 import mock
 import numpy
 import os
-import quilt
 import scipy.constants
 import shutil
 import sqlalchemy
@@ -28,7 +27,6 @@ import sys
 import tempfile
 import unittest
 import wc_utils.config
-import wc_utils.quilt
 
 warning_util.disable_warnings()
 

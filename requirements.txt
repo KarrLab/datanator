@@ -5,6 +5,7 @@ bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
 ete3
+flask_migrate
 jxmlease
 marshmallow_sqlalchemy
 numpy
@@ -12,8 +13,7 @@ obj_tables
 openbabel
 openpyxl
 pandas
-pint >= 0.9
-pronto
+pint >= 0.10
 psycopg2_binary
 pubchempy
 python_dateutil
@@ -33,7 +33,6 @@ xmltodict
 ftputil
 elasticsearch
 genson
-quilt
 jsonpickle
 datanator_query_python
 karr_lab_aws_manager
