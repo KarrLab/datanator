@@ -423,7 +423,7 @@ class Reaction(Interaction):
         """ Get list of pairs of similar reactants and products
 
         Note: This requires the modeler to have ordered the reactans and products by their similarity. The modeler is required to
-        specify this pairing because it cannot easily be computed. In particular, we have tried to use Tanitomo similarity to
+        specify this pairing because it cannot easily be computed. In particular, we have tried to use Tanimoto similarity to
         predict reactant-product pairings, but this doesn't adequately capture reaction centers.
 
         Returns:
