@@ -1,4 +1,5 @@
 from datanator.util import mongo_util, file_util
+from datanator_query_python.query import query_sabiork_old
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 from pymongo import ASCENDING
@@ -21,6 +22,7 @@ class RxnAggregate:
                                                               db=destination_database).con_db(collection)
         self.mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                   password=password, authSource=authSource, db=src_database)
+        self.query_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, password=password, authSource=authSource, username=username)
         self.file_manager = file_util.FileUtil()
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.verbose = verbose
@@ -41,17 +43,26 @@ class RxnAggregate:
             if i == self.max_entries:
                 break
             kinlaw_id = doc['kinlaw_id']
+            _, have = self.query_manager.get_rxn_with_prm([kinlaw_id])
+            if len(have) == 1:
+                with_prm = True
+            else:
+                with_prm = False
+            key = 'has_poi.'+str(kinlaw_id)
             rxn_id = self.get_rxn_id(doc)
             reactants = self.create_reactants(doc)
             substrate_names, product_names = self.extract_reactant_names(doc)
             enzyme_names = self.extract_enzyme_names(doc)
+            ec = self.get_ec(doc)
             self.col.update_one({'rxn_id': rxn_id},
                                 {'$addToSet': {'kinlaw_id': kinlaw_id},
                                 '$set': {'substrates': reactants['substrate_aggregate'],
                                         'products': reactants['product_aggregate'],
                                         'substrate_names': substrate_names,
                                         'product_names': product_names,
-                                        'enzyme_names': enzyme_names}}, upsert=True)
+                                        'enzyme_names': enzyme_names,
+                                        'ec-code': ec,
+                                        key: with_prm}}, upsert=True)
             if i == 0:
                 self.col.create_index([("rxn_id", ASCENDING)], background=True)
 
@@ -59,7 +70,13 @@ class RxnAggregate:
         resource = doc['resource']
         sr = self.file_manager.search_dict_list(resource, 'namespace', 'sabiork.reaction')
         _id = sr[0]['id']
-        return int(_id)    
+        return int(_id)
+
+    def get_ec(self, doc):
+        resource = doc['resource']
+        sr = self.file_manager.search_dict_list(resource, 'namespace', 'ec-code')
+        _id = sr[0]['id']
+        return _id
     
     def create_reactants(self, doc):
         result = {}

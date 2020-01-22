@@ -213,7 +213,8 @@ class MongoToES(es_util.EsUtil):
                     count (:obj:`int`): number of documents returned
         '''
         mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
-                                            password=password, authSource=authSource, db=db)
+                                            password=password, authSource=authSource, db=db,
+                                            readPreference=readPreference)
         _, _, collection = mongo_manager.con_db(collection_str)
         docs = collection.find(filter=query)
         count = collection.count_documents(query)
@@ -230,8 +231,8 @@ def main():
     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
 
-    filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
-    analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
+    # filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
+    # analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
     
     # old_index = 'protein'
     # new_index = 'protein_something'
@@ -295,12 +296,13 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
-    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
-    # index_schema_path = str(Path('~/host/karr_lab/datanator/datanator/data_source/schema/rna_halflife.json').expanduser())
+    count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
+    print(count)
+    # _ = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
     # _ = manager.create_index('rna_halflife', mappings=index_schema)
-    # status = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+    _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
     # data from "taxon_tree" collection
     # index_name = 'taxon_tree'
@@ -311,8 +313,8 @@ def main():
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='tax_id')
 
-    # r = manager.index_health_status()
-    # print(r.content.decode('utf-8'))
+    r = manager.index_health_status()
+    print(r.content.decode('utf-8'))
     # print('Operation status: {}'.format(status.content))
 
 if __name__ == "__main__":
