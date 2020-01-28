@@ -40,10 +40,12 @@ class KeggOrgCode(mongo_util.MongoUtil):
     def parse_names(self):
         """Parse HTML to get kegg organism names.
         """
-        not_in = ['<img alt="KEGG icon" border="0" src="/Fig/kegg128.gif"/>', 'Species', 'Genus', 'Viruses', 'Meta', 'Animals', 'Vertebrates', 'Mammals', 'RefSeq']
+        not_in = ['prag']
         for soup in self.soups.find_all(self.has_href_but_no_id):
+            if soup.get('href') == '/dbget-bin/www_bfind?T00544': # special case
+                yield 'Haemophilus influenzae PittGG (nontypeable)'
             result = re.search('.>(.*)<\/a>', str(soup))
-            if result is not None and not soup.get('href').startswith('ftp') and not soup.get('href').startswith('http'):
+            if result is not None and soup.get('href').startswith('/dbget-bin'):
                 if result.group(1) not in not_in:
                     yield result.group(1)
                 else:
@@ -66,8 +68,11 @@ class KeggOrgCode(mongo_util.MongoUtil):
         count = 0
         result = []
         for i, (_id, name) in enumerate(zip(ids, names)):
+            if count == bulk_size:
+                break
             if i < offset:
                 continue
-            if count < bulk_size:
+            if count < bulk_size:   
                 result.append({"kegg_organism_id": _id, "org_name": name})
+                count += 1
         return result
