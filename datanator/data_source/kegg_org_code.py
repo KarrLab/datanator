@@ -43,7 +43,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
         not_in = ['<img alt="KEGG icon" border="0" src="/Fig/kegg128.gif"/>', 'Species', 'Genus', 'Viruses', 'Meta', 'Animals', 'Vertebrates', 'Mammals', 'RefSeq']
         for soup in self.soups.find_all(self.has_href_but_no_id):
             result = re.search('.>(.*)<\/a>', str(soup))
-            if result is not None:
+            if result is not None and not soup.get('href').startswith('ftp') and not soup.get('href').startswith('http'):
                 if result.group(1) not in not_in:
                     yield result.group(1)
                 else:

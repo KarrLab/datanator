@@ -47,3 +47,8 @@ class TestKeggOrgCode(unittest.TestCase):
             i += 1
         self.assertEqual(result[0], 'Homo sapiens (human)')
         self.assertEqual(len(result), self.src.max_entries)
+
+    # @unittest.skip('passed')
+    def test_make_bulk(self):
+        result = self.src.make_bulk()
+        print(len(result))
