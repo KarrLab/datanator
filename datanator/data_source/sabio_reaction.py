@@ -34,7 +34,7 @@ class RxnAggregate:
         _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
         docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
-        start = 2900
+        start = 0
         for i, doc in enumerate(docs[start:]):
             if self.verbose and i % 100 == 0:
                 print('Processing document {} out of {}'.format(i+start, count))
