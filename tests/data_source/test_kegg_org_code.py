@@ -50,5 +50,5 @@ class TestKeggOrgCode(unittest.TestCase):
 
     # @unittest.skip('passed')
     def test_make_bulk(self):
-        result = self.src.make_bulk(offset=1000)
+        result = self.src.make_bulk(offset=6000)
         print(result)

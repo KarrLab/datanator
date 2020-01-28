@@ -76,3 +76,6 @@ class KeggOrgCode(mongo_util.MongoUtil):
                 result.append({"kegg_organism_id": _id, "org_name": name})
                 count += 1
         return result
+
+    def bulk_load(self):
+        pass
