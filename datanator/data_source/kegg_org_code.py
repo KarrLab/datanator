@@ -5,12 +5,15 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datanator_query_python.util import mongo_util
+from pymongo.collation import Collation, CollationStrength
 
 
 class KeggOrgCode(mongo_util.MongoUtil):
 
     def __init__(self, MongoDB, db, cache_dirname=None, replicaSet=None, verbose=False, max_entries=float('inf'),
                 username=None, password=None, readPreference=None, authSource='admin'):
+        super().__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, verbose=verbose, max_entries=max_entries,
+                        db=db, username=username, password=password, authSource=authSource, readPreference=readPreference)
         self.ENDPOINT_DOMAINS = {
             'root': 'https://www.genome.jp/kegg/catalog/org_list.html',
         }
@@ -19,11 +22,11 @@ class KeggOrgCode(mongo_util.MongoUtil):
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection = 'kegg_organisms_code'
-        super().__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, verbose=verbose, max_entries=max_entries,
-        db=db, username=username, password=password, authSource=authSource, readPreference=readPreference)
+        self.collection_str = 'kegg_organisms_code'
         r = requests.get(self.ENDPOINT_DOMAINS['root'])
         self.soups = BeautifulSoup(r.content, 'html.parser')
+        self.client, self.db, self.collection = self.con_db(self.collection_str)
+        self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
 
     def has_href_and_id(self, tag):
         return tag.has_attr('href') and tag.has_attr('id')
@@ -77,5 +80,19 @@ class KeggOrgCode(mongo_util.MongoUtil):
                 count += 1
         return result
 
-    def bulk_load(self):
-        pass
+    def bulk_load(self, bulk_size=100):
+        """Loading bulk data into MongoDB.
+        
+        Args:
+            bulk_size(:obj:`int`): number of entries per insertion. Defaults to 100.
+        """
+        offset = 0
+        length = bulk_size
+        count = 0
+        while length != 0:
+            if count == self.max_entries:
+                break
+            count += 1
+            docs = self.make_bulk(offset=offset * count, bulk_size=bulk_size)
+            self.collection.insert_many(docs)
+            length = len(docs)
