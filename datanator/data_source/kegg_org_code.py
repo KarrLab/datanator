@@ -52,7 +52,13 @@ class KeggOrgCode(mongo_util.MongoUtil):
         soup = BeautifulSoup(r.content, 'html.parser')
         result = soup.find(string=re.compile('Taxonomy ID: '))
         if result is None:
-            return result
+            suggestion = soup.find_all(attrs={"title": "species"})
+            if suggestion == []:
+                return None
+            else:
+                href = suggestion[0].get('href')
+                id_list = re.search('.id=(.*)&lvl=', str(href))
+                return int(id_list.group(1))
         else:
             return int(str(result).split(': ')[1])
     
@@ -96,28 +102,17 @@ class KeggOrgCode(mongo_util.MongoUtil):
         """
         ids = self.parse_ids()
         names = self.parse_names()
-        ncbi_ids = self.parse_species_id()
-        species_names = self.parse_species_name()
         count = 0
         result = []
-        for i, (_id, name, ncbi_id, species_name) in enumerate(zip(ids, names, ncbi_ids, species_names)):
+        for i, (_id, name) in enumerate(zip(ids, names)):
             if count == bulk_size:
                 break
             if i < offset:
                 continue
             if count < bulk_size:
-                if species_name == 'Lokiarchaeum sp. GC14 75':
-                    result.append({"kegg_organism_id": _id, "org_name": [name, species_name],
-                                    'ncbi_taxonomy_id': 1538547})
-                elif species_name == 'archaeon GW2011 AR10':
-                    result.append({"kegg_organism_id": _id, "org_name": [name, species_name],
-                                    'ncbi_taxonomy_id': 1579370})
-                elif species_name == 'archaeon GW2011 AR10':
-                    result.append({"kegg_organism_id": _id, "org_name": [name, species_name],
-                                    'ncbi_taxonomy_id': 1579378})                     
-                else:   
-                    result.append({"kegg_organism_id": _id, "org_name": [name, species_name],
-                                    'ncbi_taxonomy_id': ncbi_id})
+                ncbi_id = self.get_ncbi_id(name.split(' (')[0])   
+                result.append({"kegg_organism_id": _id, "org_name": name,
+                                'ncbi_taxonomy_id': ncbi_id})
                 count += 1
         return result
 
@@ -182,8 +177,8 @@ class KeggOrgCode(mongo_util.MongoUtil):
         while length != 0:
             if count == self.max_entries:
                 break
-            if count % 10 == 0 and self.verbose:
-                print('Inserting bulk {} of {}'.format(count, bulk_size))            
+            if count % 1 == 0 and self.verbose:
+                print('Inserting bulk {} ...'.format(count))            
             docs = self.make_bulk(offset=count * bulk_size, bulk_size=bulk_size)
             length = len(docs)
             if length != 0:
