@@ -20,7 +20,7 @@ class TestKeggOrgCode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.src.db.drop_collection('kegg_organism_code')
+        # cls.src.db.drop_collection('kegg_organism_code')
 
     @unittest.skip('passed')
     def test_parse_ids(self):
@@ -53,5 +53,9 @@ class TestKeggOrgCode(unittest.TestCase):
         result = self.src.make_bulk(offset=6000)
         self.assertEqual(len(result), 100)
 
+    @unittest.skip('passed')
     def test_bulk_load(self):
         self.src.bulk_load()
+
+    def test_fill_ncbi_id(self):
+        self.src.fill_ncbi_id()

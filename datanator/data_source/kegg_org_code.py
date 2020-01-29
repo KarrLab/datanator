@@ -5,6 +5,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datanator_query_python.util import mongo_util
+from datanator_query_python.query import query_taxon_tree
 from pymongo.collation import Collation, CollationStrength
 import datanator.config.core
 
@@ -23,11 +24,14 @@ class KeggOrgCode(mongo_util.MongoUtil):
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection_str = 'kegg_organism_code'
+        self.collection_str = 'kegg_organisms_code'
         r = requests.get(self.ENDPOINT_DOMAINS['root'])
         self.soups = BeautifulSoup(r.content, 'html.parser')
         self.client, self.db, self.collection = self.con_db(self.collection_str)
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
+        self.taxon_manager = query_taxon_tree.QueryTaxonTree(collection_str='taxon_tree', 
+                verbose=verbose, max_entries=max_entries, username=username, MongoDB=MongoDB, 
+                password=password, db='datanator', authSource=authSource, readPreference=readPreference)
 
     def has_href_and_id(self, tag):
         return tag.has_attr('href') and tag.has_attr('id')
@@ -100,6 +104,27 @@ class KeggOrgCode(mongo_util.MongoUtil):
                 self.collection.insert_many(docs)            
             count += 1
 
+    def fill_ncbi_id(self):
+        """Fill collection with ncbi_taxonomy_id.
+        """
+        query = {}
+        docs = self.collection.find(query)
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if i % 50 == 0 and self.verbose:
+                print('Processing doc {} out of {}.'.format(i, count))
+            name = doc['org_name']
+            ids = self.taxon_manager.get_ids_by_name(name)
+            if len(ids) > 1:
+                self.collection.update_one({'org_name': name},
+                                            {'$set': {'ncbi_taxonomy_id': ids,
+                                                      'ambiguous': True}}, upsert=False)
+            else:
+                self.collection.update_one({'org_name': name},
+                                            {'$set': {'ncbi_taxonomy_id': ids,
+                                                      'ambiguous': False}}, upsert=False)
 
 def main():
     db = 'datanator'
