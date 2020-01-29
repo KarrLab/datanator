@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from datanator_query_python.util import mongo_util
 from pymongo.collation import Collation, CollationStrength
+import datanator.config.core
 
 
 class KeggOrgCode(mongo_util.MongoUtil):
@@ -22,7 +23,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection_str = 'kegg_organisms_code'
+        self.collection_str = 'kegg_organism_code'
         r = requests.get(self.ENDPOINT_DOMAINS['root'])
         self.soups = BeautifulSoup(r.content, 'html.parser')
         self.client, self.db, self.collection = self.con_db(self.collection_str)
@@ -86,13 +87,28 @@ class KeggOrgCode(mongo_util.MongoUtil):
         Args:
             bulk_size(:obj:`int`): number of entries per insertion. Defaults to 100.
         """
-        offset = 0
         length = bulk_size
         count = 0
         while length != 0:
             if count == self.max_entries:
                 break
-            count += 1
-            docs = self.make_bulk(offset=offset * count, bulk_size=bulk_size)
-            self.collection.insert_many(docs)
+            if count % 10 == 0 and self.verbose:
+                print('Inserting bulk {} of {}'.format(count, bulk_size))            
+            docs = self.make_bulk(offset=count * bulk_size, bulk_size=bulk_size)
             length = len(docs)
+            if length != 0:
+                self.collection.insert_many(docs)            
+            count += 1
+
+
+def main():
+    db = 'datanator'
+    username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+    password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
+    src = KeggOrgCode(MongoDB, db, username=username, password=password,
+                    readPreference='nearest', authSource='admin', verbose=True)
+    src.bulk_load()
+
+if __name__ == '__main__':
+    main()
