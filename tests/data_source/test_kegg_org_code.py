@@ -48,7 +48,7 @@ class TestKeggOrgCode(unittest.TestCase):
         self.assertEqual(result[0], 'Homo sapiens (human)')
         self.assertEqual(len(result), self.src.max_entries)
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_make_bulk(self):
         result = self.src.make_bulk(offset=500)
         print(result)
@@ -83,3 +83,19 @@ class TestKeggOrgCode(unittest.TestCase):
             i += 1
         self.assertEqual(result[0], '9606')
         self.assertEqual(len(result), self.src.max_entries)
+
+    @unittest.skip('passed')
+    def test_matching_species_name_id(self):
+        names = self.src.parse_species_name()
+        ids = self.src.parse_species_id()
+        i = 0
+        result = ''
+        for i, (name, _id) in enumerate(zip(names, ids)):
+            result = {name: _id}
+        self.assertEqual(result, {'Candidatus Bathyarchaeota archaeon BA2': 1700836})
+
+    def test_get_ncbi_id(self):
+        name = 'Ornithobacterium rhinotracheale ORT-UMN 88'
+        self.assertEqual(self.src.get_ncbi_id(name), 1401325)
+        name = 'latoieruwerwe'
+        self.assertEqual(self.src.get_ncbi_id(name), None)
