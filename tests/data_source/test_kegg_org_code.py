@@ -15,7 +15,7 @@ class TestKeggOrgCode(unittest.TestCase):
         password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
         cls.src = kegg_org_code.KeggOrgCode(MongoDB, db, max_entries=100, username=username, password=password,
-                                            readPreference='nearest', authSource='admin', verbose=True)
+                                            readPreference='nearest', authSource='admin', verbose=True, collection_str='kegg_organisms_code')
 
     @classmethod
     def tearDownClass(cls):
@@ -48,14 +48,38 @@ class TestKeggOrgCode(unittest.TestCase):
         self.assertEqual(result[0], 'Homo sapiens (human)')
         self.assertEqual(len(result), self.src.max_entries)
 
-    @unittest.skip('passed')
+    # @unittest.skip('passed')
     def test_make_bulk(self):
-        result = self.src.make_bulk(offset=6000)
+        result = self.src.make_bulk(offset=500)
+        print(result)
         self.assertEqual(len(result), 100)
 
     @unittest.skip('passed')
     def test_bulk_load(self):
         self.src.bulk_load()
 
-    def test_fill_ncbi_id(self):
-        self.src.fill_ncbi_id()
+    @unittest.skip('passed')
+    def test_parse_species_names(self):
+        names = self.src.parse_species_name()
+        result = []
+        i = 0
+        for i, name in enumerate(names):
+            if i == self.src.max_entries:
+                return (result)
+            result.append(name)
+            i += 1
+        self.assertEqual(result[0], 'Homo sapiens')
+        self.assertEqual(len(result), self.src.max_entries)
+
+    @unittest.skip('passed')
+    def test_parse_species_ids(self):
+        names = self.src.parse_species_id()
+        result = []
+        i = 0
+        for i, name in enumerate(names):
+            if i == self.src.max_entries:
+                return (result)
+            result.append(name)
+            i += 1
+        self.assertEqual(result[0], '9606')
+        self.assertEqual(len(result), self.src.max_entries)
