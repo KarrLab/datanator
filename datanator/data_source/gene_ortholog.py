@@ -1,7 +1,8 @@
-from datanator_query_python.query import query_kegg_organism_code
+from datanator_query_python.query import query_kegg_organism_code, query_uniprot, query_kegg_orthology, query_protein
 from datanator_query_python.util import mongo_util
 import requests
 from bs4 import BeautifulSoup
+import re
 
 
 class KeggGeneOrtholog(mongo_util.MongoUtil):
@@ -12,9 +13,18 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         super().__init__(MongoDB=server, db=des_db, verbose=verbose, max_entries=max_entries,
                         username=username, password=password, authSource=authSource,
                         readPreference=readPreference)
+        self.collection_str = collection_str
+        self.max_entries = max_entries
         self.des_client, self.des_db, self.des_collection = self.con_db(collection_str)
         self.koc_manager = query_kegg_organism_code.QueryKOC(username=username, password=password,
-        server=server, authSource=authSource, collection_str='kegg_organism_code', readPreference=readPreference)
+        server=server, authSource=authSource, collection_str='kegg_organism_code', readPreference=readPreference,
+        database=src_db)
+        self.uniprot_manager = query_uniprot.QueryUniprot(username=username, password=password, server=server,
+        authSource=authSource, database=src_db, collection_str='uniprot', readPreference=readPreference)
+        self.kegg_manager = query_kegg_orthology.QueryKO(username=username, password=password, server=server,
+        authSource=authSource, database=src_db, max_entries=max_entries, verbose=verbose, readPreference=readPreference)
+        self.protein_manager = query_protein.QueryProtein(username=username, password=password, server=server,
+        authSource=authSource, database=src_db, max_entries=max_entries, verbose=verbose, readPreference=readPreference)
         self.endpoint = 'https://www.kegg.jp/ssdb-bin/ssdb_best?org_gene='
 
     def get_html(self, query):
@@ -28,14 +38,57 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         soup = BeautifulSoup(r.content, 'html.parser')
         return soup
     
-    def parse_html(self, soup, top_hits=10):
-        """Parse out the top_hits number of gene_orthologs
-        from HTML e.g. (https://www.kegg.jp/ssdb-bin/ssdb_best?org_gene=aly:ARALYDRAFT_486312).
+    def parse_html(self, soup):
+        """Parse out gene_orthologs from HTML 
+        (https://www.kegg.jp/ssdb-bin/ssdb_best?org_gene=aly:ARALYDRAFT_486312).
         
         Args:
             soup (:obj:`BeautifulSoup`): BeautifulSoup object
-            top_hits (:obj:`int`, optional): Number of hits needed. Defaults to 10.
         """
-        objs = soup.find_all(attrs={"title": "species"}, limit=top_hits)
-        for obj in objs:
-            yield obj.get('value')
+        org_gene_objs = soup.find_all(attrs={"type": "checkbox"})
+        value_objs = soup.find_all(string=re.compile('<->'))
+        for org_gene, value_str in zip(org_gene_objs, value_objs):
+            values_list = ' '.join(value_str.split()).split()
+            length = int(values_list[0])
+            sw_score = int(values_list[1])
+            try:
+                margin = int(values_list[3])
+            except ValueError:
+                margin = None
+            bits = int(values_list[4])
+            identity = float(values_list[5])
+            overlap = int(values_list[6])
+            org_gene_str = org_gene.get('value')
+            docs, count = self.uniprot_manager.get_id_by_org_gene(org_gene_str)
+            uniprot_id = []
+            if count != 0:
+                for doc in docs:
+                    uniprot_id.append(doc['uniprot_id'])                               
+            yield {'org_gene': org_gene_str,
+                   'uniprot_id': uniprot_id,
+                   'length': length,
+                   'sw_score': sw_score,
+                   'margin': margin,
+                   'bits': bits,
+                   'identity': identity,
+                   'overlap': overlap,
+                   'reference': self.endpoint + org_gene_str}
+
+    def uniprot_to_org_gene(self, uniprot_id):
+        """Given uniprot_id, convert to kegg org_gene format.
+        
+        Args:
+            uniprot_id (:obj:`str`): Uniprot ID.
+
+        Return:
+            (:obj:`str`): Kegg org_gene format.
+        """
+        protein_doc = self.protein_manager.get_meta_by_id([uniprot_id])[0] #id from db so won't have missing entries
+        ko = protein_doc.get('ko_number')
+        if ko is None:
+            return 'No KO info found.'
+        ncbi_id = protein_doc['ncbi_taxonomy_id']
+        org_code = self.koc_manager.get_org_code_by_ncbi(ncbi_id)
+        gene_id = self.kegg_manager.get_gene_ortholog_by_id_org(ko, org_code)
+        return '{}:{}'.format(org_code, gene_id)
+        
