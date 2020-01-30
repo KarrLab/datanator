@@ -61,6 +61,24 @@ class KeggOrgCode(mongo_util.MongoUtil):
                 return int(id_list.group(1))
         else:
             return int(str(result).split(': ')[1])
+
+    def get_ncbi_id_rest(self, name):
+        """Get ncbi taxonomy id of an organism using
+        api.datanator.info
+        
+        Args:
+            name (:obj:`str`): Name of the organism.
+
+        Return:
+            (:obj:`int`): NCBI Taxonomy ID.
+        """
+        endpoint = "https://api.datanator.info/ftx/text_search/num_of_index/?query_message={}&index=taxon_tree&from_=0&size=5&fields=tax_name&fields=name_txt".format(name)
+        r = requests.get(endpoint)
+        data = json.loads(r.text)
+        if data.get('taxon_tree', []) !=[]:
+            return data['taxon_tree'][0]['tax_id']
+        else:
+            return None
     
     def has_href_and_id(self, tag):
         return tag.has_attr('href') and tag.has_attr('id')
@@ -110,7 +128,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
             if i < offset:
                 continue
             if count < bulk_size:
-                ncbi_id = self.get_ncbi_id(name.split(' (')[0])   
+                ncbi_id = self.get_ncbi_id_rest(name)   
                 result.append({"kegg_organism_id": _id, "org_name": name,
                                 'ncbi_taxonomy_id': ncbi_id})
                 count += 1
@@ -173,7 +191,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
             bulk_size(:obj:`int`): number of entries per insertion. Defaults to 100.
         """
         length = bulk_size
-        count = 0
+        count = 16
         while length != 0:
             if count == self.max_entries:
                 break
