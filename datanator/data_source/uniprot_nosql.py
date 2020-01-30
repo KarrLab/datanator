@@ -158,8 +158,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                         upsert=False)
 
     def load_abundance_from_pax(self):
-        '''
-            Load protein abundance data but interating from pax collection.
+        '''Load protein abundance data but interating from pax collection.
         '''
         _, _, col_pax = self.con_db('pax')
         query = {}
