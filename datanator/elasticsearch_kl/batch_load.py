@@ -231,8 +231,8 @@ def main():
     manager = MongoToES(verbose=True, profile_name='es-poweruser', credential_path='~/.wc/third_party/aws_credentials',
                 config_path='~/.wc/third_party/aws_config', elastic_path='~/.wc/third_party/elasticsearch.ini')
 
-    # filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
-    # analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
+    filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
+    analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
     
     # old_index = 'protein'
     # new_index = 'protein_something'
@@ -271,7 +271,7 @@ def main():
 
     # # data from "metabolites_meta" collection
     # index_name = 'metabolites_meta'
-    # _ = manager.create_index(index_name)
+    # _ = manager.delete_index(index_name)
     # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
@@ -296,13 +296,13 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
-    count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
-    print(count)
+    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
+    # print(count)
     # _ = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
     # _ = manager.create_index('rna_halflife', mappings=index_schema)
-    _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+    # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
     # data from "taxon_tree" collection
     # index_name = 'taxon_tree'

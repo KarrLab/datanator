@@ -145,7 +145,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=2200)
+    manager.load_data(skip=2300)
 
 if __name__ == '__main__':
     main()
