@@ -21,7 +21,7 @@ class TestKeggOrgCode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.src.des_db.drop_collection(cls.src.collection_str)
+        # cls.src.des_db.drop_collection(cls.src.collection_str)
 
     @unittest.skip('passed')
     def test_parse_html(self):
@@ -32,6 +32,7 @@ class TestKeggOrgCode(unittest.TestCase):
                 break
             print(result)
 
+    @unittest.skip('passed')
     def test_uniprot_to_org_gene(self):
         uniprot_id = 'Q05758'
         result = self.src.uniprot_to_org_gene(uniprot_id)
