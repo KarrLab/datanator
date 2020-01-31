@@ -21,7 +21,7 @@ class TestKeggOrgCode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        # cls.src.des_db.drop_collection(cls.src.collection_str)
+        cls.src.des_db.drop_collection(cls.src.collection_str)
 
     @unittest.skip('passed')
     def test_parse_html(self):
