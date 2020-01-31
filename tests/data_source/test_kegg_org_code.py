@@ -20,7 +20,7 @@ class TestKeggOrgCode(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.src.db.drop_collection(self.src.collection_str)
+        cls.src.db.drop_collection(cls.src.collection_str)
 
     @unittest.skip('passed')
     def test_parse_ids(self):
@@ -94,7 +94,7 @@ class TestKeggOrgCode(unittest.TestCase):
             result = {name: _id}
         self.assertEqual(result, {'Candidatus Bathyarchaeota archaeon BA2': 1700836})
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_get_ncbi_id(self):
         name = 'Ornithobacterium rhinotracheale ORT-UMN 88'
         self.assertEqual(self.src.get_ncbi_id(name), 1401325)
@@ -102,3 +102,8 @@ class TestKeggOrgCode(unittest.TestCase):
         self.assertEqual(self.src.get_ncbi_id(name), None)
         name = 'Pan troglodytes'
         self.assertEqual(self.src.get_ncbi_id(name), 9598)
+
+    @unittest.skip('passed')
+    def test_get_ncbi_id_rest(self):
+        name = "homo sapiens (human)"
+        self.assertEqual(self.src.get_ncbi_id_rest(name), 9606)
