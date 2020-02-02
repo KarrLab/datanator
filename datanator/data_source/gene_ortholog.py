@@ -54,16 +54,23 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         org_gene_objs = soup.find_all(attrs={"type": "checkbox"})
         value_objs = soup.find_all(string=re.compile('<->'))
         for org_gene, value_str in zip(org_gene_objs, value_objs):
-            values_list = ' '.join(value_str.split()).split()            
-            length = int(values_list[-8])
-            sw_score = int(values_list[-7])
-            try:
-                margin = int(values_list[-5])
-            except ValueError:
-                margin = None
+            values_list = ' '.join(value_str.split()).split()
             bits = int(values_list[-4])
             identity = float(values_list[-3])
-            overlap = int(values_list[-2])
+            overlap = int(values_list[-2])            
+            margin = values_list[-5]
+            if margin[0] == '(':
+                margin = int(magin[1:-1])
+                length = int(values_list[-7])
+                sw_score = int(values_list[-6])
+            elif margin[0] == '-':
+                margin = None
+                length = int(values_list[-8])
+                sw_score = int(values_list[-7])
+            else:
+                margin = int(margin[1:-1])
+                length = int(values_list[-8])
+                sw_score = int(values_list[-7])                                
             org_gene_str = org_gene.get('value')
             docs, count = self.uniprot_manager.get_id_by_org_gene(org_gene_str)
             ncbi_id = self.koc_manager.get_ncbi_by_org_code(org_gene_str.split(':')[0])
@@ -178,7 +185,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=156253)
+    manager.load_data(skip=156503)
 
 if __name__ == '__main__':
     main()
