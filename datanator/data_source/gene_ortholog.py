@@ -60,7 +60,7 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
             overlap = int(values_list[-2])            
             margin = values_list[-5]
             if margin[0] == '(':
-                margin = int(magin[1:-1])
+                margin = int(margin[1:-1])
                 length = int(values_list[-7])
                 sw_score = int(values_list[-6])
             elif margin[0] == '-':
@@ -68,7 +68,7 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
                 length = int(values_list[-8])
                 sw_score = int(values_list[-7])
             else:
-                margin = int(margin[1:-1])
+                margin = int(margin[0:-1])
                 length = int(values_list[-8])
                 sw_score = int(values_list[-7])                                
             org_gene_str = org_gene.get('value')
@@ -146,7 +146,9 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
             skip (:obj:`int`, optional): Beginning of the documents. Defaults to 0.
             top_hits (:obj:`int`, optional): Number of top hits to iterate through. Defaults to 10.
         """
-        query = {'entrez_id': {'$ne': None}}
+        con_0 = {'entrez_id': {'$ne': None}}
+        con_1 = {'ko_number': {'$ne': "nan"}}
+        query = {'$and': [con_0, con_1]}
         projection = {'_id': 0}
         docs = self.uniprot_manager.collection.find(filter=query, projection=projection, 
                                                     collation=self.uniprot_manager.collation, skip=skip,
@@ -185,7 +187,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=156503)
+    manager.load_data(skip=157723)
 
 if __name__ == '__main__':
     main()
