@@ -70,7 +70,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         response.raise_for_status()
 
         try:
-            data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8')
+            data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8', low_memory=False)
         except pandas.errors.EmptyDataError:
             return
         data.columns = [
