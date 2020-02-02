@@ -80,7 +80,10 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         ]
         data['entrez_id'] = data['entrez_id'].astype(str).str.replace(';', '')
 
-        data['mass'] = data['mass'].str.replace(',', '')
+        try:
+            data['mass'] = data['mass'].str.replace(',', '')
+        except AttributeError:
+            pass
 
         data['ko_number'] = data['ko_number'].astype(str).str.replace(';', '')
         data['gene_name_oln'] = data['gene_name_oln'].astype(str).str.split(' ')

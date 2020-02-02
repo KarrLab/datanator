@@ -54,7 +54,6 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         org_gene_objs = soup.find_all(attrs={"type": "checkbox"})
         value_objs = soup.find_all(string=re.compile('<->'))
         for org_gene, value_str in zip(org_gene_objs, value_objs):
-            print('Processing gene {} with orthologs {}'.format(org_gene, value_str))
             values_list = ' '.join(value_str.split()).split()            
             length = int(values_list[-8])
             sw_score = int(values_list[-7])
@@ -74,9 +73,14 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
                     uniprot_id.append(doc['uniprot_id'])
             else:
                 proteins = self.parse_gene_info(org_gene_str.split(':')[1])
-                if proteins != []: 
+                if isinstance(proteins, str):
+                    self.uniprot_nosql_manager.load_uniprot(query=True, msg=proteins.split('.')[0], species=[ncbi_id])
+                    doc = self.uniprot_manager.get_info_by_entrez_id(org_gene_str.split(':')[1])
+                    if doc is not None:
+                        uniprot_id.append(doc)                    
+                elif proteins != []: 
                     for protein in proteins:
-                        self.uniprot_nosql_manager.load_uniprot(query=True, msg=protein, species=[ncbi_id])
+                        self.uniprot_nosql_manager.load_uniprot(query=True, msg=protein.split('.')[0], species=[ncbi_id])
                         doc = self.uniprot_manager.get_info_by_entrez_id(org_gene_str.split(':')[1])
                         if doc is not None:
                             uniprot_id.append(doc)
@@ -137,16 +141,18 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         """
         query = {'entrez_id': {'$ne': None}}
         projection = {'_id': 0}
-        docs = self.uniprot_manager.collection.find(filter=query, projection=projection, skip=skip)
-        count = self.uniprot_manager.collection.count_documents(query)
+        docs = self.uniprot_manager.collection.find(filter=query, projection=projection, 
+                                                    collation=self.uniprot_manager.collation, skip=skip,
+                                                    no_cursor_timeout=True)
+        count = self.uniprot_manager.collection.count_documents(query, collation=self.uniprot_manager.collation)
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
-            if i % 100 == 0 and self.verbose:
+            if i % 50 == 0 and self.verbose:
                 print('Processing document {} out of {} ...'.format(i+skip, count))
             uniprot_id = doc['uniprot_id']
             org_gene_code = self.uniprot_to_org_gene(uniprot_id)
-            print('Processing protein {} whose org_gene code is: {}'.format(uniprot_id, org_gene_code))
+            print('    Processing protein {} whose org_gene code is: {}'.format(uniprot_id, org_gene_code))
             soup = self.get_html(org_gene_code)
             results = self.parse_html(soup)
             tmp = []
@@ -158,6 +164,7 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
             self.uniprot_manager.collection.update_one({'uniprot_id': uniprot_id},
                                                        {'$set': {'orthologs': tmp}}, upsert=False, 
                                                         collation=self.uniprot_manager.collation)
+        docs.close()
 
 
 def main():
@@ -171,7 +178,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=201)
+    manager.load_data(skip=156253)
 
 if __name__ == '__main__':
     main()
