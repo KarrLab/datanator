@@ -49,7 +49,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             msg (:obj:`str`, optional): Query message. Defaults to ''.
             species (:obj:`list`, optional): species information to extract from df and loaded into uniprot. Defaults to None.
         """
-        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN),database(EMBL),database(RefSeq)'
+        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN),database(EMBL),database(RefSeq),Cross-reference (KEGG)'
         if not query:
             url = self.url + fields
         else:
@@ -76,9 +76,10 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
             'ec_number', 'entrez_id', 'status', 'ncbi_taxonomy_id', 'ko_number', 'gene_name_alt',
-            'gene_name_orf', 'gene_name_oln', 'sequence_embl', 'sequence_refseq'
+            'gene_name_orf', 'gene_name_oln', 'sequence_embl', 'sequence_refseq', 'kegg_org_gene'
         ]
         data['entrez_id'] = data['entrez_id'].astype(str).str.replace(';', '')
+        data['kegg_org_gene'] = data['kegg_org_gene'].astype(str).str.replace(';', '')
 
         try:
             data['mass'] = data['mass'].str.replace(',', '')
