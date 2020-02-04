@@ -30,7 +30,7 @@ class TestKeggOrgCode(unittest.TestCase):
                 break
             print(result)
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_make_bulk(self):
         result = self.src.make_bulk(offset=500)
         print(result)
@@ -40,3 +40,7 @@ class TestKeggOrgCode(unittest.TestCase):
     def test_get_ncbi_id_rest(self):
         name = "homo sapiens (human)"
         self.assertEqual(self.src.get_ncbi_id_rest(name), 9606)
+
+    def test_get_ncbi_id(self):
+        name = 'Mus musculus'
+        print(self.src.get_ncbi_id(name))

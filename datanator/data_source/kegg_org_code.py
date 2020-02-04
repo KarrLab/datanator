@@ -82,7 +82,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
                 name_str = str(name_row.get_text())
                 name = re.search('(.*?)\(.*?\)', name_str)
                 if name is not None:
-                    obj['org_name'] = name.group(1)[:-2]
+                    obj['org_name'] = name.group(1)[:-1]
                     obj['org_synonym'] = re.search('.*?\((.*?)\)', name_str).group(1)
                 else:
                     obj['org_name'] = name_str
@@ -104,16 +104,18 @@ class KeggOrgCode(mongo_util.MongoUtil):
         skipped = 0
         result = []
         for i, obj in enumerate(objs):
+            if i + skipped < offset:
+                continue
             if obj == {}:
                 skipped += 1
                 continue
             if count == bulk_size:
                 break
-            if i + skipped < offset:
-                continue
             if count < bulk_size:
                 name = obj['org_name']
-                ncbi_id = self.get_ncbi_id_rest(name)
+                ncbi_id = self.get_ncbi_id(name)
+                if ncbi_id is None:
+                    ncbi_id = self.get_ncbi_id_rest(name)
                 obj['ncbi_taxonomy_id'] = ncbi_id   
                 result.append(obj)
                 count += 1
