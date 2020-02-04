@@ -43,4 +43,4 @@ class TestKeggOrgCode(unittest.TestCase):
 
     def test_get_ncbi_id(self):
         name = 'Mus musculus'
-        print(self.src.get_ncbi_id(name))
+        self.assertEqual(self.src.get_ncbi_id(name), 9606)
