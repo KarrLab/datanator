@@ -23,19 +23,6 @@ class TestKeggOrgCode(unittest.TestCase):
         cls.src.db.drop_collection(cls.src.collection_str)
 
     @unittest.skip('passed')
-    def test_parse_ids(self):
-        _ids = self.src.parse_ids()
-        result = []
-        i = 0
-        for i, _id in enumerate(_ids):
-            if i == self.src.max_entries:
-                return (result)
-            result.append(_id)
-            i += 1
-        self.assertEqual(result[0], 'hsa')
-        self.assertEqual(len(result), self.src.max_entries)
-
-    @unittest.skip('passed')
     def test_parse_html_iter(self):
         results = self.src.parse_html_iter()
         for i, result in enumerate(results):
