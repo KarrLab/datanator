@@ -112,11 +112,13 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         """
         protein_doc = self.protein_manager.get_meta_by_id([uniprot_id])[0] #id from db so won't have missing entries
         ko = protein_doc.get('ko_number')
-        if ko is None:
-            return 'No KO info found.'
         ncbi_id = protein_doc['ncbi_taxonomy_id']
         org_code = self.koc_manager.get_org_code_by_ncbi(ncbi_id)
-        gene_id = self.kegg_manager.get_gene_ortholog_by_id_org(ko, org_code)
+        if ko is None:
+            gene_id = protein_doc['entrez_id']
+        else:
+            gene_id = self.kegg_manager.get_gene_ortholog_by_id_org(ko, org_code)
+
         return '{}:{}'.format(org_code, gene_id)
 
     def parse_gene_info(self, gene):
@@ -187,7 +189,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=158673)
+    manager.load_data(skip=370)
 
 if __name__ == '__main__':
     main()

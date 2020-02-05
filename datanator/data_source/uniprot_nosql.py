@@ -49,7 +49,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             msg (:obj:`str`, optional): Query message. Defaults to ''.
             species (:obj:`list`, optional): species information to extract from df and loaded into uniprot. Defaults to None.
         """
-        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN),database(EMBL),database(RefSeq),Cross-reference (KEGG)'
+        fields = '&columns=id,entry name,genes(PREFERRED),protein names,sequence,length,mass,ec,database(GeneID),reviewed,organism-id,database(KO),genes(ALTERNATIVE),genes(ORF),genes(OLN),database(EMBL),database(RefSeq),database(KEGG)'
         if not query:
             url = self.url + fields
         else:
@@ -65,13 +65,16 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         
         try:
             response = requests.get(url, stream=False)
+            response.raise_for_status()
         except requests.exceptions.ConnectionError:
             pass 
-        response.raise_for_status()
+        
 
         try:
             data = pandas.read_csv(io.BytesIO(response.content), delimiter='\t', encoding='utf-8', low_memory=False)
         except pandas.errors.EmptyDataError:
+            return
+        except UnboundLocalError:
             return
         data.columns = [
             'uniprot_id', 'entry_name', 'gene_name', 'protein_name', 'canonical_sequence', 'length', 'mass',
@@ -192,6 +195,27 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                 except TypeError:
                     continue
 
+    def remove_redudant_id(self):
+        """Remove redundant entries in uniprot collection.
+        Priority:
+            1. Has 'abundances' field
+            1. Has 'ko_name' field
+            2. Has 'kegg_org_gene' field
+            3. Has 'orthologs' field
+        """
+        ids = self.collection.distinct('uniprot_id', collation=self.collation)
+        projection = {'abundances': 1, 'ko_name': 1, 'kegg_org_gene': 1, 'orthologs': 1}
+        for _id in ids:
+            query = {'uniprot_id': _id}
+            count = self.collection.count_documents(query, projection=projection, collation=self.collation)
+            if count == 1:
+                continue
+            else:
+                docs = self.collection.find(filter=query, projection=projection, collation=self.collation)
+                to_be_removed = []
+                to_be_saved = []
+                for doc in docs:
+                    pass
 
 from multiprocessing import Pool, Process
 

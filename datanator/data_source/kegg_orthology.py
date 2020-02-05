@@ -89,6 +89,17 @@ class KeggOrthology(mongo_util.MongoUtil):
         else:
             pass
 
+    def parse_pathway(self, line):
+        """Parse parthway information
+        
+        Args:
+            line (:obj:`str`): pathway line.
+
+        Return:
+            (:obj:`list` of :obj:`dict`): list of pathways [{"kegg_pathway": ..., "pathway_description": ...}]
+        """
+        pass
+
     def parse_ko_txt(self, filename):
         '''Parse kegg_ortho txt file into dictionary object
         '''
@@ -111,7 +122,7 @@ class KeggOrthology(mongo_util.MongoUtil):
                 first_word = [line.split()[0] for line in lines]
 
                 # find line number of certain first words of interest
-                WOI_nonrepeating = ['MODULE', 'BRITE', 'GENES']
+                WOI_nonrepeating = ['PATHWAY', 'MODULE', 'DISEASE', 'BRITE', 'GENES']
                 reference = 'REFERENCE'
 
                 index_nonrepeating = [first_word.index(
@@ -119,9 +130,12 @@ class KeggOrthology(mongo_util.MongoUtil):
                 index_reference = [i for i, v in enumerate(
                     first_word) if v == reference]
 
-                module_begin = index_nonrepeating[0]
-                module_end = index_nonrepeating[1]
-                gene_begin = index_nonrepeating[2]
+                pathway_begin = index_nonrepeating[0]
+                module_begin = index_nonrepeating[1]
+                disease_begin = index_nonrepeating[2]
+                brite_begin = index_nonrepeating[3]
+                gene_begin = index_nonrepeating[4]
+
                 if len(index_reference) == 0:
                     gene_end = len(lines) - 1
                 else:
