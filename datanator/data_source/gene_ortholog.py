@@ -114,10 +114,10 @@ class KeggGeneOrtholog(mongo_util.MongoUtil):
         ko = protein_doc.get('ko_number')
         ncbi_id = protein_doc['ncbi_taxonomy_id']
         org_code = self.koc_manager.get_org_code_by_ncbi(ncbi_id)
-        if ko is None:
-            gene_id = protein_doc['entrez_id']
-        else:
-            gene_id = self.kegg_manager.get_gene_ortholog_by_id_org(ko, org_code)
+        gene_id = protein_doc.get('entrez_id')
+        if gene_id is None:
+            protein_gene = protein_doc['gene_name']
+            gene_id = self.kegg_manager.get_loci_by_id_org(ko, org_code, protein_gene)
 
         return '{}:{}'.format(org_code, gene_id)
 
@@ -189,7 +189,7 @@ def main():
     )['datanator']['mongodb']['server']
     manager = KeggGeneOrtholog(server, collection_str=collection_str, username=username,
     password=password, des_db=des_db)
-    manager.load_data(skip=770)
+    manager.load_data(skip=2320)
 
 if __name__ == '__main__':
     main()

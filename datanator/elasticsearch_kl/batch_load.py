@@ -220,6 +220,37 @@ class MongoToES(es_util.EsUtil):
         count = collection.count_documents(query)
         return (count, docs)
 
+    def data_from_mongo_kegg_orthology(self, server, db, username, password, verbose=False,
+                                readPreference='nearest', authSource='admin',
+                                query={}, collection_str='kegg_orthology'):
+        ''' Acquire documents from protein collection in datanator
+
+            Args:
+                server (:obj:`str`): mongodb ip address
+                db (:obj:`str`): database name
+                username (:obj:`str`): username for mongodb login
+                password (:obj:`str`): password for mongodb login
+                verbose (:obj:`bool`): display verbose messages
+                readPreference (:obj:`str`): mongodb readpreference
+                authSource (:obj:`str`): database login info is authenticating against
+                projection (:obj:`str`): mongodb query projection
+                query (:obj:`str`): mongodb query filter
+
+            Returns:
+                (:obj:`tuple`): tuple containing:
+
+                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    count (:obj:`int`): number of documents returned
+        '''
+        mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
+                                            password=password, authSource=authSource, db=db,
+                                            readPreference=readPreference)
+        _, _, collection = mongo_manager.con_db(collection_str)
+        docs = collection.find(filter=query)
+        count = collection.count_documents(query)
+        return (count, docs)
+
+
 
 def main():
     conf = config_mongo.Config()
@@ -312,6 +343,17 @@ def main():
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='tax_id')
+
+    # data from "kegg_orthology" collection
+    count, docs = manager.data_from_mongo_kegg_orthology(server, db, username, password, authSource=authDB)
+    index_name = 'kegg_orthology'
+    # _ = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
+    # with open(index_schema_path) as json_file:
+    #     index_schema = json.load(json_file)
+    _ = manager.delete_index(index_name)
+    _ = manager.index_settings(index_name, 0)
+    # _ = manager.create_index('kegg_orthology', mappings=index_schema)
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
