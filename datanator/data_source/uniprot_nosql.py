@@ -17,7 +17,7 @@ import requests
 import pymongo.errors
 from datanator.util import mongo_util
 from pymongo.collation import Collation, CollationStrength
-from datanator_query_python.query import query_taxon_tree, query_kegg_orthology
+from datanator_query_python.query import query_taxon_tree, query_kegg_orthology, query_sabiork
 import datanator.config.core
 
 
@@ -37,6 +37,8 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                                                         authSource=authSource)
         self.ko_manager = query_kegg_orthology.QueryKO(username=username, password=password, server=MongoDB,
         authSource=authSource, verbose=verbose, max_entries=max_entries)
+        self.sabio_manager = query_sabiork.QuerySabio(MongoDB=MongoDB, username=username, password=password,
+        authSource=authSource)
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.client, self.db, self.collection = self.con_db(collection_str)
 
@@ -217,6 +219,37 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                 for doc in docs:
                     pass
 
+    def fill_reactions(self, start=0):
+        """Fill reactions in which the protein acts as a catalyst.
+        
+        Args:
+            start (:obj:`int`, optional): Starting document in sabio_rk. Defaults to 0.
+        """
+        docs = self.sabio_manager.collection.find({}, projection={'enzyme': 1, 'kinlaw_id': 1})
+        count = self.sabio_manager.collection.count_documents({})
+        for i, doc in enumerate(docs[start:]):
+            if i == self.max_entries:
+                break
+            if i % 100 == 0 and self.verbose:
+                print("Processing reaction {} out of {}...".format(i+start, count))
+            enzyme = doc['enzyme']
+            kinlaw_id = doc['kinlaw_id']
+            if len(enzyme) == 0 or enzyme is None or enzyme[0].get('subunits') is None:
+                continue
+            else:
+                enzyme_subunits = enzyme[0]['subunits']
+                for subunit in enzyme_subunits:
+                    if subunit is None:
+                        continue
+                    else:
+                        uniprot_id = subunit['uniprot']
+                        if i % 100 == 0 and self.verbose:
+                            print("     Adding kinlaw_id {} into uniprot collection.".format(kinlaw_id))
+                        self.collection.update_one({'uniprot_id': uniprot_id},
+                                                {'$addToSet': {'sabio_kinlaw_id': kinlaw_id}},
+                                                collation=self.collation, upsert=False)                
+            
+
 from multiprocessing import Pool, Process
 
 def main():
@@ -246,7 +279,11 @@ def main():
     # p.start()
     # p.join()
 
-    p = Process(target=manager.load_abundance_from_pax())
+    # p = Process(target=manager.load_abundance_from_pax())
+    # p.start()
+    # p.join()
+
+    p = Process(target=manager.fill_reactions())
     p.start()
     p.join()
 
