@@ -1,5 +1,5 @@
 from datanator.util import mongo_util, file_util
-from datanator_query_python.query import query_sabiork_old
+from datanator_query_python.query import query_sabiork_old, query_metabolites_meta
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 from pymongo import ASCENDING
@@ -23,6 +23,8 @@ class RxnAggregate:
         self.mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                   password=password, authSource=authSource, db=src_database)
         self.query_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, password=password, authSource=authSource, username=username)
+        self.metabolites_meta_manager = query_metabolites_meta.QueryMetabolitesMeta(MongoDB=server, db=src_database, username=username,
+        password=password, authSource=authSource)
         self.file_manager = file_util.FileUtil()
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.verbose = verbose
@@ -156,6 +158,26 @@ class RxnAggregate:
         else:
             return result
         
+    def label_existence(self, start=0):
+        """Label reactant's existence in metabolites collections.
+        """
+        docs = self.metabolites_meta_manager.collection.find({})
+        count = self.metabolites_meta_manager.collection.count_documents({})
+        for i, doc in enumerate(docs[start:]):
+            inchi_key = doc.get('InChI_Key')
+            if inchi_key is None:
+                continue
+            if i == self.max_entries:
+                break
+            if i % 50 == 0 and self.verbose:
+                print("Process metabolite {} out of {} ...".format(i+start, count))
+            con_0 = {'products': inchi_key}
+            con_1 = {'substrates': inchi_key}
+            query = {'$or': [con_0, con_1]}
+            self.col.update_many(query,
+                                 {'$addToSet': {'in_metabolites': inchi_key}}, upsert=False,
+                                 collation=self.collation)
+
 
 def main():
     cache_dirname = tempfile.mkdtemp()
@@ -168,14 +190,13 @@ def main():
     password = datanator.config.core.get_config(
     )['datanator']['mongodb']['password']
     server = datanator.config.core.get_config(
-    )['datanator']['mongodb']['server']
-    port = datanator.config.core.get_config(
-    )['datanator']['mongodb']['port']        
+    )['datanator']['mongodb']['server']      
     src = RxnAggregate(username=username, password=password, server=server, 
                         authSource='admin', src_database=src_db,
                         verbose=True, collection=collection_str, destination_database=des_db,
                         cache_dir=cache_dir)
-    src.fill_collection()
+    # src.fill_collection()
+    src.label_existence()
 
 if __name__ == '__main__':
     main()
