@@ -60,7 +60,8 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                         'halflife': halflife,
                         'unit': 's',
                         'species': 'Saccharomyces cerevisiae',
-                        'ncbi_taxonomy_id': 4932}
+                        'ncbi_taxonomy_id': 4932,
+                        'reference': [{'doi': '10.1016/j.cell.2013.12.026'}]}
             self.rna_hl_collection.update_one({'gene_name': gene_name},
                                         {'$addToSet': {'halflives': halflife_obj,
                                                        'description': description}},
