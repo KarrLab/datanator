@@ -101,7 +101,7 @@ class RnaHLUtil(mongo_util.MongoUtil):
         Returns:
             (:obj:`pandas.DataFrame`): xlsx transformed to pandas.DataFrame
         """
-        if file_type == 'xlsx':
+        if file_type == 'xlsx' or 'xls':
             data = pd.read_excel(url, sheet_name=sheet_name, nrows=nrows, header=header,
                                 names=names, usecols=usecols, skiprows=skiprows, na_values=na_values)
         elif file_type == 'zip':
