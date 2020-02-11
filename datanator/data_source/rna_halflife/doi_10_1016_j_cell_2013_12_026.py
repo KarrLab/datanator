@@ -59,13 +59,20 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                         'type': 'coding_dna_sequences',
                         'halflife': halflife,
                         'unit': 's',
-                        'species': 'Saccharomyces cerevisiae',
-                        'ncbi_taxonomy_id': 4932,
+                        'species': 'Saccharomyces cerevisiae S288C',
+                        'ncbi_taxonomy_id': 559292,
                         'reference': [{'doi': '10.1016/j.cell.2013.12.026'}]}
             self.rna_hl_collection.update_one({'gene_name': gene_name},
                                         {'$addToSet': {'halflives': halflife_obj,
                                                        'description': description}},
                                         collation=self.collation, upsert=True)
+
+    # def fill_doi(self):
+    #     """Only need to run once b/c I forgot to include reference information.
+    #     """
+    #     self.rna_hl_collection.update_many({},
+    #                                        {'$pull': {'halflives': {'ncbi_taxonomy_id': 4932}}})
+
 
 
 import os
