@@ -1,9 +1,6 @@
 # description
 include README.rst
 
-# version
-include datanator/VERSION
-
 # license
 include LICENSE
 
