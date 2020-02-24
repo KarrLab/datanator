@@ -44,7 +44,6 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     package_data={
         name: [
-            'VERSION',
             'config/core.schema.cfg',
             'config/core.default.cfg',
             'data_source/*.txt',
