@@ -47,8 +47,15 @@ class Halflife(rna_halflife_util.RnaHLUtil):
     def fill_species_name(self):
         """[summary]
         """
-        self.rna_hl_collection.update_many({'halflives.ncbi_taxonomy_id': 10090},
-                                           {'$set': {'halflives.species': 'Mus musculus'}})
+        query = {'halflives.ncbi_taxonomy_id': 10090}
+        docs = self.rna_hl_collection.find(filter=query)
+        for doc in docs:
+            for subdoc in doc['halflives']:
+                if subdoc.get('species') is None:
+                    subdoc['species'] = 'Mus musculus'
+            self.rna_hl_collection.update_one({'_id': doc['_id']},
+                                              {'$set': {'halflives': doc['halflives']}})
+              
     
     def fill_rna_half_life(self, df, species, start=0):
         """Load df into rna_halflife collection
