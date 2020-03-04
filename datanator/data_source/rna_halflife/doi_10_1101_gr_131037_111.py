@@ -44,6 +44,12 @@ class Halflife(rna_halflife_util.RnaHLUtil):
         df_10987 = self.make_df(url, 'V1ncodemouse_probe_annotations_', names=names, usecols='B', skiprows=[0,1], nrows=34509)
         self.fill_uniprot_with_df(df_10987, 'Accession ID', identifier_type='sequence_embl', species=[10090])
 
+    def fill_species_name(self):
+        """[summary]
+        """
+        self.rna_hl_collection.update_many({},
+                                           {'$set': {'halflives.species': 'Mus musculus'}})
+    
     def fill_rna_half_life(self, df, species, start=0):
         """Load df into rna_halflife collection
         
@@ -81,6 +87,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
             
             halflives['accession_id'] = oln.split(',')
             halflives['ncbi_taxonomy_id'] = species[1]
+            halflives['species'] = species[0]
 
             gene_name, protein_name = self.uniprot_query_manager.get_names_by_gene_name(gene_name)
             
@@ -133,9 +140,10 @@ def main():
         des_db=des_db, rna_col=rna_col, cache_dir=cache_dir)
     url = 'https://genome.cshlp.org/content/suppl/2012/02/06/gr.131037.111.DC1/Supp_Table_2.xlsx'
     # src.load_uniprot()
-    usecols = 'B,L,M,N,O,P,AC,AD,AR,AT,AU'
-    df_0 = src.make_df(url, 'V1ncodemouse_probe_annotations_', header=0, usecols=usecols, nrows=34509)
-    src.fill_rna_half_life(df_0, ['Mus musculus', 10090], start=3040)
+    # usecols = 'B,L,M,N,O,P,AC,AD,AR,AT,AU'
+    # df_0 = src.make_df(url, 'V1ncodemouse_probe_annotations_', header=0, usecols=usecols, nrows=34509)
+    # src.fill_rna_half_life(df_0, ['Mus musculus', 10090], start=3040)
+    src.fill_species_name()
     shutil.rmtree(cache_dir)
 
 if __name__ == '__main__':
