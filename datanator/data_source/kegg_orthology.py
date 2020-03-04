@@ -1,6 +1,7 @@
 import json
 import requests
 import os
+import re
 from datanator.util import mongo_util
 from datanator.util import file_util
 import datanator.config.core
@@ -20,7 +21,7 @@ class KeggOrthology(mongo_util.MongoUtil):
         self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.collection = 'kegg_orthology_new'
+        self.collection = 'kegg_orthology'
         self.path = os.path.join(self.cache_dirname, self.collection)
         super(KeggOrthology, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet, db=db,
                                             verbose=verbose, max_entries=max_entries, username = username,
@@ -89,6 +90,83 @@ class KeggOrthology(mongo_util.MongoUtil):
         else:
             pass
 
+    def parse_pathway_disease(self, lines, category='pathway'):
+        """Parse parthway or disease or module information
+        
+        Args:
+            line (:obj:`readlines()`): pathway lines.
+            category (:obj:`str`): which category to parse. Defaults to pathway.
+
+        Return:
+            (:obj:`list` of :obj:`dict`): list of pathways [{"kegg_pathway_code": ..., "pathway_description": ...}]
+        """
+        result = []
+        if category == 'pathway':
+            key_0 = "kegg_pathway_code"
+            key_1 = "pathway_description"
+        elif category == 'disease':
+            key_0 = "kegg_disease_code"
+            key_1 = "kegg_disease_name"
+        elif category == 'module':
+            key_0 = "kegg_module_code"
+            key_1 = "kegg_module_name"            
+
+        for i, line in enumerate(lines):
+            if i == 0:
+                _list = line.split()
+                kegg_pathway = _list[1]
+                pathway_description = ' '.join(_list[2:])
+                result.append({key_0: kegg_pathway, key_1: pathway_description})
+            else:
+                _list = line.split()
+                kegg_pathway = _list[0]
+                pathway_description = ' '.join(_list[1:])
+                result.append({key_0: kegg_pathway, key_1: pathway_description})
+        return result
+
+    def parse_gene(self, lines):
+        """Parse GENES category
+        (http://rest.kegg.jp/get/ko:K00023)
+        
+        Args:
+            lines (:obj:`readlines()`): Lines for genes.
+
+        Return:
+            (:obj:`list` of :obj:`dict`): list of parsed genes.
+        """
+        def parse_annotation(gene_annotation):
+            """Parse 'XCC2294(phbB)' into structured object
+            
+            Args:
+                gene_annotation (:obj:`str`): annotation string.
+
+            Return:
+                (:obj:`dict`): {'locus_id': locus, 'gene_id': gene_id}
+            """
+            locus = gene_annotation.split('(')[0]
+            gene_id = re.search(r'\((.*?)\)', gene_annotation)
+            if gene_id is not None:
+                gene_id = gene_id.group(1)
+            return {'locus_id': locus, 'gene_id': gene_id}
+
+        result = []
+        for i, line in enumerate(lines):
+            if i == 0:
+                _list = line.split()
+                org_code = _list[1][:-1]
+                genetic_info = []
+                for gene_annotation in _list[2:]:
+                    genetic_info.append(parse_annotation(gene_annotation))
+                result.append({'organism': org_code, 'genetic_info': genetic_info})
+            else:
+                _list = line.split()
+                org_code = _list[0][:-1]
+                genetic_info = []
+                for gene_annotation in _list[1:]:
+                    genetic_info.append(parse_annotation(gene_annotation))
+                result.append({'organism': org_code, 'genetic_info': genetic_info})
+        return result                
+
     def parse_ko_txt(self, filename):
         '''Parse kegg_ortho txt file into dictionary object
         '''
@@ -111,7 +189,7 @@ class KeggOrthology(mongo_util.MongoUtil):
                 first_word = [line.split()[0] for line in lines]
 
                 # find line number of certain first words of interest
-                WOI_nonrepeating = ['MODULE', 'BRITE', 'GENES']
+                WOI_nonrepeating = ['PATHWAY', 'MODULE', 'DISEASE', 'BRITE', 'GENES']
                 reference = 'REFERENCE'
 
                 index_nonrepeating = [first_word.index(
@@ -119,42 +197,40 @@ class KeggOrthology(mongo_util.MongoUtil):
                 index_reference = [i for i, v in enumerate(
                     first_word) if v == reference]
 
-                module_begin = index_nonrepeating[0]
-                module_end = index_nonrepeating[1]
-                gene_begin = index_nonrepeating[2]
+                pathway_begin = index_nonrepeating[0]
+                module_begin = index_nonrepeating[1]
+                disease_begin = index_nonrepeating[2]
+                brite_begin = index_nonrepeating[3]
+                gene_begin = index_nonrepeating[4]
+                
+                if pathway_begin == -1:
+                    doc['kegg_pathway'] = None
+                else:
+                    pathway_end = list(filter(lambda i: i != -1, index_nonrepeating))[1]
+                    pathway_lines = lines[pathway_begin:pathway_end] 
+                    doc['kegg_pathway'] = self.parse_pathway_disease(pathway_lines)
+                
                 if len(index_reference) == 0:
                     gene_end = len(lines) - 1
                 else:
                     gene_end = index_reference[0]
 
-                # get module's key,value pairs
-                if module_begin == -1:
-                    doc['kegg_module_id'] = None
-                elif (module_end - module_begin) == 1:  # only 1 module
-                    doc['kegg_module_id'] = lines[module_begin].split()[1]
+                if disease_begin == -1:
+                    doc['kegg_disease'] = None
+                    module_end = brite_begin
                 else:
-                    module_list = []
-                    module_list.append(lines[module_begin].split()[1])
-                    module_list += [line.split()[0]
-                                    for line in lines[module_begin+1:module_end]]
-                    doc['kegg_module_id'] = module_list
+                    module_end = disease_begin
+                    disease_lines = lines[disease_begin:brite_begin]
+                    doc['kegg_disease'] = self.parse_pathway_disease(disease_lines, category='disease')
+
+                if module_begin == -1:
+                    doc['kegg_module'] = None
+                else:
+                    module_lines = lines[module_begin:module_end]
+                    doc['kegg_module'] = self.parse_pathway_disease(module_lines, category='module')
 
                 # get gene_id's key,value pairs
-                if (gene_end - gene_begin) == 1:  # only one ortholog
-                    doc['gene_ortholog'] = {'organism': lines[gene_begin].split()[1].replace(':', ''),
-                                            'gene_id': lines[gene_begin].split()[2]}
-                else:
-                    ortholog_list = []
-                    ortholog_list.append({'organism': lines[gene_begin].split()[1].replace(':', ''),
-                                          'gene_id': lines[gene_begin].split()[2]})
-                    organisms = [line.split()[0].replace(':', '')
-                                 for line in lines[gene_begin+1:gene_end]]
-                    gene_ids = [line.split()[1:]
-                                for line in lines[gene_begin+1:gene_end]]
-                    for organism, gene_id in zip(organisms, gene_ids):
-                        ortholog_list += [{
-                            'organism': organism, 'gene_id': gene_id}]
-                    doc['gene_ortholog'] = ortholog_list
+                doc['gene_ortholog'] = self.parse_gene(lines[gene_begin:gene_end])
 
                 # get reference's namespace:value pairs
                 ref_list = []
@@ -200,10 +276,6 @@ def main():
     )['datanator']['mongodb']['password']
     MongoDB = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']
-    port = datanator.config.core.get_config(
-    )['datanator']['mongodb']['port']
-    replSet = datanator.config.core.get_config(
-    )['datanator']['mongodb']['replSet']
     cache_dirname = tempfile.mkdtemp()
     manager = KeggOrthology(MongoDB=MongoDB,  db=db, cache_dirname=cache_dirname,
                             verbose=True, username=username,

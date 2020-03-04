@@ -62,6 +62,65 @@ class KeggOrgCode(mongo_util.MongoUtil):
         else:
             return int(str(result).split(': ')[1])
 
+    def has_align_but_no_rowspan(self, tag):
+        return tag.has_attr('align') and not tag.has_attr('rowspan')
+
+    def parse_html_iter(self):
+        """Parse org code HTML iteratively.
+
+        Yield:
+            (:obj:`obj`): {'kegg_organism_id':  , 'org_name':   , 'org_synonym':  }
+        """
+        results = self.soups.find_all('tr', {'align': 'center'})
+        for result in results:
+            obj = {}
+            code_row = result.find(self.has_align_but_no_rowspan, {'align': 'center'})
+            if code_row is not None:
+                obj['kegg_organism_id'] = str(code_row.get_text())
+            name_row = result.find(self.has_align_but_no_rowspan, {'align': 'left'})
+            if name_row is not None:
+                name_str = str(name_row.get_text())
+                name = re.search('(.*?)\(.*?\)', name_str)
+                if name is not None:
+                    obj['org_name'] = name.group(1)[:-1]
+                    obj['org_synonym'] = re.search('.*?\((.*?)\)', name_str).group(1)
+                else:
+                    obj['org_name'] = name_str
+                    obj['org_synonym'] = None
+            yield obj
+
+    def make_bulk(self, offset=0, bulk_size=100):
+        """Make bulk objects to be inserted into MongoDB.
+
+        Args:
+            offset(:obj:`int`): Position of beginning (zero-indexed). Defaults to 0.
+            bulk_size(:obj:`int`): number of objects. Defaults to 100.
+
+        Return:
+            (:obj:`list` of :obj:`dict`): list of objects to be inserted.
+        """
+        objs = self.parse_html_iter()
+        count = 0
+        skipped = 0
+        result = []
+        for i, obj in enumerate(objs):
+            if i + skipped < offset:
+                continue
+            if obj == {}:
+                skipped += 1
+                continue
+            if count == bulk_size:
+                break
+            if count < bulk_size:
+                name = obj['org_name']
+                ncbi_id = self.get_ncbi_id(name)
+                if ncbi_id is None:
+                    ncbi_id = self.get_ncbi_id_rest(name)
+                obj['ncbi_taxonomy_id'] = ncbi_id   
+                result.append(obj)
+                count += 1
+        return result
+
     def get_ncbi_id_rest(self, name):
         """Get ncbi taxonomy id of an organism using
         api.datanator.info
@@ -79,110 +138,6 @@ class KeggOrgCode(mongo_util.MongoUtil):
             return data['taxon_tree'][0]['tax_id']
         else:
             return None
-    
-    def has_href_and_id(self, tag):
-        return tag.has_attr('href') and tag.has_attr('id')
-
-    def has_href_but_no_id(self, tag):
-        return tag.has_attr('href') and not tag.has_attr('id')
-
-    def parse_ids(self):
-        """Parse HTML to get kegg organism codes.
-        """
-        for soup in self.soups.find_all(self.has_href_and_id):
-            yield soup.get('id')
-
-    def parse_names(self):
-        """Parse HTML to get kegg organism names.
-        """
-        not_in = ['prag']
-        for soup in self.soups.find_all(self.has_href_but_no_id):
-            if soup.get('href') == '/dbget-bin/www_bfind?T00544': # special case
-                yield 'Haemophilus influenzae PittGG (nontypeable)'
-            result = re.search('.>(.*)<\/a>', str(soup))
-            if result is not None and soup.get('href').startswith('/dbget-bin'):
-                if result.group(1) not in not_in:
-                    yield result.group(1)
-                else:
-                    continue
-            else:
-                continue
-
-    def make_bulk(self, offset=0, bulk_size=100):
-        """Make bulk objects to be inserted into MongoDB.
-
-        Args:
-            offset(:obj:`int`): Position of beginning (zero-indexed). Defaults to 0.
-            bulk_size(:obj:`int`): number of objects. Defaults to 100.
-
-        Return:
-            (:obj:`list` of :obj:`dict`): list of objects to be inserted.
-        """
-        ids = self.parse_ids()
-        names = self.parse_names()
-        count = 0
-        result = []
-        for i, (_id, name) in enumerate(zip(ids, names)):
-            if count == bulk_size:
-                break
-            if i < offset:
-                continue
-            if count < bulk_size:
-                ncbi_id = self.get_ncbi_id_rest(name)   
-                result.append({"kegg_organism_id": _id, "org_name": name,
-                                'ncbi_taxonomy_id': ncbi_id})
-                count += 1
-        return result
-
-    def parse_species_name(self):
-        """Parse species name from html.
-        """
-        not_in = ['Pragia sp. CF-458', 'Citrobacter sp. FDAARGOS 156', 'Psychrobacter sp. DAB AL43B',
-                'Shewanella sp. FDAARGOS 354', 'Acidiferrobacter sp. SPIII 3', 'Janthinobacterium sp. 1 2014MBL_MicDiv',
-                'Sulfurimonas sp. GYSZ 1', 'Halobacteriovorax sp. BALOs 7', 'Caulobacteraceae bacterium OTSz A_272',
-                'Roseomonas sp. FDAARGOS 362', 'Streptomyces sp. CCM MD2014', 'Curtobacterium sp. MR MD2014',
-                'Actinomyces sp. VUL4 3', 'Thermus sp. CCB US3_UF1', 'Capnocytophaga sp. FDAARGOS 737',
-                'Maribacter sp. 1 2014MBL_MicDiv', 'Formosa sp. Hel1 33_131', 'Formosa sp. Hel3 A1_48',
-                'Oceanihabitans sp. IOP 32', 'Candidatus Saccharibacteria bacterium RAAC3 TM7_1',
-                'Candidatus Saccharibacteria bacterium GW2011 GWC2_44_17', 'candidate division TM6 bacterium GW2011 GWF2_28_16',
-                'candidate division SR1 bacterium RAAC1 SR1_1', 'candidate division SR1 bacterium Aalborg AAW-1',
-                'candidate division WWE3 bacterium RAAC2 WWE3_1', 'candidate division Kazan bacterium GW2011 GWA1_50_15',
-                'Berkelbacteria bacterium GW2011 GWE1_39_12', 'Candidatus Beckwithbacteria bacterium GW2011 GWC1_49_16',
-                'Candidatus Woesebacteria bacterium GW2011 GWF1_31_35', 'Candidatus Wolfebacteria bacterium GW2011 GWB1_47_1',
-                'Candidatus Campbellbacteria bacterium GW2011 OD1_34_28', 'Lokiarchaeum sp. GC14 75',
-                'archaeon GW2011 AR10', 'archaeon GW2011 AR20'] # no ncbi id given in html
-        soups = self.species_soups.find_all(href=re.compile('/kegg-bin/show_organism'))
-        for soup in soups:
-            result = re.search('.>(.*)<\/a>', str(soup))
-            name = result.group(1)
-            if name not in not_in:
-                yield name
-            else:
-                continue
-
-    def parse_species_id(self):
-        """Parse NCBI Taxonomy ID from html.
-        """
-        not_in = [2498113]
-        soups = self.species_soups.find_all(href=re.compile('https://www.ncbi.nlm.nih.gov/Taxonomy/'))
-        for soup in soups:
-            result = re.search('.>(.*)<\/a>', str(soup))
-            _id = int(result.group(1))
-            if _id not in not_in and _id is not None:
-                yield _id
-            else:
-                continue 
-    
-    def parse_species_html(self, obj):
-        """Parse html (https://www.genome.jp/kegg/catalog/org_list4.html)
-        to get NCBI Taxonomy ID. This method works
-        because organisms in the source page (https://www.genome.jp/kegg/catalog/org_list4.html)
-        is in the same order as (https://www.genome.jp/kegg/catalog/org_list.html)
-
-        Args:
-            obj(:obj:`list` of :obj)
-        """
-        pass
 
     def bulk_load(self, bulk_size=100):
         """Loading bulk data into MongoDB.
@@ -191,7 +146,7 @@ class KeggOrgCode(mongo_util.MongoUtil):
             bulk_size(:obj:`int`): number of entries per insertion. Defaults to 100.
         """
         length = bulk_size
-        count = 16
+        count = 0
         while length != 0:
             if count == self.max_entries:
                 break
@@ -202,28 +157,6 @@ class KeggOrgCode(mongo_util.MongoUtil):
             if length != 0:
                 self.collection.insert_many(docs)            
             count += 1
-
-    # def fill_ncbi_id(self):
-    #     """Fill collection with ncbi_taxonomy_id.
-    #     """
-    #     query = {}
-    #     docs = self.collection.find(query)
-    #     count = self.collection.count_documents(query)
-    #     for i, doc in enumerate(docs):
-    #         if i == self.max_entries:
-    #             break
-    #         if i % 50 == 0 and self.verbose:
-    #             print('Processing doc {} out of {}.'.format(i, count))
-    #         name = doc['org_name']
-    #         ids = self.taxon_manager.get_ids_by_name(name)
-    #         if len(ids) > 1:
-    #             self.collection.update_one({'org_name': name},
-    #                                         {'$set': {'ncbi_taxonomy_id': ids,
-    #                                                   'ambiguous': True}}, upsert=False)
-    #         else:
-    #             self.collection.update_one({'org_name': name},
-    #                                         {'$set': {'ncbi_taxonomy_id': ids,
-    #                                                   'ambiguous': False}}, upsert=False)
 
 
 def main():

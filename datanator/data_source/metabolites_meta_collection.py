@@ -155,6 +155,38 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
             self.collection.update_one({'_id': doc['_id']},
                                         {'$set': {'name': name}}, upsert=False)
 
+    def fill_standard_id(self, skip=0):
+        """Fill meta collection with chebi_id, pubmed_id,
+        and kegg_id.
+
+        Args:
+            skip (:obj:`int`): skip first n number of records.
+        """
+        query = {}
+        docs = self.collection.find(query, skip=skip)
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if i % 100 == 0 and self.verbose:
+                print('Processing doc {} out of {}'.format(i+skip, count))
+            m2m_id = doc.get('m2m_id')
+            ymdb_id = doc.get('ymdb_id')
+            if m2m_id is not None:
+                doc_e = self.ecmdb_query.get_standard_ids_by_id(m2m_id)
+                self.collection.update_one({'m2m_id': m2m_id},
+                                           {'$set': {'chebi_id': doc_e['chebi_id'],
+                                                    'hmdb_id': doc_e['hmdb_id'],
+                                                    'kegg_id': doc_e['kegg_id']}}, upsert=False)
+            elif ymdb_id is not None:
+                doc_y = self.ymdb_query.get_standard_ids_by_id(ymdb_id)
+                self.collection.update_one({'ymdb_id': ymdb_id},
+                                           {'$set': {'chebi_id': doc_y['chebi_id'],
+                                                    'hmdb_id': doc_y['hmdb_id'],
+                                                    'kegg_id': doc_y['kegg_id']}}, upsert=False)
+            else:
+                continue
+
 def main():
     db = 'datanator'
     meta_loc = 'datanator'
@@ -173,7 +205,8 @@ def main():
     # manager.fill_metabolite_fields(fields=['ymdb_id', 'inchi', 'synonyms.synonym'], 
     #     collection_src='ymdb', 
     #     collection_des = collection_name)
-    manager.fill_names()
+    # manager.fill_names()
+    manager.fill_standard_id(skip=0)
 
 if __name__ == '__main__':
     main()
