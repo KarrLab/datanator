@@ -12,7 +12,7 @@ numpy
 obj_tables
 openbabel
 openpyxl
-pandas >= 1.0.1
+pandas == 1.0.1
 pint >= 0.10
 psycopg2_binary
 pubchempy

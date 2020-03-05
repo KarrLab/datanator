@@ -37,6 +37,7 @@ jobs:
                 fi
               done < .circleci/requirements.txt
             fi
+            sudo rm -rf *.egg-info
       - run:
           name: Install package (Python 3)
           command: python3 -m pip install -U -e .
