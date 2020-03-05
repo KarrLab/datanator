@@ -12,7 +12,7 @@ numpy
 obj_tables
 openbabel
 openpyxl
-pandas
+pandas == 1.0.1
 pint >= 0.10
 psycopg2_binary
 pubchempy
@@ -34,8 +34,8 @@ ftputil
 elasticsearch
 genson
 jsonpickle
-datanator_query_python
-karr_lab_aws_manager
+datanator_query_python == 0.6.31
+karr_lab_aws_manager == 0.0.21
 pyarrow >= 0.14.1
-urllib3 >= 1.24.2
+urllib3 <1.25
 tabula_py

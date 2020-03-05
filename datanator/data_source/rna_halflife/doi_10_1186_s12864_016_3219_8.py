@@ -190,7 +190,7 @@ class Halflife(mongo_util.MongoUtil):
         for doc in docs:
             oln = doc['halflives'][0]['ordered_locus_name']
             oln = 'MA_' + oln.split('MA')[1]  # "MA0002" to "MA_0002"
-            gene_name, protein_name = uniprot_manager.get_gene_protein_name_by_oln(oln, species=188937)
+            gene_name, protein_name = uniprot_manager.get_gene_protein_name_by_oln(oln, species=[188937])
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {'gene_name': gene_name,
                                                  'protein_name': protein_name}})
@@ -201,7 +201,7 @@ class Halflife(mongo_util.MongoUtil):
         Args:
             oln (:obj:`str`): Ordered locus name
         """
-        gene_name, protein_name = self.uniprot_manager.get_gene_protein_name_by_oln(oln, species=188937)
+        gene_name, protein_name = self.uniprot_manager.get_gene_protein_name_by_oln(oln, species=[188937])
         if gene_name is None and protein_name is None: # no such entry in uniprot collection
             self.uniprot_col_manager.load_uniprot(query=True, msg=oln)
         else:
