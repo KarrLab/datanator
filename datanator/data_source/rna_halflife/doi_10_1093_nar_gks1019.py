@@ -77,7 +77,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
             halflives = {}
             oln = row['ordered_locus_name']
             halflives['halflife'] = row['half_life'] * 60
-            halflives['r_sqaured'] = row['r_squared']
+            halflives['r_squared'] = row['r_squared']
             halflives['unit'] = 's'
             halflives['reference'] = [{'doi': '10.1093/nar/gks1019', 'pubmed_id': '23125364'}]
             halflives['growth_medium'] = 'Middlebrook 7H9 with the ADC supplement (Difco) and 0.05% Tween80, at 37 degree celcius.'

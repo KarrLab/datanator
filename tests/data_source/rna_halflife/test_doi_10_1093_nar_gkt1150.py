@@ -35,6 +35,7 @@ class TestProteinAggregate(unittest.TestCase):
         cls.src.client.close()
         cls.src.uniprot_query_manager.client.close()
 
+    @unittest.skip('downloading of file forbidden from nonacademic IP')
     def test_fill_rna_half_life(self):
         url = 'https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/nar/42/4/10.1093_nar_gkt1150/1/gkt1150_Supplementary_Data.zip?Expires=1578928721&Signature=ADjsCSaceimzGs6aJ~uG7np88TzHNooAoBabdm-6utYVIZOEwRbzTdiBp~76vM4KEHz9Nir8GNrtA3AwHwGFm0bu~aorTG4xrOChS6UgfBQiUtgr8vfbDIUno1y1nxLGCKIfQrb2Gx-SVnigum2gjcveymK995zadSNZqN~w-vz-Ii0a6fH7kvKN8m9vLWf6fdo0NXSmgnkjj9KPCuS-bmK0y4ZH5Ex0Rl4qi5uCroYmDBNOhXY23pcalbpFwB1-07tA3~756gZN4Mo9uMeSVQKl5UsHzx5amB6WvSCXS8z756YoaaMCg0FQbUCcQ46fRGdHxcvPNcrPo5IMEGmi8g__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA'
         df_s1 = self.src.make_df(url, 'TableS1', names=['oln', 'gene_symbol', 'a', 'vc_a', 'b', 'vc_b', 'c', 'vc_c', 'd', 'vc_d'], usecols='A,B,L:S',

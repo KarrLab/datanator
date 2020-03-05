@@ -40,7 +40,7 @@ class TestProteinAggregate(unittest.TestCase):
         self.assertEqual(df_0.iloc[0]['ordered_locus_name'], 'Rv0002')
 
     def test_fill_rna_halflife(self):
-        d = {'half_life': [32.3, 12.2, 13.2], 'r_sqaured': [0.9, 0.7, 0.8],
+        d = {'half_life': [32.3, 12.2, 13.2], 'r_squared': [0.9, 0.7, 0.8],
             'ordered_locus_name': ['Rv0002', 'something', 'this']}
         df_0 = pd.DataFrame(d)
         self.src.fill_rna_halflife(df_0, ['aaa', 102])
