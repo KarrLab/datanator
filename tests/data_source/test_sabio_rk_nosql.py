@@ -187,7 +187,7 @@ class TestSabioRk(unittest.TestCase):
         tsv = response.text
         self.src.load_missing_kinetic_law_information_from_tsv_helper(tsv)
         result = self.src.collection.find_one({'kinlaw_id': 4096})
-        self.assertEqual(result.get('mechanism', 'no mechanism filed'), 'no mechanism filed')
+        self.assertEqual(result.get('mechanism', 'no mechanism filed'), None)
 
     # @unittest.skip('passed')
     def test_infer_compound_structures_from_names(self):
@@ -335,6 +335,7 @@ class TestSabioRk(unittest.TestCase):
     def test_load_content(self):
         self.src.load_content()
 
+    @unittest.skip('function obsolete')
     def test_add_inchi_hash(self):
         result = self.src.add_inchi_hash()
         query = {}
