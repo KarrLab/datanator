@@ -33,6 +33,7 @@ class TestProteinAggregate(unittest.TestCase):
         cls.src.client.close()
         cls.src.uniprot_query_manager.client.close()
 
+    @unittest.skip('Needs acadamic IPs.')
     def test_fill_rna_halflife(self):
         url = 'https://journals.plos.org/plosone/article/file?type=supplementary&id=info:doi/10.1371/journal.pone.0059059.s002'
         df = tabula.read_pdf(url, pandas_options={'header': None, 'na_values': 'ND'}, pages='all')
