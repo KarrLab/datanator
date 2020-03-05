@@ -1,5 +1,5 @@
 import unittest
-from karr_lab_aws_manager.elasticsearch_kl import batch_load
+from datanator.elasticsearch_kl import batch_load
 from datanator_query_python.config import config
 import tempfile
 import shutil
