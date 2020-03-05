@@ -327,13 +327,13 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
-    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
+    count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
     # print(count)
     # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
     # _ = manager.create_index('rna_halflife', mappings=index_schema)
-    # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+    _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
     # data from "taxon_tree" collection
     # index_name = 'taxon_tree'
@@ -345,14 +345,14 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='tax_id')
 
     # data from "kegg_orthology" collection
-    count, docs = manager.data_from_mongo_kegg_orthology(server, db, username, password, authSource=authDB)
-    index_name = 'kegg_orthology'
+    # count, docs = manager.data_from_mongo_kegg_orthology(server, db, username, password, authSource=authDB)
+    # index_name = 'kegg_orthology'
     # _ = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
     # _ = manager.delete_index(index_name)
-    _ = manager.create_index(index_name)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
+    # _ = manager.create_index(index_name)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
