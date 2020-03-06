@@ -9,10 +9,10 @@
 from datanator.util import molecule_util
 import copy
 import enum
+import itertools
 import numpy
 import obj_tables.core
 import obj_tables.bio.seq
-import six.moves
 
 
 class ConsensusMethod(enum.Enum):
@@ -432,7 +432,7 @@ class Reaction(Interaction):
         participants = self.get_ordered_participants()
         reactants = list(filter(lambda p: p.coefficient < 0, participants))
         products = list(filter(lambda p: p.coefficient > 0, participants))
-        return list(six.moves.zip_longest(reactants, products))
+        return list(itertools.zip_longest(reactants, products))
 
     def get_ec_numbers(self):
         """ Get the EC numbers from the list of cross references

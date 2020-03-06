@@ -11,7 +11,6 @@ import os
 import requests
 import requests_cache
 import shutil
-import six
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy_utils.functions import database_exists, create_database
@@ -24,7 +23,7 @@ import time
 import wc_utils.quilt
 
 
-class DataSource(six.with_metaclass(abc.ABCMeta, object)):
+class DataSource(object, metaclass=abc.ABCMeta):
     """ Represents an external data source
 
     Attributes:

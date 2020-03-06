@@ -25,7 +25,6 @@ import pubchempy
 import re
 import requests
 import requests_cache
-import six
 import sqlalchemy
 import sqlalchemy.ext.declarative
 import sqlalchemy.orm
@@ -691,7 +690,7 @@ class SabioRk(data_source.HttpDataSource):
                 cache.delete(key)
                 raise Exception('Unable to download kinetic laws with ids {}'.format(', '.join([str(id) for id in batch_ids])))
 
-            self.create_kinetic_laws_from_sbml(batch_ids, response.content if six.PY2 else response.text)
+            self.create_kinetic_laws_from_sbml(batch_ids, response.text)
 
             if self.commit_intermediate_results:
                 self.session.commit()
@@ -843,8 +842,6 @@ class SabioRk(data_source.HttpDataSource):
                 self.session.add(specie)
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
-            if six.PY2:
-                variant = unicode(variant.decode('utf-8'))
             properties = {'is_wildtype': is_wildtype, 'variant': variant, 'modifier_type': modifier_type}
 
             query = self.session.query(Enzyme).filter_by(id=id)
@@ -1111,8 +1108,6 @@ class SabioRk(data_source.HttpDataSource):
                 .getChild(0) \
                 .getCharacters() \
                 .strip()
-            if six.PY2:
-                media = unicode(media.decode('utf-8'))
             kinetic_law.media = media
 
         """ references """
@@ -1743,7 +1738,7 @@ class SabioRk(data_source.HttpDataSource):
             try:
                 subunit_coefficients = self.parse_complex_subunit_structure(inner_html)
             except Exception as error:
-                six.reraise(
+                raise(
                     ValueError,
                     ValueError('Subunit structure for kinetic law {} could not be parsed: {}\n\t{}'.format(
                         kinetic_law.id, inner_html, str(error).replace('\n', '\n\t'))),

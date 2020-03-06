@@ -8,7 +8,6 @@
 """
 
 from ete3 import NCBITaxa
-import six
 
 
 def setup_database(force_update=False):

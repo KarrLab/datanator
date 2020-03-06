@@ -1,9 +1,9 @@
+from io import BytesIO
 import os
-import zipfile
-from six import BytesIO
 import shutil
 import pandas as pd
 import requests
+import zipfile
 from datanator.util import mongo_util
 
 

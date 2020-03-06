@@ -1,11 +1,11 @@
+from io import BytesIO
 import csv
 import ete3
-import os
-import zipfile
-from six import BytesIO
 import json
+import os
 import pymongo
 import requests
+import zipfile
 from datanator.util import mongo_util
 import datanator.config.core
 

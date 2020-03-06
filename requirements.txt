@@ -23,7 +23,6 @@ requests
 requests_cache
 scipy
 setuptools
-six
 sqlalchemy
 sqlalchemy_searchable
 sqlalchemy_utils
