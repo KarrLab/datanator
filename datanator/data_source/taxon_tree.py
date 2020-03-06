@@ -1,10 +1,10 @@
+from io import BytesIO
 import json
-import requests
 import os
-from six import BytesIO
-from datanator.util import mongo_util
-import zipfile
 import pymongo
+import requests
+import zipfile
+from datanator.util import mongo_util
 
 class TaxonTree(mongo_util.MongoUtil):
 

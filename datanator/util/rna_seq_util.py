@@ -7,10 +7,7 @@
 :License: MIT
 """
 
-import os
-import six
 import subprocess
-import time
 
 class Kallisto(object):
     """ Python interface to `kallisto <https://pachterlab.github.io/kallisto>`_. """
