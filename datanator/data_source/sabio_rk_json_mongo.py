@@ -13,7 +13,7 @@ import datanator.config.core
 from pymongo import MongoClient
 from datanator.util import mongo_util
 from datanator.util import chem_util, file_util
-from datanator_query_python.query import query_taxon_tree
+from datanator_query_python.query import query_taxon_tree, query_sabiork, query_protein
 from pathlib import Path
 import re
 import os
@@ -43,6 +43,13 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
 
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
         self.sabio_reaction_entries = self.db_obj['sabio_reaction_entries']
+        self.kegg_collection = self.db_obj['kegg_orthology']
+        self.sabiork_manager = query_sabiork.QuerySabio(MongoDB=MongoDB, db=db,
+                                                        collection_str='sabio_rk', verbose=verbose, max_entries=max_entries, username=username,
+                                                        password=password, authSource=authSource)
+        self.protein_manager = query_protein.QueryProtein(username=username, password=password, server=MongoDB, authSource=authSource,
+                 database=db, max_entries=max_entries, verbose=verbose, collection_str='uniprot',
+                 readPreference='nearest')
         self.ec = self.db_obj['ec']
         self.chem_manager = chem_util.ChemUtil()
         self.tax_manager = query_taxon_tree.QueryTaxonTree(username=username, MongoDB=MongoDB,
@@ -660,8 +667,33 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                 if obj_list != [None]:
                     ec_number = obj_list[0]['id']
                     ec_meta = self.ec.find_one({'ec_number': ec_number}, projection={'_id': 0})
-                    self.collection.update_many({'kinlaw_id': doc['kinlaw_id']},
+                    self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                                                 {'$set': {'ec_meta': ec_meta}}, upsert=False)
+
+    def fill_kegg_meta(self, start=0):
+        """Fill kegg information for reactions.
+        
+        Args:
+            start (:obj:`int`, optional): Starting document. Defaults to 0.
+        """
+        query = {}
+        docs = self.collection.find(filter=query, skip=start, no_cursor_timeout=True)
+        count = self.collection.count_documents(query) - start
+        for i, doc in enumerate(docs):
+            if self.verbose and i % 20 == 0:
+                print('Processing doc {} out of {}'.format(i+start, count))
+            kinlaw_id = doc['kinlaw_id']
+            subunit = self.sabiork_manager.get_subunit_by_id(kinlaw_id)
+            if subunit != 'No subunit information.':
+                ko_number, _ = self.protein_manager.get_kegg_orthology(subunit)
+                if ko_number is None:
+                    continue
+                ko_meta = self.kegg_collection.find_one({'kegg_orthology_id': ko_number}, projection={'_id': 0})
+                self.collection.update_one({'kinlaw_id': kinlaw_id},
+                                           {'$set': {'kegg_meta': ko_meta}}, upsert=False)
+            else:
+                continue
+        self.client.close()
 
 
 def main():
@@ -678,7 +710,8 @@ def main():
     # manager.make_doc(file_names, file_dict)
     # manager.add_inchi_hash()
     # manager.add_taxon_info()
-    manager.fill_ec_meta()
+    # manager.fill_ec_meta()
+    manager.fill_kegg_meta(start=1780)
 
 if __name__ == '__main__':
     main()
