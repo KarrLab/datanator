@@ -12,7 +12,7 @@ import pymongo
 import datanator.config.core
 from pymongo import MongoClient
 from datanator.util import mongo_util
-from datanator.util import chem_util
+from datanator.util import chem_util, file_util
 from datanator_query_python.query import query_taxon_tree
 from pathlib import Path
 import re
@@ -42,9 +42,12 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                                     password = password, authSource = authSource)
 
         self.client, self.db_obj, self.collection = self.con_db(self.collection_str)
+        self.sabio_reaction_entries = self.db_obj['sabio_reaction_entries']
+        self.ec = self.db_obj['ec']
         self.chem_manager = chem_util.ChemUtil()
         self.tax_manager = query_taxon_tree.QueryTaxonTree(username=username, MongoDB=MongoDB,
                                                             password=password)
+        self.file_manager = file_util.FileUtil()
 
     # load json files
     def load_json(self):
@@ -642,6 +645,24 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                                                   'anc_name': anc_name[0]}})
         print('Done!')
 
+    def fill_ec_meta(self, start=0):
+        """Fill sabio documents with ec meta information.
+        """
+        query = {}
+        docs = self.collection.find(filter=query)
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(docs[start:]):
+            if self.verbose and i % 50 == 0:
+                print("Processing doc {} out of {}".format(i+start, count))
+            resource = doc.get('resource')
+            if isinstance(resource, list):
+                obj_list = self.file_manager.search_dict_list(resource, 'namespace', value='ec-code')
+                if obj_list != [None]:
+                    ec_number = obj_list[0]['id']
+                    ec_meta = self.ec.find_one({'ec_number': ec_number}, projection={'_id': 0})
+                    self.collection.update_many({'kinlaw_id': doc['kinlaw_id']},
+                                                {'$set': {'ec_meta': ec_meta}}, upsert=False)
+
 
 def main():
     db = 'datanator'
@@ -656,7 +677,8 @@ def main():
     # file_names, file_dict = manager.load_json()
     # manager.make_doc(file_names, file_dict)
     # manager.add_inchi_hash()
-    manager.add_taxon_info()
+    # manager.add_taxon_info()
+    manager.fill_ec_meta()
 
 if __name__ == '__main__':
     main()
