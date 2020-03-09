@@ -8,7 +8,7 @@ from datanator.util import chem_util
 
 
 class CalcTanimoto(mongo_util.MongoUtil):
-    '''Calculating the tanitomo similarity matrix
+    '''Calculating the Tanimoto similarity matrix
             given two compound collections e.g.
             ECMDB YMDB
     '''

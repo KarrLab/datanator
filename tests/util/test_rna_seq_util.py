@@ -7,12 +7,12 @@
 """
 
 from datanator.util import rna_seq_util
-from six.moves import urllib
 import capturer
 import os
 import shutil
 import tempfile
 import unittest
+import urllib.request
 
 
 class TestKallisto(unittest.TestCase):

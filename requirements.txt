@@ -5,15 +5,15 @@ bioservices >= 1.5.0
 cement >= 3.0.0
 configobj
 ete3
+flask_migrate
 jxmlease
 marshmallow_sqlalchemy
 numpy
 obj_tables
 openbabel
 openpyxl
-pandas
-pint >= 0.9
-pronto
+pandas == 1.0.1
+pint >= 0.10
 psycopg2_binary
 pubchempy
 python_dateutil
@@ -23,7 +23,6 @@ requests
 requests_cache
 scipy
 setuptools
-six
 sqlalchemy
 sqlalchemy_searchable
 sqlalchemy_utils
@@ -33,9 +32,9 @@ xmltodict
 ftputil
 elasticsearch
 genson
-quilt
 jsonpickle
-datanator_query_python
-karr_lab_aws_manager
+datanator_query_python == 0.6.31
+karr_lab_aws_manager == 0.0.21
 pyarrow >= 0.14.1
-urllib3==1.24.2
+urllib3 <1.25
+tabula_py

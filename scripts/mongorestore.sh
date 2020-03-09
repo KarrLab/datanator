@@ -1,5 +1,5 @@
 #!/bin/bash
-FILE=/root/host/karr_lab/datanator.archive
+FILE=/root/karr_lab/datanator.archive
 if [ ! -f "$FILE" ]; then
 	curl -o $FILE https://mongo-dbdump.s3.amazonaws.com/datanator.20190701.archive
 fi

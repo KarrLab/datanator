@@ -1,4 +1,5 @@
 from datanator.util import mongo_util, file_util
+from datanator_query_python.query import query_sabiork_old, query_metabolites_meta
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 from pymongo import ASCENDING
@@ -21,6 +22,9 @@ class RxnAggregate:
                                                               db=destination_database).con_db(collection)
         self.mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                                   password=password, authSource=authSource, db=src_database)
+        self.query_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, password=password, authSource=authSource, username=username)
+        self.metabolites_meta_manager = query_metabolites_meta.QueryMetabolitesMeta(MongoDB=server, db=src_database, username=username,
+        password=password, authSource=authSource)
         self.file_manager = file_util.FileUtil()
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.verbose = verbose
@@ -32,7 +36,7 @@ class RxnAggregate:
         _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
         docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
-        start = 2900
+        start = 0
         for i, doc in enumerate(docs[start:]):
             if self.verbose and i % 100 == 0:
                 print('Processing document {} out of {}'.format(i+start, count))
@@ -41,17 +45,26 @@ class RxnAggregate:
             if i == self.max_entries:
                 break
             kinlaw_id = doc['kinlaw_id']
+            _, have = self.query_manager.get_rxn_with_prm([kinlaw_id])
+            if len(have) == 1:
+                with_prm = True
+            else:
+                with_prm = False
+            key = 'has_poi.'+str(kinlaw_id)
             rxn_id = self.get_rxn_id(doc)
             reactants = self.create_reactants(doc)
             substrate_names, product_names = self.extract_reactant_names(doc)
             enzyme_names = self.extract_enzyme_names(doc)
+            ec = self.get_ec(doc)
             self.col.update_one({'rxn_id': rxn_id},
                                 {'$addToSet': {'kinlaw_id': kinlaw_id},
                                 '$set': {'substrates': reactants['substrate_aggregate'],
                                         'products': reactants['product_aggregate'],
                                         'substrate_names': substrate_names,
                                         'product_names': product_names,
-                                        'enzyme_names': enzyme_names}}, upsert=True)
+                                        'enzyme_names': enzyme_names,
+                                        'ec-code': ec,
+                                        key: with_prm}}, upsert=True)
             if i == 0:
                 self.col.create_index([("rxn_id", ASCENDING)], background=True)
 
@@ -59,7 +72,13 @@ class RxnAggregate:
         resource = doc['resource']
         sr = self.file_manager.search_dict_list(resource, 'namespace', 'sabiork.reaction')
         _id = sr[0]['id']
-        return int(_id)    
+        return int(_id)
+
+    def get_ec(self, doc):
+        resource = doc['resource']
+        sr = self.file_manager.search_dict_list(resource, 'namespace', 'ec-code')
+        _id = sr[0]['id']
+        return _id
     
     def create_reactants(self, doc):
         result = {}
@@ -139,6 +158,26 @@ class RxnAggregate:
         else:
             return result
         
+    def label_existence(self, start=0):
+        """Label reactant's existence in metabolites collections.
+        """
+        docs = self.metabolites_meta_manager.collection.find({})
+        count = self.metabolites_meta_manager.collection.count_documents({})
+        for i, doc in enumerate(docs[start:]):
+            inchi_key = doc.get('InChI_Key')
+            if inchi_key is None:
+                continue
+            if i == self.max_entries:
+                break
+            if i % 50 == 0 and self.verbose:
+                print("Process metabolite {} out of {} ...".format(i+start, count))
+            con_0 = {'products': inchi_key}
+            con_1 = {'substrates': inchi_key}
+            query = {'$or': [con_0, con_1]}
+            self.col.update_many(query,
+                                 {'$addToSet': {'in_metabolites': inchi_key}}, upsert=False,
+                                 collation=self.collation)
+
 
 def main():
     cache_dirname = tempfile.mkdtemp()
@@ -151,14 +190,13 @@ def main():
     password = datanator.config.core.get_config(
     )['datanator']['mongodb']['password']
     server = datanator.config.core.get_config(
-    )['datanator']['mongodb']['server']
-    port = datanator.config.core.get_config(
-    )['datanator']['mongodb']['port']        
+    )['datanator']['mongodb']['server']      
     src = RxnAggregate(username=username, password=password, server=server, 
                         authSource='admin', src_database=src_db,
                         verbose=True, collection=collection_str, destination_database=des_db,
                         cache_dir=cache_dir)
-    src.fill_collection()
+    # src.fill_collection()
+    src.label_existence()
 
 if __name__ == '__main__':
     main()

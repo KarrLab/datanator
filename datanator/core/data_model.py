@@ -9,10 +9,10 @@
 from datanator.util import molecule_util
 import copy
 import enum
+import itertools
 import numpy
 import obj_tables.core
-import obj_tables.bio
-import six.moves
+import obj_tables.bio.seq
 
 
 class ConsensusMethod(enum.Enum):
@@ -241,7 +241,7 @@ class DnaSpecie(PolymerSpecie):
     Attributes:
         binding_matrix (:obj:`Bio.motifs.matrix.FrequencyPositionMatrix`): Binding motif
     """
-    binding_matrix = obj_tables.bio.FrequencyPositionMatrixAttribute()
+    binding_matrix = obj_tables.bio.seq.FreqPosMatrixAttribute()
 
 
 class RnaSpecie(PolymerSpecie):
@@ -423,7 +423,7 @@ class Reaction(Interaction):
         """ Get list of pairs of similar reactants and products
 
         Note: This requires the modeler to have ordered the reactans and products by their similarity. The modeler is required to
-        specify this pairing because it cannot easily be computed. In particular, we have tried to use Tanitomo similarity to
+        specify this pairing because it cannot easily be computed. In particular, we have tried to use Tanimoto similarity to
         predict reactant-product pairings, but this doesn't adequately capture reaction centers.
 
         Returns:
@@ -432,7 +432,7 @@ class Reaction(Interaction):
         participants = self.get_ordered_participants()
         reactants = list(filter(lambda p: p.coefficient < 0, participants))
         products = list(filter(lambda p: p.coefficient > 0, participants))
-        return list(six.moves.zip_longest(reactants, products))
+        return list(itertools.zip_longest(reactants, products))
 
     def get_ec_numbers(self):
         """ Get the EC numbers from the list of cross references

@@ -2,7 +2,6 @@ import datanator.config.core
 from datanator.util import mongo_util
 from datanator.util import file_util, chem_util
 from datanator.util import molecule_util
-import six
 import requests
 from xml import etree
 import libsbml
@@ -241,8 +240,7 @@ class SabioRk:
             
             response.raise_for_status()
 
-            loaded_ids += self.create_kinetic_laws_from_sbml(batch_ids,
-                                                            response.content if six.PY2 else response.text)
+            loaded_ids += self.create_kinetic_laws_from_sbml(batch_ids, response.text)
 
         not_loaded_ids = list(set(ids).difference(loaded_ids))
         if not_loaded_ids:
@@ -519,8 +517,6 @@ class SabioRk:
         #         .getChild(0) \
         #         .getCharacters() \
         #         .strip()
-        #     if six.PY2:
-        #         media = unicode(media.decode('utf-8'))
         #     kinetic_law['media'] = media
 
         # """ references """
@@ -636,8 +632,6 @@ class SabioRk:
                                                 upsert=True)
         elif type == 'ENZ':
             name, is_wildtype, variant = self.parse_enzyme_name(sbml.getName())
-            if six.PY2:
-                variant = unicode(variant.decode('utf-8'))
             properties = {'is_wildtype': is_wildtype,
                           'variant': variant, 'modifier_type': modifier_type}
 
@@ -1191,7 +1185,7 @@ class SabioRk:
                 subunit_coefficients = self.parse_complex_subunit_structure(
                     inner_html)
             except Exception as error:
-                six.reraise(
+                raise(
                     ValueError,
                     ValueError('Subunit structure for kinetic law {} could not be parsed: {}\n\t{}'.format(
                         kinetic_law['kinlaw_id'], inner_html, str(error).replace('\n', '\n\t'))),

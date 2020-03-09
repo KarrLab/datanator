@@ -1,8 +1,7 @@
 #from . import download_cdna
 from datanator.util import rna_seq_util
-from six.moves.urllib.request import urlretrieve
+from urllib.request import urlretrieve
 import urllib
-#from six.moves import urllib 
 import numpy as np
 import os
 import pandas as pd

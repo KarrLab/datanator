@@ -32,7 +32,7 @@ class TestProteinAggregate(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.src.db.drop_collection(cls.collection_str)
+        # cls.src.db.drop_collection(cls.collection_str)
         cls.src.client.close()
 
     # # @unittest.skip('passed')
@@ -70,6 +70,7 @@ class TestProteinAggregate(unittest.TestCase):
     #     doc = self.src.col.find_one(filter={'species_name': 'D.vulgaris'})
     #     self.assertEqual(doc['ncbi_taxonomy_id'], 882)
 
+    @unittest.skip('removed the function')
     def test_loadload_kinlaw_from_sabio(self):
         dic_0 = {'uniprot_id': 'P20932'}
         dic_1 = {'uniprot_id': 'id_mock_1', 'protein_name': 'subtilisin'}
@@ -77,7 +78,7 @@ class TestProteinAggregate(unittest.TestCase):
         self.src.col.insert_many([dic_0, dic_1, dic_2])
         self.src.load_kinlaw_from_sabio()
         result_0 = self.src.col.find_one({'uniprot_id': 'P20932'})
-        self.assertTrue('kinetics' in result_0.keys())
+        self.assertTrue('kinetics' in list(result_0.keys()))
         self.assertTrue({'kinlaw_id': 17, 'ncbi_taxonomy_id': 303} in result_0['kinetics'])
         result_1 = self.src.col.find_one({'uniprot_id': 'P16064'})
         self.assertTrue({'kinlaw_id': 1, 'ncbi_taxonomy_id': 1467} in result_1['kinetics'])

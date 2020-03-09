@@ -9,7 +9,7 @@ class MongoUtil:
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db='test',
                  verbose=False, max_entries=float('inf'), username = None, 
-                 password = None, authSource = 'admin'):
+                 password = None, authSource = 'admin', readPreference='nearest'):
         self.cache_dirname = cache_dirname
         self.MongoDB = MongoDB
         self.db = db
@@ -19,7 +19,7 @@ class MongoUtil:
         self.client = pymongo.MongoClient(
             self.MongoDB, replicaSet=self.replicaSet, 
             username = username, password = password,
-            authSource = authSource)  # 400ms max timeout
+            authSource = authSource, readPreference=readPreference)  # 400ms max timeout
         self.db_obj = self.client[db]
 
     def list_all_collections(self):

@@ -2,8 +2,10 @@ import setuptools
 try:
     import pkg_utils
 except ImportError:
-    import pip._internal
-    pip._internal.main(['install', 'pkg_utils'])
+    import subprocess
+    import sys
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "pkg_utils"])
     import pkg_utils
 import os
 
@@ -39,7 +41,6 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     package_data={
         name: [
-            'VERSION',
             'config/core.schema.cfg',
             'config/core.default.cfg',
             'data_source/*.txt',

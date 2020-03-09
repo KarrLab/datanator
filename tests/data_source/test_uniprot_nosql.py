@@ -6,6 +6,7 @@ import datanator.config.core
 
 
 class TestUniprotNoSQL(unittest.TestCase):
+    
     @classmethod
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
@@ -27,3 +28,6 @@ class TestUniprotNoSQL(unittest.TestCase):
         # count = uni.count()
         # self.assertEqual(count, 10)
         # self.assertNotEqual(uni.find_one()['gene_name'], None)
+
+    def test_fill_species_name(self):
+        self.src.fill_species_name()
