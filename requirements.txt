@@ -9,7 +9,7 @@ flask_migrate
 jxmlease
 marshmallow_sqlalchemy
 numpy
-obj_tables
+obj_tables[bio]
 openbabel
 openpyxl
 pandas == 1.0.1
