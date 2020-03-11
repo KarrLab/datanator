@@ -711,7 +711,7 @@ def main():
     # manager.add_inchi_hash()
     # manager.add_taxon_info()
     # manager.fill_ec_meta()
-    manager.fill_kegg_meta(start=1780)
+    manager.fill_kegg_meta(start=6200)
 
 if __name__ == '__main__':
     main()
