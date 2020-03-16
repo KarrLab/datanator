@@ -1,4 +1,6 @@
 # Karr Lab
 git+https://github.com/KarrLab/datanator_swagger_ui_bundle.git#egg=swagger_ui_bundle
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
+git+https://github.com/KarrLab/bpforms.git#egg=bpforms
+git+https://github.com/KarrLab/bcforms.git#egg=bcforms
 git+https://github.com/KarrLab/obj_tables.git#egg=obj_tables[all]
