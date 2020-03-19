@@ -1,4 +1,4 @@
-from datanator_query_python.query import query_uniprot_orgs
+from datanator_query_python.query import query_uniprot_org
 from datanator_query_python.util import mongo_util
 from pymongo.collation import Collation, CollationStrength
 
@@ -36,7 +36,7 @@ class Reorg:
                                                                                 password=password, authSource=authSource, readPreference=readPreference).con_db(collection_str=src_collection)
         self.des_client, self.des_db, self.des_collection = mongo_util.MongoUtil(cache_dirname=cache_dirname, MongoDB=MongoDB, db=des_db,
                                                                                 verbose=verbose, max_entries=max_entries, username=username, 
-                                                                                password=password, authSource=authSource, readPreference=readPreference).con_db(collection_str=src_collection)
+                                                                                password=password, authSource=authSource, readPreference=readPreference).con_db(collection_str=des_collection)
         self.collation = Collation('en', strength=CollationStrength.SECONDARY)
 
     def helper(self, doi, start=0):
@@ -68,7 +68,7 @@ class Reorg:
                 systematic_name = subdoc.get(field_name)
                 species = subdoc.get('species')
                 if systematic_name is not None:
-                    uniprot_org_manager = uniprot_org_manager.QueryUniprotOrg(systematic_name+' '+species)
+                    uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name+' '+species)
                     uniprot_id = uniprot_org_manager.get_uniprot_id()
                     if uniprot_id is not None:
                         self.des_collection.update_one({'uniprot_id': uniprot_id},
@@ -79,10 +79,10 @@ class Reorg:
                     continue
 
     def fill_cell(self, start=0):
-        """Processing doi_10_1016_j_cell_2013_12_026.
+        """Processing 10.1016/j.cell.2013.12.026.
         
         Args:
             start (:obj:`int`, optional): Starting document position. Defaults to 0.
         """
-        doi = 'doi_10_1016_j_cell_2013_12_026'        
+        doi = '10.1016/j.cell.2013.12.026'        
         self.fill_helper(doi, 'systematic_name', start=start)
