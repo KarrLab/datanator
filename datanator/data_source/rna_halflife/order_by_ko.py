@@ -46,7 +46,19 @@ class Reorg:
             doi (:obj:`str`): DOI of publication.
         """
         query = {'halflives.reference.doi': doi}
-        docs = self.src_collection.find(filter=query, skip=start)
+        project = {
+            '$project': {
+                'halflives': {
+                    '$filter': {
+                        'input': "$halflives",
+                        'as': "halflivess",
+                        'cond': {'$eq': ['$$halflivess.reference.doi', doi]}
+                    }
+                }
+            }
+        }
+        pipeline = [{'$match': query}, project]
+        docs = self.src_collection.aggregate(pipeline)
         count = self.src_collection.count_documents(query)
         return docs, count
 
@@ -61,6 +73,7 @@ class Reorg:
         """
         docs, count = self.helper(doi, start=start)
         for i, doc in enumerate(docs):
+            print(doc)
             if i == self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
@@ -105,4 +118,13 @@ class Reorg:
             start (:obj:`int`, optional): Starting document position. Defaults to 0.
         """
         doi = '10.1093/nar/gks1019'        
-        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Methanosarcina acetivorans')
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Mycolicibacterium smegmatis')
+
+    def fill_nar_gkt(self, start=0):
+        """Processing 10.1093/nar/gkt1150
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1093/nar/gkt1150'        
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Mycolicibacterium smegmatis')
