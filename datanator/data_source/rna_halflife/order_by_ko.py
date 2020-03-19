@@ -50,13 +50,14 @@ class Reorg:
         count = self.src_collection.count_documents(query)
         return docs, count
 
-    def fill_helper(self, doi, field_name, start=0):
+    def fill_helper(self, doi, field_name, start=0, species=None):
         """Method to fill new collection across different dois.
         
         Args:
             doi (:obj:`str`): DOI of publications.
             field_name (:obj:`str`): Name of the field that indicates the mRNA identifier.
             start (:obj:`int`, optional): Starting document position. Defaults to 0.
+            species (:obj:`str`, optional): NCBI Taxonomy name of the organism
         """
         docs, count = self.helper(doi, start=start)
         for i, doc in enumerate(docs):
@@ -64,9 +65,10 @@ class Reorg:
                 break
             if self.verbose and i % 50 == 0:
                 print('Processing doc {} out of {} ...'.format(i, count-start))
-            for subdoc in doc:
+            for subdoc in doc['halflives']:
                 systematic_name = subdoc.get(field_name)
-                species = subdoc.get('species')
+                if species is None:
+                    species = subdoc.get('species')
                 if systematic_name is not None:
                     uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name+' '+species)
                     uniprot_id = uniprot_org_manager.get_uniprot_id()
@@ -74,7 +76,7 @@ class Reorg:
                         self.des_collection.update_one({'uniprot_id': uniprot_id},
                                                        {'$addToSet': {'halflives': subdoc}}, upsert=True, collation=self.collation)
                     else:
-                        continue
+                        print(systematic_name)
                 else:
                     continue
 
@@ -86,3 +88,21 @@ class Reorg:
         """
         doi = '10.1016/j.cell.2013.12.026'        
         self.fill_helper(doi, 'systematic_name', start=start)
+
+    def fill_mbc(self, start=0):
+        """Processing 10.1091/mbc.e11-01-0028
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1091/mbc.e11-01-0028'        
+        self.fill_helper(doi, 'systematic_name', start=start, species='Saccharomyces cerevisiae')
+
+    def fill_nar_gks(self, start=0):
+        """Processing 10.1093/nar/gks1019
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1093/nar/gks1019'        
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Methanosarcina acetivorans')
