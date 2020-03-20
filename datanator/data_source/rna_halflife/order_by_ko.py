@@ -59,7 +59,7 @@ class Reorg:
         #     }
         # }
         # pipeline = [{'$match': query}, project]
-        docs = self.src_collection.find(filter=query, collation=self.collation)
+        docs = self.src_collection.find(filter=query, collation=self.collation, skip=start)
         count = self.src_collection.count_documents(query)
         return docs, count
 
@@ -77,7 +77,7 @@ class Reorg:
             if i == self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
-                print('Processing doc {} out of {} ...'.format(i, count-start))
+                print('Processing doi {} doc {} out of {} ...'.format(doi, i, count-start))
             for subdoc in doc['halflives']:
                 reference = subdoc.get('reference')[0]['doi']
                 if reference != doi:
@@ -194,7 +194,7 @@ from multiprocessing import Process
 import datanator.config.core
 
 def joint_operation(src):
-    src.fill_cell()
+    src.fill_cell(start=4700)
     src.fill_mbc()
     src.fill_nar_gks()
     src.fill_nar_gkt()
@@ -212,7 +212,7 @@ def main():
     password = datanator.config.core.get_config()['datanator']['mongodb']['password']
     MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']    
     src = Reorg(MongoDB=MongoDB, src_db=src_db,
-                verbose=False, username=username, 
+                verbose=True, username=username, 
                 password=password, authSource='admin', readPreference='nearest',
                 des_collection=des_collection, src_collection=src_collection,
                 des_db=des_db)
