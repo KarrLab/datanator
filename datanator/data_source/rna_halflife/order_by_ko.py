@@ -1,5 +1,6 @@
 from datanator_query_python.query import query_uniprot_org
 from datanator_query_python.util import mongo_util
+from datanator_query_python.config import config
 from pymongo.collation import Collation, CollationStrength
 
 
@@ -92,23 +93,28 @@ class Reorg:
 
                 uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name+' '+species)
                 uniprot_id = uniprot_org_manager.get_uniprot_id()
+                ko = uniprot_org_manager.get_kegg_ortholog()
                 protein_names = uniprot_org_manager.get_protein_name()
                 if uniprot_id is not None:
                     self.des_collection.update_one({'uniprot_id': uniprot_id},
                                                     {'$addToSet': {'halflives': subdoc},
-                                                     '$set': {'protein_names': protein_names}}, upsert=True, collation=self.collation)                
+                                                     '$set': {'protein_names': protein_names,
+                                                              'ko_number': ko}}, upsert=True, collation=self.collation)                
                 else:
                     uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name)
                     uniprot_id = uniprot_org_manager.get_uniprot_id()
+                    ko = uniprot_org_manager.get_kegg_ortholog()
                     protein_names = uniprot_org_manager.get_protein_name()
                     if uniprot_id is not None:
                         self.des_collection.update_one({'uniprot_id': uniprot_id},
                                                         {'$addToSet': {'halflives': subdoc},
-                                                        '$set': {'protein_names': protein_names}}, upsert=True, collation=self.collation)
+                                                        '$set': {'protein_names': protein_names,
+                                                                 'ko_number': ko}}, upsert=True, collation=self.collation)
                     else:
                         self.des_collection.update_one({'identifier': systematic_name},
                                                         {'$addToSet': {'halflives': subdoc},
-                                                        '$set': {'protein_names': [protein_names]}}, upsert=True, collation=self.collation)
+                                                        '$set': {'protein_names': [protein_names],
+                                                                 'ko_number': None}}, upsert=True, collation=self.collation)
                         print(systematic_name) 
 
 
@@ -183,3 +189,36 @@ class Reorg:
         """
         doi = '10.1371/journal.pone.0059059'        
         self.fill_helper(doi, 'ordered_locus_name', start=start, species='Lactococcus lactis subsp. lactis (strain IL1403)')
+
+from multiprocessing import Process
+import datanator.config.core
+
+def joint_operation(src):
+    src.fill_cell()
+    src.fill_mbc()
+    src.fill_nar_gks()
+    src.fill_nar_gkt()
+    src.fill_gr_131()
+    src.fill_gb_2012()
+    src.fill_s12864()
+    src.fill_journal_pone()
+
+def main():
+    des_db = 'datanator'
+    src_db = 'datanator'
+    src_collection = 'rna_halflife'
+    des_collection = 'rna_halflife_new'
+    username = datanator.config.core.get_config()['datanator']['mongodb']['user']
+    password = datanator.config.core.get_config()['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']    
+    src = Reorg(MongoDB=MongoDB, src_db=src_db,
+                verbose=False, username=username, 
+                password=password, authSource='admin', readPreference='nearest',
+                des_collection=des_collection, src_collection=src_collection,
+                des_db=des_db)
+    p = Process(target=joint_operation(src))
+    p.start()
+    p.join()
+
+if __name__ == '__main__':
+    main()
