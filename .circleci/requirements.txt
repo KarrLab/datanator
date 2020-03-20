@@ -4,3 +4,5 @@ git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
 git+https://github.com/KarrLab/bpforms.git#egg=bpforms
 git+https://github.com/KarrLab/bcforms.git#egg=bcforms
 git+https://github.com/KarrLab/obj_tables.git#egg=obj_tables[all]
+git+https://github.com/KarrLab/karr_lab_aws_manager.git#egg=karr_lab_aws_manager
+git+https://github.com/KarrLab/datanator_query_python.git#egg=datanator_query_python
