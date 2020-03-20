@@ -23,7 +23,7 @@ class TestReorg(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # cls.src.des_db.drop_collection(cls.des_collection)
+        cls.src.des_db.drop_collection(cls.des_collection)
         cls.src.src_client.close()
         cls.src.des_client.close()
 
@@ -40,6 +40,26 @@ class TestReorg(unittest.TestCase):
     def test_fill_mbc(self):
         self.src.fill_mbc()
 
-    # @unittest.skip('passed')
+    @unittest.skip('passed')
     def test_fill_nar_gks(self):
         self.src.fill_nar_gks()
+
+    @unittest.skip('passed')
+    def test_fill_nar_gkt(self):
+        self.src.fill_nar_gkt()
+
+    @unittest.skip('passed')
+    def test_fill_gr_131(self):
+        self.src.fill_gr_131()
+
+    @unittest.skip('passed')
+    def test_fill_gb_2012(self):
+        self.src.fill_gb_2012()
+
+    @unittest.skip('passed')
+    def test_fill_s12864(self):
+        self.src.fill_s12864()
+
+    @unittest.skip('passed')
+    def test_fill_journal_pone(self):
+        self.src.fill_journal_pone()         

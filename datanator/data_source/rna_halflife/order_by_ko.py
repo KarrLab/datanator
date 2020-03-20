@@ -46,19 +46,19 @@ class Reorg:
             doi (:obj:`str`): DOI of publication.
         """
         query = {'halflives.reference.doi': doi}
-        project = {
-            '$project': {
-                'halflives': {
-                    '$filter': {
-                        'input': "$halflives",
-                        'as': "halflivess",
-                        'cond': {'$eq': ['$$halflivess.reference.doi', doi]}
-                    }
-                }
-            }
-        }
-        pipeline = [{'$match': query}, project]
-        docs = self.src_collection.aggregate(pipeline)
+        # project = {
+        #     '$project': {
+        #         'halflives': {
+        #             '$filter': {
+        #                 'input': "$halflives",
+        #                 'as': "ref",
+        #                 'cond': {'$eq': ['$$ref.reference', {'doi': doi}]}
+        #             }
+        #         }
+        #     }
+        # }
+        # pipeline = [{'$match': query}, project]
+        docs = self.src_collection.find(filter=query, collation=self.collation)
         count = self.src_collection.count_documents(query)
         return docs, count
 
@@ -73,25 +73,44 @@ class Reorg:
         """
         docs, count = self.helper(doi, start=start)
         for i, doc in enumerate(docs):
-            print(doc)
             if i == self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
                 print('Processing doc {} out of {} ...'.format(i, count-start))
             for subdoc in doc['halflives']:
-                systematic_name = subdoc.get(field_name)
+                reference = subdoc.get('reference')[0]['doi']
+                if reference != doi:
+                    continue
+                if doi == '10.1371/journal.pone.0059059':
+                    systematic_name = doc['gene_name']
+                else:
+                    systematic_name = subdoc.get(field_name)
+                    if isinstance(systematic_name, list):
+                        systematic_name = systematic_name[0]
                 if species is None:
                     species = subdoc.get('species')
-                if systematic_name is not None:
-                    uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name+' '+species)
+
+                uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name+' '+species)
+                uniprot_id = uniprot_org_manager.get_uniprot_id()
+                protein_names = uniprot_org_manager.get_protein_name()
+                if uniprot_id is not None:
+                    self.des_collection.update_one({'uniprot_id': uniprot_id},
+                                                    {'$addToSet': {'halflives': subdoc},
+                                                     '$set': {'protein_names': protein_names}}, upsert=True, collation=self.collation)                
+                else:
+                    uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(systematic_name)
                     uniprot_id = uniprot_org_manager.get_uniprot_id()
+                    protein_names = uniprot_org_manager.get_protein_name()
                     if uniprot_id is not None:
                         self.des_collection.update_one({'uniprot_id': uniprot_id},
-                                                       {'$addToSet': {'halflives': subdoc}}, upsert=True, collation=self.collation)
+                                                        {'$addToSet': {'halflives': subdoc},
+                                                        '$set': {'protein_names': protein_names}}, upsert=True, collation=self.collation)
                     else:
-                        print(systematic_name)
-                else:
-                    continue
+                        self.des_collection.update_one({'identifier': systematic_name},
+                                                        {'$addToSet': {'halflives': subdoc},
+                                                        '$set': {'protein_names': [protein_names]}}, upsert=True, collation=self.collation)
+                        print(systematic_name) 
+
 
     def fill_cell(self, start=0):
         """Processing 10.1016/j.cell.2013.12.026.
@@ -127,4 +146,40 @@ class Reorg:
             start (:obj:`int`, optional): Starting document position. Defaults to 0.
         """
         doi = '10.1093/nar/gkt1150'        
-        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Mycolicibacterium smegmatis')
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Escherichia coli strain K-12')
+
+    def fill_gr_131(self, start=0):
+        """Processing 10.1101/gr.131037.111
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1101/gr.131037.111'        
+        self.fill_helper(doi, 'accession_id', start=start, species='Mus musculus')
+
+    def fill_gb_2012(self, start=0):
+        """Processing 10.1186/gb-2012-13-4-r30
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1186/gb-2012-13-4-r30'        
+        self.fill_helper(doi, 'ordered_locus_name', start=start)
+
+    def fill_s12864(self, start=0):
+        """Processing 10.1186/s12864-016-3219-8
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1186/s12864-016-3219-8'        
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Methanosarcina acetivorans')
+
+    def fill_journal_pone(self, start=0):
+        """Processing 10.1371/journal.pone.0059059
+        
+        Args:
+            start (:obj:`int`, optional): Starting document position. Defaults to 0.
+        """
+        doi = '10.1371/journal.pone.0059059'        
+        self.fill_helper(doi, 'ordered_locus_name', start=start, species='Lactococcus lactis subsp. lactis (strain IL1403)')
