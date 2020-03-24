@@ -115,7 +115,37 @@ class Reorg:
                                                         {'$addToSet': {'halflives': subdoc},
                                                         '$set': {'protein_names': [protein_names],
                                                                  'ko_number': None}}, upsert=True, collation=self.collation)
-                        print(systematic_name) 
+                        print(systematic_name)
+
+    def fill_gr_131_helper(self, start=0):
+        """Fill 10.1101/gr.131037.111
+        
+        Args:
+            start (:obj:`int`, optional): Starting position. Defaults to 0.
+        """
+        docs = self.src_collection.find({'identifier': {'$exists': True}}, skip=start)
+        count = self.src_collection.count_documents({'identifier': {'$exists': True}})
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 50 == 0:
+                print('Processing doi {} doc {} out of {} ...'.format('10.1101/gr.131037.111', i, count-start))
+            identifier = doc['identifier']
+            for subdoc in doc['halflives']:
+                query = ' OR '.join(subdoc.get('accession_id'))
+                uniprot_org_manager = query_uniprot_org.QueryUniprotOrg(query)
+                uniprot_id = uniprot_org_manager.get_uniprot_id()
+                ko = uniprot_org_manager.get_kegg_ortholog()
+                protein_names = uniprot_org_manager.get_protein_name()
+                if uniprot_id is not None:
+                    self.des_collection.update_one({'identifier': identifier},
+                                                    {'$set': {'protein_names': protein_names,
+                                                             'ko_number': ko,
+                                                             'uniprot_id': uniprot_id},
+                                                    '$unset': {'identifier': ""}}, upsert=False, collation=self.collation)
+                else:
+                    print(identifier)
+                    continue       
 
 
     def fill_cell(self, start=0):
@@ -194,19 +224,19 @@ from multiprocessing import Process
 import datanator.config.core
 
 def joint_operation(src):
-    src.fill_cell(start=4700)
-    src.fill_mbc()
-    src.fill_nar_gks()
-    src.fill_nar_gkt()
-    src.fill_gr_131()
-    src.fill_gb_2012()
-    src.fill_s12864()
-    src.fill_journal_pone()
+    # src.fill_cell(start=4700)
+    # src.fill_mbc()
+    # src.fill_nar_gks()
+    # src.fill_nar_gkt()
+    src.fill_gr_131_helper(start=2400)
+    # src.fill_gb_2012()
+    # src.fill_s12864()
+    # src.fill_journal_pone()
 
 def main():
     des_db = 'datanator'
     src_db = 'datanator'
-    src_collection = 'rna_halflife'
+    src_collection = 'rna_halflife_new'
     des_collection = 'rna_halflife_new'
     username = datanator.config.core.get_config()['datanator']['mongodb']['user']
     password = datanator.config.core.get_config()['datanator']['mongodb']['password']
