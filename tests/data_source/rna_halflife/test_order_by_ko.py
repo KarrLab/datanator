@@ -9,7 +9,7 @@ class TestReorg(unittest.TestCase):
     def setUpClass(cls):
         des_db = 'test'
         src_db = 'datanator'
-        cls.src_collection = 'rna_halflife'
+        cls.src_collection = 'rna_halflife_new'
         cls.des_collection = 'rna_halflife_test'
         conf = config.TestConfig()
         username = conf.MONGO_TEST_USERNAME
