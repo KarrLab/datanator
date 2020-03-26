@@ -1,4 +1,3 @@
-import pandas as pd
 from datanator.util import rna_halflife_util
 from datanator_query_python.query import query_uniprot_org
 import datetime
@@ -62,7 +61,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
             halflife_7 = {'gm12813': row.get('gm12813_a1_dup'), 'technical_replicates': 'a1', 'note': 'separate RNA aliquots from the same cell culture', 'unit': 'hr'}
             halflife_8 = {'gm12813': row.get('gm12813_a2'), 'biological_replicates': 'a2', 'note': 'independent cell cultures for the same cell line', 'unit': 'hr'}
             halflife_9 = {'gm12813': row.get('gm12813_a2_dup'), 'technical_replicates': 'a2', 'note': 'separate RNA aliquots from the same cell culture', 'unit': 'hr'}
-            halflife_10 = {'gm12813': row.get('gm12813_a3'), 'biological_replicates': 'a3', 'note': 'independent cell cultures for the same cell line', 'unit': 'hr'}
+            # halflife_10 = {'gm12813': row.get('gm12813_a3'), 'biological_replicates': 'a3', 'note': 'independent cell cultures for the same cell line', 'unit': 'hr'}
             halflife_11 = {'gm12813': row.get('gm12813_a3_dup'), 'technical_replicates': 'a3', 'note': 'separate RNA aliquots from the same cell culture', 'unit': 'hr'}
             halflife_12 = {'gm07019': row.get('gm07019'), 'unit': 'hr'}
             halflife_13 = {'gm12812': row.get('gm12812'), 'unit': 'hr'}
@@ -82,7 +81,7 @@ class Halflife(rna_halflife_util.RnaHLUtil):
 
             values = [halflife_0, halflife_1, halflife_2, halflife_3,
                         halflife_4, halflife_5, halflife_6, halflife_7,
-                        halflife_8, halflife_9, halflife_10, halflife_11,
+                        halflife_8, halflife_9, halflife_11,
                         halflife_12, halflife_13, halflife_14, halflife_15]
             obj = {'accession_id': accession_id,
                     'probeset_id': probeset_id,
@@ -106,3 +105,32 @@ class Halflife(rna_halflife_util.RnaHLUtil):
                 self.rna_hl_collection.update_one({'identifier': accession_id},
                                                   {'$addToSet': {'halflives': obj}},
                                                   collation=self.collation, upsert=True)                
+
+
+def main():
+    src_db = 'datanator'
+    des_db = 'datanator'
+    rna_col = 'rna_halflife'
+    protein_col = 'uniprot'
+    cache_dir = tempfile.mkdtemp()
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    src = Halflife(server=server, src_db=src_db,
+        protein_col=protein_col, authDB='admin', readPreference='nearest',
+        username=username, password=password, verbose=True, max_entries=float('inf'),
+        des_db=des_db, rna_col=rna_col, cache_dir=cache_dir)
+    url = 'https://static-content.springer.com/esm/art%3A10.1038%2Fsrep01318/MediaObjects/41598_2013_BFsrep01318_MOESM2_ESM.xls'
+    names = ['probeset_id', 'gene_symbol', 'accession_id', 'gm07029_a1', 'gm07029_a2', 'gm07029_a3',
+            'gm10835_a1', 'gm10835_a2', 'gm10835_a3', 'gm12813_a1', 'gm12813_a1_dup', 'gm12813_a2', 'gm12813_a2_dup',
+            'gm12813_a3_dup', 'gm07019', 'gm12812', 'gm12814', 'gm12815', 'irrelavent', 'anova_3',
+            'fdr_3', 'anova_7', 'fdr_7']
+    df_s1 = src.make_df(url, 'S3', names=names, usecols='A:W', file_type='xls')
+    src.fill_rna_halflife(df_s1)
+    shutil.rmtree(cache_dir)
+
+if __name__ == '__main__':
+    main()
