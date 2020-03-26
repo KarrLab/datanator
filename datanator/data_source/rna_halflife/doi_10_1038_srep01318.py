@@ -104,13 +104,13 @@ class Halflife(rna_halflife_util.RnaHLUtil):
             else:
                 self.rna_hl_collection.update_one({'identifier': accession_id},
                                                   {'$addToSet': {'halflives': obj}},
-                                                  collation=self.collation, upsert=True)                
+                                                  upsert=True)                
 
 
 def main():
     src_db = 'datanator'
     des_db = 'datanator'
-    rna_col = 'rna_halflife'
+    rna_col = 'rna_halflife_new'
     protein_col = 'uniprot'
     cache_dir = tempfile.mkdtemp()
     username = datanator.config.core.get_config()[
