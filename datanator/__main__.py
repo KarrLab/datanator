@@ -9,7 +9,7 @@
 """
 
 from datanator.core import data_model
-from datanator_query_python.query import query_nosql, query_metabolites_meta, query_pax, query_sabiork, query_taxon_tree
+from datanator_query_python.query import query_metabolites_meta, query_pax, query_sabiork, query_taxon_tree
 from datanator.data_source import *
 from datanator.util import molecule_util
 from datanator.util import taxonomy_util

@@ -2,3 +2,4 @@
 git+https://github.com/KarrLab/datanator_swagger_ui_bundle.git#egg=swagger_ui_bundle
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
 git+https://github.com/KarrLab/obj_tables.git#egg=obj_tables[all]
+git+https://github.com/KarrLab/datanator_query_python.git#egg=datanator_query_python
