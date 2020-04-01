@@ -50,7 +50,7 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
 
         _, _, collection = self.con_db(collection_name)
         k = 0
-        for doc in self.doc_feeder(collection_str=collection_name, query={}, projection={'inchi':1}):
+        for doc in self.collection.find(filter={}, projection={'inchi':1}):
             if k > self.max_entries:
                 break
             kinlaw_id = self.get_kinlawid_by_inchi([doc['inchi']])
