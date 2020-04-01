@@ -37,6 +37,7 @@ python3 -m pytest tests
 
 ## License
 This software is released open-source under the [MIT license](LICENSE).
+The Quilt3 package used in the software is released under the [CC BY-NC-ND 4.0 license](LICENCE.quilt3.md)
 
 ## Development team
 The model was developed by the [Karr Lab](https://www.karrlab.org) at the Icahn School of Medicine at Mount Sinai in New York, US.
