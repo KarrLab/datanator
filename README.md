@@ -36,7 +36,7 @@ python3 -m pytest tests
 ```
 
 ## License
-This software is released open-source under the [MIT license](LICENSE).
+This software is released open-source under the [MIT license](LICENSE). 
 
 The data aggregated by the software is released under the [CC BY-NC-ND 4.0 license](DATA_LICENSE)
 
