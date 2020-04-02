@@ -5,7 +5,7 @@ include README.rst
 include LICENSE
 
 # quilt3-license
-include LICENSE.quilt3.md
+include DATA_LICENSE
 
 # requirements
 include requirements.txt
