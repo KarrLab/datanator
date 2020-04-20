@@ -1509,21 +1509,21 @@ class SabioRk:
 
 
 def main():
-        db = 'datanator'
-        username = datanator.config.core.get_config()[
-            'datanator']['mongodb']['user']
-        password = datanator.config.core.get_config(
-        )['datanator']['mongodb']['password']
-        MongoDB = datanator.config.core.get_config(
-        )['datanator']['mongodb']['server']
-        port = datanator.config.core.get_config(
-        )['datanator']['mongodb']['port']
-        replSet = datanator.config.core.get_config(
-        )['datanator']['mongodb']['replSet']
-        manager = SabioRk(MongoDB=MongoDB, db=db,
-                          verbose=True, username=username,
-                          password=password)
-        manager.load_content()
+    db = 'datanator'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    MongoDB = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    port = datanator.config.core.get_config(
+    )['datanator']['mongodb']['port']
+    replSet = datanator.config.core.get_config(
+    )['datanator']['mongodb']['replSet']
+    manager = SabioRk(MongoDB=MongoDB, db=db,
+                        verbose=True, username=username,
+                        password=password)
+    manager.load_content()
 
 
 if __name__ == '__main__':
