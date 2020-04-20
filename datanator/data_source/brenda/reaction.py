@@ -48,6 +48,8 @@ class BrendaRxn(mongo_util.MongoUtil):
         """
         df['brenda_pathway_name'] = df['brenda_pathway_name'].str.split('; ')
         df['kegg_pathway_name'] = df['kegg_pathway_name'].str.split('; ')
+        df['kegg_pathway_id'] = df['kegg_pathway_id'].str.split('; ')
+        df['metacyc_pathway_id'] = df['metacyc_pathway_id'].str.split('; ')
         df['metacyc_pathway_name'] = df['metacyc_pathway_name'].str.split('; ')
         df['commentary_kegg'] = df['commentary_kegg'].str.split('; ')
         df['reaction_id_brenda'] = df['reaction_id_brenda'].str.split(',')
