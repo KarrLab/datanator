@@ -190,7 +190,7 @@ class MongoToES(es_util.EsUtil):
         count = collection.count_documents(query)
         return (count, docs)
 
-    def data_from_mongo_rna_halflife_entries(self, server, db, username, password, verbose=False,
+    def data_from_mongo(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin',
                                 query={}, collection_str='rna_halflife_new'):
         ''' Acquire documents from protein collection in datanator
@@ -207,10 +207,9 @@ class MongoToES(es_util.EsUtil):
                 query (:obj:`str`): mongodb query filter
 
             Returns:
-                (:obj:`tuple`): tuple containing:
-
-                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
-                    count (:obj:`int`): number of documents returned
+                (:obj:`tuple`): tuple containing
+                    (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    (:obj:`int`): number of documents returned
         '''
         mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
                                             password=password, authSource=authSource, db=db,
@@ -327,17 +326,17 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
-    count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB)
-    print(count)
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB)
+    # print(count)
     # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
-    _ = manager.create_index('rna_halflife')
-    _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
+    # _ = manager.create_index('rna_halflife')
+    # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
     # data from "taxon_tree" collection
     # index_name = 'taxon_tree'
-    # count, docs = manager.data_from_mongo_rna_halflife_entries(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/taxon_tree.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
@@ -353,6 +352,18 @@ def main():
     # _ = manager.delete_index(index_name)
     # _ = manager.create_index(index_name)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
+
+    # data from "brenda_reactions" collection
+    index_name = 'brenda_reactions'
+    count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    print(count)    
+    # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
+    # with open(index_schema_path) as json_file:
+    #     index_schema = json.load(json_file)
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
+    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    _ = manager.create_index_with_file(index_name, setting_file)
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
