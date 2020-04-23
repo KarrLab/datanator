@@ -15,13 +15,14 @@
 
 import ete3
 import pickle
+import os.path
 import re
 import warnings
 
 
 class Brenda(object):
-    RAW_FILENAME = './brenda_download.txt'
-    PROCESSED_FILENAME = './brenda.pkl'
+    RAW_FILENAME = os.path.join(os.path.dirname(__file__), 'brenda_download.txt')
+    PROCESSED_FILENAME = os.path.join(os.path.dirname(__file__), 'brenda.pkl')
 
     LINE_CODES = {
         'AC': 'ACTIVATING_COMPOUND',
@@ -150,6 +151,12 @@ class Brenda(object):
                 for loc in enz['subcellular_localizations']:
                     loc['refs'] = [ec_data['refs'][ref_id] for ref_id in loc['ref_ids']]
 
+            for rxn in ec_data['natural_reactions']:
+                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+
+            for rxn in ec_data['reactions']:
+                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+
             for k_cat in ec_data['k_cats']:
                 k_cat['refs'] = [ec_data['refs'][ref_id] for ref_id in k_cat['ref_ids']]
 
@@ -167,6 +174,12 @@ class Brenda(object):
 
                 for loc in enz['subcellular_localizations']:
                     loc.pop('ref_ids')
+
+            for rxn in ec_data['natural_reactions']:
+                rxn.pop('ref_ids')
+
+            for rxn in ec_data['reactions']:
+                rxn.pop('ref_ids')
 
             for k_cat in ec_data['k_cats']:
                 k_cat.pop('ref_ids')
@@ -196,6 +209,7 @@ class Brenda(object):
         ec_data = data[ec_code] = {
             'name': None,
             'systematic_name': None,
+            'natural_reactions': [],
             'reactions': [],
             'enzymes': {},
             'k_cats': [],
@@ -216,7 +230,7 @@ class Brenda(object):
                 r'[ \n](.*?)'
                 r'([ \n]([A-Z][A-Z0-9\.]+)'
                 r'[ \n](GenBank|UniProt|SwissProt|))?'
-                r'([ \n]\(.*?\))?'
+                r'([ \n]\((.*?)\))?'
                 r'[ \n]<([0-9,\n]+)>$'
             ), val, re.DOTALL)
 
@@ -225,7 +239,8 @@ class Brenda(object):
             taxon_id = self._ncbi_taxa.get_name_translator([taxon_name]).get(taxon_name, [None])[0]
             xid = match.group(4) or None
             namespace = match.group(5) or None
-            ref_ids = match.group(7).replace('\n', ',').strip().split(',')
+            comments = self.parse_comments(match.group(7))
+            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
 
             if id not in ec_data['enzymes']:
                 ec_data['enzymes'][id] = {
@@ -234,6 +249,7 @@ class Brenda(object):
                     'taxon': {'name': taxon_name, 'id': taxon_id} if taxon_name else None,
                     'tissues': [],
                     'subcellular_localizations': [],
+                    'comments': comments,
                     'ref_ids': ref_ids,
                     'refs': None,
                 }
@@ -248,6 +264,7 @@ class Brenda(object):
                 if not ec_data['enzymes'][id]['taxon'] and taxon_name:
                     ec_data['enzymes'][id]['taxon'] = {'name': taxon_name, 'id': taxon_id}
 
+                ec_data['enzymes'][id]['comments'] += comments
                 ec_data['enzymes'][id]['ref_ids'] = sorted(set(ec_data['enzymes'][id]['ref_ids'] + ref_ids))
 
         elif type == 'RN':
@@ -257,16 +274,18 @@ class Brenda(object):
             ec_data['systematic_name'] = val.replace('\n', ' ').strip()
 
         elif type == 'ST':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\(.*?\))?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
 
             enz_ids = match.group(1).replace('\n', ',').strip().split(',')
             tissue = match.group(2).strip()
-            ref_ids = match.group(4).replace('\n', ',').strip().split(',')
+            comments = self.parse_comments(match.group(4))
+            ref_ids = match.group(5).replace('\n', ',').strip().split(',')
             for enz_id in enz_ids:
                 enzyme = ec_data['enzymes'].get(enz_id, None)
                 if enzyme:
                     enzyme['tissues'].append({
                         'name': tissue,
+                        'comments': self.filter_comments(comments, enz_id),
                         'ref_ids': ref_ids,
                         'refs': None,
                     })
@@ -274,71 +293,79 @@ class Brenda(object):
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
 
         elif type == 'LO':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\(.*?\))?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
 
             enz_ids = match.group(1).replace('\n', ',').strip().split(',')
             localization = match.group(2).strip()
-            ref_ids = match.group(4).replace('\n', ',').strip().split(',')
+            comments = self.parse_comments(match.group(4))
+            ref_ids = match.group(5).replace('\n', ',').strip().split(',')
             for enz_id in enz_ids:
                 enzyme = ec_data['enzymes'].get(enz_id, None)
                 if enzyme:
                     ec_data['enzymes'][enz_id]['subcellular_localizations'].append({
                         'name': localization,
+                        'comments': self.filter_comments(comments, enz_id),
                         'ref_ids': ref_ids,
                         'refs': None,
                     })
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
 
-        elif type == 'SP':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\(.*?\))?([ \n]\|.*?\|)?([ \n]\{(r)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+        elif type == 'NSP':
+            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+            comments = self.parse_comments(match.group(4))
+            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
+            ec_data['natural_reactions'].append({
+                'equation': match.group(2).replace('\n', ' ').strip(),
+                'reversible': match.group(7) == 'r',
+                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+                'comments': comments,
+                'ref_ids': ref_ids,
+                'refs': None,
+            })
 
+        elif type == 'SP':
+            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+            comments = self.parse_comments(match.group(4))
+            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
             ec_data['reactions'].append({
                 'equation': match.group(2).replace('\n', ' ').strip(),
-                'reversible': match.group(6) == 'r',
-                'enzymes': match.group(1).replace('\n', ',').strip().split(','),
+                'reversible': match.group(7) == 'r',
+                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+                'comments': comments,
+                'ref_ids': ref_ids,
+                'refs': None,
             })
 
         elif type in ['TN', 'KM']:
             match = re.match(
                 '^#(.*?)#[ \n]((\d+(\.\d+)?)?-?(\d+(\.\d+)?)?)[ \n]{(.*?)}[ \n]([ \n]\((.*?)\))?[ \n]?<([0-9,\n]+)>$', val, re.DOTALL)
 
+            enz_ids = match.group(1).replace('\n', ',').split(',')
+            ref_ids = match.group(10).replace('\n', ',').strip().split(',')
+            comments = self.parse_comments(match.group(9))
+
             datum = {
                 'substrate': match.group(7),
-                'value': match.group(2).replace('\n', '-'),
+                'value': match.group(2).replace('\n', ''),
                 'units': 's^-1' if type == 'TN' else 'mM',
                 'enzymes': [],
-                'wild_type': None,
-                'genetic_variant': None,
-                'temperature': None,
-                'ph': None,
-                'ref_ids': match.group(10).replace('\n', ',').strip().split(','),
+                'ref_ids': ref_ids,
                 'refs': None,
             }
 
-            enz_ids = match.group(1).replace('\n', ',').split(',')
             for enz_id in enz_ids:
                 enzyme = ec_data['enzymes'].get(enz_id, None)
                 if enzyme:
-                    datum['enzymes'].append(enzyme)
+                    filtered_comments = self.filter_comments(comments, enz_id)
+
+                    datum['enzymes'].append({
+                        'enzyme': enzyme,
+                        'comments': filtered_comments,
+                    })
+
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
-
-            comments = match.group(9)
-            if comments:
-                if 'wild-type' in comments or 'native' in comments:
-                    datum['wild_type'] = True
-
-                if 'mutant' in comments:
-                    datum['genetic_variant'] = True
-
-                match = re.search('(\d+(\.\d+)?)°C', comments)
-                if match:
-                    datum['temperature'] = float(match.group(1))
-
-                match = re.search('pH[ \n](\d+(\.\d+)?)', comments, re.DOTALL)
-                if match:
-                    datum['ph'] = float(match.group(1))
 
             if type == 'TN':
                 ec_data['k_cats'].append(datum)
@@ -366,6 +393,73 @@ class Brenda(object):
                 },
                 'comments': match.group(6).replace('\n', ' ') if match.group(6) else None,
             }
+
+    def parse_comments(self, comment_strs):
+        if not comment_strs:
+            return []
+
+        comment_strs = re.split(r';[ \n]', comment_strs.strip())
+        comments = []
+        for comment_str in comment_strs:
+            comment_match = re.match(r'^#([0-9,\n]+)#[ \n](.*?)[ \n]<([0-9,\n]+)>$', comment_str.strip())
+            if comment_match:
+                enz_ids = comment_match.group(1).replace('\n', ',').strip().split(',')
+                ref_ids = comment_match.group(3).replace('\n', ',').strip().split(',')
+
+                text = comment_match.group(2).replace('\n', ' ')
+                if 'wild-type' in text or 'native' in text:
+                    wild_type = True
+                else:
+                    wild_type = None
+
+                if 'mutant' in text:
+                    genetic_variant = True
+                else:
+                    genetic_variant = None
+
+                match = re.search(r'(^|,[ \n])(\d+(\.\d+)?)°C(,[ \n]|$)', text)
+                if match:
+                    temperature = float(match.group(2))
+                else:
+                    temperature = None
+
+                match = re.search(r'(^|,[ \n])pH[ \n](\d+(\.\d+)?)(,[ \n]|$)', text, re.DOTALL)
+                if match:
+                    ph = float(match.group(2))
+                else:
+                    ph = None
+
+                comments.append({
+                    'enz_ref_ids': list(zip(enz_ids, ref_ids)),
+                    'text': text,
+                    'wild_type': wild_type,
+                    'genetic_variant': genetic_variant,
+                    'temperature': temperature,
+                    'ph': ph,
+                })
+            else:
+                comments.append({
+                    'enz_ref_ids': [(None, None)],
+                    'text': comment_str,
+                    'wild_type': None,
+                    'genetic_variant': None,
+                    'temperature': None,
+                    'ph': None,
+                })
+
+        return comments
+
+    def filter_comments(self, comments, enz_id):
+        filtered_comments = []
+        for comment in comments:
+            has_comment = False
+            for enz_ref_id in comment['enz_ref_ids']:
+                if enz_ref_id[0] == enz_id:
+                    has_comment = True
+                    break
+            if has_comment:
+                filtered_comments.append(comment)
+        return filtered_comments
 
 
 """
