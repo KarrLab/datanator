@@ -15,13 +15,16 @@
 
 import ete3
 import pickle
+import json
+from pathlib import Path
 import re
 import warnings
 
 
 class Brenda(object):
-    RAW_FILENAME = './brenda_download.txt'
-    PROCESSED_FILENAME = './brenda.pkl'
+    RAW_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda_download.txt').expanduser())
+    PROCESSED_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda.pkl').expanduser())
+    MAX_ENTRIES = float('inf')
 
     LINE_CODES = {
         'AC': 'ACTIVATING_COMPOUND',
@@ -73,9 +76,10 @@ class Brenda(object):
     def __init__(self):
         self._ncbi_taxa = ete3.NCBITaxa()
 
-    def run(self, raw_filename=None, processed_filename=None):
+    def run(self, raw_filename=None, processed_filename=None, max_entries=None):
         raw_filename = raw_filename or self.RAW_FILENAME
-        processed_filename = processed_filename or self.PROCESSED_FILENAME
+        processed_filename = str(Path(processed_filename).expanduser()) or self.PROCESSED_FILENAME
+        max_entries = max_entries or self.MAX_ENTRIES
 
         ec_data = None
         ec_code = None
@@ -157,7 +161,11 @@ class Brenda(object):
                 k_m['refs'] = [ec_data['refs'][ref_id] for ref_id in k_m['ref_ids']]
 
         # remove information no longer needed because refs have been deserialized
-        for ec_data in data.values():
+        for i, ec_data in enumerate(data.values()):
+            if i == max_entries:
+                break
+            if i % 50 == 0:
+                print('Processing EC {}'.format(i))
             for enz in ec_data['enzymes'].values():
                 enz.pop('id')
                 enz.pop('ref_ids')
@@ -181,8 +189,8 @@ class Brenda(object):
             ec_data.pop('refs')
 
         # save to pickle and JSON files
-        with open(processed_filename, 'wb') as file:
-            pickle.dump(data, file)
+        with open(processed_filename, 'w+') as file:
+            json.dump(data['1.1.1.1'], file, indent=4)
 
         # return extracted data
         return data
@@ -383,3 +391,10 @@ for ec_data in data.values():
     k_m_vals.update(set(k_m['value'] for k_m in ec_data['k_ms']))
     comments.add(ec_data['comments'])
 """
+
+def main():
+    Brenda().run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda.json', max_entries=10)
+
+
+if __name__ == '__main__':
+    main()
