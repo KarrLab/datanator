@@ -145,20 +145,20 @@ class Brenda(object):
 
         # link refs
         for ec_data in data.values():
-            for enz in ec_data['enzymes'].values():
-                enz['refs'] = [ec_data['refs'][ref_id] for ref_id in enz['ref_ids']]
+            # for enz in ec_data['enzymes'].values():
+            #     enz['refs'] = [ec_data['refs'][ref_id] for ref_id in enz['ref_ids']]
 
-                for tissue in enz['tissues']:
-                    tissue['refs'] = [ec_data['refs'][ref_id] for ref_id in tissue['ref_ids']]
+                # for tissue in enz['tissues']:
+                #     tissue['refs'] = [ec_data['refs'][ref_id] for ref_id in tissue['ref_ids']]
 
-                for loc in enz['subcellular_localizations']:
-                    loc['refs'] = [ec_data['refs'][ref_id] for ref_id in loc['ref_ids']]
+                # for loc in enz['subcellular_localizations']:
+                #     loc['refs'] = [ec_data['refs'][ref_id] for ref_id in loc['ref_ids']]
 
-            for rxn in ec_data['natural_reactions']:
-                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+            # for rxn in ec_data['natural_reactions']:
+            #     rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
 
-            for rxn in ec_data['reactions']:
-                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+            # for rxn in ec_data['reactions']:
+            #     rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
 
             for k_cat in ec_data['k_cats']:
                 k_cat['refs'] = [ec_data['refs'][ref_id] for ref_id in k_cat['ref_ids']]
@@ -174,19 +174,19 @@ class Brenda(object):
                 print('Processing EC {}'.format(i))
             for enz in ec_data['enzymes'].values():
                 enz.pop('id')
-                enz.pop('ref_ids')
+            #     enz.pop('ref_ids')
 
-                for tissue in enz['tissues']:
-                    tissue.pop('ref_ids')
+            #     for tissue in enz['tissues']:
+            #         tissue.pop('ref_ids')
 
-                for loc in enz['subcellular_localizations']:
-                    loc.pop('ref_ids')
+            #     for loc in enz['subcellular_localizations']:
+            #         loc.pop('ref_ids')
 
-            for rxn in ec_data['natural_reactions']:
-                rxn.pop('ref_ids')
+            # for rxn in ec_data['natural_reactions']:
+            #     rxn.pop('ref_ids')
 
-            for rxn in ec_data['reactions']:
-                rxn.pop('ref_ids')
+            # for rxn in ec_data['reactions']:
+            #     rxn.pop('ref_ids')
 
             for k_cat in ec_data['k_cats']:
                 k_cat.pop('ref_ids')
@@ -256,9 +256,9 @@ class Brenda(object):
                     'taxon': {'name': taxon_name, 'id': taxon_id} if taxon_name else None,
                     'tissues': [],
                     'subcellular_localizations': [],
-                    'comments': comments,
-                    'ref_ids': ref_ids,
-                    'refs': None,
+                    # 'comments': comments,
+                    # 'ref_ids': ref_ids,
+                    # 'refs': None,
                 }
             else:
                 if xid:
@@ -271,8 +271,8 @@ class Brenda(object):
                 if not ec_data['enzymes'][id]['taxon'] and taxon_name:
                     ec_data['enzymes'][id]['taxon'] = {'name': taxon_name, 'id': taxon_id}
 
-                ec_data['enzymes'][id]['comments'] += comments
-                ec_data['enzymes'][id]['ref_ids'] = sorted(set(ec_data['enzymes'][id]['ref_ids'] + ref_ids))
+                # ec_data['enzymes'][id]['comments'] += comments
+                # ec_data['enzymes'][id]['ref_ids'] = sorted(set(ec_data['enzymes'][id]['ref_ids'] + ref_ids))
 
         elif type == 'RN':
             ec_data['name'] = val.replace('\n', ' ').strip()
@@ -293,8 +293,8 @@ class Brenda(object):
                     enzyme['tissues'].append({
                         'name': tissue,
                         'comments': self.filter_comments(comments, enz_id),
-                        'ref_ids': ref_ids,
-                        'refs': None,
+                        # 'ref_ids': ref_ids,
+                        # 'refs': None,
                     })
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
@@ -312,8 +312,8 @@ class Brenda(object):
                     ec_data['enzymes'][enz_id]['subcellular_localizations'].append({
                         'name': localization,
                         'comments': self.filter_comments(comments, enz_id),
-                        'ref_ids': ref_ids,
-                        'refs': None,
+                        # 'ref_ids': ref_ids,
+                        # 'refs': None,
                     })
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
@@ -327,8 +327,8 @@ class Brenda(object):
                 'reversible': match.group(7) == 'r',
                 'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
                 'comments': comments,
-                'ref_ids': ref_ids,
-                'refs': None,
+                # 'ref_ids': ref_ids,
+                # 'refs': None,
             })
 
         elif type == 'SP':
@@ -340,8 +340,8 @@ class Brenda(object):
                 'reversible': match.group(7) == 'r',
                 'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
                 'comments': comments,
-                'ref_ids': ref_ids,
-                'refs': None,
+                # 'ref_ids': ref_ids,
+                # 'refs': None,
             })
 
         elif type in ['TN', 'KM']:
@@ -463,6 +463,7 @@ class Brenda(object):
             for enz_ref_id in comment['enz_ref_ids']:
                 if enz_ref_id[0] == enz_id:
                     has_comment = True
+                    comment.pop['enz_ref_ids']
                     break
             if has_comment:
                 filtered_comments.append(comment)
@@ -486,7 +487,7 @@ for ec_data in data.values():
 """
 
 def main():
-    Brenda().run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda.json', max_entries=10)
+    Brenda().run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda-1.json', max_entries=10)
 
 
 if __name__ == '__main__':
