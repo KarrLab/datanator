@@ -318,31 +318,31 @@ class Brenda(object):
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
 
-        elif type == 'NSP':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
-            comments = self.parse_comments(match.group(4))
-            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
-            ec_data['natural_reactions'].append({
-                'equation': match.group(2).replace('\n', ' ').strip(),
-                'reversible': match.group(7) == 'r',
-                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
-                'comments': comments,
-                # 'ref_ids': ref_ids,
-                # 'refs': None,
-            })
+        # elif type == 'NSP':
+        #     match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+        #     comments = self.parse_comments(match.group(4))
+        #     ref_ids = match.group(8).replace('\n', ',').strip().split(',')
+        #     ec_data['natural_reactions'].append({
+        #         'equation': match.group(2).replace('\n', ' ').strip(),
+        #         'reversible': match.group(7) == 'r',
+        #         'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+        #         'comments': comments,
+        #         # 'ref_ids': ref_ids,
+        #         # 'refs': None,
+        #     })
 
-        elif type == 'SP':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
-            comments = self.parse_comments(match.group(4))
-            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
-            ec_data['reactions'].append({
-                'equation': match.group(2).replace('\n', ' ').strip(),
-                'reversible': match.group(7) == 'r',
-                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
-                'comments': comments,
-                # 'ref_ids': ref_ids,
-                # 'refs': None,
-            })
+        # elif type == 'SP':
+        #     match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+        #     comments = self.parse_comments(match.group(4))
+        #     ref_ids = match.group(8).replace('\n', ',').strip().split(',')
+        #     ec_data['reactions'].append({
+        #         'equation': match.group(2).replace('\n', ' ').strip(),
+        #         'reversible': match.group(7) == 'r',
+        #         'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+        #         'comments': comments,
+        #         # 'ref_ids': ref_ids,
+        #         # 'refs': None,
+        #     })
 
         elif type in ['TN', 'KM']:
             match = re.match(
