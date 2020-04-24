@@ -17,11 +17,13 @@ import ete3
 import pickle
 import json
 from pathlib import Path
+from datanator_query_python.util import mongo_util
+import datanator.config.core
 import re
 import warnings
 
 
-class Brenda(object):
+class Brenda(mongo_util.MongoUtil):
     RAW_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda_download.txt').expanduser())
     PROCESSED_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda.pkl').expanduser())
     MAX_ENTRIES = float('inf')
@@ -73,8 +75,12 @@ class Brenda(object):
         'TS': 'TEMPERATURE_STABILITY'
     }
 
-    def __init__(self):
+    def __init__(self, MongoDB=None, db=None, username=None, password=None,
+                collection_str=None, authSource='admin', readPreference='nearest'):
+        super().__init__(MongoDB=MongoDB, db=db, username=username, password=password,
+                        authSource=authSource, readPreference=readPreference)
         self._ncbi_taxa = ete3.NCBITaxa()
+        self.collection = self.db_obj[collection_str]
 
     def run(self, raw_filename=None, processed_filename=None, max_entries=None):
         raw_filename = raw_filename or self.RAW_FILENAME
@@ -167,11 +173,11 @@ class Brenda(object):
                 k_m['refs'] = [ec_data['refs'][ref_id] for ref_id in k_m['ref_ids']]
 
         # remove information no longer needed because refs have been deserialized
-        for i, ec_data in enumerate(data.values()):
+        for i, (_key, ec_data) in enumerate(data.items()):
             if i == max_entries:
                 break
-            if i % 50 == 0:
-                print('Processing EC {}'.format(i))
+            if i % 10 == 0:
+                print('Processing EC {}, the {}th of all ECs'.format(_key, i))
             for enz in ec_data['enzymes'].values():
                 enz.pop('id')
             #     enz.pop('ref_ids')
@@ -200,12 +206,14 @@ class Brenda(object):
             ec_data.pop('enzymes')
             ec_data.pop('refs')
 
-        # save to pickle and JSON files
-        with open(processed_filename, 'w+') as file:
-            json.dump(data['1.1.1.1'], file, indent=4)
-
+            # save to MongoDB
+            self.collection.update_one({'ec_number': _key},
+                                       {'$addToSet': {'ec_synonyms': {'$each': [ec_data['name'], ec_data['systematic_name']]}},
+                                        '$set': {'k_ms': ec_data['k_ms'],
+                                                'k_cats': ec_data['k_cats'],
+                                                'comments': ec_data['comments']}}, upsert=True)
         # return extracted data
-        return data
+        return 'done!!'
 
     def parse_ec_code(self, data, val):
         match = re.match(r'^([0-9\.]+)([ \n]\((.*?)\))?$', val, re.DOTALL)
@@ -486,8 +494,17 @@ for ec_data in data.values():
 """
 
 def main():
-    Brenda().run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda-1.json', max_entries=10)
-
+    db = 'datanator'
+    collection_str = 'ec'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    status = Brenda(MongoDB=server, username=username, password=password,
+           db=db, collection_str=collection_str).run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda-1.json')
+    print(status)
 
 if __name__ == '__main__':
     main()
