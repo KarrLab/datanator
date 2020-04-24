@@ -216,8 +216,8 @@ class Brenda(object):
         ec_data = data[ec_code] = {
             'name': None,
             'systematic_name': None,
-            'natural_reactions': [],
-            'reactions': [],
+            # 'natural_reactions': [],
+            # 'reactions': [],
             'enzymes': {},
             'k_cats': [],
             'k_ms': [],
@@ -463,7 +463,6 @@ class Brenda(object):
             for enz_ref_id in comment['enz_ref_ids']:
                 if enz_ref_id[0] == enz_id:
                     has_comment = True
-                    comment.pop['enz_ref_ids']
                     break
             if has_comment:
                 filtered_comments.append(comment)
