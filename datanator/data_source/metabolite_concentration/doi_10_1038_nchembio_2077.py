@@ -34,3 +34,18 @@ class Concentration(rna_halflife_util.RnaHLUtil):
         self.collation = Collation('en', strength=CollationStrength.SECONDARY)
         self.max_entries = max_entries
         self.verbose = verbose
+
+    def fill_concentration(self, df):
+        """Fill Metabolite concentration collection with relevant documents.
+
+        Args:
+            df (:obj:`pandas.DataFrame`): dataframe to be loaded.
+        """
+        row_count = len(df.index)
+        for i, row in df.iterrows():
+            if i == self.max_entries:
+                break
+            if i % 10 == 0 and self.verbose:
+                print("Processing locus {} out {}".format(i, row_count))
+            chrom = row['chromosome']
+            systematic_name = row['sys_name']

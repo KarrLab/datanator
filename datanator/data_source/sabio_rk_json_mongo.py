@@ -670,6 +670,35 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
                     self.collection.update_one({'kinlaw_id': doc['kinlaw_id']},
                                                 {'$set': {'ec_meta': ec_meta}}, upsert=False)
 
+    def fill_reactant_aggregate_name(self, start=0):
+        """Fill sabio documents with reactant aggregate
+        information by reactants' name.
+        """
+        query = {}
+        docs = self.collection.find(filter=query, projection={'reaction_participant': 1})
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(docs[start:]):
+            if self.verbose and i % 50 == 0:
+                print("Processing doc {} out of {}".format(i+start, count))
+            reaction_participants = doc.get('reaction_participant')
+            if reaction_participants is None:
+                print(doc)
+                with open('./sabio_missing_info.txt', 'w+') as f:
+                    f.write(str(doc['_id']) + '\n')
+                continue
+            substrates = reaction_participants[0]['substrate']
+            products = reaction_participants[1]['product']
+            substrate_aggregate_name = []
+            product_aggregate_name = []
+            for substrate in substrates:
+                substrate_aggregate_name.append(substrate['substrate_name'])
+            for product in products:
+                product_aggregate_name.append(product['product_name'])
+
+            self.collection.update_one({'_id': doc['_id']},
+                                        {'$set': {'substrate_names': substrate_aggregate_name,
+                                                  'product_names': product_aggregate_name}}, upsert=False)
+
     def fill_kegg_meta(self, start=0):
         """Fill kegg information for reactions.
         
@@ -711,7 +740,9 @@ def main():
     # manager.add_inchi_hash()
     # manager.add_taxon_info()
     # manager.fill_ec_meta()
-    manager.fill_kegg_meta(start=6200)
+    # manager.fill_kegg_meta(start=6200)
+    manager.fill_reactant_aggregate_name(start=49350)
+
 
 if __name__ == '__main__':
     main()
