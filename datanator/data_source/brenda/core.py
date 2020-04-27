@@ -15,14 +15,18 @@
 
 import ete3
 import pickle
-import os.path
+import json
+from pathlib import Path
+from datanator_query_python.util import mongo_util
+import datanator.config.core
 import re
 import warnings
 
 
-class Brenda(object):
-    RAW_FILENAME = os.path.join(os.path.dirname(__file__), 'brenda_download.txt')
-    PROCESSED_FILENAME = os.path.join(os.path.dirname(__file__), 'brenda.pkl')
+class Brenda(mongo_util.MongoUtil):
+    RAW_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda_download.txt').expanduser())
+    PROCESSED_FILENAME = str(Path('~/karr_lab/datanator/docs/brenda/brenda.pkl').expanduser())
+    MAX_ENTRIES = float('inf')
 
     LINE_CODES = {
         'AC': 'ACTIVATING_COMPOUND',
@@ -71,12 +75,17 @@ class Brenda(object):
         'TS': 'TEMPERATURE_STABILITY'
     }
 
-    def __init__(self):
+    def __init__(self, MongoDB=None, db=None, username=None, password=None,
+                collection_str=None, authSource='admin', readPreference='nearest'):
+        super().__init__(MongoDB=MongoDB, db=db, username=username, password=password,
+                        authSource=authSource, readPreference=readPreference)
         self._ncbi_taxa = ete3.NCBITaxa()
+        self.collection = self.db_obj[collection_str]
 
-    def run(self, raw_filename=None, processed_filename=None):
+    def run(self, raw_filename=None, processed_filename=None, max_entries=None):
         raw_filename = raw_filename or self.RAW_FILENAME
-        processed_filename = processed_filename or self.PROCESSED_FILENAME
+        processed_filename = str(Path(processed_filename).expanduser()) or self.PROCESSED_FILENAME
+        max_entries = max_entries or self.MAX_ENTRIES
 
         ec_data = None
         ec_code = None
@@ -142,20 +151,20 @@ class Brenda(object):
 
         # link refs
         for ec_data in data.values():
-            for enz in ec_data['enzymes'].values():
-                enz['refs'] = [ec_data['refs'][ref_id] for ref_id in enz['ref_ids']]
+            # for enz in ec_data['enzymes'].values():
+            #     enz['refs'] = [ec_data['refs'][ref_id] for ref_id in enz['ref_ids']]
 
-                for tissue in enz['tissues']:
-                    tissue['refs'] = [ec_data['refs'][ref_id] for ref_id in tissue['ref_ids']]
+                # for tissue in enz['tissues']:
+                #     tissue['refs'] = [ec_data['refs'][ref_id] for ref_id in tissue['ref_ids']]
 
-                for loc in enz['subcellular_localizations']:
-                    loc['refs'] = [ec_data['refs'][ref_id] for ref_id in loc['ref_ids']]
+                # for loc in enz['subcellular_localizations']:
+                #     loc['refs'] = [ec_data['refs'][ref_id] for ref_id in loc['ref_ids']]
 
-            for rxn in ec_data['natural_reactions']:
-                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+            # for rxn in ec_data['natural_reactions']:
+            #     rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
 
-            for rxn in ec_data['reactions']:
-                rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
+            # for rxn in ec_data['reactions']:
+            #     rxn['refs'] = [ec_data['refs'][ref_id] for ref_id in rxn['ref_ids']]
 
             for k_cat in ec_data['k_cats']:
                 k_cat['refs'] = [ec_data['refs'][ref_id] for ref_id in k_cat['ref_ids']]
@@ -164,22 +173,26 @@ class Brenda(object):
                 k_m['refs'] = [ec_data['refs'][ref_id] for ref_id in k_m['ref_ids']]
 
         # remove information no longer needed because refs have been deserialized
-        for ec_data in data.values():
+        for i, (_key, ec_data) in enumerate(data.items()):
+            if i == max_entries:
+                break
+            if i % 10 == 0:
+                print('Processing EC {}, the {}th of all ECs'.format(_key, i))
             for enz in ec_data['enzymes'].values():
                 enz.pop('id')
-                enz.pop('ref_ids')
+            #     enz.pop('ref_ids')
 
-                for tissue in enz['tissues']:
-                    tissue.pop('ref_ids')
+            #     for tissue in enz['tissues']:
+            #         tissue.pop('ref_ids')
 
-                for loc in enz['subcellular_localizations']:
-                    loc.pop('ref_ids')
+            #     for loc in enz['subcellular_localizations']:
+            #         loc.pop('ref_ids')
 
-            for rxn in ec_data['natural_reactions']:
-                rxn.pop('ref_ids')
+            # for rxn in ec_data['natural_reactions']:
+            #     rxn.pop('ref_ids')
 
-            for rxn in ec_data['reactions']:
-                rxn.pop('ref_ids')
+            # for rxn in ec_data['reactions']:
+            #     rxn.pop('ref_ids')
 
             for k_cat in ec_data['k_cats']:
                 k_cat.pop('ref_ids')
@@ -193,12 +206,14 @@ class Brenda(object):
             ec_data.pop('enzymes')
             ec_data.pop('refs')
 
-        # save to pickle and JSON files
-        with open(processed_filename, 'wb') as file:
-            pickle.dump(data, file)
-
+            # save to MongoDB
+            self.collection.update_one({'ec_number': _key},
+                                       {'$addToSet': {'ec_synonyms': {'$each': [ec_data['name'], ec_data['systematic_name']]}},
+                                        '$set': {'k_ms': ec_data['k_ms'],
+                                                'k_cats': ec_data['k_cats'],
+                                                'comments': ec_data['comments']}}, upsert=True)
         # return extracted data
-        return data
+        return 'done!!'
 
     def parse_ec_code(self, data, val):
         match = re.match(r'^([0-9\.]+)([ \n]\((.*?)\))?$', val, re.DOTALL)
@@ -209,8 +224,8 @@ class Brenda(object):
         ec_data = data[ec_code] = {
             'name': None,
             'systematic_name': None,
-            'natural_reactions': [],
-            'reactions': [],
+            # 'natural_reactions': [],
+            # 'reactions': [],
             'enzymes': {},
             'k_cats': [],
             'k_ms': [],
@@ -249,9 +264,9 @@ class Brenda(object):
                     'taxon': {'name': taxon_name, 'id': taxon_id} if taxon_name else None,
                     'tissues': [],
                     'subcellular_localizations': [],
-                    'comments': comments,
-                    'ref_ids': ref_ids,
-                    'refs': None,
+                    # 'comments': comments,
+                    # 'ref_ids': ref_ids,
+                    # 'refs': None,
                 }
             else:
                 if xid:
@@ -264,8 +279,8 @@ class Brenda(object):
                 if not ec_data['enzymes'][id]['taxon'] and taxon_name:
                     ec_data['enzymes'][id]['taxon'] = {'name': taxon_name, 'id': taxon_id}
 
-                ec_data['enzymes'][id]['comments'] += comments
-                ec_data['enzymes'][id]['ref_ids'] = sorted(set(ec_data['enzymes'][id]['ref_ids'] + ref_ids))
+                # ec_data['enzymes'][id]['comments'] += comments
+                # ec_data['enzymes'][id]['ref_ids'] = sorted(set(ec_data['enzymes'][id]['ref_ids'] + ref_ids))
 
         elif type == 'RN':
             ec_data['name'] = val.replace('\n', ' ').strip()
@@ -286,8 +301,8 @@ class Brenda(object):
                     enzyme['tissues'].append({
                         'name': tissue,
                         'comments': self.filter_comments(comments, enz_id),
-                        'ref_ids': ref_ids,
-                        'refs': None,
+                        # 'ref_ids': ref_ids,
+                        # 'refs': None,
                     })
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
@@ -305,37 +320,37 @@ class Brenda(object):
                     ec_data['enzymes'][enz_id]['subcellular_localizations'].append({
                         'name': localization,
                         'comments': self.filter_comments(comments, enz_id),
-                        'ref_ids': ref_ids,
-                        'refs': None,
+                        # 'ref_ids': ref_ids,
+                        # 'refs': None,
                     })
                 else:
                     warnings.warn('{} does not have enzyme with id {}. Error due to {}'.format(ec_code, enz_id, val), UserWarning)
 
-        elif type == 'NSP':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
-            comments = self.parse_comments(match.group(4))
-            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
-            ec_data['natural_reactions'].append({
-                'equation': match.group(2).replace('\n', ' ').strip(),
-                'reversible': match.group(7) == 'r',
-                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
-                'comments': comments,
-                'ref_ids': ref_ids,
-                'refs': None,
-            })
+        # elif type == 'NSP':
+        #     match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+        #     comments = self.parse_comments(match.group(4))
+        #     ref_ids = match.group(8).replace('\n', ',').strip().split(',')
+        #     ec_data['natural_reactions'].append({
+        #         'equation': match.group(2).replace('\n', ' ').strip(),
+        #         'reversible': match.group(7) == 'r',
+        #         'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+        #         'comments': comments,
+        #         # 'ref_ids': ref_ids,
+        #         # 'refs': None,
+        #     })
 
-        elif type == 'SP':
-            match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
-            comments = self.parse_comments(match.group(4))
-            ref_ids = match.group(8).replace('\n', ',').strip().split(',')
-            ec_data['reactions'].append({
-                'equation': match.group(2).replace('\n', ' ').strip(),
-                'reversible': match.group(7) == 'r',
-                'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
-                'comments': comments,
-                'ref_ids': ref_ids,
-                'refs': None,
-            })
+        # elif type == 'SP':
+        #     match = re.match(r'^#(.*?)#[ \n](.*?)([ \n]\((.*?)\))?([ \n]\|.*?\|)?([ \n]\{(r|)\})?[ \n]<([0-9,\n]+)>$', val, re.DOTALL)
+        #     comments = self.parse_comments(match.group(4))
+        #     ref_ids = match.group(8).replace('\n', ',').strip().split(',')
+        #     ec_data['reactions'].append({
+        #         'equation': match.group(2).replace('\n', ' ').strip(),
+        #         'reversible': match.group(7) == 'r',
+        #         'enz_ids': match.group(1).replace('\n', ',').strip().split(','),
+        #         'comments': comments,
+        #         # 'ref_ids': ref_ids,
+        #         # 'refs': None,
+        #     })
 
         elif type in ['TN', 'KM']:
             match = re.match(
@@ -477,3 +492,19 @@ for ec_data in data.values():
     k_m_vals.update(set(k_m['value'] for k_m in ec_data['k_ms']))
     comments.add(ec_data['comments'])
 """
+
+def main():
+    db = 'datanator'
+    collection_str = 'ec'
+    username = datanator.config.core.get_config()[
+        'datanator']['mongodb']['user']
+    password = datanator.config.core.get_config(
+    )['datanator']['mongodb']['password']
+    server = datanator.config.core.get_config(
+    )['datanator']['mongodb']['server']
+    status = Brenda(MongoDB=server, username=username, password=password,
+           db=db, collection_str=collection_str).run(processed_filename='~/karr_lab/datanator/docs/brenda/brenda-1.json')
+    print(status)
+
+if __name__ == '__main__':
+    main()
