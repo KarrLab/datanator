@@ -46,17 +46,36 @@ class Concentration(mongo_util.MongoUtil):
                 break
             if i % 10 == 0 and self.verbose:
                 print("Processing locus {} out {}".format(i, row_count))
+            metabolite = row['metabolite']
+            con_0 = {'name': metabolite}
+            con_1 = {'synonyms': metabolite}
+            query = {'$or': [con_0, con_1]}
+            projection = {'name': 1, 'chebi_id': 1, 'kegg_id': 1}
+            doc = self.meta_collection.find_one(filter=query, projection=projection, collation=self.collation)
+            if doc is not None:
+                metabolite_name = doc.get('name')
+                chebi_id = doc.get('chebi_id')
+                kegg_id = doc.get('kegg_id')
+            else:
+                metabolite_name = metabolite
+                chebi_id = None
+                kegg_id = None
             row['reference'] = reference
             row['unit'] = unit
             row['last_modified'] = datetime.datetime.utcnow()
-            row['ncbi_taxonomy_id'] = self.taxon_collection.find_one({'tax_name': row['species_name']},
-                                                                     projection={'tax_id': 1}, collation=self.collation).get('tax_id')
+            try:
+                row['ncbi_taxonomy_id'] = self.taxon_collection.find_one({'tax_name': row['species_name']},
+                                                                        projection={'tax_id': 1}, collation=self.collation).get('tax_id')
+            except AttributeError:
+                continue
             obj = row.to_dict()
             obj.pop('metabolite')
             obj.pop('abbreviation')
-            self.collection.update_one({'metabolite': row['metabolite']},
+            self.collection.update_one({'metabolite': metabolite_name},
                                        {'$addToSet': {'concentrations': obj,
-                                                      'synonyms': row['abbreviation']}},
+                                                      'synonyms': row['abbreviation']},
+                                        '$set': {'chebi_id': chebi_id,
+                                                 'kegg_id': kegg_id}},
                                        collation=self.collation, upsert=True)
 
     def fill_gerosa_collection(self, file_location, sheet_name='Sheet1', start_row=0,
@@ -109,7 +128,8 @@ class Concentration(mongo_util.MongoUtil):
                                            'last_modified': datetime.datetime.utcnow(),
                                            'ncbi_taxonomy_id': 562,
                                            'species_name': 'Escherichia coli',
-                                           'nutrient': _key,
+                                           'time_point': _key,
+                                           'time_unit': 'h',
                                            'concentration': val,
                                            'std': obj[_key+'_std']})
             self.collection.update_one({'metabolite': metabolite_name},
@@ -123,7 +143,7 @@ import datanator.config.core
 from pathlib import Path
 
 def main():
-    db = 'test'
+    db = 'datanator'
     collection_str = 'metabolite_concentrations'
     username = datanator.config.core.get_config()[
         'datanator']['mongodb']['user']
@@ -139,12 +159,19 @@ def main():
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/41589_2016_BFnchembio2077_MOESM586_ESM.xlsx').expanduser()
     # manager.fill_collection(file_location, start_row=[0])
 
+    # column_names=['Metabolite', 'Acetate', 'Fructose', 'Galactose', 'Glucose', 'Glycerol', 'Gluconate', 'Pyruvate', 'Succinate',
+    #               'Acetate_std', 'Fructose_std', 'Galactose_std', 'Glucose_std', 'Glycerol_std', 'Gluconate_std', 'Pyruvate_std', 'Succinate_std']
+    # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/mmc2.xlsx').expanduser()
+    # manager.fill_gerosa_collection(file_location, start_row=[0], column_names=column_names, unit='µmol * gCDW-1',
+    #                                 reference={'doi': '10.1016/j.cels.2015.09.008'},
+    #                                 sheet_name='Metabolite concentrations', use_columns='C:K,M:T', nrows=43)
+
     column_names=['Metabolite', 'Acetate', 'Fructose', 'Galactose', 'Glucose', 'Glycerol', 'Gluconate', 'Pyruvate', 'Succinate',
                   'Acetate_std', 'Fructose_std', 'Galactose_std', 'Glucose_std', 'Glycerol_std', 'Gluconate_std', 'Pyruvate_std', 'Succinate_std']
-    file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/mmc2.xlsx').expanduser()
+    file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/mmc3.xlsx').expanduser()
     manager.fill_gerosa_collection(file_location, start_row=[0], column_names=column_names, unit='µmol * gCDW-1',
                                     reference={'doi': '10.1016/j.cels.2015.09.008'},
-                                    sheet_name='Metabolite concentrations', use_columns='C:K,M:T', nrows=43)
+                                    sheet_name='Metabolite concentrations', use_columns='C:K,M:T', nrows=21)
 
 if __name__ == '__main__':
     main()
