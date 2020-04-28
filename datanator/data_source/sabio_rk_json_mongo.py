@@ -680,9 +680,10 @@ class SabioRkNoSQL(mongo_util.MongoUtil):
         for i, doc in enumerate(docs[start:]):
             if self.verbose and i % 50 == 0:
                 print("Processing doc {} out of {}".format(i+start, count))
+            if doc.get('product_names') is not None or doc.get('substrate_names') is not None:
+                continue
             reaction_participants = doc.get('reaction_participant')
             if reaction_participants is None:
-                print(doc)
                 with open('./sabio_missing_info.txt', 'w+') as f:
                     f.write(str(doc['_id']) + '\n')
                 continue
@@ -741,7 +742,7 @@ def main():
     # manager.add_taxon_info()
     # manager.fill_ec_meta()
     # manager.fill_kegg_meta(start=6200)
-    manager.fill_reactant_aggregate_name(start=49350)
+    manager.fill_reactant_aggregate_name(start=0)
 
 
 if __name__ == '__main__':
