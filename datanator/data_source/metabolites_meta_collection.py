@@ -177,13 +177,35 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                 self.collection.update_one({'m2m_id': m2m_id},
                                            {'$set': {'chebi_id': doc_e['chebi_id'],
                                                     'hmdb_id': doc_e['hmdb_id'],
-                                                    'kegg_id': doc_e['kegg_id']}}, upsert=False)
+                                                    'kegg_id': doc_e['kegg_id'],
+                                                    'description': doc_e['description'],
+                                                    'chemical_formula': doc_e['chemical_formula'],
+                                                    'average_molecular_weight': doc_e['average_molecular_weight'],
+                                                    'cas_registry_number': doc_e['cas_registry_number'],
+                                                    'smiles': doc_e['smiles'],
+                                                    'cellular_locations': doc_e['cellular_locations'],
+                                                    'pubchem_compound_id': doc_e['pubchem_compound_id'],
+                                                    'chemspider_id': doc_e['chemspider_id'],
+                                                    'biocyc_id': doc_e['biocyc_id'],
+                                                    'pathways': doc_e['pathways'],
+                                                    'property': doc_e['property']}}, upsert=False)
             elif ymdb_id is not None:
                 doc_y = self.ymdb_query.get_standard_ids_by_id(ymdb_id)
                 self.collection.update_one({'ymdb_id': ymdb_id},
                                            {'$set': {'chebi_id': doc_y['chebi_id'],
                                                     'hmdb_id': doc_y['hmdb_id'],
-                                                    'kegg_id': doc_y['kegg_id']}}, upsert=False)
+                                                    'kegg_id': doc_y['kegg_id'],
+                                                    'description': doc_y['description'],
+                                                    'chemical_formula': doc_y['chemical_formula'],
+                                                    'average_molecular_weight': doc_y['average_molecular_weight'],
+                                                    'cas_registry_number': doc_y['cas_registry_number'],
+                                                    'smiles': doc_y['smiles'],
+                                                    'cellular_locations': doc_y['cellular_locations'],
+                                                    'pubchem_compound_id': doc_y['pubchem_compound_id'],
+                                                    'chemspider_id': doc_y['chemspider_id'],
+                                                    'biocyc_id': doc_y['biocyc_id'],
+                                                    'pathways': doc_y['pathways'],
+                                                    'property': doc_y['property']}}, upsert=False)
             else:
                 continue
 

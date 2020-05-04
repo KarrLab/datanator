@@ -354,16 +354,26 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
 
     # data from "brenda_reactions" collection
-    index_name = 'brenda_reactions'
-    count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    print(count)    
+    # index_name = 'brenda_reactions'
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # print(count)    
     # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+
+    # data from "metabolite_concentrations" collection
+    index_name = 'metabolite_concentrations'
+    count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    print(count)
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
     setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_id')
+
 
     r = manager.index_health_status()
     print(r.content.decode('utf-8'))
