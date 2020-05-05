@@ -162,7 +162,7 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
         Args:
             skip (:obj:`int`): skip first n number of records.
         """
-        query = {}
+        query = {'name': 'No metabolite found.'}
         docs = self.collection.find(query, skip=skip)
         count = self.collection.count_documents(query)
         for i, doc in enumerate(docs):
@@ -172,9 +172,15 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                 print('Processing doc {} out of {}'.format(i+skip, count))
             m2m_id = doc.get('m2m_id')
             ymdb_id = doc.get('ymdb_id')
-            if m2m_id is not None:
-                doc_e = self.ecmdb_query.get_standard_ids_by_id(m2m_id)
-                self.collection.update_one({'m2m_id': m2m_id},
+            if ymdb_id == 'YMDB00890' or ymdb_id == 'YMDB00862':
+                continue
+            if ymdb_id is not None: # ymdb has richer data than ecmdb
+                doc_e = self.ymdb_query.get_standard_ids_by_id(ymdb_id)
+                if doc_e['synonyms']:
+                    synonyms = doc_e['synonyms']['synonym']
+                else:
+                    synonyms = None
+                self.collection.update_one({'ymdb_id': ymdb_id},
                                            {'$set': {'chebi_id': doc_e['chebi_id'],
                                                     'hmdb_id': doc_e['hmdb_id'],
                                                     'kegg_id': doc_e['kegg_id'],
@@ -188,10 +194,16 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                                                     'chemspider_id': doc_e['chemspider_id'],
                                                     'biocyc_id': doc_e['biocyc_id'],
                                                     'pathways': doc_e['pathways'],
-                                                    'property': doc_e['property']}}, upsert=False)
-            elif ymdb_id is not None:
-                doc_y = self.ymdb_query.get_standard_ids_by_id(ymdb_id)
-                self.collection.update_one({'ymdb_id': ymdb_id},
+                                                    'property': doc_e['property'],
+                                                    'name': doc_e['name'],
+                                                    'synonyms': synonyms}}, upsert=False)
+            elif m2m_id is not None:
+                doc_y = self.ecmdb_query.get_standard_ids_by_id(m2m_id)
+                if doc_y['synonyms']:
+                    synonyms = doc_e['synonyms']['synonym']
+                else:
+                    synonyms = None
+                self.collection.update_one({'m2m_id': m2m_id},
                                            {'$set': {'chebi_id': doc_y['chebi_id'],
                                                     'hmdb_id': doc_y['hmdb_id'],
                                                     'kegg_id': doc_y['kegg_id'],
@@ -205,7 +217,9 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                                                     'chemspider_id': doc_y['chemspider_id'],
                                                     'biocyc_id': doc_y['biocyc_id'],
                                                     'pathways': doc_y['pathways'],
-                                                    'property': doc_y['property']}}, upsert=False)
+                                                    'property': doc_y['property'],
+                                                    'name': doc_y['name'],
+                                                    'synonyms': doc_y['synonyms']['synonym']}}, upsert=False)
             else:
                 continue
 
