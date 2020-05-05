@@ -24,34 +24,75 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         self.verbose = verbose
 
     def grab_eymdb(self, start=0):
-        """Fill collection with concentration values from ec/ymdb
+        """Fill collection with concentration values from ec/ymdb.
+        Documents in current collection all have inchikey
         """
-        count = self.meta_collection.count_documents({})
-        for i, doc in enumerate(self.meta_collection.find(filter={})[start:]):
+        query = {'concentrations': {'$ne': None}}
+        e_docs = self.e_collection.find(filter=query)
+        count_e = self.e_collection.count_documents(query)
+        y_docs = self.y_collection.find(filter=query)
+        count_y = self.y_collection.count_documents(query)
+
+        for i, e_doc in enumerate(e_docs[start:]):
             if self.verbose and i % 50 == 0:
-                print('Processing doc {} out of {}'.format(i+start, count))
-            kegg_id = doc.get('kegg_id')
-            con_0 = {'kegg_id': kegg_id}
-            con_1 = {'concentrations': {'$ne': None}}
-            query = {'$and': [con_0, con_1]}
-            e_docs = self.e_collection.find(filter=query)
-            y_docs = self.y_collection.find(filter=query)
-            if e_docs:
-                for e_doc in e_docs:
-                    self.collection.update_one({'kegg_id': kegg_id},
-                                               {'$set': {'metabolite': e_doc['name'],
-                                                         'chebi_id': e_doc['chebi_id'],
-                                                         'synonyms': e_doc['synonyms']},
-                                                '$addToSet': {'concentrations': e_doc['concentrations']}},
-                                               upsert=True)
-            if y_docs:
-                for y_doc in y_docs:
-                    self.collection.update_one({'kegg_id': kegg_id},
-                                               {'$set': {'metabolite': y_doc['name'],
-                                                         'chebi_id': y_doc['chebi_id'],
-                                                         'synonyms': y_doc['synonyms']},
-                                                '$addToSet': {'concentrations': y_doc['concentrations']}},
-                                               upsert=True)
+                print('Processing ecmdb doc {} out of {}'.format(i+start, count_e))
+            if e_doc['synonyms']:
+                synonyms = e_doc['synonyms']['synonym']
+            else:
+                synonyms = None
+            concentrations = self._flatten_conc_obj(e_doc['concentrations'], 562, 'Escherichia coli')
+            self.collection.update_many({'inchikey': e_doc['inchikey']},
+                                        {'$set': {'metabolite': e_doc['name'],
+                                                    'chebi_id': e_doc['chebi_id'],
+                                                    'synonyms': synonyms},
+                                        '$addToSet': {'concentrations': {'$each': concentrations}}},
+                                        upsert=True)
+        for i, y_doc in enumerate(y_docs[start:]):
+            if self.verbose and i % 50 == 0:
+                print('Processing ymdb doc {} out of {}'.format(i+start, count_y))
+            if y_doc['synonyms']:
+                synonyms = y_doc['synonyms']['synonym']
+            else:
+                synonyms = None
+            concentrations = self._flatten_conc_obj(y_doc['concentrations'], 4932, 'Saccharomyces cerevisiae')
+            self.collection.update_many({'inchikey': y_doc['inchikey']},
+                                        {'$set': {'metabolite': y_doc['name'],
+                                                    'chebi_id': y_doc['chebi_id'],
+                                                    'synonyms': synonyms},
+                                        '$addToSet': {'concentrations': {'$each': concentrations}}},
+                                        upsert=True)
+
+    def _flatten_conc_obj(self, obj, ncbi_id, species_name):
+        """Flatten concentrations object in ec/ymdb.
+
+        Args:
+            obj(:obj:`Obj`): concentrations object.
+            ncbi_id(:obj:`int`): NCBI Taxonomy ID of species.
+            species_name(:obj:`str`): Name of species.
+
+        Return:
+            (:obj:`list` of :obj:`Obj`): [{'growth_media': '', 'concentration': '', ...} ..., {}]
+        """
+        result = []
+        media = obj['growth_media'] if isinstance(obj['growth_media'], list) else [obj['growth_media']]
+        conc = obj['concentration'] if isinstance(obj['concentration'], list) else [obj['concentration']]
+        unit = obj['concentration_units'] if isinstance(obj['concentration_units'], list) else [obj['concentration_units']]
+        internal = obj['internal'] if isinstance(obj['internal'], list) else [obj['internal']]
+        error = obj['error'] if isinstance(obj['error'], list) else [obj['error']]
+        strain = obj['strain'] if isinstance(obj['strain'], list) else [obj['strain']]
+        reference = obj['reference'] if isinstance(obj['reference'], list) else [obj['reference']]
+        for (m, c, u, i, e, s, r) in zip(media, conc, unit, internal, error, strain, reference):
+            result.append({'growth_meda': m,
+                           'concentration': c,
+                           'unit': u,
+                           'internal': i,
+                           'error': e,
+                           'strain': s,
+                           'ncbi_taxonomy_id': ncbi_id,
+                           'species_name': species_name,
+                           'reference': r})
+        return result
+
 
     def fill_collection(self, file_location, sheet_name='Sheet1', start_row=0,
                         use_columns='A:E,G', column_names=['EC_Number', 'metabolite',
@@ -209,6 +250,8 @@ def main():
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/41589_2016_BFnchembio2077_MOESM586_ESM.xlsx').expanduser()
     # manager.fill_collection(file_location, start_row=[0])
 
+    manager.grab_eymdb()
+
     # column_names=['Metabolite', 'Acetate', 'Fructose', 'Galactose', 'Glucose', 'Glycerol', 'Gluconate', 'Pyruvate', 'Succinate',
     #               'Acetate_std', 'Fructose_std', 'Galactose_std', 'Glucose_std', 'Glycerol_std', 'Gluconate_std', 'Pyruvate_std', 'Succinate_std']
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/mmc2.xlsx').expanduser()
@@ -223,7 +266,7 @@ def main():
     #                                 reference={'doi': '10.1016/j.cels.2015.09.008'},
     #                                 sheet_name='Metabolite concentrations', use_columns='B:K,M:U', nrows=21)
 
-    manager.fill_meta()
+    # manager.fill_meta()
 
 if __name__ == '__main__':
     main()
