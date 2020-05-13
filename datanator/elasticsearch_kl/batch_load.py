@@ -118,7 +118,7 @@ class MongoToES(es_util.EsUtil):
         manager = query_metabolites_meta.QueryMetabolitesMeta(MongoDB=server, db=db,
                  collection_str='metabolites_meta', verbose=verbose, username=username,
                  password=password, authSource=authSource, readPreference=readPreference)
-        docs = manager.collection.find(filter=query, projection=projection)
+        docs = manager._collection.find(filter=query, projection=projection)
         for doc in docs:
             if doc['InChI_Key'] is None:
                 continue    
@@ -299,7 +299,7 @@ def main():
     # _ = manager.create_index_with_file(ymdb, ymdb_setting_file)    
     # status = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
-    # # data from "metabolites_meta" collection
+    # data from "metabolites_meta" collection
     # index_name = 'metabolites_meta'
     # _ = manager.delete_index(index_name)
     # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
@@ -367,12 +367,13 @@ def main():
 
     # data from "metabolite_concentrations" collection
     index_name = 'metabolite_concentrations'
+    _ = manager.delete_index(index_name)
     count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
     print(count)
     index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
     setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_id')
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
 
 
     r = manager.index_health_status()

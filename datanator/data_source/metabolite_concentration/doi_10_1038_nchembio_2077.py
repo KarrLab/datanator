@@ -22,6 +22,18 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         self.y_collection = self.client['datanator']['ymdb']
         self.max_entries = max_entries
         self.verbose = verbose
+        self.collection_str = collection_str
+
+    def merge_duplicates(self):
+        _, docs = self.get_duplicates(self.collection_str, 'inchikey')
+        for doc in docs:
+            obj_id = doc['uniqueIds'][0]
+            for unique_id in doc['uniqueIds'][1:]:
+                concentrations = self.collection.find_one(filter={'_id': unique_id})['concentrations']
+                self.collection.update_one({'_id': obj_id},
+                                           {'$addToSet': {'concentrations': {'$each': concentrations}}})
+                self.collection.delete_one({'_id': unique_id})
+        return "Done"
 
     def grab_eymdb(self, start=0):
         """Fill collection with concentration values from ec/ymdb.
@@ -74,24 +86,23 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
             (:obj:`list` of :obj:`Obj`): [{'growth_media': '', 'concentration': '', ...} ..., {}]
         """
         result = []
-        media = obj['growth_media'] if isinstance(obj['growth_media'], list) else [obj['growth_media']]
-        conc = obj['concentration'] if isinstance(obj['concentration'], list) else [obj['concentration']]
-        unit = obj['concentration_units'] if isinstance(obj['concentration_units'], list) else [obj['concentration_units']]
-        internal = obj['internal'] if isinstance(obj['internal'], list) else [obj['internal']]
-        error = obj['error'] if isinstance(obj['error'], list) else [obj['error']]
-        strain = obj['strain'] if isinstance(obj['strain'], list) else [obj['strain']]
-        reference = obj['reference'] if isinstance(obj['reference'], list) else [obj['reference']]
-        for (m, c, u, i, e, s, r) in zip(media, conc, unit, internal, error, strain, reference):
-            result.append({'growth_meda': m,
-                           'concentration': c,
-                           'unit': u,
-                           'internal': i,
-                           'error': e,
-                           'strain': s,
-                           'ncbi_taxonomy_id': ncbi_id,
-                           'species_name': species_name,
-                           'reference': r})
-        return result
+        typecheck = list(obj.values())[0]
+        _type = isinstance(typecheck, list)
+        if not _type: #string
+            obj['ncbi_taxonomy_id'] = ncbi_id
+            obj['species_name'] = species_name
+            return [obj]
+        else:
+            keys = list(obj.keys())
+            vals = list(obj.values())
+            count = len(vals[0]) # number of final objects in array
+            for i in range(0, count):
+                dic = {'ncbi_taxonomy_id': ncbi_id, 'species_name': species_name}
+                for key in keys:
+                    dic[key] = obj[key][i]
+                result.append(dic)
+            return result
+            
 
 
     def fill_collection(self, file_location, sheet_name='Sheet1', start_row=0,
@@ -104,7 +115,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         Args:
             sheet_name(:obj:`str`, optional): Name of sheet in excel.
             start_row (:obj:`int`, optional): Read from csv row. Defaults to 0.
-            use_columns(:obj:`str`): Indicates comma separated list of Excel column letters and column ranges (e.g. “A:E” or “A,C,E:F”). Ranges are inclusive of both sides.
+            use_columns(:obj:`str`): Indicates comma separated list of Excel column letters and column ranges (e.g. "A:E" or "A,C,E:F"). Ranges are inclusive of both sides.
             column_names(:obj:`list` of :obj:`str`): Names of columns used.
             reference(:obj:`Obj`): reference information.
             unit(:obj:`str`): Unit used for Km.
@@ -129,10 +140,12 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                 metabolite_name = doc.get('name')
                 chebi_id = doc.get('chebi_id')
                 kegg_id = doc.get('kegg_id')
+                inchikey = doc.get('InChI_Key')
             else:
                 metabolite_name = metabolite
                 chebi_id = None
                 kegg_id = None
+                inchikey = None
             row['reference'] = reference
             row['unit'] = unit
             row['last_modified'] = datetime.datetime.utcnow()
@@ -148,7 +161,8 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                                        {'$addToSet': {'concentrations': obj,
                                                       'synonyms': row['abbreviation']},
                                         '$set': {'chebi_id': chebi_id,
-                                                 'kegg_id': kegg_id}},
+                                                 'kegg_id': kegg_id,
+                                                 'inchikey': inchikey}},
                                        collation=self.collation, upsert=True)
 
     def fill_gerosa_collection(self, file_location, sheet_name='Sheet1', start_row=0,
@@ -162,7 +176,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         Args:
             sheet_name(:obj:`str`, optional): Name of sheet in excel.
             start_row (:obj:`int`, optional): Read from csv row. Defaults to 0.
-            use_columns(:obj:`str`): Indicates comma separated list of Excel column letters and column ranges (e.g. “A:E” or “A,C,E:F”). Ranges are inclusive of both sides.
+            use_columns(:obj:`str`): Indicates comma separated list of Excel column letters and column ranges (e.g. "A:E" or "A,C,E:F"). Ranges are inclusive of both sides.
             column_names(:obj:`list` of :obj:`str`): Names of columns used.
             reference(:obj:`Obj`): reference information.
             unit(:obj:`str`): Unit used for Km.
@@ -186,12 +200,8 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
             doc = self.meta_collection.find_one(filter=query, projection=projection, collation=self.collation)
             if doc is not None:
                 metabolite_name = doc.get('name')
-                chebi_id = doc.get('chebi_id')
-                kegg_id = doc.get('kegg_id')
             else:
                 metabolite_name = metabolite
-                chebi_id = None
-                kegg_id = None
 
             obj = row.to_dict()
             for i, (_key, val) in enumerate(obj.items()):
@@ -201,21 +211,20 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                                            'last_modified': datetime.datetime.utcnow(),
                                            'ncbi_taxonomy_id': 562,
                                            'species_name': 'Escherichia coli',
-                                           'time_point': _key,
-                                           'time_unit': 'h',
+                                           'nutrient': _key,
+                                        #    'time_unit': 'h',
                                            'concentration': val,
                                            'std': obj[_key+'_std']})
             self.collection.update_one({'metabolite': metabolite_name},
-                                       {'$addToSet': {'concentrations': {'$each': concentrations}},
-                                        '$set': {'chebi_id': chebi_id,
-                                                 'kegg_id': kegg_id}},
+                                       {'$addToSet': {'concentrations': {'$each': concentrations}}},
                                        collation=self.collation, upsert=True)
 
     def fill_meta(self):
         """Fill exisiting metabolites with meta information.
         """
-        count = self.collection.count_documents({})
-        for i, doc in enumerate(self.collection.find({})):
+        query = {'inchikey': {'$exists': False}}
+        count = self.collection.count_documents(query)
+        for i, doc in enumerate(self.collection.find(filter=query)):
             if self.verbose and i % 20 == 0:
                 print('Processing doc {} out of {}'.format(i, count))
             name = doc['metabolite']
@@ -245,12 +254,15 @@ def main():
     manager = Concentration(MongoDB=MongoDB, db=db, collection_str=collection_str,
                             username=username, password=password)
 
+    # status = manager.merge_duplicates()
+    # print(status)
+
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/41589_2016_BFnchembio2077_MOESM585_ESM.xlsx').expanduser()
     # manager.fill_collection(file_location, start_row=[0])
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/41589_2016_BFnchembio2077_MOESM586_ESM.xlsx').expanduser()
     # manager.fill_collection(file_location, start_row=[0])
 
-    manager.grab_eymdb()
+    # manager.grab_eymdb()
 
     # column_names=['Metabolite', 'Acetate', 'Fructose', 'Galactose', 'Glucose', 'Glycerol', 'Gluconate', 'Pyruvate', 'Succinate',
     #               'Acetate_std', 'Fructose_std', 'Galactose_std', 'Glucose_std', 'Glycerol_std', 'Gluconate_std', 'Pyruvate_std', 'Succinate_std']
