@@ -74,6 +74,12 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                                         '$addToSet': {'concentrations': {'$each': concentrations}}},
                                         upsert=True)
 
+    def remove_eymdb(self):
+        """Remove concentration records pulled from EC/YMDB
+        """
+        self.collection.update_many({},
+                                    {'$pull': {'concentrations': {'growth_meda': {'$exists': True}}}})
+
     def _flatten_conc_obj(self, obj, ncbi_id, species_name):
         """Flatten concentrations object in ec/ymdb.
 
@@ -262,6 +268,7 @@ def main():
     # file_location = Path('~/karr_lab/datanator/docs/metabolite_concentration/41589_2016_BFnchembio2077_MOESM586_ESM.xlsx').expanduser()
     # manager.fill_collection(file_location, start_row=[0])
 
+    # manager.remove_eymdb()
     # manager.grab_eymdb()
 
     # column_names=['Metabolite', 'Acetate', 'Fructose', 'Galactose', 'Glucose', 'Glycerol', 'Gluconate', 'Pyruvate', 'Succinate',

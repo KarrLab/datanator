@@ -162,7 +162,9 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
         Args:
             skip (:obj:`int`): skip first n number of records.
         """
-        query = {'name': 'No metabolite found.'}
+        con_0 = {'chebi_id': {'$exists': False}}
+        con_1 = {'chebi_id': None}
+        query = {'$or': [con_0, con_1]}
         docs = self.collection.find(query, skip=skip)
         count = self.collection.count_documents(query)
         for i, doc in enumerate(docs):
@@ -180,7 +182,7 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                     synonyms = doc_e['synonyms']['synonym']
                 else:
                     synonyms = None
-                self.collection.update_one({'ymdb_id': ymdb_id},
+                self.collection.update_many({'ymdb_id': ymdb_id},
                                            {'$set': {'chebi_id': doc_e['chebi_id'],
                                                     'hmdb_id': doc_e['hmdb_id'],
                                                     'kegg_id': doc_e['kegg_id'],
@@ -200,10 +202,10 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
             elif m2m_id is not None:
                 doc_y = self.ecmdb_query.get_standard_ids_by_id(m2m_id)
                 if doc_y['synonyms']:
-                    synonyms = doc_e['synonyms']['synonym']
+                    synonyms = doc_y['synonyms']['synonym']
                 else:
                     synonyms = None
-                self.collection.update_one({'m2m_id': m2m_id},
+                self.collection.update_many({'m2m_id': m2m_id},
                                            {'$set': {'chebi_id': doc_y['chebi_id'],
                                                     'hmdb_id': doc_y['hmdb_id'],
                                                     'kegg_id': doc_y['kegg_id'],
@@ -219,9 +221,18 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
                                                     'pathways': doc_y['pathways'],
                                                     'property': doc_y['property'],
                                                     'name': doc_y['name'],
-                                                    'synonyms': doc_y['synonyms']['synonym']}}, upsert=False)
+                                                    'synonyms': synonyms}}, upsert=False)
             else:
                 continue
+
+    def remove_dups(self, _key):
+        """Remove entries with the same _key.
+
+        Args:
+            _key(:obj:`str`): Name of fields in which dups will be identified.
+        """
+        num, docs = self.get_duplicates('metabolites_meta', _key)
+        return num, docs
 
 def main():
     db = 'datanator'
@@ -242,7 +253,10 @@ def main():
     #     collection_src='ymdb', 
     #     collection_des = collection_name)
     # manager.fill_names()
-    manager.fill_standard_id(skip=0)
+    # manager.fill_standard_id(skip=0)
+
+    num, _ = manager.remove_dups('InChI_Key')
+    print(num)
 
 if __name__ == '__main__':
     main()

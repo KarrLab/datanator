@@ -300,14 +300,14 @@ def main():
     # status = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
     # data from "metabolites_meta" collection
-    # index_name = 'metabolites_meta'
-    # _ = manager.delete_index(index_name)
-    # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
+    index_name = 'metabolites_meta'
+    _ = manager.delete_index(index_name)
+    docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
-    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
-    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
-    # _ = manager.create_index_with_file(index_name, setting_file)
-    # _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
+    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    _ = manager.create_index_with_file(index_name, setting_file)
+    _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
 
     # data from "sabio_rk_old" collection
     # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
@@ -366,14 +366,14 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
     # data from "metabolite_concentrations" collection
-    index_name = 'metabolite_concentrations'
-    _ = manager.delete_index(index_name)
-    count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    print(count)
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
-    _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
+    # index_name = 'metabolite_concentrations'
+    # _ = manager.delete_index(index_name)
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # print(count)
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
 
 
     r = manager.index_health_status()
