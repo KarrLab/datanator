@@ -247,32 +247,23 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
             if self.verbose and i % 100 == 0:
                 print('Processing doc {} out of {} ...'.format(i, count))
             cell_locations = doc['cellular_locations']
-            list_or_str = isinstance(cell_locations, list)
             obj = []
             if doc.get('ymdb_id'):
-                if list_or_str: # list
-                    for loc in cell_locations:
-                        obj.append({
-                                    'reference': ['YMDB'],
-                                    'cellular_location': loc
-                                   })
-                else: #str
+                for loc in cell_locations:
+                    location = loc['cellular_location']['cellular_location']
                     obj.append({
                                 'reference': ['YMDB'],
-                                'cellular_location': cell_locations
-                               })
+                                'cellular_location': location
+                                })
+
             else:
-                if list_or_str: # list
-                    for loc in cell_locations:
-                        obj.append({
-                                    'reference': ['ECMDB'],
-                                    'cellular_location': loc
-                                   })
-                else: #str
+                for loc in cell_locations:
+                    location = loc['cellular_location']['cellular_location']
                     obj.append({
                                 'reference': ['ECMDB'],
-                                'cellular_location': cell_locations
-                               })
+                                'cellular_location': location
+                                })
+
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {'cellular_locations': obj}},
                                        upsert=False)                

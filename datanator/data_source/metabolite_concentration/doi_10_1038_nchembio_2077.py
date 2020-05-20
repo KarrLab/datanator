@@ -1,6 +1,7 @@
 import pandas as pd
 import datetime
 from datanator_query_python.query import query_metabolites_meta
+from collections import deque
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
 
@@ -34,6 +35,64 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                                            {'$addToSet': {'concentrations': {'$each': concentrations}}})
                 self.collection.delete_one({'_id': unique_id})
         return "Done"
+
+    def edit_nchembio2077(self, start=0):
+        """Resolve https://github.com/KarrLab/datanator_rest_api/issues/73
+        """
+        con_0 = {"concentrations.reference.doi": "10.1038/nchembio.2077"}
+        con_1 = {"metabolite": {"$ne": "UDP-D-glucose"}}
+        query = {"$and": [con_0, con_1]}
+        projection = {"concentrations": 1}
+        docs = self.collection.find(filter=query, projection=projection, skip=start)
+        count = self.collection.count_documents(query) - start
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 20 == 0:
+                print("Processing doc {} out of {} ...".format(i, count))
+            seen_val = deque() # previous concentration value
+            next_idx = 0 # next new concentration value's index in conc_obj
+            conc_obj = []
+            conc_idx = {}  # position lookup table
+            for conc in doc['concentrations']:
+                val = conc['concentration']
+                ref = conc["reference"]
+                if ref is None or conc.get('ec_number') is None:
+                    conc_obj.append(conc)
+                    next_idx += 1
+                else:
+                    ref = ref.get('doi')
+                    if ref == "10.1038/nchembio.2077" and val not in seen_val:  # new concentration
+                        conc_obj.append({
+                                        "affinities": [{
+                                                        "ec_number": conc['ec_number'],
+                                                        "k_m": conc.get('k_m'),
+                                                        "k_i": conc.get('k_i'),
+                                                        "unit": conc.get('unit')
+                                                        }],
+                                        "concentration": conc['concentration'],
+                                        "species_name": conc['species_name'],
+                                        "ncbi_taxonomy_id": conc["ncbi_taxonomy_id"],
+                                        "last_modified": datetime.datetime.utcnow(),
+                                        "reference": {"doi": ref}
+                                        })                    
+                        conc_idx[val] = next_idx
+                        seen_val.append(val)
+                        next_idx += 1
+                    elif ref =="10.1038/nchembio.2077" and val in seen_val: # existing concentration value
+                        idx = conc_idx[val] # where in conc_obj the concentration value is
+                        conc_obj[idx]["affinities"].append({
+                                                            "ec_number": conc['ec_number'],
+                                                            "k_m": conc.get('k_m'),
+                                                            "k_i": conc.get('k_i'),
+                                                            "unit": conc.get('unit')
+                                                            })
+                        conc_obj[idx]["last_modified"] = datetime.datetime.utcnow()
+                    else:
+                        conc_obj.append(conc)
+                        next_idx += 1
+            self.collection.update_one({'_id': doc['_id']},
+                                       {'$set': {"concentrations": conc_obj}})
 
     def grab_eymdb(self, start=0):
         """Fill collection with concentration values from ec/ymdb.
@@ -286,6 +345,8 @@ def main():
     #                                 sheet_name='Metabolite concentrations', use_columns='B:K,M:U', nrows=21)
 
     # manager.fill_meta()
+
+    manager.edit_nchembio2077()
 
 if __name__ == '__main__':
     main()
