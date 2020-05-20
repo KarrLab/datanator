@@ -271,7 +271,7 @@ def main():
 
 
     # data from "protein" collection
-    # index_name = 'protein'
+    # index_name = 'uniprot'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
@@ -300,14 +300,14 @@ def main():
     # status = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
     # data from "metabolites_meta" collection
-    index_name = 'metabolites_meta'
-    _ = manager.delete_index(index_name)
-    docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
-    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
-    _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
+    # index_name = 'metabolites_meta'
+    # _ = manager.delete_index(index_name)
+    # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
+    # # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
 
     # data from "sabio_rk_old" collection
     # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)

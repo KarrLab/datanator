@@ -246,14 +246,14 @@ class TaxonTree(mongo_util.MongoUtil):
         """Insert two arrays to each document, one is
         canon_anc_id, the other is canon_anc_name
         """
-        query = {}
+        query = {"canon_anc_ids": {"$exists": False}}
         canon_info = {}  # store info of canon to avoid multiple db queries
         ids_ranked = deque()
         canons = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom']
         count = self.collection.count_documents(query)
         projection = {'anc_name': 1, 'anc_id': 1, 'tax_id': 1}
         docs = self.collection.find(filter=query, skip=start, projection=projection,
-                                    no_cursor_timeout=True).sort('tax_id', 1).hint('tax_id_1')
+                                    no_cursor_timeout=True, batch_size=1000).sort('tax_id', 1).hint('tax_id_1')
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
@@ -274,10 +274,9 @@ class TaxonTree(mongo_util.MongoUtil):
                         canon_info[anc_id] = True
                         ids_ranked.append(anc_id)
                     else:
-                        canon_info[anc_id] = False
                         ids_ranked.append(anc_id)
                 else: # no need to perform db lookups
-                    c = canon_info.get(anc_id)
+                    c = canon_info.get(anc_id, False)
                     if c:
                         canon_anc_ids.append(anc_id)
                         canon_anc_names.append(anc_name)
@@ -301,7 +300,8 @@ def main():
     manager = TaxonTree(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=None, 
                     db=db, verbose=True, username=username, password=password)
     # manager.load_content()
-    manager.insert_canon_anc(start=32700)
+    # manager.insert_canon_anc(start=250600)
+    manager.insert_canon_anc(start=0)
 
 
 if __name__ == '__main__':
