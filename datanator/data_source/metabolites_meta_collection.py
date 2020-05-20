@@ -234,6 +234,51 @@ class MetabolitesMeta(query_sabiork.QuerySabio):
         num, docs = self.get_duplicates('metabolites_meta', _key)
         return num, docs
 
+    def reset_cellular_locations(self, start=0):
+        """Github (https://github.com/KarrLab/datanator_rest_api/issues/69)
+        """
+        query = {'cellular_locations': {'$ne': None}}
+        count = self.collection.count_documents(query) - start
+        for i, doc in enumerate(self.collection.find(filter=query, skip=start,
+                                                     projection={'m2m_id': 1, 'ymdb_id': 1,
+                                                                 'cellular_locations': 1})):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 100 == 0:
+                print('Processing doc {} out of {} ...'.format(i, count))
+            cell_locations = doc['cellular_locations']
+            list_or_str = isinstance(cell_locations, list)
+            obj = []
+            if doc.get('ymdb_id'):
+                if list_or_str: # list
+                    for loc in cell_locations:
+                        obj.append({
+                                    'reference': ['YMDB'],
+                                    'cellular_location': loc
+                                   })
+                else: #str
+                    obj.append({
+                                'reference': ['YMDB'],
+                                'cellular_location': cell_locations
+                               })
+            else:
+                if list_or_str: # list
+                    for loc in cell_locations:
+                        obj.append({
+                                    'reference': ['ECMDB'],
+                                    'cellular_location': loc
+                                   })
+                else: #str
+                    obj.append({
+                                'reference': ['ECMDB'],
+                                'cellular_location': cell_locations
+                               })
+            self.collection.update_one({'_id': doc['_id']},
+                                       {'$set': {'cellular_locations': obj}},
+                                       upsert=False)                
+                                
+                
+
 def main():
     db = 'datanator'
     meta_loc = 'datanator'
@@ -255,8 +300,10 @@ def main():
     # manager.fill_names()
     # manager.fill_standard_id(skip=0)
 
-    num, _ = manager.remove_dups('InChI_Key')
-    print(num)
+    # num, _ = manager.remove_dups('InChI_Key')
+    # print(num)
+
+    manager.reset_cellular_locations()
 
 if __name__ == '__main__':
     main()
