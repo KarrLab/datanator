@@ -74,7 +74,8 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                                         "species_name": conc['species_name'],
                                         "ncbi_taxonomy_id": conc["ncbi_taxonomy_id"],
                                         "last_modified": datetime.datetime.utcnow(),
-                                        "reference": {"doi": ref}
+                                        "reference": {"doi": ref},
+                                        "unit": "M"
                                         })                    
                         conc_idx[val] = next_idx
                         seen_val.append(val)
@@ -93,6 +94,15 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                         next_idx += 1
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {"concentrations": conc_obj}})
+
+    def add_units_nchembio2077(self, start=0):
+        """(https://github.com/KarrLab/datanator_rest_api/issues/77)
+        """
+        query = {"concentrations.reference.doi": "10.1038/nchembio.2077"}
+        array_filters = [{"t.affinities": {"$exists": True}}]
+        self.collection.update_many(query,
+                                    {"$set": {"concentrations.$[t].unit": 'M'}},
+                                    array_filters=array_filters)
 
     def grab_eymdb(self, start=0):
         """Fill collection with concentration values from ec/ymdb.
@@ -346,7 +356,9 @@ def main():
 
     # manager.fill_meta()
 
-    manager.edit_nchembio2077()
+    # manager.edit_nchembio2077()
+
+    manager.add_units_nchembio2077()
 
 if __name__ == '__main__':
     main()
