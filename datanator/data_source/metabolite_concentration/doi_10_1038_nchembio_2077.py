@@ -95,7 +95,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {"concentrations": conc_obj}})
 
-    def add_units_nchembio2077(self, start=0):
+    def add_units_nchembio2077(self):
         """(https://github.com/KarrLab/datanator_rest_api/issues/77)
         """
         query = {"concentrations.reference.doi": "10.1038/nchembio.2077"}
@@ -103,6 +103,38 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         self.collection.update_many(query,
                                     {"$set": {"concentrations.$[t].unit": 'M'}},
                                     array_filters=array_filters)
+
+    def add_reference_eymdb(self, start=0):
+        """(https://github.com/KarrLab/datanator_rest_api/issues/77)
+        """
+        query = {}
+        projection = {"concentrations": 1, "inchikey": 1}
+        docs = self.collection.find(filter=query, projection=projection, skip=start)
+        count = self.collection.count_documents(query) - start
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 20 == 0:
+                print("Processing doc {} out of {} ...".format(i, count))
+            conc_obj = deque()
+            m2m_id = self.e_collection.find_one(filter={'inchikey': doc['inchikey']})
+            ymdb_id = self.y_collection.find_one(filter={'inchikey': doc['inchikey']})
+            for conc in doc['concentrations']:
+                if conc.get('reference') is None:
+                    if conc.get('ncbi_taxonomy_id') == 4932:  # yeast
+                        conc['reference'] = {'id': ymdb_id.get('ymdb_id'), 'namespace': 'ymdb'}
+                    else:
+                        conc['reference'] = {'id': m2m_id.get('m2m_id'), 'namespace': 'ecmdb'}
+                    conc_obj.append(conc)
+                elif conc['reference'].get('pubmed_id') is not None:
+                    conc['reference'] = {'namespace': 'pubmed', 'id': conc['reference']['pubmed_id'], 'text': conc['reference'].get('reference_text')}
+                    conc_obj.append(conc)
+                else:   # DOI
+                    conc['reference'] = {'namespace': 'doi', 'id': conc['reference']['doi']}
+                    conc_obj.append(conc)
+            self.collection.update_one({'_id': doc['_id']},
+                                       {'$set': {"concentrations": list(conc_obj)}})
+
 
     def grab_eymdb(self, start=0):
         """Fill collection with concentration values from ec/ymdb.
@@ -121,7 +153,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                 synonyms = e_doc['synonyms']['synonym']
             else:
                 synonyms = None
-            concentrations = self._flatten_conc_obj(e_doc['concentrations'], 562, 'Escherichia coli')
+            concentrations = self._flatten_conc_obj(e_doc['concentrations'], 562, 'Escherichia coli', e_doc['m2m_id'], source='ECMDB')
             self.collection.update_many({'inchikey': e_doc['inchikey']},
                                         {'$set': {'metabolite': e_doc['name'],
                                                     'chebi_id': e_doc['chebi_id'],
@@ -135,7 +167,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                 synonyms = y_doc['synonyms']['synonym']
             else:
                 synonyms = None
-            concentrations = self._flatten_conc_obj(y_doc['concentrations'], 4932, 'Saccharomyces cerevisiae')
+            concentrations = self._flatten_conc_obj(y_doc['concentrations'], 4932, 'Saccharomyces cerevisiae', y_doc['ymdb_id'], source='YMDB')
             self.collection.update_many({'inchikey': y_doc['inchikey']},
                                         {'$set': {'metabolite': y_doc['name'],
                                                     'chebi_id': y_doc['chebi_id'],
@@ -149,7 +181,7 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         self.collection.update_many({},
                                     {'$pull': {'concentrations': {'growth_meda': {'$exists': True}}}})
 
-    def _flatten_conc_obj(self, obj, ncbi_id, species_name):
+    def _flatten_conc_obj(self, obj, ncbi_id, species_name, _id, source='ECMDB'):
         """Flatten concentrations object in ec/ymdb.
 
         Args:
@@ -166,6 +198,8 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
         if not _type: #string
             obj['ncbi_taxonomy_id'] = ncbi_id
             obj['species_name'] = species_name
+            if obj['internal'] == 'true':
+                obj['reference'] = {'source': source, 'id': _id}
             return [obj]
         else:
             keys = list(obj.keys())
@@ -175,6 +209,8 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                 dic = {'ncbi_taxonomy_id': ncbi_id, 'species_name': species_name}
                 for key in keys:
                     dic[key] = obj[key][i]
+                    if key == 'reference' and obj[key][i] is None:
+                        dic[key] = {'source': source, 'id': _id}
                 result.append(dic)
             return result
             
@@ -358,7 +394,9 @@ def main():
 
     # manager.edit_nchembio2077()
 
-    manager.add_units_nchembio2077()
+    # manager.add_units_nchembio2077()
+
+    manager.add_reference_eymdb()
 
 if __name__ == '__main__':
     main()
