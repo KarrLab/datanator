@@ -185,7 +185,7 @@ class RxnAggregate(mongo_util.MongoUtil):
         con_0 = {'substrates': None}
         con_1 = {'products': None}
         query = {'$or': [con_0, con_1]}
-        docs = self.col.find(query, skip=start)
+        docs = self.col.find(query, skip=start, no_cursor_timeout=True, batch_size=10)
         count = self.col.count_documents(query)
         sabio_rk_old = self.db_obj['sabio_rk_old']
         for i, doc in enumerate(docs):
