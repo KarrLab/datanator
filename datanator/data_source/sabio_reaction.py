@@ -1,4 +1,4 @@
-from datanator.util import mongo_util, file_util
+from datanator_query_python.util import mongo_util, file_util
 from datanator_query_python.query import query_sabiork_old, query_metabolites_meta
 import datanator.config.core
 from pymongo.collation import Collation, CollationStrength
@@ -7,24 +7,21 @@ import os
 import tempfile
 
 
-class RxnAggregate:
+class RxnAggregate(mongo_util.MongoUtil):
 
     def __init__(self, username=None, password=None, server=None, authSource='admin',
                  src_database='datanator', max_entries=float('inf'), verbose=True,
-                 collection='sabio_reaction', destination_database='datanator', cache_dir=None):
+                 collection='sabio_reaction_entries', destination_database='datanator', cache_dir=None):
         '''
                 Args:
                         src_database (:obj: `str`): name of database in which source collections reside
                         destination_database (:obj: `str`): name of database to put the aggregated collection
         '''
-        self.client, self.db, self.col = mongo_util.MongoUtil(MongoDB=server, username=username,
-                                                              password=password, authSource=authSource,
-                                                              db=destination_database).con_db(collection)
-        self.mongo_manager = mongo_util.MongoUtil(MongoDB=server, username=username,
-                                                  password=password, authSource=authSource, db=src_database)
+        super().__init__(MongoDB=MongoDB, db=destination_database, username=username, password=password,
+                        authSource=authSource)
+        self.col = self.db_obj['collection']
         self.query_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, password=password, authSource=authSource, username=username)
-        self.metabolites_meta_manager = query_metabolites_meta.QueryMetabolitesMeta(MongoDB=server, db=src_database, username=username,
-        password=password, authSource=authSource)
+        self.metabolites_meta_manager = self.client[src_database]['metabolites_meta']
         self.file_manager = file_util.FileUtil()
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
         self.verbose = verbose
@@ -33,7 +30,7 @@ class RxnAggregate:
     def fill_collection(self):
         projection = {'_id': 0,'resource': 1, 'reaction_participant': 1,
                     'reaction_participant': 1, 'kinlaw_id': 1, 'enzymes': 1}
-        _, _, collection = self.mongo_manager.con_db('sabio_rk_old')
+        _, _, collection = self.db_obj['sabio_rk_old']
         docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
         start = 0
@@ -161,8 +158,8 @@ class RxnAggregate:
     def label_existence(self, start=0):
         """Label reactant's existence in metabolites collections.
         """
-        docs = self.metabolites_meta_manager.collection.find({})
-        count = self.metabolites_meta_manager.collection.count_documents({})
+        docs = self.metabolites_meta_manager.find({})
+        count = self.metabolites_meta_manager.count_documents({})
         for i, doc in enumerate(docs[start:]):
             inchi_key = doc.get('InChI_Key')
             if inchi_key is None:
@@ -177,6 +174,17 @@ class RxnAggregate:
             self.col.update_many(query,
                                  {'$addToSet': {'in_metabolites': inchi_key}}, upsert=False,
                                  collation=self.collation)
+
+    def hash_null_reactants(self, start=0):
+        """(https://github.com/KarrLab/datanator/issues/50)
+
+        Args:
+            start (:obj:`int`, optional): Start of document. Defaults to 0.
+        """
+        con_0 = {'substrates': None}
+        con_1 = {'products': None}
+        query = {'$or': [con_0, con_1]}
+        docs = self.collec
 
 
 def main():

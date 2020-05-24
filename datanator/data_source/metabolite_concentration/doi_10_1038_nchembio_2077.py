@@ -126,12 +126,16 @@ class Concentration(query_metabolites_meta.QueryMetabolitesMeta):
                     else:
                         conc['reference'] = {'id': m2m_id.get('m2m_id'), 'namespace': 'ecmdb'}
                     conc_obj.append(conc)
-                elif conc['reference'].get('pubmed_id') is not None:
+                elif conc['reference'].get('reference_text') is not None:  # pubmed_id can be None
+                    print(doc['inchikey'])
                     conc['reference'] = {'namespace': 'pubmed', 'id': conc['reference']['pubmed_id'], 'text': conc['reference'].get('reference_text')}
                     conc_obj.append(conc)
                 else:   # DOI
-                    conc['reference'] = {'namespace': 'doi', 'id': conc['reference']['doi']}
-                    conc_obj.append(conc)
+                    try:
+                        conc['reference'] = {'namespace': 'doi', 'id': conc['reference']['doi']}
+                        conc_obj.append(conc)
+                    except KeyError:
+                        conc_obj.append(conc)                    
             self.collection.update_one({'_id': doc['_id']},
                                        {'$set': {"concentrations": list(conc_obj)}})
 
