@@ -1,6 +1,7 @@
 from datanator_query_python.util import mongo_util, file_util
 from datanator_query_python.query import query_sabiork_old, query_metabolites_meta
 import datanator.config.core
+import hashlib
 from pymongo.collation import Collation, CollationStrength
 from pymongo import ASCENDING
 import os
@@ -17,9 +18,9 @@ class RxnAggregate(mongo_util.MongoUtil):
                         src_database (:obj: `str`): name of database in which source collections reside
                         destination_database (:obj: `str`): name of database to put the aggregated collection
         '''
-        super().__init__(MongoDB=MongoDB, db=destination_database, username=username, password=password,
+        super().__init__(MongoDB=server, db=destination_database, username=username, password=password,
                         authSource=authSource)
-        self.col = self.db_obj['collection']
+        self.col = self.db_obj[collection]
         self.query_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, password=password, authSource=authSource, username=username)
         self.metabolites_meta_manager = self.client[src_database]['metabolites_meta']
         self.file_manager = file_util.FileUtil()
@@ -184,7 +185,36 @@ class RxnAggregate(mongo_util.MongoUtil):
         con_0 = {'substrates': None}
         con_1 = {'products': None}
         query = {'$or': [con_0, con_1]}
-        docs = self.collec
+        docs = self.col.find(query, skip=start)
+        count = self.col.count_documents(query)
+        sabio_rk_old = self.db_obj['sabio_rk_old']
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break            
+            if i % 10 == 0 and self.verbose:
+                print("Process entry {} out of {} ...".format(i+start, count))
+            products_hashed = doc['products']
+            substrates_hashed = doc['substrates']
+
+            products_name = [x[0] for x in doc['product_names']]
+            substrates_name = [x[0] for x in doc['substrate_names']]
+            products_name_hashed = [hashlib.new('ripemd160', x.encode()).hexdigest() for x in products_name]
+            substrates_name_hashed = [hashlib.new('ripemd160', x.encode()).hexdigest() for x in substrates_name]
+
+            products_hashed = [x if x is not None else products_name_hashed[i] for i, x in enumerate(products_hashed)]
+            substrates_hashed = [x if x is not None else substrates_name_hashed[i] for i, x in enumerate(substrates_hashed)]
+
+            sabio_rk_old.update_many({"resource": {"namespace": "sabiork.reaction", "id": str(doc['rxn_id'])}},
+                                     {"$set": {"reaction_participant.3.substrate_aggregate": substrates_hashed,
+                                               "reaction_participant.4.product_aggregate": products_hashed}},
+                                     upsert=False)
+
+            self.col.update_one({'_id': doc['_id']},
+                                {'$set': {'products': products_hashed,
+                                          'substrates': substrates_hashed}},
+                                upsert=False)
+
+
 
 
 def main():
@@ -204,7 +234,9 @@ def main():
                         verbose=True, collection=collection_str, destination_database=des_db,
                         cache_dir=cache_dir)
     # src.fill_collection()
-    src.label_existence()
+    # src.label_existence()
+
+    src.hash_null_reactants()
 
 if __name__ == '__main__':
     main()
