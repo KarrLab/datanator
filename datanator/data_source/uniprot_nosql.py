@@ -287,7 +287,8 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                     print("No pax doc found for uniprot doc {}, abundance entry {}; skip is at {}".format(doc["_id"], j, i))
                     break
             self.collection.update_many({"uniprot_id": doc["uniprot_id"]},
-                                        {"$set": {"abundances": abundances}})
+                                        {"$set": {"abundances": abundances}},
+                                        collation=self.collation)
                             
             
 
