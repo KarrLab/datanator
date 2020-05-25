@@ -20,7 +20,7 @@ class TestUniprotNoSQL(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
-        cls.src.db.drop_collection(cls.src.collection_str)
+        cls.src.db_obj.drop_collection(cls.src.collection_str)
 
     # @unittest.skip('large single file download')
     def test_proper_loading(self):

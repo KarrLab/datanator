@@ -15,7 +15,7 @@ import json
 import pandas
 import requests
 import pymongo.errors
-from datanator.util import mongo_util
+from datanator_query_python.util import mongo_util
 from pymongo.collation import Collation, CollationStrength
 from datanator_query_python.query import query_taxon_tree, query_kegg_orthology, query_sabiork
 import datanator.config.core
@@ -40,7 +40,8 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         self.sabio_manager = query_sabiork.QuerySabio(MongoDB=MongoDB, username=username, password=password,
         authSource=authSource)
         self.collation = Collation(locale='en', strength=CollationStrength.SECONDARY)
-        self.client, self.db, self.collection = self.con_db(collection_str)
+        self.collection = self.db_obj[collection_str]
+        self.verbose = verbose
 
     # build dataframe for uniprot_swiss for loading into mongodb
     def load_uniprot(self, query=False, msg='', species=None):
@@ -247,10 +248,52 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                             print("     Adding kinlaw_id {} into uniprot collection.".format(kinlaw_id))
                         self.collection.update_one({'uniprot_id': uniprot_id},
                                                 {'$addToSet': {'sabio_kinlaw_id': kinlaw_id}},
-                                                collation=self.collation, upsert=False)                
+                                                collation=self.collation, upsert=False)
+
+    def fill_abundance_publication(self, start=0):
+        """(https://github.com/KarrLab/datanator/issues/51)
+
+        Args:
+            start(:obj:`int`, optional): beginning of documents.
+        """
+        # query = {'abundances': {"$exists": True}}
+        query = {'uniprot_id': 'Q75QI0'}
+        projection = {'abundances': 1, 'ncbi_taxonomy_id': 1, "uniprot_id": 1}
+        count = self.collection.count_documents(query)
+        docs = self.collection.find(filter=query, projection=projection,
+                                    no_cursor_timeout=True, batch_size=20,
+                                    skip=start, collation=self.collation)
+        pax_collection = self.client['datanator']['pax']
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if i % 20 == 0 and self.verbose:
+                print("Processing doc {} out of {}...".format(i+start, count))
+            uniprot_id = doc['uniprot_id']
+            abundances = doc['abundances']
+            taxon = doc['ncbi_taxonomy_id']
+            for j, abundance in enumerate(abundances):  #{organ: xxx, abundance: xxx}
+                if abundance.get("file_name") is not None:
+                    continue
+                value = abundance['abundance']
+                con_0 = {'ncbi_id': taxon}
+                con_1 = {'organ': abundance['organ']}
+                con_2 = {'observation': {"$elemMatch": {"protein_id.uniprot_id": uniprot_id, "abundance": value}}}
+                q_pax = {"$and": [con_0, con_1, con_2]}
+                # q_pax = {"$and": [con_0, con_1]}
+                p_doc = pax_collection.find_one(filter=q_pax, projection={"file_name": 1, "publication": 1})
+                if p_doc is not None:
+                    abundance['file_name'] = p_doc['file_name']
+                    abundance['publication'] = p_doc['publication']
+                else:
+                    print("No pax doc found for uniprot doc {}, abundance entry {}; skip is at {}".format(doc["_id"], j, i))
+                    break
+            self.collection.update_many({"uniprot_id": doc["uniprot_id"]},
+                                        {"$set": {"abundances": abundances}})
+                            
             
 
-from multiprocessing import Pool, Process
+# from multiprocessing import Pool, Process
 
 def main():
     db = 'datanator'
@@ -261,8 +304,8 @@ def main():
     )['datanator']['mongodb']['password']
     server = datanator.config.core.get_config(
     )['datanator']['mongodb']['server']
-    manager=UniprotNoSQL(MongoDB = server, db = db, 
-    username = username, password = password, collection_str=collection_str,
+    manager=UniprotNoSQL(MongoDB=server, db=db, 
+    username=username, password=password, collection_str=collection_str,
     verbose=True)
 
     # manager.load_uniprot()
@@ -283,9 +326,11 @@ def main():
     # p.start()
     # p.join()
 
-    p = Process(target=manager.fill_reactions())
-    p.start()
-    p.join()
+    # p = Process(target=manager.fill_reactions())
+    # p.start()
+    # p.join()
+
+    manager.fill_abundance_publication()
 
 if __name__ == '__main__':
     main()

@@ -319,11 +319,11 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
     # # data from "sabio_reaction_entries" collection
-    # index_name = 'sabio_reaction_entries'
-    # _ = manager.delete_index(index_name)
-    # count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
-    # r = manager.create_index(index_name)
-    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
+    index_name = 'sabio_reaction_entries'
+    _ = manager.delete_index(index_name)
+    count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
+    r = manager.create_index(index_name)
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB)
@@ -376,14 +376,14 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
 
     # data from "rna_modification" collection
-    index_name = 'rna_modification'
-    _ = manager.delete_index(index_name)
-    count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    print(count)
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
-    _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+    # index_name = 'rna_modification'
+    # _ = manager.delete_index(index_name)
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # print(count)
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
 
     r = manager.index_health_status()
