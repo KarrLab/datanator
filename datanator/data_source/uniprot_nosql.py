@@ -256,8 +256,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         Args:
             start(:obj:`int`, optional): beginning of documents.
         """
-        # query = {'abundances': {"$exists": True}}
-        query = {'uniprot_id': 'Q75QI0'}
+        query = {'abundances': {"$exists": True}}
         projection = {'abundances': 1, 'ncbi_taxonomy_id': 1, "uniprot_id": 1}
         count = self.collection.count_documents(query)
         docs = self.collection.find(filter=query, projection=projection,
@@ -280,7 +279,6 @@ class UniprotNoSQL(mongo_util.MongoUtil):
                 con_1 = {'organ': abundance['organ']}
                 con_2 = {'observation': {"$elemMatch": {"protein_id.uniprot_id": uniprot_id, "abundance": value}}}
                 q_pax = {"$and": [con_0, con_1, con_2]}
-                # q_pax = {"$and": [con_0, con_1]}
                 p_doc = pax_collection.find_one(filter=q_pax, projection={"file_name": 1, "publication": 1})
                 if p_doc is not None:
                     abundance['file_name'] = p_doc['file_name']
