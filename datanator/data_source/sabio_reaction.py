@@ -178,13 +178,16 @@ class RxnAggregate(mongo_util.MongoUtil):
 
     def hash_null_reactants(self, start=0):
         """(https://github.com/KarrLab/datanator/issues/50)
+           (https://github.com/KarrLab/datanator_rest_api/issues/116)
 
         Args:
             start (:obj:`int`, optional): Start of document. Defaults to 0.
         """
         con_0 = {'substrates': None}
         con_1 = {'products': None}
-        query = {'$or': [con_0, con_1]}
+        con_2 = {'substrates': []}
+        con_3 = {'products': []}
+        query = {'$or': [con_0, con_1, con_2, con_3]}
         docs = self.col.find(query, skip=start, no_cursor_timeout=True, batch_size=10)
         count = self.col.count_documents(query)
         sabio_rk_old = self.db_obj['sabio_rk_old']
@@ -195,6 +198,11 @@ class RxnAggregate(mongo_util.MongoUtil):
                 print("Process entry {} out of {} ...".format(i+start, count))
             products_hashed = doc['products']
             substrates_hashed = doc['substrates']
+
+            if products_hashed == []:
+                products_hashed = [None]
+            if substrates_hashed == []:
+                substrates_hashed = [None]        
 
             products_name = [x[0] for x in doc['product_names']]
             substrates_name = [x[0] for x in doc['substrate_names']]
@@ -213,7 +221,6 @@ class RxnAggregate(mongo_util.MongoUtil):
                                 {'$set': {'products': products_hashed,
                                           'substrates': substrates_hashed}},
                                 upsert=False)
-
 
 
 

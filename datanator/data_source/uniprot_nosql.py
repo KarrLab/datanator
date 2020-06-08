@@ -126,7 +126,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
 
     def fill_species_name(self):
         ncbi_taxon_ids = self.collection.distinct('ncbi_taxonomy_id')
-        start = 16650
+        start = 0
         for i, _id in enumerate(ncbi_taxon_ids[start:]):
             if i == self.max_entries:
                 break
@@ -256,7 +256,7 @@ class UniprotNoSQL(mongo_util.MongoUtil):
         Args:
             start(:obj:`int`, optional): beginning of documents.
         """
-        query = {'abundances': {"$exists": True}}
+        query = {'abundances.file_name': {"$exists": False}}
         projection = {'abundances': 1, 'ncbi_taxonomy_id': 1, "uniprot_id": 1}
         count = self.collection.count_documents(query)
         docs = self.collection.find(filter=query, projection=projection,
@@ -289,10 +289,30 @@ class UniprotNoSQL(mongo_util.MongoUtil):
             self.collection.update_many({"uniprot_id": doc["uniprot_id"]},
                                         {"$set": {"abundances": abundances}},
                                         collation=self.collation)
+
+    def fill_species_name_new(self, start=0):
+        """Some documents don't have species_name filed.
+        """
+        query = {"species_name": {"$exists": False}}
+        count = self.collection.count_documents(query)
+        taxon_col = self.client['datanator']['taxon_tree']
+        docs = self.collection.find(filter=query, projection={"ncbi_taxonomy_id": 1},
+                                    no_cursor_timeout=True, batch_size=100)
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if i % 50 == 0 and self.verbose:
+                print("Processing doc {} out of {}...".format(i+start, count))
+            tax_id = doc["ncbi_taxonomy_id"]
+            species_name = taxon_col.find_one(filter={"tax_id": tax_id}, projection={"tax_name": 1})["tax_name"]
+            self.collection.update_one({"_id": doc["_id"]},
+                                       {"$set": {"species_name": species_name}},
+                                        upsert=False)
+
                             
             
 
-# from multiprocessing import Pool, Process
+from multiprocessing import Pool, Process
 
 def main():
     db = 'datanator'
@@ -309,9 +329,9 @@ def main():
 
     # manager.load_uniprot()
 
-    # p = Process(target=manager.fill_species_name())
-    # p.start()
-    # p.join()
+    p = Process(target=manager.fill_species_name())
+    p.start()
+    p.join()
 
     # p = Process(target=manager.fill_ko_name())
     # p.start()
@@ -329,7 +349,11 @@ def main():
     # p.start()
     # p.join()
 
-    manager.fill_abundance_publication()
+    # manager.fill_abundance_publication()
+
+    # p = Process(target=manager.fill_species_name_new())
+    # p.start()
+    # p.join()
 
 if __name__ == '__main__':
     main()
