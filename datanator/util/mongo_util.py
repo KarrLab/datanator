@@ -10,17 +10,9 @@ class MongoUtil:
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db='test',
                  verbose=False, max_entries=float('inf'), username = None, 
                  password = None, authSource = 'admin', readPreference='nearest'):
-        self.cache_dirname = cache_dirname
-        self.MongoDB = MongoDB
-        self.db = db
-        self.replicaSet = replicaSet
-        self.verbose = verbose
-        self.max_entries = max_entries
-        self.client = pymongo.MongoClient(
-            self.MongoDB, replicaSet=self.replicaSet, 
-            username = username, password = password,
-            authSource = authSource, readPreference=readPreference)  # 400ms max timeout
-        self.db_obj = self.client[db]
+        string = "mongodb+srv://{}:{}@{}/{}?authSource={}&retryWrites=true&w=majority&readPreference={}".format(username, password, MongoDB, db, authSource, readPreference)
+        self.client = pymongo.MongoClient(string)
+        self.db_obj = self.client.get_database(db)
 
     def list_all_collections(self):
         '''List all non-system collections within database
