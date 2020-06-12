@@ -41,31 +41,33 @@ class MigrateTaxon(mongo_util.MongoUtil):
         """
         self.to_collection.create_index(_key, background=background)
 
-    def get_rank(self, ids):
+    def get_rank(self, ids, names):
         ''' Given a list of taxon ids, return
             the list of ranks. no rank = '+'
 
         Args:
             ids(:obj:`list` of :obj:`int`): list of taxon ids [1234,2453,431]
+            names(:obj:`list` of :obj:`str`): list of taxon names.
 
         Return:
-            (:obj:`list` of :obj:`str`): list of ranks ['kingdom', '+', 'phylum']
+            (:obj:`tuple`): canon_anc_id, canon_anc_name
         '''
-        ranks = []
+        canon_anc_id = []
+        canon_anc_name = []
         roi = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom', 'superkingdom']
-        projection = {'rank': 1, 'tax_id': 1}
-        for _id in ids:
+        projection = {'rank': 1}
+        for _id, name in zip(ids, names):
+            if _id == 131567:
+                canon_anc_id.append(_id)
+                canon_anc_name.append(name)
+                continue
             query = {'tax_id': _id}
-            cursor = self.from_collection.find_one(filter=query, projection=projection)
-            rank = cursor.get('rank', None)
-            tax_id = cursor.get('tax_id', None)
+            doc = self.from_collection.find_one(filter=query, projection=projection)
+            rank = doc.get('rank', None)
             if rank in roi:
-                ranks.append(rank)
-            elif tax_id == 131567:
-                ranks.append('cellular organisms')
-            else:
-                ranks.append('+')
-        return ranks
+                canon_anc_id.append(_id)
+                canon_anc_name.append(name)
+        return canon_anc_id, canon_anc_name
 
     def process_cursors(self, skip=0): # docs, l, counter
         """Process mongodb cursor (for parallel processing)
@@ -77,7 +79,7 @@ class MigrateTaxon(mongo_util.MongoUtil):
             counter(:obj:`Counter`): to keep track of processor progress across parallel processes.
         """
         bulk_write = []
-        docs = self.to_collection.find(filter={}, projection={'_id': 0},
+        docs = self.from_collection.find(filter={}, projection={'_id': 0},
                                       no_cursor_timeout=True, batch_size=1000)
         for i, doc in enumerate(docs):
             if i == self.max_entries:
@@ -94,9 +96,7 @@ class MigrateTaxon(mongo_util.MongoUtil):
             canon_anc_ids = []
             anc_ids = doc['anc_id']
             anc_names = doc['anc_name']
-            ranks = self.get_rank(anc_ids)
-            [canon_anc_names.append(anc) for (anc, rank) in zip(anc_names, ranks) if rank != '+']
-            [canon_anc_ids.append(anc) for (anc, rank) in zip(anc_ids, ranks) if rank != '+']
+            canon_anc_ids, canon_anc_names = self.get_rank(anc_ids, anc_names)
             doc['canon_anc_ids'] = canon_anc_ids
             doc['canon_anc_names'] = canon_anc_names
             doc['schema_version'] = '2'
