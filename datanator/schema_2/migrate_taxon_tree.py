@@ -12,8 +12,8 @@ class MigrateTaxon(mongo_util.MongoUtil):
 
     def __init__(self, 
                 server=query_config.AtlasConfig.SERVER,
-                username=query_config.SchemaMigration.USERNAME,
-                password=query_config.SchemaMigration.PASSWORD,
+                username=query_config.Config.USERNAME,
+                password=query_config.Config.PASSWORD,
                 authSource=query_config.AtlasConfig.AUTHDB,
                 replicaSet=query_config.AtlasConfig.REPLSET,
                 readPreference=query_config.AtlasConfig.READ_PREFERENCE,
@@ -22,8 +22,8 @@ class MigrateTaxon(mongo_util.MongoUtil):
                 from_database='datanator',
                 max_entries=float('inf')):
         super().__init__(MongoDB=query_config.AtlasConfig.SERVER,
-                        username=query_config.SchemaMigration.USERNAME,
-                        password=query_config.SchemaMigration.PASSWORD,
+                        username=query_config.Config.USERNAME,
+                        password=query_config.Config.PASSWORD,
                         authSource=query_config.AtlasConfig.AUTHDB,
                         replicaSet=query_config.AtlasConfig.REPLSET,
                         readPreference=query_config.AtlasConfig.READ_PREFERENCE,

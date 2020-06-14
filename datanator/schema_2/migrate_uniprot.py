@@ -1,13 +1,13 @@
-from datanator_query_python.config import query_schema_2_manager
+from datanator_query_python.util import mongo_util
 from datanator_query_python.config import config
 from datanator_query_python.query import query_taxon_tree
 
 
-class MigrateUniprot(query_schema_2_manager.QM):
+class MigrateUniprot(mongo_util.MongoUtil):
 
     def __init__(self, readPreference='primary', collection='uniprot',
-                max_entries=float('inf'), username=config.SchemaMigration.USERNAME,
-                password=config.SchemaMigration.PASSWORD):
+                max_entries=float('inf'), username=config.Config.USERNAME,
+                password=config.Config.PASSWORD):
         super().__init__(readPreference=readPreference, username=username,
                         password=password)
         self.collection = collection
