@@ -1,4 +1,4 @@
-from datanator_query_python.config import query_schema_2_manager
+from datanator_query_python.util import mongo_util
 from datanator_query_python.config import config
 import simplejson as json
 from pymongo import UpdateOne
@@ -6,7 +6,7 @@ from pymongo.errors import BulkWriteError
 from pprint import pprint
 
 
-class MigrateUniprot(query_schema_2_manager.QM):
+class MigrateUniprot(mongo_util.MongoUtil):
 
     def __init__(self, readPreference='primary',
                 username=config.SchemaMigration.USERNAME,
