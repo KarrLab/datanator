@@ -28,6 +28,9 @@ Please see the [documentation](http://docs.karrlab.org/datanator) for installati
 
 Note, Datanator only supports Python 3. 
 
+If one needs to use the datanator database hosted by Karr Lab, one will need `karr_lab_build_config` repository saved
+as `.wc` in the user home directory.
+
 ## Testing Datanator
 To ensure Datanator works properly, we have developed extensive units tests of every aspect of `datanator`. We recommend using `pytest` to run these tests as follows:
 
