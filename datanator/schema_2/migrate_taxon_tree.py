@@ -1,47 +1,31 @@
-from datanator_query_python.config import config as query_config
-from datanator_query_python.util import mongo_util
-from multiprocessing import Process, Lock, Value
-from datanator_query_python.query import query_taxon_tree
+from datanator_query_python.config import motor_client_manager
+import asyncio
+import simplejson as json
 from pymongo import UpdateOne
 from pymongo.errors import BulkWriteError
 from pprint import pprint
-import time
 
 
-class MigrateTaxon(mongo_util.MongoUtil):
+class MigrateTaxon:
 
-    def __init__(self, 
-                server=query_config.AtlasConfig.SERVER,
-                username=query_config.SchemaMigration.USERNAME,
-                password=query_config.SchemaMigration.PASSWORD,
-                authSource=query_config.AtlasConfig.AUTHDB,
-                replicaSet=query_config.AtlasConfig.REPLSET,
-                readPreference=query_config.AtlasConfig.READ_PREFERENCE,
-                collection='taxon_tree',
-                to_database='datanator-test',
-                from_database='datanator',
-                max_entries=float('inf')):
-        super().__init__(MongoDB=query_config.AtlasConfig.SERVER,
-                        username=query_config.SchemaMigration.USERNAME,
-                        password=query_config.SchemaMigration.PASSWORD,
-                        authSource=query_config.AtlasConfig.AUTHDB,
-                        replicaSet=query_config.AtlasConfig.REPLSET,
-                        readPreference=query_config.AtlasConfig.READ_PREFERENCE,
-                        db=from_database)
-        self.from_collection = self.db_obj[collection]
-        self.to_collection = self.client[to_database][collection]
+    def __init__(self, collection="taxon_tree", to_database="datanator-test",
+                 from_database="datanator", max_entries=float("inf")):
+        self.collection = collection
+        self.to_database = to_database
+        self.from_collection = motor_client_manager.client.get_database(from_database)[collection]
+        self.to_collection = motor_client_manager.client.get_database(to_database)[collection]
         self.max_entries = max_entries
 
-    def index_primary(self, _key, background=True):
+    async def index_primary(self, _key, background=True):
         """Index key (single key ascending)
 
         Args:
             _key(:obj:`str`): Name of key to be indexed.
             background(:obj:`bool`): Building index in the background.
         """
-        self.to_collection.create_index(_key, background=background)
+        yield self.to_collection.create_index(_key, background=background)
 
-    def get_rank(self, ids, names):
+    async def get_rank(self, ids, names):
         ''' Given a list of taxon ids, return
             the list of ranks. no rank = '+'
 
@@ -62,14 +46,14 @@ class MigrateTaxon(mongo_util.MongoUtil):
                 canon_anc_name.append(name)
                 continue
             query = {'tax_id': _id}
-            doc = self.from_collection.find_one(filter=query, projection=projection)
+            doc = await self.from_collection.find_one(filter=query, projection=projection)
             rank = doc.get('rank', None)
             if rank in roi:
                 canon_anc_id.append(_id)
                 canon_anc_name.append(name)
         return canon_anc_id, canon_anc_name
 
-    def process_cursors(self, skip=0): # docs, l, counter
+    async def process_cursors(self, skip=0): # docs, l, counter
         """Process mongodb cursor (for parallel processing)
         Transform data and move to new database
 
@@ -79,11 +63,16 @@ class MigrateTaxon(mongo_util.MongoUtil):
             counter(:obj:`Counter`): to keep track of processor progress across parallel processes.
         """
         bulk_write = []
+        if self.max_entries == float("inf"):
+            limit = 0
+        else:
+            limit = self.max_entries
         docs = self.from_collection.find(filter={}, projection={'_id': 0},
-                                      no_cursor_timeout=True, batch_size=1000)
-        for i, doc in enumerate(docs):
-            if i == self.max_entries:
-                break            
+                                      no_cursor_timeout=True, batch_size=1000,
+                                      limit=limit)
+        i = 0
+        async for doc in docs:
+            i += 1          
             if i != 0 and i % 100 == 0:
                 print("Processing file {}".format(i))
                 try:
@@ -96,7 +85,7 @@ class MigrateTaxon(mongo_util.MongoUtil):
             canon_anc_ids = []
             anc_ids = doc['anc_id']
             anc_names = doc['anc_name']
-            canon_anc_ids, canon_anc_names = self.get_rank(anc_ids, anc_names)
+            canon_anc_ids, canon_anc_names = await self.get_rank(anc_ids, anc_names)
             doc['canon_anc_ids'] = canon_anc_ids
             doc['canon_anc_names'] = canon_anc_names
             doc['schema_version'] = '2'
@@ -110,22 +99,8 @@ class MigrateTaxon(mongo_util.MongoUtil):
                 print("Done.")            
 
 
-class Counter(object):
-    def __init__(self, initval=0):
-        self.val = Value('i', initval)
-        self.lock = Lock()
-
-    def increment(self):
-        with self.lock:
-            self.val.value += 1
-
-    def value(self):
-        with self.lock:
-            return self.val.value
-
-
 def main():
-    src = MigrateTaxon()
+    src = MigrateTaxon(to_database="test")
     src.index_primary('tax_id')
     # cursors = src.split_cursors(1, 'datanator', 'taxon_tree')    
     # lock = Lock()
@@ -133,7 +108,9 @@ def main():
     # procs = [Process(target=src.process_cursors, args=(docs, lock, counter)) for docs in cursors]
     # for p in procs: p.start()
     # for p in procs: p.join()
-    src.process_cursors()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(src.process_cursors())
+    
 
 if __name__ == '__main__':
     main()
