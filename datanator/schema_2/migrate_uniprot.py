@@ -11,6 +11,7 @@ class MigrateUniprot:
     def __init__(self, collection="uniprot", to_database="datanator-test",
                  from_database="datanator", max_entries=float("inf")):
         self.collection = collection
+        self.from_database = from_database
         self.to_database = to_database
         self.from_collection = motor_client_manager.client.get_database(from_database)[collection]
         self.to_collection = motor_client_manager.client.get_database(to_database)[collection]
@@ -32,10 +33,14 @@ class MigrateUniprot:
             docs(:obj:`pymongo.Cursor`): documents to be processed
         """
         bulk_write = []
-        query = {"modifications": {"$exists": True}}
+        query = {"ncbi_taxonomy_id": 188937}
+        if self.max_entries == float('inf'):
+            limit = 0
+        else:
+            limit = self.max_entries
         docs = self.from_collection.find(filter=query, projection={'_id': 0},
                                         no_cursor_timeout=True, batch_size=500,
-                                        skip=skip)
+                                        skip=skip, limit=limit)
         i = 0
         async for doc in docs:
             i += 1
@@ -57,8 +62,11 @@ class MigrateUniprot:
             doc.pop('gene_name_orf', None)
             doc.pop('gene_name_oln', None)
             doc['schema_version'] = "2"
-            doc['canon_anc_names'] = []  # place holder
-            doc['canon_anc_ids'] = [] # place holder
+            tax_doc = await motor_client_manager.client.get_database(
+                "datanator-test")["taxon_tree"].find_one(filter={"tax_id": doc["ncbi_taxonomy_id"]},
+                projection={'canon_anc_ids': 1, 'canon_anc_names': 1})
+            doc['canon_anc_names'] = tax_doc["canon_anc_names"] 
+            doc['canon_anc_ids'] = tax_doc["canon_anc_ids"]  # place holder
             modifications = doc.get('modifications')
             if modifications is not None:
                 bw = []
@@ -82,7 +90,7 @@ class MigrateUniprot:
 
 def main():
     loop = asyncio.get_event_loop()
-    src = MigrateUniprot(max_entries=101)
+    src = MigrateUniprot(max_entries=101, to_database="test")
     src.index_primary('uniprot_id')
     loop.run_until_complete(src.process_cursor())
 

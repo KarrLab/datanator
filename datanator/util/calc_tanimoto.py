@@ -14,32 +14,36 @@ class CalcTanimoto(mongo_util.MongoUtil):
     '''
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
-                 verbose=False, max_entries=float('inf'), username=None,
+                 verbose=True, max_entries=float('inf'), username=None,
                  password=None, authSource='admin'):
         self.authSource = authSource
         self.username = username
         self.password = password
         self.replicaSet = replicaSet
+        self.verbose = verbose
         self.db = db
         self.MongoDB = MongoDB
-        super(CalcTanimoto, self).__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
-                                           db=db, verbose=verbose, max_entries=max_entries, username=username,
-                                           password=password, authSource=authSource)
+        self.max_entries = max_entries
+        super().__init__(cache_dirname=cache_dirname, MongoDB=MongoDB, replicaSet=replicaSet,
+                        db=db, verbose=verbose, max_entries=max_entries, username=username,
+                        password=password, authSource=authSource)
         log_handler = pybel.ob.OBMessageHandler()
         log_handler.SetOutputLevel(0) 
         pybel.ob.obErrorLog.SetOutputLevel(0)
 
     def get_tanimoto(self, mol1, mol2, str_format='inchi', rounding=3):
         '''Calculates tanimoto coefficients between
-                two molecules, mol1 and mol2
-                Args:
-                        mol1: molecule 1 in some format
-                        mol2: molecule 2 in same format as molecule 1
-                        str_format: format for molecular representation
-                                                supported formats are provided by Pybel
-                        rounding: rounding of the final results
-                Return:
-                        tani: rounded tanimoto coefficient
+        two molecules, mol1 and mol2
+
+        Args:
+                mol1: molecule 1 in some format
+                mol2: molecule 2 in same format as molecule 1
+                str_format: format for molecular representation
+                                        supported formats are provided by Pybel
+                rounding: rounding of the final results
+        
+        Return:
+                tani: rounded tanimoto coefficient
         '''
         try:           
             inchi = [mol1, mol2]
@@ -52,25 +56,25 @@ class CalcTanimoto(mongo_util.MongoUtil):
     def one_to_many(self, inchi, collection_str='metabolites_meta',
                     field='inchi', lookup='InChI_Key', num=100):
         ''' Calculate tanimoto coefficients between one
-                metabolite and the rest of the 'collection_str'
-                Args:
-                    inchi: chosen chemical compound in InChI format
-                    collection_str: collection in which comparisons are made
-                    field: field that has the chemical structure
-                    lookup: field that had been previous indexed
-                    num: max number of compounds to be returned, sorted by tanimoto
-                Returns:
-                        sorted_coeff: sorted numpy array of top num tanimoto coeff
-                        sorted_inchi: sorted top num inchi
+        metabolite and the rest of the 'collection_str'
+        Args:
+            inchi: chosen chemical compound in InChI format
+            collection_str: collection in which comparisons are made
+            field: field that has the chemical structure
+            lookup: field that had been previous indexed
+            num: max number of compounds to be returned, sorted by tanimoto
+
+        Returns:
+                sorted_coeff: sorted numpy array of top num tanimoto coeff
+                sorted_inchi: sorted top num inchi
         '''
-        _, _, col = self.con_db(collection_str)
+        col = self.db_obj[collection_str]
         coeff_np = np.empty([0])
         top_inchi = []
 
         np_size = 0
         projection = {field: 1, lookup: 1}
         cursor = col.find({}, projection=projection)
-
         count = col.count_documents({})
         total = min(count, self.max_entries)
 
