@@ -55,6 +55,8 @@ class MigrateUniprot:
                     pprint(bwe.details)
                     bulk_write = []
             uniprot_id = doc.get('uniprot_id')
+            if doc.get("ancestor_taxon_id") == [-1]:
+                continue
             doc["add_id"] = [{"name_space": "gene_name_alt", "value": doc.get("gene_name_alt")},
                              {"name_space": "gene_name_orf", "value": doc.get("gene_name_orf")},
                              {"name_space": "gene_name_oln", "value": doc.get("gene_name_oln")}]
@@ -90,9 +92,9 @@ class MigrateUniprot:
 
 def main():
     loop = asyncio.get_event_loop()
-    src = MigrateUniprot(max_entries=101, to_database="test")
+    src = MigrateUniprot()
     src.index_primary('uniprot_id')
-    loop.run_until_complete(src.process_cursor())
+    loop.run_until_complete(src.process_cursor(skip=11000))
 
 if __name__ == '__main__':
     main()
