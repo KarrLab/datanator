@@ -33,7 +33,7 @@ class MigrateUniprot:
             docs(:obj:`pymongo.Cursor`): documents to be processed
         """
         bulk_write = []
-        query = {"ncbi_taxonomy_id": 188937}
+        query = {}
         if self.max_entries == float('inf'):
             limit = 0
         else:

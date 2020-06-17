@@ -86,7 +86,7 @@ def main():
     loop = asyncio.get_event_loop()
     src = MigrateMM()
     src.index_primary('InChI_Key')
-    loop.run_until_complete(src.process_cursor(skip=1147))
+    loop.run_until_complete(src.process_cursor(skip=2095))
 
 if __name__ == '__main__':
     main()
