@@ -55,8 +55,6 @@ class MigrateUniprot:
                     pprint(bwe.details)
                     bulk_write = []
             uniprot_id = doc.get('uniprot_id')
-            if doc.get("ancestor_taxon_id") == [-1]:
-                continue
             doc["add_id"] = [{"name_space": "gene_name_alt", "value": doc.get("gene_name_alt")},
                              {"name_space": "gene_name_orf", "value": doc.get("gene_name_orf")},
                              {"name_space": "gene_name_oln", "value": doc.get("gene_name_oln")}]
@@ -67,8 +65,9 @@ class MigrateUniprot:
             tax_doc = await motor_client_manager.client.get_database(
                 "datanator-test")["taxon_tree"].find_one(filter={"tax_id": doc["ncbi_taxonomy_id"]},
                 projection={'canon_anc_ids': 1, 'canon_anc_names': 1})
-            doc['canon_anc_names'] = tax_doc["canon_anc_names"] 
-            doc['canon_anc_ids'] = tax_doc["canon_anc_ids"]  # place holder
+            if tax_doc is not None:
+                doc['canon_anc_names'] = tax_doc["canon_anc_names"] 
+                doc['canon_anc_ids'] = tax_doc["canon_anc_ids"] 
             modifications = doc.get('modifications')
             if modifications is not None:
                 bw = []
