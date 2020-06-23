@@ -4,7 +4,7 @@ import numpy as np
 from datanator_query_python.config import config
 from datanator_query_python.util import mongo_util
 
-        
+
 class ParsePsortExperimental(mongo_util.MongoUtil):
 
     def __init__(self, max_entries=float('inf'),
