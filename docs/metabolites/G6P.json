@@ -1,0 +1,105 @@
+{
+    "metabolite": "Glucose 6-Phosphate",
+    "inchikey": "NBSCHQHZLSJFNQ-DVKNGEFBSA-N",
+    "concentration": [
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.87,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "NOX",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.78,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "NOX",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.82,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "NOX",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.84,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "ATPase",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.88,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "ATPase",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.78,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "ATPase",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.59,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "REF",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.54,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "REF",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        },
+        {
+            "units": "µmol/g DCW",
+            "concentration": 0.58,
+            "species_name": "Escherichia coli str. K-12 substr. MG1655",
+            "ncbi_taxonomy_id": 511145,
+            "treatment": "REF",
+            "reference":{
+                "namespace": "doi",
+                "id": "10.1074/jbc.M109.095570"
+            }
+        }
+    ]
+}
