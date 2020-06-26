@@ -23,6 +23,5 @@ simplejson
 sqlalchemy
 sqlalchemy_utils
 tabula_py
-urllib3 < 1.25
 wc_utils
 xmltodict
