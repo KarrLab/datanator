@@ -22,7 +22,6 @@ class Demo(mongo_util.MongoUtil):
         # dic = {"uniprot_id": "P01234",
         #        "locale": "cell membrane",
         #        "array_obj": ["a", "b", "c"]}
-        self.collection.create_index("uniprot_id")
         dic = {"uniprot_id": "P01234",
             "locale": "cell membrane",
             "array_obj": ["a", "c", "d"]}
@@ -34,13 +33,15 @@ class Demo(mongo_util.MongoUtil):
 
 
 def main():
-    conf = config.Justin()
+    conf = config.SchemaMigration()
     username = conf.USERNAME
     password = conf.PASSWORD
     server = conf.SERVER
     src = Demo(server_demo=server,
                username_demo=username,
-               password_demo=password)
+               password_demo=password,
+               db_demo="test",
+               collection_str="taxon-schema")
     src.update_collection()
 
 
