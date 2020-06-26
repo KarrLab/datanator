@@ -1,5 +1,5 @@
 import unittest
-from datanator.schema_2 import migrate_uniprot
+# from datanator.schema_2 import migrate_uniprot
 
 
 class TestMU(unittest.TestCase):
