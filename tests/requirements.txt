@@ -1,4 +1,6 @@
 attrdict
 capturer
 flask_testing
+ftputil
 mock
+scipy
