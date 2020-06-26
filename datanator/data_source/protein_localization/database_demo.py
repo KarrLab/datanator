@@ -30,7 +30,7 @@ class Demo(mongo_util.MongoUtil):
         self.collection.update_one({"uniprot_id": dic["uniprot_id"]},
                                     {"$set": {"locale": dic["locale"]},
                                     "$addToSet": {"array_obj": {"$each": dic["array_obj"]}}},
-                                upsert=True)
+                                    upsert=True)
 
 
 def main():
