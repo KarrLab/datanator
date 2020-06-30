@@ -1,105 +1,24 @@
 {
-    "metabolite": "3-Phosphoglyceraldehyde",
-    "inchikey": "LXJXRIRHZLFYRP-UHFFFAOYSA-N",
-    "concentration": [
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.35,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.32,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.37,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.15,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.15,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.18,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.09,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.16,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 0.12,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        }
-    ]
+    "type":"metabolite",
+    "name":"3-Phosphoglyceraldehyde",
+    "synonyms":[
+        "GAP",
+        "glyceraldehyde 3-phosphate",
+        "2-hydroxy-3-(phosphonooxy)-Propanal",
+        "2-Hydroxy-3-oxopropyl dihydrogen phosphate",
+        "2-Hydroxy-3-oxopropyldihydrogenphosphat",
+        "3-phosphoglyceraldehyde"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
 }

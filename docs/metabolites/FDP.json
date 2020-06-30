@@ -1,105 +1,20 @@
 {
-    "metabolite": "Fluorescein diphosphate",
-    "inchikey": "IMZBXSAKACGTPH-UHFFFAOYSA-N",
-    "concentration": [
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.90,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.95,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.59,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.73,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.78,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.91,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 1.95,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 1.81,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 1.78,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        }
-    ]
+    "type":"metabolite",
+    "name":"Fluorescein diphosphate",
+    "synonyms":[
+        "FDP",
+        "3-Oxo-3H-spiro[2-benzofuran-1,9'-xanthene]-3',6'-diyl bis(phosphate)"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
 }

@@ -1,0 +1,40 @@
+{
+    "entity": {
+        "type": "protein",
+        "name": "Enterotoxin type C-2 precursor (SEC2)",
+        "synonyms": [],
+        "identifiers": [
+            {
+                "name_space": "uniprot_id",
+                "value": "P34071"
+            },
+            {
+                "name_space": "Refseq_Accession",
+                "value": null
+            },
+            {
+                "name_space": "Other_Accession",
+                "value": null
+            }
+        ]
+    },
+    "value": {
+        "experimental_localization": [
+            "Extracellular"
+        ],
+        "secondary_localizaton": []
+    },
+    "genotype": {
+        "taxon": {
+            "ncbi_taxonomy_id": 1280,
+            "name": "Staphylococcus aureus"
+        }
+    },
+    "environment": {
+        "GramStain": "Gram positive"
+    },
+    "source": {
+        "namespace": "ePSORTdb",
+        "value": "Version 3"
+    }
+}

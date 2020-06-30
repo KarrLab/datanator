@@ -1,105 +1,23 @@
 {
-    "metabolite": "6-Phosphogluconic acid",
-    "inchikey": "BIRSGZKFKXLSJQ-SQOUGZDYSA-N",
-    "concentration": [
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.31,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.08,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.60,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "NOX",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.47,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.36,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 3.44,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "ATPase",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 1.14,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.00,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        },
-        {
-            "units": "µmol/g DCW",
-            "concentration": 2.29,
-            "species_name": "Escherichia coli str. K-12 substr. MG1655",
-            "ncbi_taxonomy_id": 511145,
-            "treatment": "REF",
-            "reference":{
-                "namespace": "doi",
-                "id": "10.1074/jbc.M109.095570"
-            }
-        }
-    ]
+    "type":"metabolite",
+    "name":"6-Phosphogluconic acid",
+    "synonyms":[
+        "6PG",
+        "6-O-Phosphono-D-gluconic acid",
+        "6-phosphogluconate",
+        "6-phospho-D-gluconate",
+        "D-gluconic acid 6-phosphate"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
 }
