@@ -8,9 +8,9 @@
         "6-phospho-D-gluconate",
         "D-gluconic acid 6-phosphate"
         ],
-    "identifiers":[
-        {"namespace":"doi"},
-        {"value":"10.1074/jbc.M109.095570"}
+    "identifiers":[ 
+        {"namespace":"inchikey"},
+        {"value":"xxxxx"}
     ],
     "taxon":{
         "ncbi_taxonomy_id":562,

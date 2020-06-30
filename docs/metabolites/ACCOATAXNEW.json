@@ -1,80 +1,28 @@
 {
+    "entity": {
 
-“entity”: {
+        "type": "metabolite",
 
-    “type”: “metabolite”,
+        "name": "acetyl-CoA",
 
-    “name”: “acetyl-CoA”,
+        "identifiers": [
 
-    “identifiers”: [
+            {"namespace": "inchikey",
+            "value": "SLZBFCDCINBPY-ZSJPKINUSA-N"}
 
-        {“doi”: “SLZBFCDCINBPY-ZSJPKINUSA-N”, “value”:“10.1074/jbc.M109.0955”:“SLZBFCDCINBPY-ZSJPKINUSA-N”}
+        ]
+
+    },
+
+    "value": [
+
+        {"type": "metabolite_concentration", "value": "0.26", "units": "μmol/g DCW",
+
+        "substrate": "NOX01"},
+
+        {"type": "metabolite_concentration", "value": "0.29", "units": "μmol/g DCW",
+
+            "substrate": "NOX02"}
 
     ]
-
-},
-
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: “0.26”, “units”: “μmol/g DCW”,
-
-     “substrate”: "NOX01"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: “0.29”, “units”: “μmol/g DCW”,
-
-     “substrate”: "NOX02"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.08", “units”: “μmol/g DCW”,
-
-     “substrate”: "NOXO3"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.46", “units”: “μmol/g DCW”,
-
-     “substrate”: "ATPase01"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.29", “units”: “μmol/g DCW”,
-
-     “substrate”: "ATPase02"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.44", “units”: “μmol/g DCW”,
-
-     “substrate”: "ATPase03"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.42", “units”: “μmol/g DCW”,
-
-     “substrate”: "REF01"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.65", “units”: “μmol/g DCW”,
-
-     “substrate”: "REF02"}
-
-],
-“value”: [
-
-    {“type”: “metabolite_concentration”, “value”: "0.08", “units”: “μmol/g DCW”,
-
-     “substrate”: "REF03"}
-
-],
 }

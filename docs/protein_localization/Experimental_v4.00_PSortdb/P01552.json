@@ -27,7 +27,8 @@
     "genotype": {
         "taxon": {
             "ncbi_taxonomy_id": 1280,
-            "name": "Staphylococcus aureus"
+            "name": "Staphylococcus aureus",
+            "canon_anctors": []
         }
     },
     "environment": {
