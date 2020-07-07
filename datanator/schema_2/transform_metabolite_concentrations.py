@@ -10,13 +10,15 @@ class TMC(mongo_util.MongoUtil):
                  des_col=None,
                  username=None,
                  password=None,
-                 max_entries=float('inf')):
+                 max_entries=float('inf'),
+                 verbose=True):
         super().__init__(MongoDB=MongoDB,
                          db=db,
                          username=username,
                          password=password)
         self.max_entries = max_entries
         self.des = self.db_obj[des_col]
+        self.verbose = verbose
 
     def process_docs(self, skip=0):
         query = {}
@@ -25,10 +27,11 @@ class TMC(mongo_util.MongoUtil):
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
+            if self.verbose and i % 10 == 0:
+                print("Processing doc {}...".format(i + skip))
             sets = self.build_conc_observation(doc)
             for _set in sets:
                 if _set[0] != {}:
-                    print(_set[0])
                     query = {"$and": [{"identifier": {'namespace': 'inchikey', 'value': doc["inchikey"]}},
                                       {"source": {"$elemMatch": _set[0]["source"][0]}}]}
                     self.des.update_one(query,
@@ -90,17 +93,23 @@ class TMC(mongo_util.MongoUtil):
             else: # has env information
                 genotype["growthPhase"] = conc.get("growth_status")
                 environment["media"] = conc.get("growth_media")
-                environment["growthSystem"] = conc.get("growth_system")
-                error = conc.get("error")
+                environment["growthSystem"] = conc.get("growth_system", conc.get("nutrient"))
+                error = conc.get("error", 0)
 
             unit = conc.get('unit')
-            value = conc.get("concentration")
+            value = conc.get("concentration", 0)
+            if value is None:  # condition where {"concentration": null}
+                value = 0
             
             #unit conversion
             if unit == "M":
                 unit = unit
                 value = float(value)
-                error = float(error)                
+                error = float(error)
+            elif unit == "µmol * gCDW-1":
+                unit = unit
+                value = float(value)
+                error = float(error)                                
             else:
                 unit = "M"
                 value = float(value) / 1000
@@ -141,5 +150,4 @@ class TMC(mongo_util.MongoUtil):
                         "source": source,
                         "schema_version": schema_version,
                         "identifier": identifier}            
-
             yield (conc_obs, aff_obs)

@@ -33,8 +33,9 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                                                  "description": entity["description"],
                                                  "schema_version": "2.0"},
                                         "$addToSet": {"identifiers": {"$each": entity["identifiers"]},
-                                                        "synonyms": {"$each": entity["synonyms"]},
-                                                        "related": {"$each": entity["related"]}}},
+                                                      "synonyms": {"$each": entity["synonyms"]},
+                                                      "related": {"$each": entity["related"]},
+                                                      "similarity": {"$each": entity["similarity"]}}},
                                         upsert=True)
 
             if ob_y != {}:
@@ -59,8 +60,6 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                                          "$addToSet": {"values": {"$each": ob_e["values"]},
                                                        "source": {"$each": ob_e["source"]}}},
                                          upsert=True)
-
-
 
     def build_entity(self, obj):
         """Build entity object from obj.
@@ -242,3 +241,4 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                     "source": [{"namespace": "ECMDB", "value": obj.get("m2m_id"), "level": "secondary"}],
                     "schema_version": "2.0"}
         return ob_y, ob_e
+        
