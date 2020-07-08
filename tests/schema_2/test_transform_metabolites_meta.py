@@ -648,7 +648,7 @@ class TestTMM(unittest.TestCase):
                     "ymdb_id": "YMDB00071"
                 }
         cls.src = transform_metabolites_meta.TransformMetabolitesMeta(MongoDB=conf.SERVER,
-                                                                      db="datanator-demo",
+                                                                      db="test",
                                                                       username=conf.USERNAME,
                                                                       password=conf.PASSWORD,
                                                                       max_entries=20)

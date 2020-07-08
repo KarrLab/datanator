@@ -10,7 +10,7 @@ class TestTMC(unittest.TestCase):
     def setUpClass(cls):
         conf = config.DatanatorTest()
         cls.src = transform_metabolite_concentrations.TMC(MongoDB=conf.SERVER,
-                                                          db="datanator-demo",
+                                                          db="test",
                                                           username=conf.USERNAME,
                                                           password=conf.PASSWORD,
                                                           max_entries=20,
