@@ -23,9 +23,10 @@ class TestTransform(unittest.TestCase):
         pass
         # cls.src.db_obj.drop_collection(cls.des_col)
 
-    @unittest.skip("for now")
+    # @unittest.skip("for now")
     def test_parse_docs(self):
-        self.src.process_docs("uniprot")
+        self.src.process_docs("rna_halflife_new",
+                              db="datanator")
     
     @unittest.skip("passed")
     def test_build_uniprot_entity(self):
@@ -510,6 +511,7 @@ class TestTransform(unittest.TestCase):
         self.assertEqual(self.src.build_uniprot_observation({}), {})
         self.assertEqual(self.src.build_uniprot_observation(obj)["entity"]["type"], "protein")
 
+    @unittest.skip("passed")
     def test_build_rna_observation(self):
         obj = {
             "uniprot_id": "Q8TUR2",
@@ -781,3 +783,4 @@ class TestTransform(unittest.TestCase):
         result = self.src.build_rna_observation(obj)        
         self.assertEqual(len(result), 23)
         self.assertEqual(result[2]["environment"]["replicate"], "a1")
+        self.assertEqual(result[3]["environment"]["replicate"], "a3")

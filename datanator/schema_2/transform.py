@@ -24,16 +24,18 @@ class Transform(mongo_util.MongoUtil):
         self.verbose = verbose
 
     def process_docs(self,
-                     col, 
+                     col,
+                     db="datanator-test", 
                      skip=0):
         """Processing documents and transform.
 
         Args:
             col(:obj:`str`): Name of the source collection.
+            db(:obj:`Obj`): Name of database.
         """
         query = {}
         projection = {"_id": 0}
-        docs = self.client["datanator-test"][col].find(filter=query, projection=projection)
+        docs = self.client[db][col].find(filter=query, projection=projection)
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
@@ -48,6 +50,17 @@ class Transform(mongo_util.MongoUtil):
                 if obs != {}:
                     self.update_observation(obs,
                                             obs["source"][0])
+            elif col == "rna_halflife_new":
+                obs = self.build_rna_observation(doc)
+                for ob in obs:
+                    _filter = {"$and": [{"identifier": ob["identifier"]},
+                                        {"source": {"$elemMatch": ob["source"][0]}},
+                                        {"environment": ob["environment"]}]}
+                    print(ob)
+                    self.update_observation(ob,
+                                            ob["source"][0],
+                                            db=self.db,
+                                            query=_filter)
 
 
     def build_uniprot_entity(self, obj):
@@ -205,7 +218,7 @@ class Transform(mongo_util.MongoUtil):
                     if key == "unit":
                         value["units"] = val
                     elif key == "halflife":
-                        value["value"] = val
+                        value["value"] = float(val)
                     elif key == "ncbi_taxonomy_id": # protein entity includes taxon info
                         continue
                     elif key == "species_name":
@@ -232,7 +245,7 @@ class Transform(mongo_util.MongoUtil):
                                 entity["identifiers"].append({"namespace": key,
                                                             "value": _id})                            
                     elif key == "variation_coefficient":
-                        value["uncertainty"] = val
+                        value["uncertainty"] = float(val)
                     elif key == "growth_medium":
                         environment["media"] = val
                     elif key == "ordered_locus_name":
@@ -241,9 +254,9 @@ class Transform(mongo_util.MongoUtil):
                     elif key == "doubling_time":
                         environment[key] = val
                     elif key == "r_squared":
-                        value["uncertainty"] = val
+                        value["uncertainty"] = float(val)
                     elif key == "standard_error":
-                        value["uncertainty"] = val
+                        value["uncertainty"] = float(val)
                     elif key == "transcript_size":
                         entity["structures"].append({"format": key,
                                                     "value": str(val)})
@@ -260,7 +273,7 @@ class Transform(mongo_util.MongoUtil):
                         entity["structures"].append({"format": key,
                                                     "value": str(val)})
                     elif key == "std":
-                        value["uncertainty"] = val
+                        value["uncertainty"] = float(val)
                     elif key == "ar_cog":
                         entity["identifiers"].append({"namespace": key,
                                                     "value": val})
@@ -292,22 +305,13 @@ class Transform(mongo_util.MongoUtil):
                     genotype = {}
                     for k, v in o.items():
                         if re.search(pattern, k):
-                            value["value"] = v * 3600
+                            value["value"] = v * 3600.0
                             genotype["cellLine"] = k
                             value["units"] = "s"
                         elif k == "note":
                             environment["condition"] = v
                         elif k == "biological_replicates":
-                            environment["replicate"] = v
-                    # print({"entity": entity,
-                    #         "genotype": genotype,
-                    #         "values": [value],
-                    #         "environment": environment,
-                    #         "source": source,
-                    #         "identifier": {"namespace": "uniprot_id",
-                    #                         "value": obj.get("uniprot_id")},
-                    #         "schema_version": schema_version,
-                    #         "related": related})       
+                            environment["replicate"] = v       
                     result.append({"entity": entity,
                                 "genotype": genotype,
                                 "values": [value],
