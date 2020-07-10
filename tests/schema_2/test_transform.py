@@ -23,9 +23,11 @@ class TestTransform(unittest.TestCase):
         pass
         # cls.src.db_obj.drop_collection(cls.des_col)
 
+    @unittest.skip("for now")
     def test_parse_docs(self):
         self.src.process_docs("uniprot")
     
+    @unittest.skip("passed")
     def test_build_uniprot_entity(self):
         obj = {
                 "uniprot_id": "Q75IW1",
@@ -266,6 +268,7 @@ class TestTransform(unittest.TestCase):
             }
         result = self.src.build_uniprot_entity(obj)
 
+    @unittest.skip("passed")
     def test_build_uniprot_obs(self):
         obj = { 
                 "uniprot_id": "Q75IW1",
@@ -506,3 +509,275 @@ class TestTransform(unittest.TestCase):
             }
         self.assertEqual(self.src.build_uniprot_observation({}), {})
         self.assertEqual(self.src.build_uniprot_observation(obj)["entity"]["type"], "protein")
+
+    def test_build_rna_observation(self):
+        obj = {
+            "uniprot_id": "Q8TUR2",
+            "halflives": [
+                {
+                    "halflife": 4041.87006,
+                    "std": 523.16592,
+                    "std_over_avg": 0.1294366004,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1186/s12864-016-3219-8"
+                        }
+                    ],
+                    "growth_medium": "TMA",
+                    "ordered_locus_name": "MA0001",
+                    "ar_cog": "arCOG00468",
+                    "cog_class": "L",
+                    "cog": "COG1474",
+                    "species": "Methanosarcina acetivorans",
+                    "ncbi_taxonomy_id": 188937
+                },
+                {
+                    "systematic_name": "YJL194W",
+                    "halflife": 1200,
+                    "unit": "s",
+                    "species": "Saccharomyces cerevisiae W303",
+                    "ncbi_taxonomy_id": 580240,
+                    "r_squared": 0.98,
+                    "reference": [
+                        {
+                            "doi": "10.1091/mbc.e11-01-0028"
+                        }
+                    ]
+                },
+                {
+                    "accession_id": "NM_031449 ",
+                    "probeset_id": 3000010,
+                    "values": [
+                        {
+                            "gm07029": 6.200316296854718,
+                            "biological_replicates": "a1",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+
+                        {
+                            "gm07029": 5.817285876322001,
+                            "biological_replicates": "a3",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm10835": 4.167696688892588,
+                            "biological_replicates": "a1",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm10835": 4.454436766714646,
+                            "biological_replicates": "a2",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm10835": 4.0912138205438024,
+                            "biological_replicates": "a3",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12813": 7.853596564318888,
+                            "biological_replicates": "a1",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12813": 8.231318451169917,
+                            "technical_replicates": "a1",
+                            "note": "separate RNA aliquots from the same cell culture",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12813": 7.958703606479381,
+                            "biological_replicates": "a2",
+                            "note": "independent cell cultures for the same cell line",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12813": 7.798393420876806,
+                            "technical_replicates": "a2",
+                            "note": "separate RNA aliquots from the same cell culture",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12813": 7.167623222693315,
+                            "technical_replicates": "a3",
+                            "note": "separate RNA aliquots from the same cell culture",
+                            "unit": "hr"
+                        },
+                        {
+                            "gm07019": 5.640622176,
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12812": 6.162088116,
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12814": 6.042021467,
+                            "unit": "hr"
+                        },
+                        {
+                            "gm12815": 6.758158592,
+                            "unit": "hr"
+                        }
+                    ],
+                    "anova_3": 3.923e-7,
+                    "anova_7": 0.00000515675001947275,
+                    "false_discovery_rate_3": 0.0004363744,
+                    "false_discovery_rate_7": 0.00154363733333333,
+                    "species": "Homo sapiens",
+                    "ncbi_taxonomy_id": 9606,
+                    "reference": [
+                        {
+                            "doi": "10.1038/srep01318"
+                        }
+                    ],
+                    "gene_symbol": "ZMIZ2 "
+                },
+                {
+                    "chromosome": "chr10",
+                    "systematic_name": "YJL194W",
+                    "gene_name": "CDC6",
+                    "type": "coding_dna_sequences",
+                    "halflife": 1593.6956414259646,
+                    "unit": "s",
+                    "species": "Saccharomyces cerevisiae S288C",
+                    "ncbi_taxonomy_id": 559292,
+                    "reference": [
+                        {
+                            "doi": "10.1016/j.cell.2013.12.026"
+                        }
+                    ]
+                },
+                {
+                    "halflife": 353.6181058470822,
+                    "r_sqaured": 0.9974211229873777,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1093/nar/gks1019",
+                            "pubmed_id": "23125364"
+                        }
+                    ],
+                    "growth_medium": "Middlebrook 7H9 with the ADC supplement (Difco) and 0.05% Tween80, at 37 degree celcius.",
+                    "ordered_locus_name": "MSMEG_1867",
+                    "species": "Mycolicibacterium smegmatis MC2 155",
+                    "ncbi_taxonomy_id": 246196
+                },
+                {
+                    "halflife": 489.00036341439363,
+                    "variation_coefficient": 18.2337631285916,
+                    "species": "Escherichia coli str. K-12 substr. MG1655",
+                    "ncbi_taxonomy_id": 511145,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1093/nar/gkt1150"
+                        }
+                    ],
+                    "growth_medium": "M9 minimal medium supplemented with glucose",
+                    "ordered_locus_name": "b0060",
+                    "doubling_time": {
+                        "value": 6.9,
+                        "unit": "h"
+                    }
+                },
+                {
+                    "transcript_size": 1938,
+                    "cds_size": 918,
+                    "intron_size": 6906,
+                    "genomic_size": 8844,
+                    "intron_count": 8,
+                    "halflife": 21797.96271,
+                    "r_sqaured": 0.988426426,
+                    "standard_error": 0.019283288,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1101/gr.131037.111",
+                            "pubmed_id": "22406755"
+                        }
+                    ],
+                    "accession_id": [
+                        "AK088066",
+                        "AK133695",
+                        "BC003426",
+                        "NM_145371"
+                    ],
+                    "ncbi_taxonomy_id": 10090,
+                    "species": "Mus musculus"
+                },
+                {
+                    "halflife": 113.13485976,
+                    "expression_reads_per_kb_per_mb": 19.37889675,
+                    "quantification_method": "Illumina GA-II",
+                    "transcriptional_start_sites": 160034,
+                    "transcriptional_end_sites": 162771,
+                    "unit": "s",
+                    "operon": [
+                        "TU_160034-162771_F"
+                    ],
+                    "reference": [
+                        {
+                            "doi": "10.1186/gb-2012-13-4-r30",
+                            "pubmed_id": "22537947"
+                        }
+                    ],
+                    "growth_medium": "Luria-Bertani (LB) broth (500 ml) at 30 degree celcius, 250 rpm.",
+                    "ordered_locus_name": "BCE_0159",
+                    "gene_start": 160105,
+                    "gene_end": 162642,
+                    "strand": "F",
+                    "cog": "R",
+                    "species": "Bacillus cereus ATCC 10987",
+                    "ncbi_taxonomy_id": 222523
+                },
+                {
+                    "halflife": 4041.87006,
+                    "std": 523.16592,
+                    "std_over_avg": 0.1294366004,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1186/s12864-016-3219-8"
+                        }
+                    ],
+                    "growth_medium": "TMA",
+                    "ordered_locus_name": "MA0001",
+                    "ar_cog": "arCOG00468",
+                    "cog_class": "L",
+                    "cog": "COG1474",
+                    "species": "Methanosarcina acetivorans",
+                    "ncbi_taxonomy_id": 188937
+                },
+                {
+                    "halflife": 1436.4,
+                    "species": "Lactococcus lactis subsp. lactis Il1403",
+                    "ncbi_taxonomy_id": 272623,
+                    "unit": "s",
+                    "reference": [
+                        {
+                            "doi": "10.1371/journal.pone.0059059"
+                        }
+                    ],
+                    "doubling_time": {
+                        "value": 6.301338005090412,
+                        "unit": "h"
+                    }
+                }
+            ],
+            "ko_number": "K10725",
+            "protein_names": [
+                "ORC1-type DNA replication protein 1",
+                "ORC1-type DNA replication protein 1"
+            ]
+        }
+        result = self.src.build_rna_observation(obj)        
+        self.assertEqual(len(result), 23)
+        self.assertEqual(result[2]["environment"]["replicate"], "a1")

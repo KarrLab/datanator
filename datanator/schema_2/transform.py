@@ -2,7 +2,7 @@ from datanator_query_python.util import mongo_util
 from datanator_query_python.config import config
 import copy
 import numpy as np
-from numpy.lib.arraysetops import isin
+import re
 
 
 class Transform(mongo_util.MongoUtil):
@@ -180,11 +180,13 @@ class Transform(mongo_util.MongoUtil):
             (:obj:`list` of :obj:`Obj`)
         """
         result = []
+        pattern = r"^gm[\d]+"
         schema_version = "2.0"
         for life in obj.get("halflives"):
             entity = {"schema_version": schema_version}
-            value = {}
+            value = {"type": "rna_halflife"}
             environment = {}
+            genotype = {}
             source = []            
             related = []
             related.append({"namespace": "uniprot_id",
@@ -195,45 +197,128 @@ class Transform(mongo_util.MongoUtil):
             entity["name"] = obj.get("protein_names")[0]
             entity["identifiers"] = [{"namespace": "uniprot_id",
                                       "value": obj.get("uniprot_id")}]
-            for key, val in life.items():
-                if key == "unit":
-                    value[key] = val
-                elif key == "halflife":
-                    value["value"] = val
-                elif key == "ncbi_taxonomy_id": # protein entity includes taxon info
-                    continue
-                elif key == "species_name":
-                    continue
-                elif key == "reference":
-                    for ref in val:
-                        source.append({"namespace": list(ref.keys())[0],
-                                       "value": list(ref.values())[0]})
-                elif key == "gene_name":
-                    related.append({"namespace": key,
-                                    "value": val})
-                elif key == "gene_symbol":
-                    related.append({"namespace": key,
-                                    "value": val})
-                elif key == "systematic_name": 
-                    entity["identifiers"].append({"namespace": key,
-                                                  "value": val})
-                elif key == "accession_id": 
-                    if isinstance(val, str):
+            values = []
+            if life.get("transcript_size") is not None:
+                entity["structures"] = []
+            if life.get("values") is None:
+                for key, val in life.items():
+                    if key == "unit":
+                        value["units"] = val
+                    elif key == "halflife":
+                        value["value"] = val
+                    elif key == "ncbi_taxonomy_id": # protein entity includes taxon info
+                        continue
+                    elif key == "species_name":
+                        continue
+                    elif key == "reference":
+                        for ref in val:
+                            source.append({"namespace": list(ref.keys())[0],
+                                        "value": list(ref.values())[0]})
+                    elif key == "gene_name":
+                        related.append({"namespace": key,
+                                        "value": val})
+                    elif key == "gene_symbol":
+                        related.append({"namespace": key,
+                                        "value": val})
+                    elif key == "systematic_name": 
                         entity["identifiers"].append({"namespace": key,
                                                     "value": val})
-                    elif isinstance(val, list):
-                        for _id in val:
+                    elif key == "accession_id": 
+                        if isinstance(val, str):
                             entity["identifiers"].append({"namespace": key,
-                                                          "value": _id})                            
-                elif key == "variation_coefficient":
-                    value["uncertainty"] = val
-                elif key == "growth_medium":
-                    environment["media"] = val
-                elif key == "ordered_locus_name":
-                    entity["identifiers"].append({"namespace": key,
-                                                  "value": val})
-                elif key == "doubling_time":
-                    environment[key] = val                    
+                                                        "value": val})
+                        elif isinstance(val, list):
+                            for _id in val:
+                                entity["identifiers"].append({"namespace": key,
+                                                            "value": _id})                            
+                    elif key == "variation_coefficient":
+                        value["uncertainty"] = val
+                    elif key == "growth_medium":
+                        environment["media"] = val
+                    elif key == "ordered_locus_name":
+                        entity["identifiers"].append({"namespace": key,
+                                                    "value": val})
+                    elif key == "doubling_time":
+                        environment[key] = val
+                    elif key == "r_squared":
+                        value["uncertainty"] = val
+                    elif key == "standard_error":
+                        value["uncertainty"] = val
+                    elif key == "transcript_size":
+                        entity["structures"].append({"format": key,
+                                                    "value": str(val)})
+                    elif key == "cds_size":
+                        entity["structures"].append({"format": key,
+                                                    "value": str(val)})
+                    elif key == "intron_size":
+                        entity["structures"].append({"format": key,
+                                                    "value": str(val)})
+                    elif key == "genomic_size":
+                        entity["structures"].append({"format": key,
+                                                    "value": str(val)})
+                    elif key == "intron_count":
+                        entity["structures"].append({"format": key,
+                                                    "value": str(val)})
+                    elif key == "std":
+                        value["uncertainty"] = val
+                    elif key == "ar_cog":
+                        entity["identifiers"].append({"namespace": key,
+                                                    "value": val})
+                    elif key == "cog":
+                        entity["identifiers"].append({"namespace": key,
+                                                    "value": val})
+                    elif key == "quantification_method":
+                        environment["condition"] = "Quantified via {}.".format(val)
+                values.append(value)
+                result.append({"entity": entity,
+                            "genotype": genotype,
+                            "values": values,
+                            "environment": environment,
+                            "source": source,
+                            "identifier": {"namespace": "uniprot_id",
+                                            "value": obj.get("uniprot_id")},
+                            "schema_version": schema_version,
+                            "related": related})
+            else:  #gmxxxxx
+                val = life.get("values")  
+                entity["identifiers"].append({"namespace": "accession_id",
+                                              "value": life.get("accession_id")[:-1]})
+                related.append({"namespace": "gene_symbol",
+                                "value": life.get("gene_symbol")})
+                source = life.get("reference")                                          
+                for o in val:
+                    value = {}
+                    environment = {}
+                    genotype = {}
+                    for k, v in o.items():
+                        if re.search(pattern, k):
+                            value["value"] = v * 3600
+                            genotype["cellLine"] = k
+                            value["units"] = "s"
+                        elif k == "note":
+                            environment["condition"] = v
+                        elif k == "biological_replicates":
+                            environment["replicate"] = v
+                    # print({"entity": entity,
+                    #         "genotype": genotype,
+                    #         "values": [value],
+                    #         "environment": environment,
+                    #         "source": source,
+                    #         "identifier": {"namespace": "uniprot_id",
+                    #                         "value": obj.get("uniprot_id")},
+                    #         "schema_version": schema_version,
+                    #         "related": related})       
+                    result.append({"entity": entity,
+                                "genotype": genotype,
+                                "values": [value],
+                                "environment": environment,
+                                "source": source,
+                                "identifier": {"namespace": "uniprot_id",
+                                                "value": obj.get("uniprot_id")},
+                                "schema_version": schema_version,
+                                "related": related}) 
+        return result                   
+
 
 def main():
     pass
