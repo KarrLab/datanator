@@ -69,7 +69,8 @@ class TMC(mongo_util.MongoUtil):
                       "value": obj["inchikey"]}
         entity = {"name": obj["metabolite"],
                   "type": "metabolite",
-                  "identifiers": [identifier]}
+                  "identifiers": [identifier],
+                  "schema_version": "2.0"}
         schema_version = "2.0"        
         for conc in obj["concentrations"]:
             genotype = {}

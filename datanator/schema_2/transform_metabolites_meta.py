@@ -35,7 +35,8 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                                         "$addToSet": {"identifiers": {"$each": entity["identifiers"]},
                                                       "synonyms": {"$each": entity["synonyms"]},
                                                       "related": {"$each": entity["related"]},
-                                                      "similarity": {"$each": entity["similarity"]}}},
+                                                      "similarity": {"$each": entity["similarity"]},
+                                                      "structures": {"$each": entity["structures"]}}},
                                         upsert=True)
 
             if ob_y != {}:
@@ -81,6 +82,7 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
             }        
         """
         entity = {}
+        entity["structures"] = []
         entity["type"] = "metabolite"
         entity["name"] = obj.get("name")
         entity["synonyms"] = obj.get("synonyms", [])
@@ -99,7 +101,7 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                                     "value": obj.get("chemspider_id")})
         entity["identifiers"].append({"namespace": "hmdb_id",
                                     "value": obj.get("hmdb_id")})
-        entity["identifiers"].append({"namespace": "inchi",
+        entity["structures"].append({"format": "inchi",
                                     "value": obj.get("inchi")})
         entity["identifiers"].append({"namespace": "kegg_id",
                                     "value": obj.get("kegg_id")})
@@ -107,7 +109,7 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
                                     "value": obj.get("m2m_id")})
         entity["identifiers"].append({"namespace": "pubchem_compound_id",
                                     "value": obj.get("pubchem_compound_id")})
-        entity["identifiers"].append({"namespace": "smiles",
+        entity["structures"].append({"format": "smiles",
                                     "value": obj.get("smiles")})
         entity["identifiers"].append({"namespace": "ymdb_id",
                                     "value": obj.get("ymdb_id")})
@@ -164,8 +166,9 @@ class TransformMetabolitesMeta(mongo_util.MongoUtil):
         cell_locs = obj.get("cellular_locations", [])
         entity = {"type": "metabolite",
                   "name": obj.get("name"),
-                    "identifiers": [{"namespace": "inchikey",
-                                    "value": obj.get("InChI_Key")}]}
+                  "identifiers": [{"namespace": "inchikey",
+                                   "value": obj.get("InChI_Key")}],
+                  "schema_version": "2.0"}
         values_e = []
         values_y = []
         if cell_locs != [] and cell_locs is not None: 

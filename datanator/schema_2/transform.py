@@ -78,43 +78,8 @@ class Transform(mongo_util.MongoUtil):
                             "canon_ancestors": canon_ancestors}
         structures = [{"format": "canonical_sequence",
                        "value": obj.get("canonical_sequence")}]
-        mod = obj.get("modifications")            
+        mod = self.client["datanator-test"]["protein_modifications"].find({"uniprot_id": obj.get("uniprot_id")})            
         if mod is not None:
-            if isinstance(mod, dict):
-                if mod.get("concrete") is True and mod.get("monomeric_form_issues") == np.NaN and mod.get("pro_issues") == np.NaN:
-                    identifiers.append({"namespace": "pro_id",
-                                        "value": mod.get("pro_id")})
-                    structures.append({"format": "processed_sequence_iubmb",
-                                       "value": mod.get("processed_sequence_iubmb"),
-                                       "molecular_weight": mod.get("processed_molecular_weight"),
-                                       "charge": mod.get("processed_charge"),
-                                       "formula": mod.get("processed_formula"),
-                                       "source": [{"namespace": "pro_id",
-                                                   "value": mod.get("pro_id"),
-                                                   "level": "secondary"},
-                                                  {"namespace": "doi",
-                                                   "value": mod.get("reference")["doi"],
-                                                   "level": "primary"}]})
-                    structures.append({"format": "modified_sequence_abbreviated_bpforms",
-                                       "value": mod.get("modified_sequence_abbreviated_bpforms"),
-                                       "molecular_weight": mod.get("modified_molecular_weight"),
-                                       "charge": mod.get("modified_charge"),
-                                       "formula": mod.get("modified_formula"),
-                                       "modification": {
-                                           "description": mod.get("modifications"),
-                                           "formula": mod.get("modifications_formula"),
-                                           "weight": mod.get("modifications_molecular_weight"),
-                                           "charge": mod.get("modifications_charge")
-                                        },
-                                       "source": [{"namespace": "pro_id",
-                                                   "value": mod.get("pro_id"),
-                                                   "level": "secondary"},
-                                                  {"namespace": "doi",
-                                                   "value": mod.get("reference")["doi"],
-                                                   "level": "primary"}]})
-                    structures.append({"format": "modified_sequence_bpforms",
-                                       "value": mod.get("modified_sequence_bpforms")})
-            elif isinstance(mod, list):
                 for o in mod:
                     if o.get("concrete") and np.isnan(o.get("monomeric_form_issues")) and np.isnan(o.get("pro_issues")):
                         identifiers.append({"namespace": "pro_id",
@@ -205,6 +170,70 @@ class Transform(mongo_util.MongoUtil):
                                    "value": obj.get("uniprot_id")},
                     "schema_version": schema_version}
 
+    def build_rna_observation(self, obj):
+        """Build RNA observation object from rna_haflife_new collection.
+
+        Args:
+            obj(:obj:`Obj`): object to be transformed.
+
+        Return:
+            (:obj:`list` of :obj:`Obj`)
+        """
+        result = []
+        schema_version = "2.0"
+        for life in obj.get("halflives"):
+            entity = {"schema_version": schema_version}
+            value = {}
+            environment = {}
+            source = []            
+            related = []
+            related.append({"namespace": "uniprot_id",
+                            "value": obj.get("uniprot_id")})
+            related.append({"namespace": "kegg_orthology_id",
+                            "value": obj.get("ko_number")})
+            entity["type"] = "RNA"
+            entity["name"] = obj.get("protein_names")[0]
+            entity["identifiers"] = [{"namespace": "uniprot_id",
+                                      "value": obj.get("uniprot_id")}]
+            for key, val in life.items():
+                if key == "unit":
+                    value[key] = val
+                elif key == "halflife":
+                    value["value"] = val
+                elif key == "ncbi_taxonomy_id": # protein entity includes taxon info
+                    continue
+                elif key == "species_name":
+                    continue
+                elif key == "reference":
+                    for ref in val:
+                        source.append({"namespace": list(ref.keys())[0],
+                                       "value": list(ref.values())[0]})
+                elif key == "gene_name":
+                    related.append({"namespace": key,
+                                    "value": val})
+                elif key == "gene_symbol":
+                    related.append({"namespace": key,
+                                    "value": val})
+                elif key == "systematic_name": 
+                    entity["identifiers"].append({"namespace": key,
+                                                  "value": val})
+                elif key == "accession_id": 
+                    if isinstance(val, str):
+                        entity["identifiers"].append({"namespace": key,
+                                                    "value": val})
+                    elif isinstance(val, list):
+                        for _id in val:
+                            entity["identifiers"].append({"namespace": key,
+                                                          "value": _id})                            
+                elif key == "variation_coefficient":
+                    value["uncertainty"] = val
+                elif key == "growth_medium":
+                    environment["media"] = val
+                elif key == "ordered_locus_name":
+                    entity["identifiers"].append({"namespace": key,
+                                                  "value": val})
+                elif key == "doubling_time":
+                    environment[key] = val                    
 
 def main():
     pass
