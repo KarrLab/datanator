@@ -56,7 +56,6 @@ class Transform(mongo_util.MongoUtil):
                     _filter = {"$and": [{"identifier": ob["identifier"]},
                                         {"source": {"$elemMatch": ob["source"][0]}},
                                         {"environment": ob["environment"]}]}
-                    print(ob)
                     self.update_observation(ob,
                                             ob["source"][0],
                                             db=self.db,
@@ -322,6 +321,35 @@ class Transform(mongo_util.MongoUtil):
                                 "schema_version": schema_version,
                                 "related": related}) 
         return result                   
+
+    def build_rna_modification(self, obj):
+        """build entity objects from rna_modification collection
+
+        Args:
+            obj (:obj:`Obj`): Object from which entity will be built.
+
+        Return:
+            (:obj:`Obj`)
+        """
+        entity = {"type": "RNA", "schema_version": "2.0",
+                  "name": obj["definition"], "related": [],
+                  "identifiers": []}
+        entity["related"].append({"namespace": "amino_acid",
+                                  "value": obj["amino_acid"]})
+        entity["related"].append({"namespace": "aa_code",
+                                  "value": obj["aa_code"]})                    
+        entity["related"].append({"namespace": "aa_name",
+                                  "value": obj["aa_name"]})
+        entity["related"].append({"namespace": "kegg_orthology_id",
+                                  "value": obj["kegg_orthology_id"]})                                  
+        entity["related"].append({"namespace": "kegg_orthology_name",
+                                  "value": obj["kegg_orthology_name"]})
+        entity["related"].append({"namespace": "kegg_pathway_id",
+                                  "value": obj["kegg_pathway_id"]})
+        entity["related"].append({"namespace": "kegg_pathway_name",
+                                  "value": obj["kegg_pathway_name"]})
+        entity["identifiers"].append({"namespace": "amino_acid",
+                                      "value": obj["amino_acid"]})
 
 
 def main():
