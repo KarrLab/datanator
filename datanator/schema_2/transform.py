@@ -60,6 +60,19 @@ class Transform(mongo_util.MongoUtil):
                                             ob["source"][0],
                                             db=self.db,
                                             query=_filter)
+            elif col == "rna_modification":
+                if doc.get("amino_acid") is None:
+                    continue
+                entity = self.build_rna_modification_entity(doc)
+                obs = self.build_rna_modification_observation(doc)
+                self.update_entity(entity,
+                                   entity["identifiers"][0])
+                for ob in obs:
+                    query = {"$and": [{"identifier": ob["identifier"]},
+                                       {"genotype.taxon.ncbi_taxonomy_id": ob["genotype"]["taxon"]["ncbi_taxonomy_id"]}]}
+                    self.update_observation(ob,
+                                            ob["source"][0],
+                                            query=query)  
 
 
     def build_uniprot_entity(self, obj):
@@ -322,7 +335,7 @@ class Transform(mongo_util.MongoUtil):
                                 "related": related}) 
         return result                   
 
-    def build_rna_modification(self, obj):
+    def build_rna_modification_entity(self, obj):
         """build entity objects from rna_modification collection
 
         Args:
@@ -343,13 +356,81 @@ class Transform(mongo_util.MongoUtil):
         entity["related"].append({"namespace": "kegg_orthology_id",
                                   "value": obj["kegg_orthology_id"]})                                  
         entity["related"].append({"namespace": "kegg_orthology_name",
-                                  "value": obj["kegg_orthology_name"]})
+                                  "value": obj["kegg_gene_name"]})
         entity["related"].append({"namespace": "kegg_pathway_id",
                                   "value": obj["kegg_pathway_id"]})
         entity["related"].append({"namespace": "kegg_pathway_name",
                                   "value": obj["kegg_pathway_name"]})
         entity["identifiers"].append({"namespace": "amino_acid",
                                       "value": obj["amino_acid"]})
+        return entity
+
+    def build_rna_modification_observation(self, obj):
+        """Build observation objects from rna_modification collection.
+
+        Args:
+            obj (:obj:`Obj`): object from which observation objects will be built.
+
+        Return:
+            (:obj:`list` of :obj:`Obj`)
+        """
+        result = []        
+        entity = self.build_rna_modification_entity(obj)
+        for mod in obj["modifications"]:
+            genotype = {}
+            values = []
+            entity["stuctures"] = []
+            identifier = {"namespace": "sequence_bpforms",
+                          "value": mod["sequence_bpforms"]}
+            if mod["ncbi_taxonomy_id"] is None:
+                genotype["taxon"] = self.build_taxon_object(mod["organism"], _format="tax_name")
+            else:    
+                genotype["taxon"] = self.build_taxon_object(mod["ncbi_taxonomy_id"])
+            genotype["organ"] = mod["organellum"]
+            entity["stuctures"].append({"format": "sequence_modomics",
+                                        "value": mod["sequence_modomics"]})
+            entity["stuctures"].append({"format": "sequence_bpforms",
+                                        "value": mod["sequence_bpforms"]})    
+            entity["stuctures"].append({"format": "sequence_iupac",
+                                        "value": mod["sequence_iupac"]})
+            values.append({"type": "length",
+                           "value": mod["length"]}) 
+            values.append({"type": "anticodon",
+                           "value": mod["anticodon"]})  
+            values.append({"type": "number_of_modifications",
+                           "value": mod["number_of_modifications"]})
+            values.append({"type": "number_of_modified_a",
+                           "value": mod["number_of_modified_a"]})
+            values.append({"type": "number_of_modified_u",
+                           "value": mod["number_of_modified_u"]})
+            values.append({"type": "number_of_modified_c",
+                           "value": mod["number_of_modified_c"]})
+            values.append({"type": "number_of_modified_g",
+                           "value": mod["number_of_modified_g"]})
+            values.append({"type": "formula",
+                           "value": mod["formula"]})
+            values.append({"type": "molecular_weight",
+                           "value": mod["molecular_weight"]})
+            values.append({"type": "charge",
+                           "value": mod["charge"]})
+            values.append({"type": "canonical_formula",
+                           "value": mod["canonical_formula"]})
+            values.append({"type": "canonical_molecular_weight",
+                           "value": mod["canonical_molecular_weight"]})
+            values.append({"type": "canonical_charge",
+                           "value": mod["canonical_charge"]})
+            values.append({"type": "bpforms_errors",
+                           "value": mod["bpforms_errors"]})
+            source = [{"namespace": "doi",
+                       "value": mod["reference"]["doi"]}]
+            result.append({"entity": entity,
+                           "values": values,
+                           "genotype": genotype,
+                           "source": source,
+                           "identifier": identifier,
+                           "schema_version": "2.0"})
+        return result
+
 
 
 def main():
