@@ -74,7 +74,6 @@ class Transform(mongo_util.MongoUtil):
                                             ob["source"][0],
                                             query=query)  
 
-
     def build_uniprot_entity(self, obj):
         """Build entity from uniprot collection.
 
@@ -431,7 +430,16 @@ class Transform(mongo_util.MongoUtil):
                            "schema_version": "2.0"})
         return result
 
+    def build_sabio_observation(self, obj):
+        """Build observation objects from sabio_rk_old collection.
 
+        Args:
+            obj (:obj:`Obj`): object from which observation objects will be built.
+
+        Return:
+            (:obj:`Obj`)
+        """
+        
 
 def main():
     pass
