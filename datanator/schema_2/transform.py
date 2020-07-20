@@ -430,16 +430,36 @@ class Transform(mongo_util.MongoUtil):
                            "schema_version": "2.0"})
         return result
 
-    def build_sabio_observation(self, obj):
-        """Build observation objects from sabio_rk_old collection.
+    def build_sabio_entity(self, obj):
+        """Build entity objects from sabio_rk_old collection.
 
         Args:
-            obj (:obj:`Obj`): object from which observation objects will be built.
+            obj (:obj:`Obj`): object from which entity objects will be built.
 
         Return:
             (:obj:`Obj`)
         """
-        
+        entity = {"type": "reaction"}
+        structures = []        
+        identifiers = []
+        related = []
+        source = []
+        related.append({"namespace": "kinlaw_id",
+                        "value": obj.get("kinlaw_id")})
+        resources = obj.get("resource", [{}])
+        for r in resources:
+            for key, val in r.items():
+                if key == "pubmed":
+                    source.append({"namespace": key,
+                                   "value": val})
+                elif key == "ec-code":
+                    related.append({"namespace": "ec_code",
+                                    "value": val})
+                elif key == "sabiork.reaction":
+                    identifiers.append({"namespace": "sabio_rxn_id",
+                                        "value": val})
+
+
 
 def main():
     pass

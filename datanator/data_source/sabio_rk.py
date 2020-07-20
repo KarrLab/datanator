@@ -1240,6 +1240,9 @@ class SabioRk(data_source.HttpDataSource):
 
             if units is None:
                 return (None, None, None, None, None)
+        
+        else:  # edge cases such as "("
+            return (None, None, None, None, None)
 
         raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
 
@@ -1938,3 +1941,7 @@ class SabioRk(data_source.HttpDataSource):
         if not filename:
             filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
         wc_utils.workbook.io.write(filename, wb, style=style)
+
+
+if __name__ == "__main__":
+    SabioRk(verbose=True).load_content()
