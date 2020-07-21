@@ -1,5 +1,5 @@
 import pybel
-from datanator.util import mongo_util
+from datanator_query_python.util import mongo_util
 import pymongo
 import numpy as np
 import multiprocessing as mp
@@ -139,16 +139,16 @@ class CalcTanimoto(mongo_util.MongoUtil):
                         num: number of most similar compound
                         batch_size: batch_size for each server round trip
         '''
-        client = pymongo.MongoClient(
-            self.MongoDB, replicaSet=self.replicaSet,
+        src = mongo_util.MongoUtil(
+            MongoDB=self.MongoDB,
             username=self.username, password=self.password,
             authSource=self.authSource)
-        db_obj = client[self.db]
+        db_obj = src.client[self.db]
         final = db_obj[collection_str1]
 
         projection = {'m2m_id':0,  'ymdb_id': 0, 'kinlaw_id': 0, 
                     'reaction_participants': 0, 'synonyms': 0}
-        _, _, col = self.con_db(collection_str1)
+        col = src.client["datanator"]["metabolites_meta"]
         count = col.count_documents({})
         total = min(count, self.max_entries)
 

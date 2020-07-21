@@ -35,7 +35,7 @@ class TestCalcTanimoto(unittest.TestCase):
         self.assertEqual(0.121, coe)
         self.assertEqual(1., coe2)
 
-    # @unittest.skip('passed')
+    @unittest.skip('out of date')
     def test_one_to_many(self):
         inchi = 'InChI=1S/C5H8O3/c1-3(2)4(6)5(7)8/h3H,1-2H3,(H,7,8)'
         coeff, hashes = self.src.one_to_many(inchi, collection_str='metabolites_meta',
@@ -48,7 +48,7 @@ class TestCalcTanimoto(unittest.TestCase):
         self.assertEqual(coeff[5], self.src.get_tanimoto(inchi, inchi1))
         self.assertEqual(coeff[9], self.src.get_tanimoto(inchi, inchi2))
 
-    # @unittest.skip('passed')
+    @unittest.skip('out of date')
     def test_many_to_many(self):
         client, _, col = mongo_util.MongoUtil(db = self.db, MongoDB = self.server,
                                         username = self.username, password = self.password).con_db('metabolites_meta')
