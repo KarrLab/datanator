@@ -28,7 +28,7 @@ class TestRnaHlUtil(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dir)
-        cls.src.uniprot_collection_manager.db.drop_collection(cls.protein_col)
+        cls.src.uniprot_collection_manager.db_obj.drop_collection(cls.protein_col)
         cls.src.uniprot_collection_manager.client.close()
         cls.src.uniprot_query_manager.client.close()
 

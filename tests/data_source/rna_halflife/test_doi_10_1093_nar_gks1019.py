@@ -27,7 +27,7 @@ class TestProteinAggregate(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.src.uniprot_collection_manager.db_obj_obj.drop_collection(cls.protein_col)
+        cls.src.uniprot_collection_manager.db_obj.drop_collection(cls.protein_col)
         cls.src.db_obj.drop_collection(cls.rna_col)
         cls.src.uniprot_collection_manager.client.close()
         cls.src.client.close()
