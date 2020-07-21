@@ -317,7 +317,7 @@ class SabioRk:
                 #                            upsert=True)
                 self.collection.update_one({'kinlaw_id': _id},
                                            {'$set': {'parameters': kinetic_law['parameters']}},
-                                           upsert=False)
+                                           upsert=True)
             except pymongo.errors.WriteError as err:
                 logging.error(err)
             except TypeError:
