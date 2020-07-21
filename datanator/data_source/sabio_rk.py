@@ -10,7 +10,6 @@
 
 from datanator.core import data_source
 from datanator.util import molecule_util
-from io import StringIO
 from xml import etree
 import Bio.Alphabet
 import Bio.SeqUtils
@@ -1395,7 +1394,7 @@ class SabioRk(data_source.HttpDataSource):
         # group properties
         tsv = tsv.split('\n')
         law_properties = {}
-        for row in csv.DictReader(StringIO(tsv), delimiter='\t'):
+        for row in csv.DictReader(tsv, delimiter='\t'):
             entry_id = row.get('EntryID')
             if entry_id is None:
                 continue
