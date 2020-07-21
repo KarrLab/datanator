@@ -7,7 +7,7 @@ class TestQueryDemo(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        conf = config.Justin()
+        conf = config.TestConfig()
         cls.src = query_demo.QueryDemo(MongoDB=conf.SERVER,
                                        db='datanator-test',
                                        collection_str="taxon_tree",
