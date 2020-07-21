@@ -46,6 +46,7 @@ class Halflife(mongo_util.MongoUtil):
         self.server = server
         self.max_entries = max_entries
         self.db_str = uniprot_col_db
+        self.verbose = verbose
 
     def download_xlsx(self, sheet_name):
         """Download supplementary xlsx file
