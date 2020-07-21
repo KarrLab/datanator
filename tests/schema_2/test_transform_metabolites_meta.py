@@ -657,6 +657,7 @@ class TestTMM(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    @unittest.skip("for now")
     def test_process_docs(self):
         self.src.process_docs()
     
