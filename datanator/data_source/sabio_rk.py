@@ -1395,7 +1395,11 @@ class SabioRk(data_source.HttpDataSource):
         tsv = tsv.split('\n')
         law_properties = {}
         for row in csv.DictReader(tsv, delimiter='\t'):
-            entry_id = int(float(row['EntryID']))
+            entry_id = row.get('EntryID')
+            if entry_id is None:
+                continue
+            else:
+                entry_id = int(float(row.get('EntryID')))
             if entry_id not in law_properties:
                 law_properties[entry_id] = {
                     'KineticMechanismType': row['KineticMechanismType'],
