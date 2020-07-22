@@ -1,3 +1,6 @@
+# for quilt3 compatibility
+urllib3 < 1.25
+
 # Karr Lab
 git+https://github.com/KarrLab/datanator_swagger_ui_bundle.git#egg=swagger_ui_bundle
 git+https://github.com/KarrLab/wc_utils.git#egg=wc_utils
