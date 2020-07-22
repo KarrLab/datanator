@@ -5,3 +5,8 @@ downstream_dependencies:
 email_notifications:
   - jonrkarr@gmail.com
   - yosefdroth@gmail.com
+static_analyses:
+  ignore_unused_requirements:
+    - python_libsbml
+  ignore_missing_requirements:
+    - python-libsbml-experimental
