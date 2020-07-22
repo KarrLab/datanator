@@ -1,40 +1,28 @@
 beautifulsoup4
 biopython
 bioservices >= 1.5.0
+bpforms
 cement >= 3.0.0
 configobj
 datanator_query_python >= 0.6.31
-elasticsearch
 ete3
 flask_migrate
-ftputil
 genson
-jsonpickle
-jxmlease
 karr_lab_aws_manager >= 0.0.21
-marshmallow_sqlalchemy
 numpy
 obj_tables[bio]
 openbabel
-openpyxl
 pandas >= 1.0.1
 pint >= 0.10
-psycopg2_binary
 pubchempy
-pyarrow >= 0.14.1
 pymongo
-pytest
-python_dateutil
-python_levenshtein
 python_libsbml
 requests
 requests_cache
-scipy
 setuptools
+simplejson
 sqlalchemy
-sqlalchemy_searchable
 sqlalchemy_utils
 tabula_py
-urllib3 < 1.25
 wc_utils
 xmltodict
