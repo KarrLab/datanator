@@ -1,5 +1,4 @@
 downstream_dependencies:
-  - datanator_query_python
   - h1_hesc
   - wc_cli
 email_notifications:
