@@ -29,7 +29,7 @@ class MigrateMM:
         Args:
             _key(:obj:`str`): Name of key to be indexed
         """
-        yield self.to_collection.create_index(_key, background=background)
+        await self.to_collection.create_index(_key, background=background)
 
     async def process_cursor(self, skip=0):
         """Transform data and move to new database

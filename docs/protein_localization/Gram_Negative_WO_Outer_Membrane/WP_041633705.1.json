@@ -1,0 +1,40 @@
+{
+    "entity": {
+        "type": "protein",
+        "name": "hypothetical protein",
+        "synonyms": [],
+        "identifiers": [
+            {
+                "namespace": "Seq_ID",
+                "value": "WP_041633705.1"
+            }
+        ]
+    },
+    "value": {
+        "PPSVM_Localization": null,
+        "Profile_Localization": "Unknown",
+        "Signal_Localization": "Unknown",
+        "SCL-BLASTe_Localization": "Unknown",
+        "CMSVM_Localization": "Unknown",
+        "SCL-BLAST_Localization": "Unknown",
+        "OMPMotif_Localization": null,
+        "OMSVM_Localization": null,
+        "Motif_Localization": "Unknown",
+        "CytoSVM_Localization": "Unknown",
+        "CWSVM_Localization": "Unknown",
+        "ModHMM_Localization": "Unknown",
+        "ECSVM_Localization": "Unknown",
+        "Cytoplasmic Membrane_Score": 2.5,
+        "Cellwall_Score": 2.5,
+        "Extracellular_Score": 2.5,
+        "Cytoplasmic_Score": 2.5,
+        "Final_Localization": "Unknown",
+        "Final_Localization_2": null,
+        "Secondary_Localization": null,
+        "Final_Score": 2.5
+    },
+    "source": {
+        "namespace": "PSORT",
+        "value": "Version 3.0"
+    }
+}

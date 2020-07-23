@@ -49,7 +49,7 @@ class MigrateUniprot:
             if i != 0 and i % 50 == 0:
                 print("Processing file {}".format(i + skip))
                 try:
-                    self.to_collection.bulk_write(bulk_write)
+                    await self.to_collection.bulk_write(bulk_write)
                     bulk_write = []
                 except BulkWriteError as bwe:
                     pprint(bwe.details)

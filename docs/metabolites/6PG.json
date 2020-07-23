@@ -1,0 +1,23 @@
+{
+    "type":"metabolite",
+    "name":"6-Phosphogluconic acid",
+    "synonyms":[
+        "6PG",
+        "6-O-Phosphono-D-gluconic acid",
+        "6-phosphogluconate",
+        "6-phospho-D-gluconate",
+        "D-gluconic acid 6-phosphate"
+        ],
+    "identifiers":[ 
+        {"namespace":"inchikey"},
+        {"value":"xxxxx"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

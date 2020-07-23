@@ -1,0 +1,21 @@
+{
+    "type":"metabolite",
+    "name":"Frutose 6-Phosphate",
+    "synonyms":[
+        "F6P",
+        "6-O-Phosphono-D-fructose",
+        "D-Fructose 6-phosphoric acid"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

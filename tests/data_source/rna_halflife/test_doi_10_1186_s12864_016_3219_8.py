@@ -31,7 +31,6 @@ class TestProteinAggregate(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dirname)
         cls.src.db.drop_collection(cls.collection_str)
-        cls.src.uniprot_col_manager.db.drop_collection('uniprot')
         cls.src.client.close()
 
     def test_download_xlsx(self):

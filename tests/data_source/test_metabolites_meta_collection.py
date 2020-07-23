@@ -12,7 +12,7 @@ class TestMetabolitesMeta(unittest.TestCase):
     def setUpClass(cls):
         cls.cache_dirname = tempfile.mkdtemp()
         cls.db = 'test'
-        cls.meta_loc = 'test'
+        cls.meta_loc = 'datanator'
         cls.username = datanator.config.core.get_config()['datanator']['mongodb']['user']
         cls.password = datanator.config.core.get_config()['datanator']['mongodb']['password']
         cls.MongoDB = datanator.config.core.get_config()['datanator']['mongodb']['server']
@@ -38,15 +38,10 @@ class TestMetabolitesMeta(unittest.TestCase):
 
     def test_load_content(self):
         self.src.load_content()
-        client = pymongo.MongoClient(
-            self.MongoDB, username = self.username, 
-            password = self.password)
-        meta_db = client[self.meta_loc]
+        meta_db = self.src.client[self.meta_loc]
         collection = meta_db['metabolites_meta']
         cursor = collection.find_one({'inchi': 'InChI=1S/C4H8O3/c1-3(2-5)4(6)7/h3,5H,2H2,1H3,(H,6,7)'})
         self.assertEqual(cursor['InChI_Key'], 'DBXBTMSZEOQQDU-UHFFFAOYSA-N')
         
-        client.close()
-
     def test_replace_key_in_similar_compounds(self):
         self.src.replace_key_in_similar_compounds()

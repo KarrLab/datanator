@@ -12,8 +12,8 @@ class TestReorg(unittest.TestCase):
         cls.src_collection = 'rna_halflife_new'
         cls.des_collection = 'rna_halflife_test'
         conf = config.TestConfig()
-        username = conf.MONGO_TEST_USERNAME
-        password = conf.MONGO_TEST_PASSWORD
+        username = conf.USERNAME
+        password = conf.PASSWORD
         MongoDB = conf.SERVER    
         cls.src = order_by_ko.Reorg(MongoDB=MongoDB, src_db=src_db,
                  verbose=False, max_entries=20, username=username, 

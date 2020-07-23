@@ -1,0 +1,21 @@
+{
+    "type":"metabolite",
+    "name":"Dihydroxyacetone Phosphate",
+    "synonyms":[
+        "DHAP",
+        "1-hydroxy-3-(phosphonooxy)-2-propanone",
+        "3-Hydroxy-2-oxopropyl dihydrogen phosphate"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

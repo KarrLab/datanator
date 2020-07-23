@@ -12,8 +12,8 @@ class TestBrendaRxn(unittest.TestCase):
     def setUpClass(cls):
         conf = config.TestConfig()
         cls.collection_str = 'brenda_reaction'
-        username = conf.MONGO_TEST_USERNAME
-        password = conf.MONGO_TEST_PASSWORD
+        username = conf.USERNAME
+        password = conf.PASSWORD
         MongoDB = conf.SERVER
         cls.src = reaction.BrendaRxn(MongoDB=MongoDB, db='test', collection_str=cls.collection_str,
                                      username=username, password=password, authSource='admin',

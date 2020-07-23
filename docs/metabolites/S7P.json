@@ -1,0 +1,21 @@
+{
+    "type":"metabolite",
+    "name":"sedoheptulose-7-phosphate",
+    "synonyms":[
+        "S7P",
+        "7-(dihydrogen phosphate) sedoheptulose",
+        "{[(2R,3S,4R,5S)-3,4,5,6-tetrahydroxy-6-(hydroxymethyl)oxan-2-yl]methoxy}phosphonic acid"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

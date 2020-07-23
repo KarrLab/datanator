@@ -18,8 +18,8 @@ class TestProteinAggregate(unittest.TestCase):
         cls.rna_col = 'rna_halflife'
         cls.cache_dir = tempfile.mkdtemp()
         conf = config.TestConfig()
-        username = conf.MONGO_TEST_USERNAME
-        password = conf.MONGO_TEST_PASSWORD
+        username = conf.USERNAME
+        password = conf.PASSWORD
         MongoDB = conf.SERVER    
         cls.src = doi_10_1093_nar_gkt1150.Halflife(server=MongoDB, src_db=src_db,
         protein_col=cls.protein_col, authDB='admin', readPreference='nearest',
@@ -29,7 +29,7 @@ class TestProteinAggregate(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.cache_dir)
-        cls.src.uniprot_collection_manager.db.drop_collection(cls.protein_col)
+        cls.src.uniprot_collection_manager.db_obj.drop_collection(cls.protein_col)
         cls.src.db_obj.drop_collection(cls.rna_col)
         cls.src.uniprot_collection_manager.client.close()
         cls.src.client.close()

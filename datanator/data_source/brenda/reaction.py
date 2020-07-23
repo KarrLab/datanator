@@ -24,7 +24,7 @@ class BrendaRxn(mongo_util.MongoUtil):
         #         'Reaction_ID_KEGG': str, 'Reaction_ID_MetaCyc': str,
         #         'Reaction_ID_SABIO_RK': int, 'stoichiometry': str,
         #         'Commentary_KEGG': str, 'Commentary_MetaCyc': str}
-        doc = './docs/Reactions_BKMS.tar.gz'
+        doc = './docs/brenda/Reactions_BKMS.tar.gz'
         df = pd.read_csv(doc, compression='gzip', header=0, error_bad_lines=False,
                          engine='c', sep='\t',
                          lineterminator='\n', low_memory=False)

@@ -1,0 +1,40 @@
+{
+    "entity": {
+        "type": "protein",
+        "name": "Toxic shock syndrome toxin-1 precursor (TSST-1)",
+        "synonyms": [],
+        "identifiers": [
+            {
+                "name_space": "uniprot_id",
+                "value": "P06886"
+            },
+            {
+                "name_space": "Refseq_Accession",
+                "value": null
+            },
+            {
+                "name_space": "Other_Accession",
+                "value": null
+            }
+        ]
+    },
+    "value": {
+        "experimental_localization": [
+            "Extracellular"
+        ],
+        "secondary_localizaton": []
+    },
+    "genotype": {
+        "taxon": {
+            "ncbi_taxonomy_id": 1280,
+            "name": "Staphylococcus aureus"
+        }
+    },
+    "environment": {
+        "GramStain": "Gram positive"
+    },
+    "source": {
+        "namespace": "ePSORTdb",
+        "value": "Version 3"
+    }
+}

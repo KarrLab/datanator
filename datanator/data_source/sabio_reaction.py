@@ -31,7 +31,7 @@ class RxnAggregate(mongo_util.MongoUtil):
     def fill_collection(self):
         projection = {'_id': 0,'resource': 1, 'reaction_participant': 1,
                     'reaction_participant': 1, 'kinlaw_id': 1, 'enzymes': 1}
-        _, _, collection = self.db_obj['sabio_rk_old']
+        collection = self.db_obj['sabio_rk_old']
         docs = collection.find({}, projection=projection)
         count = collection.count_documents({})
         start = 0

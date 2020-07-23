@@ -1,0 +1,20 @@
+{
+    "type":"metabolite",
+    "name":"Fluorescein diphosphate",
+    "synonyms":[
+        "FDP",
+        "3-Oxo-3H-spiro[2-benzofuran-1,9'-xanthene]-3',6'-diyl bis(phosphate)"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

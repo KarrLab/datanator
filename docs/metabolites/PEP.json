@@ -1,0 +1,22 @@
+{
+    "type":"metabolite",
+    "name":"Phosphoenolpyruvate",
+    "synonyms":[
+        "PEP",
+        "Phosphoenolpyruvic acid",
+        "2-(phosphonooxy)prop-2-enoic acid",
+        "138-08-9"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}

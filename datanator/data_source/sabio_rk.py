@@ -1240,6 +1240,9 @@ class SabioRk(data_source.HttpDataSource):
 
             if units is None:
                 return (None, None, None, None, None)
+        
+        else:  # edge cases such as "("
+            return (None, None, None, None, None)
 
         raise ValueError('Unsupported units "{}" for parameter type {}'.format(units, type_name))
 
@@ -1392,7 +1395,11 @@ class SabioRk(data_source.HttpDataSource):
         tsv = tsv.split('\n')
         law_properties = {}
         for row in csv.DictReader(tsv, delimiter='\t'):
-            entry_id = int(float(row['EntryID']))
+            entry_id = row.get('EntryID')
+            if entry_id is None:
+                continue
+            else:
+                entry_id = int(float(row.get('EntryID')))
             if entry_id not in law_properties:
                 law_properties[entry_id] = {
                     'KineticMechanismType': row['KineticMechanismType'],
@@ -1938,3 +1945,7 @@ class SabioRk(data_source.HttpDataSource):
         if not filename:
             filename = os.path.join(os.path.dirname(self.filename), os.path.splitext(self.filename)[0] + '.summary.xlsx')
         wc_utils.workbook.io.write(filename, wb, style=style)
+
+
+if __name__ == "__main__":
+    SabioRk(verbose=True).load_content()

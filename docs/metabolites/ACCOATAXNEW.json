@@ -1,0 +1,28 @@
+{
+    "entity": {
+
+        "type": "metabolite",
+
+        "name": "acetyl-CoA",
+
+        "identifiers": [
+
+            {"namespace": "inchikey",
+            "value": "SLZBFCDCINBPY-ZSJPKINUSA-N"}
+
+        ]
+
+    },
+
+    "value": [
+
+        {"type": "metabolite_concentration", "value": "0.26", "units": "μmol/g DCW",
+
+        "substrate": "NOX01"},
+
+        {"type": "metabolite_concentration", "value": "0.29", "units": "μmol/g DCW",
+
+            "substrate": "NOX02"}
+
+    ]
+}

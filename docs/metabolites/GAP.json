@@ -1,0 +1,24 @@
+{
+    "type":"metabolite",
+    "name":"3-Phosphoglyceraldehyde",
+    "synonyms":[
+        "GAP",
+        "glyceraldehyde 3-phosphate",
+        "2-hydroxy-3-(phosphonooxy)-Propanal",
+        "2-Hydroxy-3-oxopropyl dihydrogen phosphate",
+        "2-Hydroxy-3-oxopropyldihydrogenphosphat",
+        "3-phosphoglyceraldehyde"
+        ],
+    "identifiers":[
+        {"namespace":"doi"},
+        {"value":"10.1074/jbc.M109.095570"}
+    ],
+    "taxon":{
+        "ncbi_taxonomy_id":562,
+        "name":"Escherichia coli str. K-12 substr. MG1655",
+        "canon_ancestors":[
+            {"ncbi_taxonomy_id": "",
+            "name": ""}
+        ]
+    }
+}
