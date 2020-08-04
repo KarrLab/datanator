@@ -477,10 +477,7 @@ class Transform(mongo_util.MongoUtil):
                     structures[0]["enzyme"]["compartment"] = e.get("compartment")[i]["compartment_name"]
         parameters = obj["parameter"]
         for p in parameters:
-            
-
-
-
+            pass
 
 def main():
     pass
