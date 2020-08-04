@@ -440,7 +440,7 @@ class Transform(mongo_util.MongoUtil):
             (:obj:`Obj`)
         """
         entity = {"type": "reaction"}
-        structures = []        
+        structures = [{"format": "reaction_equation", "enzyme": {"subunit": []}}]        
         identifiers = []
         related = []
         source = []
@@ -458,6 +458,27 @@ class Transform(mongo_util.MongoUtil):
                 elif key == "sabiork.reaction":
                     identifiers.append({"namespace": "sabio_rxn_id",
                                         "value": val})
+                else:
+                    with open("edgecase.txt", "a+") as f:
+                        f.write("Kinetic law {} has more info in resources".format(obj["kinlaw_id"]))
+        enzymes_list = obj["enzymes"]
+        for e in enzymes_list:
+            if e.get("subunit") is not None:
+                for i, su in enumerate(e.get("subunit")):
+                    structures[0]["enzyme"]["subunit"].append({"namespace": "uniprot_id", 
+                                                               "value": su.get("uniprot_id"),
+                                                               "coefficient": su.get("subunit_coefficient")})
+            elif e.get("enzyme") is not None:
+                for i, en in enumerate(e.get("enzyme")):
+                    structures[0]["enzyme"]["name"] = e.get("enzyme")[i]["enzyme_name"]
+                    structures[0]["enzyme"]["id"] = e.get("enzyme")[i]["enzyme_id"]
+            elif e.get("compartment") is not None:
+                for i, en in enumerate(e.get("compartment")):
+                    structures[0]["enzyme"]["compartment"] = e.get("compartment")[i]["compartment_name"]
+        parameters = obj["parameter"]
+        for p in parameters:
+            
+
 
 
 

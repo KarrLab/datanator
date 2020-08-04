@@ -1,73 +1,74 @@
 Installation
 ============
-The following instructions describe how to install ``datanator`` onto Ubuntu Linux 16.04.
-Datanator only supports Python 3.
+The following instructions describe how to install ``datanator`` onto a Debian-based Linux OS
+using the docker image `wc_env <https://hub.docker.com/r/karrlab/wc_env>`
 
 Install dependencies
 --------------------
 First, please install the following dependencies:
 
-* `Git <https://git-scm.com>`_
-* `Open Babel <http://openbabel.org>`_
-* `Python 3 <https://www.python.org>`_
-* `Pip <https://pip.pypa.io>`_
+* `Docker <https://docs.docker.com/get-docker/>`_
+* `Docker-compose <https://docs.docker.com/compose/install/>`_
 
 The following shell commands can be used to install these dependencies onto Ubuntu Linux 16.04::
 
+    apt-get update
+    
     apt-get install \
-        git \
-        libcairo2-dev \
-        libeigen3-dev \
-        libxml2-dev \
-        python \
-        python-pip \
-        swig \
-        zlib1g-dev
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common
 
-    cd /tmp
-    wget https://sourceforge.net/projects/openbabel/files/openbabel/2.4.1/openbabel-2.4.1.tar.gz/download -O /tmp/openbabel-2.4.1.tar.gz
-    tar -xvvf /tmp/openbabel-2.4.1.tar.gz
-    cd openbabel-2.4.1
-    mkdir build
-    cd build
-    cmake ..
-    make
-    make install
-    ldconfig
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
+    sudo add-apt-repository \
+        "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+        $(lsb_release -cs) \
+        stable"
+
+    sudo apt-get update
+
+    sudo apt-get install docker-ce docker-ce-cli containerd.io
+
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 Install ``datanator``
 -----------------------------
 Second, please run the following shell commands to clone and install ``datanator`` from GitHub::
 
+    mkdir karr_lab
+    mkdir ~/.wc
+    cd ./karr_lab
+    git clone git@github.com:KarrLab/pkg_utils.git
+    git clone git@github.com:KarrLab/wc_utils.git
+    git clone git@github.com:KarrLab/karr_lab_aws_manager.git
+    git clone git@github.com:KarrLab/datanator_query_python.git
     git clone git@github.com:KarrLab/datanator.git
-    python3 -m pip install -e datanator
+    cd ./datanator
+    nano docker-compose.yml # change ``zl`` on line 13 to the proper username. Save and exit by pressing ``Ctrl + X`` followed by ``Y``
+    docker-compose up -d
 
-Because ``datanator`` is under active development, we recommend regularly pulling the latest revision of ``datanator`` from GitHub.
 
 Run ``datanator``
 -----------------------------
-The API for datanator can be run with a test and production server.
+One needs to find the docker container ID in order to use Datanator package::
 
-In order to run the test server, run the following command::
+    docker ps
+    docker exec -it <container_id> bash
+    cd karr_lab/datanator
 
-    python3 manage.py runserver
+All python scripts in ``datanator`` dicrectory can be run with python3, for example::
 
-NOTE: You will need to have the correct configuration in the datanator/__init__.py
-file. Configurations can be found in datanator/config.py include:
+    python3 datanator/data_source/corum_nosql.py
 
-* LocalDevelopmentConfig - Local server for database
-* CircleTestingConfig - CircleCI server for database
-* BuildConfig - Docker Compose/UCONN HPC server for database
-* ProductionConfig - AWS RDS server for database (PRIVATE) 
-
-In order to run the production server, run the following command::
-
-    gunicorn -w 4 -b localhost:5000 --timeout 120 manage:app
-        
-This command will create a gunicorn production server with 4 workers at the localhost:5000 address with a timeout of 2 min 
+Running the command above will parse `Corum <http://mips.helmholtz-muenchen.de/corum/>` and
+store the parsed data in KarrLab's MongoDB.
 
 
-
-
-Contact `Saahith <mailto:saahith116@gmail.com>`_ for any questions regarding installation and running the server
+Contact `Yang <mailto:zhouyang.lian@familian.life>`_ for any questions regarding installation and running the package.
