@@ -21,7 +21,7 @@ Extensive data is needed to build comprehensive predictive models of cells. Alth
 
 Datanator is a software tool for discovering, aggregating, and integrating the data needed for modeling cells. This includes metabolite, RNA, and protein abundances; protein complex compositions; transcription factor binding motifs; and kinetic parameters. Datanator is particularly useful for building large models, such as whole-cell models, that require large amounts of data to constrain large numbers of parameters.
 
-This package contains the source code for Datanator. The data aggregated with Datanator is available at [https://open.quiltdata.com/b/karrlab/packages/karrlab/datanator](https://open.quiltdata.com/b/karrlab/packages/karrlab/datanator).
+This package contains the source code for Datanator. The data aggregated with Datanator is available at [https://www.datanator.info](https://www.datanator.info). The data is also available for download as MongoDB dump from [Zenodo](https://doi.org/10.5281/zenodo.3971048).
 
 ## Installation instructions and documentation
 Please see the [documentation](http://docs.karrlab.org/datanator) for installation instructions, user instructions, and code documentation. 
