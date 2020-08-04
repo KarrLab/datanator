@@ -3,7 +3,6 @@
 [![Test coverage](https://coveralls.io/repos/github/KarrLab/datanator/badge.svg)](https://coveralls.io/github/KarrLab/datanator)
 [![Code analysis](https://api.codeclimate.com/v1/badges/e9b796130e29aee4672f/maintainability)](https://codeclimate.com/github/KarrLab/datanator)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Analytics](https://ga-beacon.appspot.com/UA-86759801-1/datanator/README.md?pixel)
 
 # Datanator: Toolkit for discovering and aggregating data for whole-cell modeling
 
