@@ -101,7 +101,7 @@ class parse_yeast_global_proteome_turnover(mongo_util.MongoUtil):
         entity["name"] = names[0]
         entity["identifiers"] = []
         entity["identifiers"].append({"namespace": "uniprot_id",
-                                      "value": uniprot})
+                                      "value": data.iloc[i,0]})
         values_p = []
         if data.iloc[i,4]!="n.d.":
             values_p.append({"type": "Half-life",
