@@ -13,10 +13,10 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
                  authSource = 'admin',
                  readPreference = 'nearest'):
         super(parse_column_k0_mouse_brain,self).__init__(MongoDB=MongoDB, db=db,
-                                                                 username = username,
-                                                                 password = password,
-                                                                 authSource = authSource,
-                                                                 readPreference=readPreference)
+                                                         username = username,
+                                                         password = password,
+                                                         authSource = authSource,
+                                                         readPreference=readPreference)
         self.collection = collection
         self.entity_col = self.db_obj["entity"]
         self.identifier_col = self.db_obj["identifier"]
@@ -75,7 +75,6 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
         doc = self.client["datanator-demo"]["identifier"].find_one(filter = query, projection = projection)
         if doc!=None:
             entity["name"] = doc["description"]
-        
         return entity
     
     def build_obs_peptide(self, data, i, description):
@@ -84,7 +83,7 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
         Args:
             data (:obj:`Obj`): source object.
             i (:obj: `int`): index (row labels) of object in dataframe
-            description (:obj: `str`): description of proteins analyzed. ("brain_peptide","liver_peptide","blood_peptide","brain_protein","liver_protein", or "blood_protein") 
+            description (:obj: `str`): description of proteins analyzed, e.g. "brain_peptide","liver_peptide","blood_peptide"
         Return:
             obj(:obj:`Obj`)
             {
@@ -133,7 +132,6 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
                 "values":values_p,
                 "source":source,
                 "schema_version":"2.0"}
-        print(str(i)+"\t"+entity["identifiers"][0]["value"])
         return ob_p
 
     def build_obs_protein(self, data, i, description):
@@ -142,7 +140,7 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
         Args:
             data (:obj:`Obj`): source object.
             i (:obj: `int`): index (row labels) of object in dataframe
-            description (:obj: `str`): description of proteins analyzed. ("brain_peptide","liver_peptide","blood_peptide","brain_protein","liver_protein", or "blood_protein") 
+            description (:obj: `str`): description of proteins analyzed, e.g. "brain_protein","liver_protein", "blood_protein"
         Return:
             obj(:obj:`Obj`)
             {
@@ -196,13 +194,11 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
                 "values":values_p,
                 "source":source,
                 "schema_version":"2.0"}
-        print(str(i)+"\t"+entity["identifiers"][0]["value"])
         return ob_p
     
     def process_docs_peptide(self):
         peptide_files = ['brain_peptide.txt','liver_peptide.txt','blood_peptide.txt']
         for file in peptide_files:
-            print(file)
             data = pd.read_csv(file,delimiter="\t",dtype={"Protein Name":str,"Uniprot Accession #":str,"k0":str})
             data = data.where(pd.notnull(data), None)
             for i in range(len(data)):
