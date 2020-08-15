@@ -321,10 +321,10 @@ def main():
     MongoDB = conf_main.SERVER
 
     src = parse_yeast_global_proteome_turnover(MongoDB = MongoDB,
-                                       username=username,
-                                       password=password,
-                                       collection = "observation",
-                                       db = "datanator-demo")
+                                               username=username,
+                                               password=password,
+                                               collection = "observation",
+                                               db = "datanator-demo")
     
     src.process_docs()
 
