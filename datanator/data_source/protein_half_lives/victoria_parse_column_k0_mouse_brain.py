@@ -287,10 +287,10 @@ def main():
     MongoDB = conf_main.SERVER
 
     src = parse_column_k0_mouse_brain(MongoDB = MongoDB,
-                                       username=username,
-                                       password=password,
-                                       collection = "observation",
-                                       db = "datanator-demo")
+                                      username=username,
+                                      password=password,
+                                      collection = "observation",
+                                      db = "datanator-demo")
     
     #src.process_docs_peptide()
     src.process_docs_protein()
