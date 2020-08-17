@@ -124,11 +124,23 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
                 d["ncbi_taxonomy_id"] = doc["canon_anc_ids"][j]
                 d["name"] = doc["canon_anc_names"][j]
                 genotype["taxon"]["canon_ancestors"].append(d)
-                
+        
+        environment = {}
+        if "blood" in description:
+            environment["condition"] = "fractionated by centrifugation, depleted of red blood cells"
+            environment["media"] = "1 ml blood, anticoagulant buffer"
+        else:
+            if "brain" in description:
+                genotype["organ"] = "brain"
+            elif "liver" in description:
+                genotype["organ"] = "liver"
+            environment["condition"] = "flash-frozen on solid CO2"
+            
         source = [{"namespace":"doi","value":"10.1073/pnas.1006551107"}]
         
         ob_p = {"entity":entity,
                 "genotype":genotype,
+                "environment":environment,
                 "values":values_p,
                 "source":source,
                 "schema_version":"2.0"}
@@ -186,11 +198,23 @@ class parse_column_k0_mouse_brain(mongo_util.MongoUtil):
                 d["ncbi_taxonomy_id"] = doc["canon_anc_ids"][j]
                 d["name"] = doc["canon_anc_names"][j]
                 genotype["taxon"]["canon_ancestors"].append(d)
-                
+        
+        environment = {}
+        if "blood" in description:
+            environment["condition"] = "fractionated by centrifugation, depleted of red blood cells"
+            environment["media"] = "1 ml blood, anticoagulant buffer"
+        else:
+            if "brain" in description:
+                genotype["organ"] = "brain"
+            elif "liver" in description:
+                genotype["organ"] = "liver"
+            environment["condition"] = "flash-frozen on solid CO2"
+            
         source = [{"namespace":"doi","value":"10.1073/pnas.1006551107"}]
         
         ob_p = {"entity":entity,
                 "genotype":genotype,
+                "environment":environment,
                 "values":values_p,
                 "source":source,
                 "schema_version":"2.0"}
@@ -292,7 +316,7 @@ def main():
                                       collection = "observation",
                                       db = "datanator-demo")
     
-    #src.process_docs_peptide()
+    src.process_docs_peptide()
     src.process_docs_protein()
 if __name__== '__main__':
     main()
