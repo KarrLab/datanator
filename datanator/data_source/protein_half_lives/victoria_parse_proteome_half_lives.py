@@ -13,10 +13,10 @@ class parse_proteome_half_life(mongo_util.MongoUtil):
                  authSource = 'admin',
                  readPreference = 'nearest'):
         super(parse_proteome_half_life,self).__init__(MongoDB=MongoDB, db=db,
-                         username = username,
-                         password = password,
-                         authSource = authSource,
-                         readPreference=readPreference)
+                                                      username = username,
+                                                      password = password,
+                                                      authSource = authSource,
+                                                      readPreference=readPreference)
         self.collection = collection
         self.entity_col = self.db_obj["entity"]
         self.identifier_col = self.db_obj["identifier"]
@@ -133,9 +133,7 @@ class parse_proteome_half_life(mongo_util.MongoUtil):
         genotype["organ"]="lung"
         genotype["cellType"]="non‐small cell lung carcinoma"
         genotype["cellLine"]="H1299"
-
         
-            
         environment = {}
         if table == 4:
             environment["condition"] = "normal growth condition"
@@ -290,9 +288,7 @@ class parse_proteome_half_life(mongo_util.MongoUtil):
             #read Table S4
             data = pd.read_csv('table_S4.txt',delimiter="\t")
             data = data.where(pd.notnull(data), None)
-
             con_1 = {"source":{"$elemMatch":{"namespace":"doi","value":"10.1126/science.1199784"}}}
-            """
             for i in range(len(data)):
                 #update entity collection
                 entity = self.build_entity(data,i)
@@ -358,7 +354,6 @@ class parse_proteome_half_life(mongo_util.MongoUtil):
                                                        "source": {"$each": obs_s5["source"]}}},
                                          upsert=True)
 
-            """
             #read Tables S6-S9
             for k in range(6,10):
                 data = pd.read_csv('table_S'+str(k)+'.txt',delimiter="\t")
@@ -386,10 +381,10 @@ def main():
     MongoDB = conf_main.SERVER
 
     src = parse_proteome_half_life(MongoDB = MongoDB,
-                                       username=username,
-                                       password=password,
-                                       collection = "observation",
-                                       db = "datanator-demo")
+                                   username=username,
+                                   password=password,
+                                   collection = "observation",
+                                   db = "datanator-demo")
     
     src.process_docs()
 if __name__== '__main__':
