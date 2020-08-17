@@ -9,3 +9,4 @@ static_analyses:
     - python_libsbml
   ignore_missing_requirements:
     - python-libsbml-experimental
+    - pymongo
