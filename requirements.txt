@@ -15,7 +15,6 @@ openbabel
 pandas >= 1.0.1
 pint >= 0.10
 pubchempy
-pymongo
 python_libsbml
 requests
 requests_cache
