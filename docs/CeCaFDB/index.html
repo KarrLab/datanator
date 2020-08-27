@@ -1,0 +1,1414 @@
+
+
+
+ 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<title>CeCaFDB - A curated database for flux distribution in central carbon metabolism systems.</title>
+<head>
+<meta name="viewport"
+	content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=0" />
+<link rel="stylesheet" href="css/style.css" type="text/css" media="all" />
+<link rel="icon" href="css/images/cecafdb_title_logo.png"   type="image/x-icon">
+<link rel="stylesheet" href="css/buttons.css" type="text/css"></link>
+<link rel='stylesheet' type='text/css' href='css/wuxia-green.css' />
+<script src="js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="js/easing.js"></script>
+<style type="text/css">
+        #report { 
+        	border-collapse:collapse;
+        	background-color: #f6f6f6;
+		    border: 2px solid #fdfdfd;
+		    border-collapse: separate;
+		    *border-collapse: collapsed;
+		    border-left: 0;
+		    -webkit-border-radius: 5px;
+		    -moz-border-radius: 5px;
+		    border-radius: 5px;
+		    margin-left:10px;margin-right:10px;
+        }
+        #report img { float:right;}
+        #report th { background:#CCCCCC;font:15px Verdana, Geneva, sans-serif;font-weight:bold;padding:7px 15px; text-align:left;border-top: 2px solid #fdfdfd;border-left: 2px solid #fdfdfd;}
+        #report td { background:#C7DDEE none repeat-x scroll center left; color:#474545;font:15px Verdana, Geneva, sans-serif; padding:7px 15px; border-top: 2px solid #fdfdfd;border-left: 2px solid #fdfdfd;}
+        #report tr.odd td { background:#f6f6f6; cursor:pointer; }
+        #report div.arrow { background:transparent url(css/images/arrows.png) no-repeat scroll 0px -16px; width:16px; height:16px; display:block;}
+        #report div.up { background-position:0px 0px;}
+    </style>
+		
+</head>
+<script type="text/javascript">
+        $(document).ready(function(){
+            $("#report tr:odd").addClass("odd");
+            $("#report tr:not(.odd)").hide();
+            $("#report tr:first-child").show();
+            
+            $("#report tr.odd").click(function(){
+                $(this).next("tr").toggle();
+                $(this).find(".arrow").toggleClass("up");
+            });
+        });
+</script>      
+
+<body>
+	<div id="wrapper">
+		<div class="shell">
+			<div class="container">
+				
+
+<style type="text/css">
+#dd-navigation {background: url('css/images/nav-bg.png') repeat-x;clear:both;}
+#nav-strip ul li.nav-item,#nav-strip ul li.nav-item.active ,#nav-strip ul li.nav-item:hover{border-right: solid 1px #79dbe1;}
+#nav-strip {clear: both; margin: 0 auto;width: 990px;height:34px;line-height: 34px;position:relative;z-index: 16777265;}
+#nav-strip a:hover {text-decoration:none;}
+#nav-strip ul li.nav-item {	display: inline;float: left;position:relative;width:90px;height:34px;text-align:center;}
+#nav-strip ul li.nav-item:hover, #nav-strip ul li.nav-item.hover{background: #3DA7C6;}
+#nav-strip ul li.nav-item:hover a, #nav-strip ul li.nav-item.hover a{color: #fff;}
+#nav-strip ul li a{	font-weight: bold;color: #FFFFFF;display:block;padding-top:8px;font-size: 14px;outline:none;}
+#nav-strip ul li a .primary-link, #nav-strip ul li.active a .primary-link, #nav-strip ul li.hover a .primary-link{background: url('css/images/sprite-nav.gif') 100% -10px no-repeat transparent;padding-right: 10px;}
+
+#nav-strip ul li .subnav {display: none;position:absolute;top:35px;padding-bottom: 2px; background:#ceebf2;border:1px #ccc solid;z-index: 16777263;*min-width: 260px;}
+#nav-strip .subnav-inner {float: left;*min-width: 260px;}
+#nav-strip ul li .subnav ul{float: left;min-width: 260px;margin:0;}
+#nav-strip ul li .subnav ul li{	display:block;border-left:none;border-right:none;float: none;height: auto;padding: 0; }
+/* double list view */
+#nav-strip ul li .subnav ul.one{width: 260px;margin-bottom: 3px;}
+#nav-strip ul li .subnav ul.one li{margin:0;}
+#nav-strip ul li .subnav ul.one li a{font-weight: bold;}
+#nav-strip ul li .subnav ul li a,#nav-strip ul li.nav-item:hover .subnav ul li a{font-size: 14px;color: #214181;padding: 5px; text-align:left;height:15px;}
+#nav-strip ul li .subnav ul li a,#nav-strip ul li.nav-item:hover .subnav ul li a {white-space: normal;}
+#nav-strip ul li .subnav ul li.active a,#nav-strip ul li .subnav ul li a:hover {color: #214181; text-decoration:underline;}
+</style>
+
+<div class="header-bottom">
+	
+	
+		<span><a href="login.jsp">Login</a> &nbsp;&nbsp;|&nbsp;&nbsp; <a
+			href="regist.jsp">Regist</a></span>
+	
+
+</div>
+<div>
+	<div id="logo"
+		style="background:url(./css/images/central-metabolic-pathways.png) repeat-x
+		; height:227px; width:990px;float:left">
+		<div class="search" id="head_search">
+		<form method="post" action="search_action" style="background:#ecebeb;height:25px;margin-top:8px;">
+			<span class="field"> <input type="text" name="search_content"
+				class="field" title="keywords here ..." />
+			</span> <input type="submit" class="search-btn" value="" />
+		</form>
+	</div>
+	</div>
+</div>
+
+<div id="dd-navigation">
+	<div id="nav-strip">
+		<ul style="margin-left:0px;">
+		    <li class="nav-item no-subnav"><a href="home.jsp"><span>Home</span></a></li>
+			<li class="nav-item" id="nav-item_2"><a href="index_action"><span class="primary-link">Browse</span></a>
+			<div class="subnav " id="subnav_2">                       
+                       <div class="subnav-inner">
+                        <ul class="one">                       
+                            <li class=""><a href="index_action">Browse Flux distribution</a></li>
+                            <li class=""><a href="reactants_action">Browse Metabolites and Reactions</a></li>
+                         </ul>                      
+                       </div>                       
+                       </div>
+            </li>
+			<li class="nav-item no-subnav"><a href="compare.jsp"><span>Alignment</span></a></li>
+			<li class="nav-item no-subnav"><a href="search.jsp"><span>Search</span></a></li>
+			<li class="nav-item no-subnav"><a href="download_action"><span>Download</span></a></li>
+			<li class="nav-item no-subnav"><a href="feedback.jsp"><span>Feed Back</span></a></li>
+			<li class="nav-item no-subnav"><a href="user_userinfo"><span>Account</span></a></li>
+			<li class="nav-item no-subnav"><a href="help.jsp"><span>Tutorial</span></a></li>
+		</ul>
+	</div>
+</div>
+<script src="js/rcom-nav.js" type="text/javascript"></script>
+				<div class="main">
+                     <table id="report">
+					        <tr>
+					            <th>Species</th>
+					            <th>Reference</th>
+					            <th></th>
+					        </tr>
+					        
+					        	<tr>
+						            <td>Actinobacillus succinogenes</td>
+						            <td>Metab Eng. 2008 Jan;10(1):55-68. 13C-metabolic flux analysis of Actinobacillus succinogenes fermentative metabolism at different NaHCO3 and H2 concentrations. McKinlay JB, Vieille C.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Actinobacillus succinogenes</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Metab Eng. 2007 Mar;9(2):177-92. Determining Actinobacillus succinogenes metabolic pathways and fluxes by NMR and GC-MS analyses of 13C-labeled metabolic product isotopomers. McKinlay JB, Shachar-Hill Y, Zeikus JG, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/429eafecb84d2f003e1fe9297b257538.xls">download--429eafecb84d2f003e1fe9297b257538.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2008 Jan;10(1):55-68. 13C-metabolic flux analysis of Actinobacillus succinogenes fermentative metabolism at different NaHCO3 and H2 concentrations. McKinlay JB, Vieille C.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/36a1b4872c5d4d32d2daff6da6d30dbf.xls">download--36a1b4872c5d4d32d2daff6da6d30dbf.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Agrobacterium tumefaciens</td>
+						            <td>J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Agrobacterium tumefaciens</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/32464c0c4a83e765853b145c4bae424e.xls">download--32464c0c4a83e765853b145c4bae424e.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Arthrobacter sp</td>
+						            <td>J Biotechnol. 2013 Dec;168(4):355-61. Metabolic flux analysis of Arthrobacter sp. CGMCC 3584 for cAMP production based on 13C tracer experiments and gas chromatography-mass spectrometry. Niu H, Chen Y, Yao S,et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Arthrobacter sp</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biotechnol. 2013 Dec;168(4):355-61. Metabolic flux analysis of Arthrobacter sp. CGMCC 3584 for cAMP production based on 13C tracer experiments and gas chromatography-mass spectrometry. Niu H, Chen Y, Yao S,et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/bf68444d2c98a42eda5dc925e57897c4.xls">download--bf68444d2c98a42eda5dc925e57897c4.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Ashbya gossypii</td>
+						            <td>J Biosci Bioeng. 2014 Aug 13. pii: S1389-1723(14)00230-8. Comparative metabolic flux analysis of an Ashbya gossypii wild type strain and a high riboflavin-producing mutant strain. Jeong BY, Wittmann C, Kato T, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Ashbya gossypii</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biosci Bioeng. 2014 Aug 13. pii: S1389-1723(14)00230-8. Comparative metabolic flux analysis of an Ashbya gossypii wild type strain and a high riboflavin-producing mutant strain. Jeong BY, Wittmann C, Kato T, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/b2c18e730cadd25794d29efc30fdf74a.xls">download--b2c18e730cadd25794d29efc30fdf74a.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Aspergillus nidulans</td>
+						            <td>PLoS One. 2008 3(12):e3847. Systems analysis unfolds the relationship between the phosphoketolase pathway and growth in Aspergillus nidulans. Panagiotou G, Andersen MR, Grotkjaer T, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Aspergillus nidulans</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Microbiology. 2005 Jul;151:2209-21. CreA influences the metabolic fluxes of Aspergillus nidulans during growth on glucose and xylose. David H, Krogh AM, Roca C, Akesson M, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/e96162ff991879a2c59cc2b71a783a25.xls">download--e96162ff991879a2c59cc2b71a783a25.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">PLoS One. 2008 3(12):e3847. Systems analysis unfolds the relationship between the phosphoketolase pathway and growth in Aspergillus nidulans. Panagiotou G, Andersen MR, Grotkjaer T, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/bf9d0cc7919740f3425dc04505220ed5.xls">download--bf9d0cc7919740f3425dc04505220ed5.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Aspergillus niger</td>
+						            <td>Metab Eng. 2000 Jan;2(1):34-41. Construction and characterization of an oxalic acid nonproducing strain of Aspergillus niger. Pedersen H, Christensen B, Hjort C, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Aspergillus niger</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Metab Eng. 2000 Jan;2(1):34-41. Construction and characterization of an oxalic acid nonproducing strain of Aspergillus niger. Pedersen H, Christensen B, Hjort C, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/66bf0a9044faa0ed54fe4bf5158f7ac6.xls">download--66bf0a9044faa0ed54fe4bf5158f7ac6.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2012 Jan;14(1):47-58. Integration of in vivo and in silico metabolic fluxes for improvement of recombinant protein production. Driouch H, Melzer G, Wittmann C.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/3e4b286d2e48420af7249f52c351c4a8.xls">download--3e4b286d2e48420af7249f52c351c4a8.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Bacillus megaterium</td>
+						            <td>J Biotechnol. 2007 Dec;132(4):385-94. Effect of different carbon sources on central metabolic fluxes and the recombinant production of a hydrolase from Thermobifida fusca in Bacillus megaterium. Furch T, Wittmann C, Wang W, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Bacillus megaterium</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Bioprocess Biosyst Eng. 2007 Jan;30(1):47-59. Comparative study on central metabolic fluxes of Bacillus megaterium strains in continuous culture using 13C labelled substrates. Furch T, Hollmann R, Wittmann C, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ae7b67ed08c77ca4effa6354ba3658ce.xls">download--ae7b67ed08c77ca4effa6354ba3658ce.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2007 Dec;132(4):385-94. Effect of different carbon sources on central metabolic fluxes and the recombinant production of a hydrolase from Thermobifida fusca in Bacillus megaterium. Furch T, Wittmann C, Wang W, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8d03c57b0727e4781fafb76ecea7d442.xls">download--8d03c57b0727e4781fafb76ecea7d442.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Bacillus subtilis</td>
+						            <td>BMC Syst Biol. 2008 Mar;2:29. Hybrid optimization for 13C metabolic flux analysis using systems parametrized by compactification. Yang TH, Frick O, Heinzle E.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Bacillus subtilis</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">BMC Syst Biol. 2008 Mar;2:29. Hybrid optimization for 13C metabolic flux analysis using systems parametrized by compactification. Yang TH, Frick O, Heinzle E.</li>
+							                   	<p class="flip" id="00000005" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000005" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/652c270c6a2282b810a1c674fe50af97.xls">download--652c270c6a2282b810a1c674fe50af97.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2001 Sep;76(2):144-56. Metabolic flux analysis with a comprehensive isotopomer model in Bacillus subtilis. Dauner M, Bailey JE, Sauer U.</li>
+							                   	<p class="flip" id="00000003" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000003" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/f2cd01747ad801452e8803dd3f752a64.xls">download--f2cd01747ad801452e8803dd3f752a64.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2012 Mar;109(3):763-71. Collisional fragmentation of central carbon metabolites in LC-MS/MS increases precision of 13 C metabolic flux analysis. Ruhl M, Rupp B, Noh K, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8b5fc46bb5568ea78a1a768d0e0df5ec.xls">download--8b5fc46bb5568ea78a1a768d0e0df5ec.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Prog. 2000 Mar-Apr;16(2):169-75. 13C NMR evidence for pyruvate kinase flux attenuation underlying suppressed acid formation in Bacillus subtilis. Phalakornkule C, Fry B, Zhu T, et al.</li>
+							                   	<p class="flip" id="00000006" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000006" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/6868a0de35cf493c61fd227a29597e3f.xls">download--6868a0de35cf493c61fd227a29597e3f.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species.
+Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000009" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000009" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/72c2ca985184cfd6865f901012c192e2.xls">download--72c2ca985184cfd6865f901012c192e2.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2008 Sep;190(18):6178-87. CcpN controls central carbon fluxes in Bacillus subtilis. Tannler S, Fischer E, Le Coq D, et al.</li>
+							                   	<p class="flip" id="00000004" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000004" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/fa9b939841c80b548cd33724fdccb029.xls">download--fa9b939841c80b548cd33724fdccb029.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biol Chem. 2012 Aug;287(33):27959-70. 13C-flux analysis reveals NADPH-balancing transhydrogenation cycles in stationary phase of nitrogen-starving Bacillus subtilis. Ruhl M, Le Coq D, Aymerich S,et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7868acaa74974bb8152bccf4748be4a2.xls">download--7868acaa74974bb8152bccf4748be4a2.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2008 Jun;7:19. Maintenance metabolism and carbon fluxes in Bacillus species. Tannler S, Decasper S, Sauer U.</li>
+							                   	<p class="flip" id="00000007" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000007" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/53833dd7083d8bf56a5aa6152bd6409f.xls">download--53833dd7083d8bf56a5aa6152bd6409f.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2014 Mar;13(1):40. Metabolic flux responses to genetic modification for shikimic acid production by Bacillus subtilis strains. Liu DF, Ai GM, Zheng QX, et al.</li>
+							                   	<p class="flip" id="00000011" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000011" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7e57f0b1b3ca499e4089fed333235514.xls">download--7e57f0b1b3ca499e4089fed333235514.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Mol Syst Biol. 2013 Nov;9:709. Transcriptional regulation is insufficient to explain substrate-induced flux changes in Bacillus subtilis. Chubukov V, Uhr M, Le Chat L, et al.</li>
+							                   	<p class="flip" id="00000008" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000008" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/614ed624e63e360aacd860de3de8aacb.xls">download--614ed624e63e360aacd860de3de8aacb.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Nat Biotechnol. 1997 May;15(5):448-52. Metabolic fluxes in riboflavin-producing Bacillus subtilis. Sauer U, Hatzimanikatis V, Bailey JE, et al.</li>
+							                   	<p class="flip" id="00000010" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000010" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8e983785e238a1ebe2956f51d0331837.xls">download--8e983785e238a1ebe2956f51d0331837.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Basfia succiniciproducens</td>
+						            <td>Biotechnol Bioeng. 2013 Nov;110(11):3013-23. Systems-wide analysis and engineering of metabolic pathway fluxes in bio-succinate producing Basfia succiniciproducens. Becker J, Reinefeld J, Stellmacher R, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Basfia succiniciproducens</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Biotechnol Bioeng. 2013 Nov;110(11):3013-23. Systems-wide analysis and engineering of metabolic pathway fluxes in bio-succinate producing Basfia succiniciproducens. Becker J, Reinefeld J, Stellmacher R, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/98e916ea6c4c3ac1840c8e1c29aa1d62.xls">download--98e916ea6c4c3ac1840c8e1c29aa1d62.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Chlorobaculum tepidum</td>
+						            <td>J Biol Chem. 2010 Dec;285(50):39544-50. Metabolic flux analysis of the mixotrophic metabolisms in the green sulfur bacterium Chlorobaculum tepidum. Feng X, Tang KH, Blankenship RE, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Chlorobaculum tepidum</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biol Chem. 2010 Dec;285(50):39544-50. Metabolic flux analysis of the mixotrophic metabolisms in the green sulfur bacterium Chlorobaculum tepidum. Feng X, Tang KH, Blankenship RE, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ab867e955616db0cc27d9e570efadf14.xls">download--ab867e955616db0cc27d9e570efadf14.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Corynebacterium glutamicum</td>
+						            <td>Metab Eng. 2010 Jul;12(4):392-400. 13C metabolic flux analysis for larger scale cultivation using gas chromatography-combustion-isotope ratio mass spectrometry. Yuan Y, Yang TH, Heinzle E.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Corynebacterium glutamicum</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Adv Biochem Eng Biotechnol. 1996;54:109-54. In vivo stationary flux analysis by 13C labeling experiments. Wiechert W, de Graaf AA.</li>
+							                   	<p class="flip" id="00000009" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000009" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/f68b4b61295b3a43c60816bc7233c6c8.xls">download--f68b4b61295b3a43c60816bc7233c6c8.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Environ Microbiol. 2004 Dec;70(12):7277-87. Metabolic fluxes in Corynebacterium glutamicum during lysine production with sucrose as carbon source. Wittmann C, Kiefer P, Zelder O.</li>
+							                   	<p class="flip" id="00000005" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000005" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/51c1b19d647195c14531efa06b68f9be.xls">download--51c1b19d647195c14531efa06b68f9be.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Environ Microbiol. 2005 Dec;71(12):8587-96. Amplified expression of fructose ,6-bisphosphatase in Corynebacterium glutamicum increases in vivo flux through the pentose phosphate pathway and lysine production on different carbon sources. Becker J, Klopprogge C, Zelder O, et al.</li>
+							                   	<p class="flip" id="00000004" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000004" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/3469ce9c0a218948a4625a4320487d30.xls">download--3469ce9c0a218948a4625a4320487d30.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Environ Microbiol. 2011 Sep;77(18):6644-52. Comparative 13C metabolic flux analysis of pyruvate dehydrogenase complex-deficient, L-valine-producing Corynebacterium glutamicum. Bartek T, Blombach B, Lang S, et al.</li>
+							                   	<p class="flip" id="00000018" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000018" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/c1376123093d62ee0da2c477edd8cd7b.xls">download--c1376123093d62ee0da2c477edd8cd7b.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 1997 Jul;55(1):118-35. Bidirectional reaction steps in metabolic networks: II. Flux estimation and statistical analysis. Wiechert W, Siefke C, de Graaf AA, et al.</li>
+							                   	<p class="flip" id="00000016" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000016" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/27b3c61a90573a5e862d90101eb6c46c.xls">download--27b3c61a90573a5e862d90101eb6c46c.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 1997 Oct;56(2):168-80. Response of the central metabolism of Corynebacterium glutamicum to different flux burdens. Marx A, Striege K, de Graaf AA, et al.</li>
+							                   	<p class="flip" id="00000022" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000022" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/b212df3400c04aeed1ebab1b4b8fb879.xls">download--b212df3400c04aeed1ebab1b4b8fb879.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2004 Mar;85(5):497-505. Serial flux mapping of Corynebacterium glutamicum during fed-batch L-lysine production using the sensor reactor approach. Drysch A, El Massaoudi M, Wiechert W, et al.</li>
+							                   	<p class="flip" id="00000012" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000012" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/dcedca3da92d3bd748dc455e52bf5de0.xls">download--dcedca3da92d3bd748dc455e52bf5de0.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Eur J Biochem. 1998 May;254(1):96-102. Carbon-flux distribution in the central metabolic pathways of Corynebacterium glutamicum during growth on fructose. Dominguez H, Rollin C, Guyonvarch A, et al.</li>
+							                   	<p class="flip" id="00000006" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000006" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/912daa86b7b60329879dbee0bde24094.xls">download--912daa86b7b60329879dbee0bde24094.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Eur J Biochem. 2001 Apr;268(8):2441-55. Application of MALDI-TOF MS to lysine-producing Corynebacterium glutamicum: a novel approach for metabolic flux analysis. Wittmann C, Heinzle E.</li>
+							                   	<p class="flip" id="00000014" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000014" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/81b754f947f0a117e32ebdcfeed69cd3.xls">download--81b754f947f0a117e32ebdcfeed69cd3.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Eur J Biochem. 2003 Sep;270(17):3525-42. Systematic quantification of complex metabolic flux networks using stable isotopes and mass spectrometry. Klapa MI, Aon JC, Stephanopoulos G.</li>
+							                   	<p class="flip" id="00000013" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000013" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/d75e4c7c83ff9c97f16ee03389b30125.xls">download--d75e4c7c83ff9c97f16ee03389b30125.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2004 Mar;186(6):1769-84. In-depth profiling of lysine-producing Corynebacterium glutamicum by combined analysis of the transcriptome, metabolome, and fluxome. Kromer JO, Sorgenfrei O, Klopprogge K, et al.</li>
+							                   	<p class="flip" id="00000010" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000010" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/f96cdad2d282ed53856d776b73833231.xls">download--f96cdad2d282ed53856d776b73833231.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biosci Bioeng. 2011 Dec;112(6):595-601. Improving protein secretion of a transglutaminase-secreting Corynebacterium glutamicum recombinant strain on the basis of 13C metabolic flux analysis. Umakoshi M, Hirasawa T, Furusawa C, et al.</li>
+							                   	<p class="flip" id="00000008" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000008" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/155611f7f54cabcdd9b368a163fd5b81.xls">download--155611f7f54cabcdd9b368a163fd5b81.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 1999 Jan;1(1):35-48. Response of the central metabolism in Corynebacterium glutamicum to the use of an NADH-dependent glutamate dehydrogenase. Marx A, Eikmanns BJ, Sahm H, et al.</li>
+							                   	<p class="flip" id="00000011" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000011" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8ab3b9d30e47040a7812e51764a6fcb6.xls">download--8ab3b9d30e47040a7812e51764a6fcb6.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2003 Apr;5(2):96-107. Production process monitoring by serial mapping of microbial carbon flux distributions using a novel Sensor Reactor approach: II--(13)C-labeling-based metabolic flux analysis and L-lysine production. Drysch A, El Massaoudi M, Mack C, et al.</li>
+							                   	<p class="flip" id="00000017" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000017" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/795cce40d12dce695efdbe8645c4a8a4.xls">download--795cce40d12dce695efdbe8645c4a8a4.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2006 Sep;8(5):432-46. Respirometric 13C flux analysis--Part II: in vivo flux estimation of lysine-producing Corynebacterium glutamicum. Hoon Yang T, Wittmann C, Heinzle E.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7ed4d8fafeb0f65ce0f6ef42292ad9a4.xls">download--7ed4d8fafeb0f65ce0f6ef42292ad9a4.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2010 Jul;12(4):392-400. 13C metabolic flux analysis for larger scale cultivation using gas chromatography-combustion-isotope ratio mass spectrometry. Yuan Y, Yang TH, Heinzle E.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/a18adc608d68c9f3d5d873885cfde399.xls">download--a18adc608d68c9f3d5d873885cfde399.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2014 Jun 19;25C:30-37. A de novo NADPH generation pathway for improving lysine production of Corynebacterium glutamicum by rational design of the coenzyme specificity of glyceraldehyde 3-phosphate dehydrogenase. Bommareddy RR, Chen Z, Rappert S, et al.</li>
+							                   	<p class="flip" id="00000015" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000015" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/2679acf18b1af54e58bf135fb964a654.xls">download--2679acf18b1af54e58bf135fb964a654.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2007 Jun;6:19. Study on roles of anaplerotic pathways in glutamate overproduction of Corynebacterium glutamicum by metabolic flux analysis. Shirai T, Fujimura K, Furusawa C, et al.</li>
+							                   	<p class="flip" id="00000020" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000020" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8e35b941fe75fc3cdc7c60977776cabc.xls">download--8e35b941fe75fc3cdc7c60977776cabc.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2008 Mar;7:8. Metabolic responses to pyruvate kinase deletion in lysine producing Corynebacterium glutamicum.
+Becker J, Klopprogge C, Wittmann C.</li>
+							                   	<p class="flip" id="00000007" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000007" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/daeeea4e6f496a634d903c580836014d.xls">download--daeeea4e6f496a634d903c580836014d.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2009 May;8:25. OpenFLUX: efficient modelling software for 13C-based metabolic flux analysis. Quek LE, Wittmann C, Nielsen LK, et al.</li>
+							                   	<p class="flip" id="00000021" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000021" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/c9a8dc93d14dc205d6ed107335d174e5.xls">download--c9a8dc93d14dc205d6ed107335d174e5.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2012 Oct;11:138. Metabolic engineering of the purine biosynthetic pathway in Corynebacterium glutamicum results in increased intracellular pool sizes of IMP and hypoxanthine. Peifer S, Barduhn T, Zimmet S, et al.</li>
+							                   	<p class="flip" id="00000019" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000019" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/a90a67610e38708039553b1f370cdbc5.xls">download--a90a67610e38708039553b1f370cdbc5.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Q Rev Biophys. 1998 Feb;31(1):41-106. 13C-NMR, MS and metabolic flux balancing in biotechnology research. Szyperski T.</li>
+							                   	<p class="flip" id="00000003" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000003" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/1f08ba11ceaa8902c10edba00d526abb.xls">download--1f08ba11ceaa8902c10edba00d526abb.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Desulfovibrio vulgaris</td>
+						            <td>J Bacteriol. 2007 Feb;189(3):940-9. Pathway confirmation and flux analysis of central metabolic pathways in Desulfovibrio vulgaris hildenborough using gas chromatography-mass spectrometry and Fourier transform-ion cyclotron resonance mass spectrometry. Tang Y, Pingitore F, Mukhopadhyay A, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Desulfovibrio vulgaris</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2007 Feb;189(3):940-9. Pathway confirmation and flux analysis of central metabolic pathways in Desulfovibrio vulgaris hildenborough using gas chromatography-mass spectrometry and Fourier transform-ion cyclotron resonance mass spectrometry. Tang Y, Pingitore F, Mukhopadhyay A, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/96fa741e5689e045a9c733217d58939b.xls">download--96fa741e5689e045a9c733217d58939b.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Escherichia coli</td>
+						            <td>J Bacteriol. 2008 Apr;190(7):2323-30. Cyclic AMP-dependent catabolite repression is the dominant control mechanism of metabolic fluxes under glucose limitation in Escherichia coli. Nanchen A, Schicker A, Revelles O, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Escherichia coli</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Anal Biochem. 2004 Feb;325(2):308-16. High-throughput metabolic flux analysis based on gas chromatography-mass spectrometry derived 13C constraints. Fischer E, Zamboni N, Sauer U.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/9bf6f02a5cb0a2ef191e49c3066892df.xls">download--9bf6f02a5cb0a2ef191e49c3066892df.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Environ Microbiol. 1997 Aug;63(8):3205-10. Reduction of aerobic acetate production by Escherichia coli. Farmer WR, Liao JC.</li>
+							                   	<p class="flip" id="00000010" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000010" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/4874ffc349232c5560e279c46b3c4e71.xls">download--4874ffc349232c5560e279c46b3c4e71.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Environ Microbiol. 2008 Nov;74(22):7002-15. Global transcription and metabolic flux analysis of Escherichia coli in glucose-limited fed-batch cultivations. Lemuth K, Hardiman T, Winter S, et al.</li>
+							                   	<p class="flip" id="00000023" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000023" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/acdb0a2aec25785603f8f660d675d759.xls">download--acdb0a2aec25785603f8f660d675d759.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Microbiol Biotechnol. 2004 Jan;63(4):407-17. Metabolic flux analysis of pykF gene knockout Escherichia coli based on 13C-labeling experiments together with measurements of enzyme activities and intracellular metabolite concentrations. Al Zaid Siddiquee K, Arauzo-Bravo MJ, Shimizu K.</li>
+							                   	<p class="flip" id="00000015" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000015" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/1133122c4f24c965362a340b0484ccd8.xls">download--1133122c4f24c965362a340b0484ccd8.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Microbiol Biotechnol. 2004 Mar;64(1):91-8. Global metabolic response of Escherichia coli to gnd or zwf gene-knockout, based on 13C-labeling experiments and the measurement of enzyme activities. Zhao J, Baba T, Mori H, et al.</li>
+							                   	<p class="flip" id="00000017" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000017" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/5f74af4dea14b5fdfd52e9a145b4e21d.xls">download--5f74af4dea14b5fdfd52e9a145b4e21d.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">BMC Syst Biol. 2010 Sep;4:122. A systematic investigation of Escherichia coli central carbon metabolism in response to superoxide stress. Rui B, Shen T, Zhou H, et al.</li>
+							                   	<p class="flip" id="00000020" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000020" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/cb0ba738d380eaf0315571b68ccb4ae3.xls">download--cb0ba738d380eaf0315571b68ccb4ae3.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2008 Apr;99(5):1170-85. Metabolic flux analysis in Escherichia coli by integrating isotopic dynamic and isotopic stationary 13C labeling data. Schaub J, Mauch K, Reuss M.</li>
+							                   	<p class="flip" id="00000007" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000007" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/151676066e8ff9c88e83c7cbfbb540fd.xls">download--151676066e8ff9c88e83c7cbfbb540fd.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2014 Jan;111(1):202-8. IsoDesign: a software for optimizing the design of 13C-metabolic flux analysis experiments.
+Millard P, Sokol S, Letisse F, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/cb4919a56a1ffc2028b86989a8702ab4.xls">download--cb4919a56a1ffc2028b86989a8702ab4.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Prog. 2004 May-Jun;20(3):706-14. Serial 13C-based flux analysis of an L-phenylalanine-producing E.coli strain using the sensor reactor. Wahl A, El Massaoudi M, Schipper D, et al.</li>
+							                   	<p class="flip" id="00000006" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000006" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/81eff1c98c8de770a28d450f5416625a.xls">download--81eff1c98c8de770a28d450f5416625a.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Prog. 2010 Jan-Feb;26(1):1-10. Rapid media transition: an experimental approach for steady state analysis of metabolic pathways. Link H, Anselment B, Weuster-Botz D.</li>
+							                   	<p class="flip" id="00000027" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000027" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/a400c72d0727b2f4345faf55c90c2197.xls">download--a400c72d0727b2f4345faf55c90c2197.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">FEMS Microbiol Lett. 2003 Mar;220(2):295-301. Analysis of metabolic and physiological responses to gnd knockout in Escherichia coli by using C-13 tracer experiment and enzyme activity measurement. Jiao Z, Baba T, Mori H, et al.</li>
+							                   	<p class="flip" id="00000013" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000013" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/fa21cfa7353ec0e00630865d7177d4e3.xls">download--fa21cfa7353ec0e00630865d7177d4e3.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">FEMS Microbiol Lett. 2004 Jun;235(1):17-23. Metabolic flux analysis for a ppc mutant Escherichia coli based on 13C-labelling experiments together with enzyme activity assays and intracellular metabolite measurements. Peng L, Arauzo-Bravo MJ, Shimizu K.</li>
+							                   	<p class="flip" id="00000008" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000008" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/cf696a2d11f1aa65a058384d4c95d75f.xls">download--cf696a2d11f1aa65a058384d4c95d75f.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">FEMS Microbiol Rev. 1996 Dec;19(2):85-116. Flux analysis and control of the central metabolic pathways in Escherichia coli. Holms H.</li>
+							                   	<p class="flip" id="00000021" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000021" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7be596adbde3170344c20d3547dd747d.xls">download--7be596adbde3170344c20d3547dd747d.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2002 Jan;184(1):152-64. Metabolic flux responses to pyruvate kinase knockout in Escherichia coli. Emmerling M, Dauner M, Ponti A, et al.</li>
+							                   	<p class="flip" id="00000014" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000014" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/15d5fb8184f2eeea9701ddb793994ff5.xls">download--15d5fb8184f2eeea9701ddb793994ff5.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2003 Dec;185(24):7053-67. Responses of the central metabolism in Escherichia coli to phosphoglucose isomerase and glucose-6-phosphate dehydrogenase knockouts. Hua Q, Yang C, Baba T, et al.</li>
+							                   	<p class="flip" id="00000025" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000025" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/e795eaedd12fdd1827bc15de5882000a.xls">download--e795eaedd12fdd1827bc15de5882000a.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2005 May;187(9):3171-9. Impact of global transcriptional regulation by ArcA, ArcB, Cra, Crp, Cya, Fnr, and Mlc on glucose catabolism in Escherichia coli. Perrenoud A, Sauer U.</li>
+							                   	<p class="flip" id="00000030" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000030" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0e5562f5406d2acd8017f6c1f11401f0.xls">download--0e5562f5406d2acd8017f6c1f11401f0.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2008 Apr;190(7):2323-30. Cyclic AMP-dependent catabolite repression is the dominant control mechanism of metabolic fluxes under glucose limitation in Escherichia coli. Nanchen A, Schicker A, Revelles O, et al.</li>
+							                   	<p class="flip" id="00000024" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000024" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7325d945e23f4ebb78ecfc7b400e5c7b.xls">download--7325d945e23f4ebb78ecfc7b400e5c7b.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2009 Sep;191(17):5538-48. Metabolic flux analysis of Escherichia coli creB and arcA mutants reveals shared control of carbon catabolism under microaerobic growth conditions. Nikel PI, Zhu J, San KY, et al.</li>
+							                   	<p class="flip" id="00000022" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000022" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/bebdbfa2f15a02ca8e3f5d9944585146.xls">download--bebdbfa2f15a02ca8e3f5d9944585146.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biol Chem. 2004 Feb;279(8):6613-9. The soluble and membrane-bound transhydrogenases UdhA and PntAB have divergent functions in NADPH metabolism of Escherichia coli. Sauer U, Canonaco F, Heri S, et al.</li>
+							                   	<p class="flip" id="00000016" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000016" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/1baf177c35411f3f8b41953093d1e799.xls">download--1baf177c35411f3f8b41953093d1e799.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biol Chem. 2006 Mar;281(12):8024-33. Latent pathway activation and increased pathway capacity enable Escherichia coli adaptation to loss of key metabolic enzymes. Fong SS, Nanchen A, Palsson BO, et al.</li>
+							                   	<p class="flip" id="00000018" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000018" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/42cb0edef24890d8c3afe3264e11d9cf.xls">download--42cb0edef24890d8c3afe3264e11d9cf.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2003 Mar;101(2):101-17. Metabolic flux analysis of Escherichia coli K12 grown on 13C-labeled acetate and glucose using GC-MS and powerful flux calculation method. Zhao J, Shimizu K.</li>
+							                   	<p class="flip" id="00000019" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000019" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0b59c7b4aed90dfcbe26c32b718566be.xls">download--0b59c7b4aed90dfcbe26c32b718566be.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2006 Mar;122(2):254-66. Effect of lpdA gene knockout on the metabolism in Escherichia coli based on enzyme activities, intracellular metabolite concentrations and metabolic flux analysis by 13C-labeling experiments. Li M, Ho PY, Yao S,et al.</li>
+							                   	<p class="flip" id="00000009" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000009" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/2efde048fe3f8f240561e71135dfa6b7.xls">download--2efde048fe3f8f240561e71135dfa6b7.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2007 Apr;129(2):249-67. Metabolic flux analysis at ultra short time scale: isotopically non-stationary 13C labeling experiments. Noh K, Gronke K, Luo B, et al.</li>
+							                   	<p class="flip" id="00000011" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000011" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/63fadee5dfb21399c37f97ea22bef41c.xls">download--63fadee5dfb21399c37f97ea22bef41c.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2007 Jan;128(1):93-111. Determination of metabolic flux changes during fed-batch cultivation from measurements of intracellular amino acids by LC-MS/MS. Iwatani S, Van Dien S, Shimbo K, et al.</li>
+							                   	<p class="flip" id="00000029" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000029" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/8b41acce483fbe44c85aaa956a5da995.xls">download--8b41acce483fbe44c85aaa956a5da995.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Chromatogr A. 2007 Aug;1159(1-2):134-41. Direct measurement of isotopomer of intracellular metabolites using capillary electrophoresis time-of-flight mass spectrometry for efficient metabolic flux analysis. Toya Y, Ishii N, Hirasawa T, et al.</li>
+							                   	<p class="flip" id="00000012" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000012" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0e382b093f803f384fbb8b2a5f22a48b.xls">download--0e382b093f803f384fbb8b2a5f22a48b.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2003 Apr;5(2):74-85. A metabolic network analysis & NMR experiment design tool with user interface-driven model construction for depth-first search analysis. Zhu T, Phalakornkule C, Ghosh S, et al.</li>
+							                   	<p class="flip" id="00000003" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000003" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/d5ff4f17cf23bdef2dac20757ae9e4af.xls">download--d5ff4f17cf23bdef2dac20757ae9e4af.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2013 Nov;20:49-55. COMPLETE-MFA:complementary parallel labeling experiments technique for metabolic flux analysis. Leighty RW, Antoniewicz MR.</li>
+							                   	<p class="flip" id="00000004" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000004" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/5cd96ed0b226edb4c431f349ad70d9da.xls">download--5cd96ed0b226edb4c431f349ad70d9da.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2012 Sep;11:127. Consequences of phosphoenolpyruvate:sugar phosphotranferase system and pyruvate kinase isozymes inactivation in central carbon metabolism flux distribution in Escherichia coli. Meza E, Becker J, Bolivar F, et al.</li>
+							                   	<p class="flip" id="00000028" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000028" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/007d4e2b7b05355b44180de78129798a.xls">download--007d4e2b7b05355b44180de78129798a.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microbiology. 2006 Aug;152(Pt 8):2421-31. Indole-3-acetic acid regulates the central metabolic pathways in Escherichia coli. Bianco C, Imperlini E, Calogero R, et al.</li>
+							                   	<p class="flip" id="00000026" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000026" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/c02a28f1d398cfca740d8a896961e712.xls">download--c02a28f1d398cfca740d8a896961e712.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Mol Syst Biol. 2011 Mar;7:477. Large-scale 13C-flux analysis reveals distinct transcriptional control of respiratory and fermentative metabolism in Escherichia coli. Haverkorn van Rijsewijk BR, Nanchen A, Nallet S, et al.</li>
+							                   	<p class="flip" id="00000031" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000031" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/afd9edb5e6ccc478603f7e675f0a6edf.xls">download--afd9edb5e6ccc478603f7e675f0a6edf.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Nat Protoc. 2009;4(6):878-92. (13)C-based metabolic flux analysis. Zamboni N, Fendt SM, Ruhl M, et al.</li>
+							                   	<p class="flip" id="00000005" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000005" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ff31a805cace3d0b8e3bc6506cede2e5.xls">download--ff31a805cace3d0b8e3bc6506cede2e5.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Geobacillus thermoglucosidasius</td>
+						            <td>Biotechnol Bioeng. 2009 Apr;102(5):1377-86. Analysis of metabolic pathways and fluxes in a newly discovered thermophilic and ethanol-tolerant Geobacillus strain. Tang YJ, Sapra R, Joyner D, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Geobacillus thermoglucosidasius</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Biotechnol Bioeng. 2009 Apr;102(5):1377-86. Analysis of metabolic pathways and fluxes in a newly discovered thermophilic and ethanol-tolerant Geobacillus strain. Tang YJ, Sapra R, Joyner D, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/5e440a2abf6a81ae3d44b96b1251d00b.xls">download--5e440a2abf6a81ae3d44b96b1251d00b.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Geobacter metallireducens</td>
+						            <td>Appl Environ Microbiol. 2007 Jun;73(12):3859-64. Flux analysis of central metabolic pathways in Geobacter metallireducens during reduction of soluble Fe(III)-nitrilotriacetic acid. Tang YJ, Chakraborty R, Martin HG, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Geobacter metallireducens</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Environ Microbiol. 2007 Jun;73(12):3859-64. Flux analysis of central metabolic pathways in Geobacter metallireducens during reduction of soluble Fe(III)-nitrilotriacetic acid. Tang YJ, Chakraborty R, Martin HG, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/5e079736c6278bafc84c0cdf11c070de.xls">download--5e079736c6278bafc84c0cdf11c070de.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Gluconacetobacter xylinus</td>
+						            <td>Appl Microbiol Biotechnol. 2013 Jul;97(14):6189-99. Metabolic flux analysis of Gluconacetobacter xylinus for bacterial cellulose production. Zhong C, Zhang GC, Liu M, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Gluconacetobacter xylinus</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Microbiol Biotechnol. 2013 Jul;97(14):6189-99. Metabolic flux analysis of Gluconacetobacter xylinus for bacterial cellulose production. Zhong C, Zhang GC, Liu M, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/fd573198b3d91bd24b26327999d2d879.xls">download--fd573198b3d91bd24b26327999d2d879.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Homo sapiens</td>
+						            <td>Metab Eng. 2013 Jan;15:206-17. Isotopically nonstationary 13C flux analysis of Myc-induced metabolic reprogramming in B-cells. Murphy TA, Dang CV, Young JD.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Homo sapiens</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biosci Bioeng. 2011 Dec;112(6):616-23. Metabolite channeling and compartmentation in the human cell line AGE1.HN determined by 13C labeling experiments and 13C metabolic flux analysis. Niklas J, Sandig V, Heinzle E.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ac8c6da10719bd009b972b676342677d.xls">download--ac8c6da10719bd009b972b676342677d.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2013 Jan;15:206-17. Isotopically nonstationary 13C flux analysis of Myc-induced metabolic reprogramming in B-cells. Murphy TA, Dang CV, Young JD.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ea8da74dfafa77b3ad393705fcfe40c5.xls">download--ea8da74dfafa77b3ad393705fcfe40c5.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Methylobacterium extorquens AM1</td>
+						            <td>Biotechnol Bioeng. 2003 Oct;84(1):45-55. Quantification of central metabolic fluxes in the facultative methylotroph methylobacterium extorquens AM1 using 13C-label tracing and mass spectrometry. Van Dien SJ, Strovas T, Lidstrom ME.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Methylobacterium extorquens AM1</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Biotechnol Bioeng. 2003 Oct;84(1):45-55. Quantification of central metabolic fluxes in the facultative methylotroph methylobacterium extorquens AM1 using 13C-label tracing and mass spectrometry. Van Dien SJ, Strovas T, Lidstrom ME.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/a3c1d5f0ed9c3721b9be54780a456ae7.xls">download--a3c1d5f0ed9c3721b9be54780a456ae7.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Mycobacterium tuberculosis</td>
+						            <td>PLoS Pathog. 2011 Jul;7(7):e1002091. 13C metabolic flux analysis identifies an unusual route for pyruvate dissimilation in mycobacteria which requires isocitrate lyase and carbon dioxide fixation. Beste DJ, Bonde B, Hawkins N, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Mycobacterium tuberculosis</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">PLoS Pathog. 2011 Jul;7(7):e1002091. 13C metabolic flux analysis identifies an unusual route for pyruvate dissimilation in mycobacteria which requires isocitrate lyase and carbon dioxide fixation. Beste DJ, Bonde B, Hawkins N, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/559f23dd45fdb1be3b7aae2b1ca83038.xls">download--559f23dd45fdb1be3b7aae2b1ca83038.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Penicillium chrysogenum</td>
+						            <td>Biotechnol Bioeng. 2000 Jun;68(6):602-18. Application of metabolic flux analysis for the identification of metabolic bottlenecks in the biosynthesis of penicillin-G. van Gulik WM, de Laat WT, Vinke JL, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Penicillium chrysogenum</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Biotechnol Bioeng. 2000 Jun;68(6):602-18. Application of metabolic flux analysis for the identification of metabolic bottlenecks in the biosynthesis of penicillin-G. van Gulik WM, de Laat WT, Vinke JL, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/deef84b08a9f674489cd4e2872b69c4a.xls">download--deef84b08a9f674489cd4e2872b69c4a.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Pichia pastoris</td>
+						            <td>Microb Cell Fact. 2012 May;11:57. Metabolic flux profiling of recombinant protein secreting Pichia pastoris growing on glucose: methanol mixtures. Jorda J, Jouhten P, Camara E, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Pichia pastoris</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Environ Microbiol. 2004 Oct;70(10):5905-11. Oxygen- and glucose-dependent regulation of central carbon metabolism in Pichia anomala. Fredlund E, Blank LM, Schnurer J, et al.</li>
+							                   	<p class="flip" id="00000003" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000003" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/1798786a0896da45dab4728e54560666.xls">download--1798786a0896da45dab4728e54560666.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2012 May;11:57. Metabolic flux profiling of recombinant protein secreting Pichia pastoris growing on glucose: methanol mixtures. Jorda J, Jouhten P, Camara E, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/aca1585a05ce725d0748423350b2765d.xls">download--aca1585a05ce725d0748423350b2765d.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">N Biotechnol. 2014 Jan;31(1):120-32. Metabolic flux analysis of recombinant Pichia pastoris growing on different glycerol/methanol mixtures by iterative fitting of NMR-derived (13)C-labelling data from proteinogenic amino acids. Jorda J, de Jesus SS, Peltier S, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/05e18997a202f5a866c46d5f96f19afc.xls">download--05e18997a202f5a866c46d5f96f19afc.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Pseudomonas aeruginosa</td>
+						            <td>PLoS One. 2014 Apr;9(4):e88368. Robustness and plasticity of metabolic pathway flux among uropathogenic isolates of Pseudomonas aeruginosa. Berger A, Dohnt K, Tielen P, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Pseudomonas aeruginosa</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">PLoS One. 2014 Apr;9(4):e88368. Robustness and plasticity of metabolic pathway flux among uropathogenic isolates of Pseudomonas aeruginosa. Berger A, Dohnt K, Tielen P, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/bae7fa0438d884083322cc8887901a61.xls">download--bae7fa0438d884083322cc8887901a61.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Pseudomonas fluorescens</td>
+						            <td>J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species.
+Fuhrer T, Fischer E, Sauer U.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Pseudomonas fluorescens</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species.
+Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/a33e27fd3770485f02cf44b0cab1fcd8.xls">download--a33e27fd3770485f02cf44b0cab1fcd8.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Pseudomonas putida</td>
+						            <td>J Biotechnol. 2009 Aug;143(2):124-9. Metabolic flux analysis of a phenol producing mutant of Pseudomonas putida S12: verification and complementation of hypotheses derived from transcriptomics. Wierckx N, Ruijssenaars HJ, de Winde JH, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Pseudomonas putida</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species.
+Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/dbabc44061463de39594c4801ae7716e.xls">download--dbabc44061463de39594c4801ae7716e.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biotechnol. 2009 Aug;143(2):124-9. Metabolic flux analysis of a phenol producing mutant of Pseudomonas putida S12: verification and complementation of hypotheses derived from transcriptomics. Wierckx N, Ruijssenaars HJ, de Winde JH, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/268c7f8ba9e5f628f9f59e09e082bbd2.xls">download--268c7f8ba9e5f628f9f59e09e082bbd2.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Rhodobacter sphaeroides</td>
+						            <td>J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Rhodobacter sphaeroides</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/aed2b3b78381b1d961ffa058d4f372d4.xls">download--aed2b3b78381b1d961ffa058d4f372d4.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Rhodopseudomonas palustris</td>
+						            <td>J Biol Chem. 2014 Jan;289(4):1960-70. Non-growing Rhodopseudomonas palustris increases the hydrogen gas yield from acetate by shifting from the glyoxylate shunt to the tricarboxylic acid cycle. McKinlay JB, Oda Y, Ruhl M, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Rhodopseudomonas palustris</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biol Chem. 2014 Jan;289(4):1960-70. Non-growing Rhodopseudomonas palustris increases the hydrogen gas yield from acetate by shifting from the glyoxylate shunt to the tricarboxylic acid cycle. McKinlay JB, Oda Y, Ruhl M, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/c91bd67ef3a3bf471d19e101ded898b6.xls">download--c91bd67ef3a3bf471d19e101ded898b6.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Saccharomyces cerevisiae</td>
+						            <td>Appl Microbiol Biotechnol. 2012 Aug;95(4):1001-10. Physiological characterization of recombinant Saccharomyces cerevisiae expressing the Aspergillus nidulans phosphoketolase pathway: validation of activity through 13C-based metabolic flux analysis. Papini M, Nookaew I, Siewers V, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Saccharomyces cerevisiae</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Environ Microbiol. 2004 Apr;70(4):2307-17. Molecular basis for anaerobic growth of Saccharomyces cerevisiae on xylose, investigated by global gene expression and metabolic flux analysis. Sonderegger M, Jeppsson M, Hahn-Hagerdal B, et al.</li>
+							                   	<p class="flip" id="00000008" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000008" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/1d81d3d1ead69410f0fd0a06170bf2d9.xls">download--1d81d3d1ead69410f0fd0a06170bf2d9.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Appl Microbiol Biotechnol. 2012 Aug;95(4):1001-10. Physiological characterization of recombinant Saccharomyces cerevisiae expressing the Aspergillus nidulans phosphoketolase pathway: validation of activity through 13C-based metabolic flux analysis. Papini M, Nookaew I, Siewers V, et al.</li>
+							                   	<p class="flip" id="00000002" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000002" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/547e649983da199465c7f9598df462c1.xls">download--547e649983da199465c7f9598df462c1.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">BMC Syst Biol. 2010 Feb;4:12. Transcriptional regulation of respiration in yeast metabolizing differently repressive carbon substrates. Fendt SM, Sauer U.</li>
+							                   	<p class="flip" id="00000003" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000003" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/c59f306466e7360ec55e88485671cef0.xls">download--c59f306466e7360ec55e88485671cef0.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Bioprocess Biosyst Eng. 2013 Sep;36(9):1261-5. Metabolic flux analysis of genetically engineered Saccharomyces cerevisiae that produces lactate under micro-aerobic conditions. Nagamori E, Shimizu K, Fujita H, et al.</li>
+							                   	<p class="flip" id="00000006" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000006" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/37731f99f295092cc6c6c4ce7715b820.xls">download--37731f99f295092cc6c6c4ce7715b820.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Biotechnol Bioeng. 2004 May;86(3):251-60. Metabolic pathway analysis of yeast strengthens the bridge between transcriptomics and metabolic networks. Cakir T, Kirdar B, Ulgen KO.</li>
+							                   	<p class="flip" id="00000012" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000012" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/28592a4320e566582d094e28ef329b9f.xls">download--28592a4320e566582d094e28ef329b9f.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Eukaryot Cell. 2003 Jun;2(3):599-608. Identification of in vivo enzyme activities in the cometabolism of glucose and acetate by Saccharomyces cerevisiae by using 13C-labeled substrates. dos Santos MM, Gombert AK, Christensen B, et al.</li>
+							                   	<p class="flip" id="00000013" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000013" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/7bbbbee2b2d6609320243c0dea017e0e.xls">download--7bbbbee2b2d6609320243c0dea017e0e.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Genome Biol. 2005;6(6):R49. Large-scale 13C-flux analysis reveals mechanistic principles of metabolic network robustness to null mutations in yeast. Blank LM, Kuepfer L, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0da7caff1dd85dab7a72cfba333bdd13.xls">download--0da7caff1dd85dab7a72cfba333bdd13.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Genome Res. 2005 Oct;15(10):1421-30. Metabolic functions of duplicate genes in Saccharomyces cerevisiae. Kuepfer L, Sauer U, Blank LM.</li>
+							                   	<p class="flip" id="00000009" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000009" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/5a826461a81c8304938e155b0d67c35f.xls">download--5a826461a81c8304938e155b0d67c35f.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Bacteriol. 2001 Feb;183(4):1441-51. Network identification and flux quantification in the central metabolism of Saccharomyces cerevisiae under different conditions of glucose repression. Gombert AK, Moreira dos Santos M, et al.</li>
+							                   	<p class="flip" id="00000010" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000010" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/49c68f12dc250e889464cf4015e13847.xls">download--49c68f12dc250e889464cf4015e13847.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">J Biol Chem. 2004 Mar;279(10):9125-38. Role of transcriptional regulation in controlling fluxes in central carbon metabolism of Saccharomyces cerevisiae. A chemostat culture study. Daran-Lapujade P, Jansen ML, Daran JM, et al.</li>
+							                   	<p class="flip" id="00000011" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000011" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/4f8363e2155a0e81bf04fd2556184b5b.xls">download--4f8363e2155a0e81bf04fd2556184b5b.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2003 Jan;5(1):16-31. Metabolic flux analysis of xylose metabolism in recombinant Saccharomyces cerevisiae using continuous culture. Pitkanen JP, Aristidou A, Salusjarvi L, et al.</li>
+							                   	<p class="flip" id="00000007" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000007" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/d4d49832d88b3ee3171faccba9536710.xls">download--d4d49832d88b3ee3171faccba9536710.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Metab Eng. 2005 Sep-Nov;7(5-6):437-44. Comparative metabolic network analysis of two xylose fermenting recombinant Saccharomyces cerevisiae strains. Grotkjaer T, Christakopoulos P, Nielsen J, et al.</li>
+							                   	<p class="flip" id="00000004" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000004" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/61c6c718da27129364bc43ac2ae98236.xls">download--61c6c718da27129364bc43ac2ae98236.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Microb Cell Fact. 2005 Nov;4:30. Characterization of the metabolic shift between oxidative and fermentative growth in Saccharomyces cerevisiae by comparative 13C flux analysis. Frick O, Wittmann C.</li>
+							                   	<p class="flip" id="00000005" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000005" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0184cea943203cc1d5817f3dea9b18b6.xls">download--0184cea943203cc1d5817f3dea9b18b6.xls</a></span><br/>
+												</div>
+							            
+							                    <li class="flip">Yeast. 2004 Jul;21(9):769-79. Phenotypic characterization of glucose repression mutants of Saccharomyces cerevisiae using experiments with 13C-labelled glucose. Raghevendran V, Gombert AK, Christensen B, et al.</li>
+							                   	<p class="flip" id="00000014" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000014" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/812b5d3de053689efeaad0ba2bf48a54.xls">download--812b5d3de053689efeaad0ba2bf48a54.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Scheffersomyces stipitis</td>
+						            <td>Microb Cell Fact. 2012 Oct;11:136. Scheffersomyces stipitis: a comparative systems biology study with the Crabtree positive yeast Saccharomyces cerevisiae. Papini M, Nookaew I, Uhlen M, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Scheffersomyces stipitis</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Microb Cell Fact. 2012 Oct;11:136. Scheffersomyces stipitis: a comparative systems biology study with the Crabtree positive yeast Saccharomyces cerevisiae. Papini M, Nookaew I, Uhlen M, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/3a33953ec449ca86d20a0b2cb5667949.xls">download--3a33953ec449ca86d20a0b2cb5667949.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Schizosaccharomyces pombe</td>
+						            <td>Appl Microbiol Biotechnol. 2013 Jun;97(11):5013-26. Metabolic fluxes in Schizosaccharomyces pombe grown on glucose and mixtures of glycerol and acetate. Klein T, Heinzle E, Schneider K.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Schizosaccharomyces pombe</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Microbiol Biotechnol. 2013 Jun;97(11):5013-26. Metabolic fluxes in Schizosaccharomyces pombe grown on glucose and mixtures of glycerol and acetate. Klein T, Heinzle E, Schneider K.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ea4b8082e40a59ba2f8eae438459aaa1.xls">download--ea4b8082e40a59ba2f8eae438459aaa1.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Shewanella oneidensis</td>
+						            <td>Appl Environ Microbiol. 2007 Feb;73(3):718-29. Shewanella oneidensis MR-1 fluxome under various oxygen conditions. Tang YJ, Hwang JS, Wemmer DE, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Shewanella oneidensis</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Appl Environ Microbiol. 2007 Feb;73(3):718-29. Shewanella oneidensis MR-1 fluxome under various oxygen conditions. Tang YJ, Hwang JS, Wemmer DE, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/0e0a1abfa36076c8320166cfe67373ca.xls">download--0e0a1abfa36076c8320166cfe67373ca.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Shewanella SPP.</td>
+						            <td>Biotechnol Bioeng. 2009 Mar;102(4):1161-9.  Metabolic flux analysis of Shewanella spp. reveals evolutionary robustness in central carbon metabolism. Tang YJ, Martin HG, Dehal PS, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Shewanella SPP.</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Biotechnol Bioeng. 2009 Mar;102(4):1161-9.  Metabolic flux analysis of Shewanella spp. reveals evolutionary robustness in central carbon metabolism. Tang YJ, Martin HG, Dehal PS, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/05e455ce5011dd08185272f71b1fe110.xls">download--05e455ce5011dd08185272f71b1fe110.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Sinorhizobium meliloti</td>
+						            <td>J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Sinorhizobium meliloti</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Bacteriol. 2005 Mar;187(5):1581-90. Experimental identification and quantification of glucose metabolism in seven bacterial species. Fuhrer T, Fischer E, Sauer U.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/d42f1c6ce1939abbec46b70741c06251.xls">download--d42f1c6ce1939abbec46b70741c06251.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Synechocystis SP.</td>
+						            <td>J Biotechnol. 2003 Oct;105(1-2):117-33. An improved method for statistical analysis of metabolic flux analysis using isotopomer mapping matrices with analytical expressions. Arauzo-Bravo MJ, Shimizu K.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Synechocystis SP.</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">J Biotechnol. 2003 Oct;105(1-2):117-33. An improved method for statistical analysis of metabolic flux analysis using isotopomer mapping matrices with analytical expressions. Arauzo-Bravo MJ, Shimizu K.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/6170974ec7b3cb5b6139dedb7fff55aa.xls">download--6170974ec7b3cb5b6139dedb7fff55aa.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Thermus thermophilus</td>
+						            <td>Metab Eng. 2014 Jul;24:173-80. Metabolic network reconstruction, growth characterization and 13C-metabolic flux analysis of the extremophile Thermus thermophilus HB8. Swarup A, Lu J, DeWoody KC, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Thermus thermophilus</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Metab Eng. 2014 Jul;24:173-80. Metabolic network reconstruction, growth characterization and 13C-metabolic flux analysis of the extremophile Thermus thermophilus HB8. Swarup A, Lu J, DeWoody KC, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ea9e25c3f453bbb6a3426c83d9262633.xls">download--ea9e25c3f453bbb6a3426c83d9262633.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Xanthomonas campestris</td>
+						            <td>Mol Biosyst. 2014 Jul. Metabolic flux pattern of glucose utilization by Xanthomonas campestris pv. campestris: prevalent role of the Entner-Doudoroff pathway and minor fluxes through the pentose phosphate pathway and glycolysis. Schatschneider S, Huber C, Neuweger H,et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Xanthomonas campestris</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Mol Biosyst. 2014 Jul. Metabolic flux pattern of glucose utilization by Xanthomonas campestris pv. campestris: prevalent role of the Entner-Doudoroff pathway and minor fluxes through the pentose phosphate pathway and glycolysis. Schatschneider S, Huber C, Neuweger H,et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/ce8e47d8bc2044ab894e185857254283.xls">download--ce8e47d8bc2044ab894e185857254283.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					        	<tr>
+						            <td>Zymomonas mobilis</td>
+						            <td>Arch Microbiol. 1999 May-Jun;171(6):371-85. Metabolic state of Zymomonas mobilis in glucose-, fructose-, and xylose-fed continuous cultures as analysed by 13C- and 31P-NMR spectroscopy. De Graaf AA, Striegel K, Wittig RM, et al.</td>
+						            <td><div class="arrow"></div></td>
+					        	</tr>
+					        	<tr>
+					        		<td>Zymomonas mobilis</td>
+					        		<td colspan="2">
+						        		<ul>
+						        		
+							                    <li class="flip">Arch Microbiol. 1999 May-Jun;171(6):371-85. Metabolic state of Zymomonas mobilis in glucose-, fructose-, and xylose-fed continuous cultures as analysed by 13C- and 31P-NMR spectroscopy. De Graaf AA, Striegel K, Wittig RM, et al.</li>
+							                   	<p class="flip" id="00000001" align="center" style="color:blue;font:20px Verdana, Geneva, sans-serif;">Click here to see download links</p>
+												<div class="00000001" style="display: none;background-color: #f6f6f6;">
+													<span><a href="./download_files/e39ecc9531673c4753f6c0e17944b1c4.xls">download--e39ecc9531673c4753f6c0e17944b1c4.xls</a></span><br/>
+												</div>
+							                
+							            </ul> 
+						            </td>  
+							    </tr>
+					        
+					    </table>
+				</div>
+				
+<div class="public_footer">
+	<div id="footer">
+					<div class="footer-cols">
+						<div class="col">
+							<h2>Metabolome database</h2><br/>
+							<ul>
+								<li><a target="_blank" href="http://www.hmdb.ca">Human metabolome database</a></li>
+								<li><a target="_blank" href="http://www.ebi.ac.uk/metabolights">Metabolights</a></li>
+								<li><a target="_blank" href="http://www.ecmdb.ca">Seo Ecoli Metabolome Database</a></li>
+							</ul>
+						</div>
+						<div class="col">
+							<h2>Metabolic pathway database</h2>
+							<ul>
+								<li><a target="_blank" href="http://bigg.ucsd.edu">BiGG Database </a></li>
+								<li><a target="_blank" href="http://humanmetabolism.org">Recon X</a></li>
+								<li><a target="_blank" href="http://www.ebi.ac.uk/biomodels-main">Biommodel</a></li>
+							</ul>
+						</div>
+						<div class="col">
+							<h2>Fluxomics</h2><br/>
+							<ul>
+								<li><a target="_blank" href="http://www.13cflux.net">13C-FLUX</a></li>
+								<li><a target="_blank" href="http://www.omix-visualization.com/index.jsp?#sthash.VWHw9Hat.dpbs">OMIX</a></li>
+								<li><a target="_blank" href="http://openflux.sourceforge.net">openFLUX </a></li>
+							</ul>
+						</div>
+						<div class="col">
+							<h2>Homepage</h2><br/>
+							<ul>
+								<li><a target="_blank" href="http://www.imsb.ethz.ch/researchgroup/sauer">Sauer' lab</a></li>
+								<li><a target="_blank" href="http://systemsbiology.ucsd.edu/">Palsson's lab</a></li>
+								<li><a target="_blank" href="http://www.che.udel.edu/mranton/">Antoniewicz'lab</a></li>
+							</ul>
+						</div>
+						<div class="cl">&nbsp;</div>
+					</div>
+					<!-- end of footer-cols -->
+					<div class="footer-bottom">
+						<p class="copy">&copy; Copyright &copy; 2018 <a target="_blank" href="http://ics.gznu.edu.cn">ICS</a> all rights reserved. E-mail:<a href="mailto:cecafdb@163.com">cecafdb@163.com</a>. <a target="_blank" href="http://www.miitbeian.gov.cn/">ICP:14002031</a><script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253212587'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s4.cnzz.com/z_stat.php%3Fid%3D1253212587%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));</script></p>
+					</div>
+				</div>
+</div>
+
+			</div>
+		</div>
+	</div>
+	<!-- end of wrapper -->
+	<script type="text/javascript">
+	    $(document).ready(function(){
+			$(".flip").click(function(){
+				var panel = $(this).attr('id'); 
+   				  $("."+panel).slideToggle("slow");
+  			});
+		});
+    </script>
+</body>
+</html>
