@@ -64,7 +64,7 @@ class InsRxn(mongo_util.MongoUtil):
             case = 0
             case_obj = {}  # {"case_0": {}, "case_1": {}, ...} common elements of a case object
             final_obj = {} # {"case_0": [{rxn_obs_0}, {rxn_obs_1}, {rxn_obs_2}, ...], "case_1": [], ...}
-            if i == 0:
+            if i < 2:
                 continue
             if i == self.max_entries:
                 break
@@ -112,10 +112,12 @@ class InsRxn(mongo_util.MongoUtil):
                     if self.verbose:
                         print(kegg_rxn_id)
                     if kegg_rxn_id.strip() in self.NON_KEGG:  # non kegg description rather than rn:RXXXXXX
+                        print("Condition 0: {}".format(kegg_rxn_id.strip()))
                         s, p = self.parse_rxn_str(row[0])
                         s_n = s
                         p_n = p
                     elif kegg.get(kegg_rxn_id) is None:
+                        print("Condition 1: {}".format(kegg_rxn_id.strip()))
                         s, s_n, p, p_n = self.get_kegg_rxn(kegg_rxn_id)
                         tmp = {"substrates": s,
                                "products": p,
