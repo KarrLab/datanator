@@ -80,7 +80,7 @@ class XRef(mongo_util.MongoUtil):
             try:
                 name = self.ortho.find_one(filter={"orthodb_id": orthodb})["orthodb_name"]
             except TypeError:
-                r = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb)).json()["data"]["name"]
+                name = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb)).json()["data"]["name"]
             obj = {"orthodb_id": orthodb,
                    "orthodb_name": name}
             cache[_id] = obj
