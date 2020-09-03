@@ -1,4 +1,4 @@
-from datanator.schema_2 import add_orthodb_uniprot
+from datanator.schema_2 import add_orthodb
 from datanator_query_python.config import config
 import unittest
 
@@ -9,7 +9,7 @@ class TestTransform(unittest.TestCase):
     def setUpClass(cls):
         conf = config.SchemaMigration()
         cls.des_col = "uniprot"
-        cls.src = add_orthodb_uniprot.AddOrtho(MongoDB=conf.SERVER,
+        cls.src = add_orthodb.AddOrtho(MongoDB=conf.SERVER,
                                                 db="test",
                                                 des_col=cls.des_col,
                                                 username=conf.USERNAME,
