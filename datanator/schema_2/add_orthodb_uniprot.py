@@ -54,7 +54,7 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_ortho()
+    src.add_ortho(skip=10500)
 
 
 if __name__ == "__main__":
