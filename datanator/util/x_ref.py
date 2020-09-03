@@ -71,8 +71,12 @@ class XRef(mongo_util.MongoUtil):
             return cache.get(_id), cache
         else:
             u = self.uniprot.search("id:{}".format(_id),
-                                    columns="database(OrthoDB),database(KO)")
-            orthodb = u.split()[4][:-1]
+                                    columns="database(OrthoDB)")
+            _list = u.split()
+            if len(_list) == 2:
+                return {"orthodb_id": None,
+                        "orthodb_name": None}, cache
+            orthodb = _list[2][:-1]
             name = self.ortho.find_one(filter={"orthodb_id": orthodb})["orthodb_name"]
             obj = {"orthodb_id": orthodb,
                    "orthodb_name": name}

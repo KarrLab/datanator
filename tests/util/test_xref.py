@@ -41,3 +41,5 @@ class TestTransform(unittest.TestCase):
         self.assertEqual(r, {'orthodb_id': '1104596at2759', 'orthodb_name': 'Pyridoxal phosphate-dependent transferase'})
         r, _ = self.src.uniprot_id_to_orthodb("mock", cache)
         self.assertEqual(r, "something")
+        r, _ = self.src.uniprot_id_to_orthodb("A5I6W0")
+        self.assertEqual(r, {'orthodb_id': None, 'orthodb_name': None})
