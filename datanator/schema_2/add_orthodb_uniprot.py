@@ -38,7 +38,7 @@ class AddOrtho(x_ref.XRef):
                 print("Done!")
                 break
             if self.verbose and i % 500 == 0:
-                print("Processing doc {} out of {} ...".format(i*500, count))
+                print("Processing doc {} out of {} ...".format(i*500+skip, count))
             uniprot_id = doc["uniprot_id"]
             obj, _ = self.uniprot_id_to_orthodb(uniprot_id)
             self.collection.update_one({"uniprot_id": uniprot_id},
