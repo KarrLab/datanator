@@ -1,11 +1,24 @@
 from bioservices import *
+from datanator_query_python.util import mongo_util
 import requests
 
 
-class XRef:
-    def __init__(self):
+class XRef(mongo_util.MongoUtil):
+    def __init__(self,
+                 MongoDB=None,
+                 db=None,
+                 des_col=None,
+                 username=None,
+                 password=None,
+                 max_entries=float('inf'),
+                 verbose=True):
+        super().__init__(MongoDB=MongoDB,
+                         db=db,
+                         username=username,
+                         password=password)
         self.kegg = KEGG()
         self.uniprot = UniProt()
+        self.ortho = self.db_obj[des_col]
 
     def get_kegg_rxn(self, _id):
         """Use bioservice to request kegg reaction information.
@@ -60,8 +73,7 @@ class XRef:
             u = self.uniprot.search("id:{}".format(_id),
                                     columns="database(OrthoDB),database(KO)")
             orthodb = u.split()[4][:-1]
-            r = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb))
-            name = r.json()["data"]["name"]
+            name = self.ortho.find_one(filter={"orthodb_id": orthodb})["orthodb_name"]
             obj = {"orthodb_id": orthodb,
                    "orthodb_name": name}
             cache[_id] = obj

@@ -1,4 +1,5 @@
 from datanator.util import x_ref
+from datanator_query_python.config import config
 import unittest
 
 
@@ -6,7 +7,15 @@ class TestTransform(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.src = x_ref.XRef()
+        conf = config.SchemaMigration()
+        cls.des_col = "orthodb"
+        cls.src = x_ref.XRef(MongoDB=conf.SERVER,
+                            db="datanator",
+                            des_col=cls.des_col,
+                            username=conf.USERNAME,
+                            password=conf.PASSWORD,
+                            max_entries=10,
+                            verbose=True)
 
     @classmethod
     def tearDownClass(cls):

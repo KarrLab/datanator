@@ -1,4 +1,5 @@
 from datanator_query_python.util import mongo_util
+from datanator_query_python.config import config
 from pymongo.collation import Collation, CollationStrength
 from datanator.util import file_util
 import csv
@@ -39,10 +40,14 @@ class OrthoDB(mongo_util.MongoUtil):
             x = csv.DictReader(f, fieldnames=["_id", "taxon", "name"],
                                delimiter="\t")
             tmp = []
+            batch = 0
             for i, row in enumerate(x):
                 if i == self.max_entries:
                     break
                 elif i % batch_size == 0 and i != 0:
+                    batch += 1
+                    if self.verbose:
+                        print("Inserting batch number {} ...".format(batch))
                     self.collection.insert_many(tmp)
                     tmp = []
                 else:
@@ -50,4 +55,23 @@ class OrthoDB(mongo_util.MongoUtil):
                            "orthodb_name": row["name"]}
                     tmp.append(obj)
             if len(tmp) != 0:
+                if self.verbose:
+                    print("Inserting last batch.")
                 self.collection.insert_many(tmp)
+            print("Done!")
+
+
+def main():
+    conf = config.DatanatorAdmin()
+    des_col = "orthodb"
+    src = OrthoDB(MongoDB=conf.SERVER,
+                    db="datanator",
+                    des_col="orthodb",
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.pairwise_name_group('./docs/orthodb/odb10v1_OGs.tab')
+
+
+if __name__ == "__main__":
+    main()
