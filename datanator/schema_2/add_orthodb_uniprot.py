@@ -19,6 +19,7 @@ class AddOrtho(x_ref.XRef):
                          max_entries=max_entries)
         self.collection = self.db_obj[des_col]
         self.max_entries = max_entries
+        self.verbose = verbose
 
     def add_ortho(self, skip=0):
         """Add OrthoDB to existing uniprot entries.
@@ -43,3 +44,17 @@ class AddOrtho(x_ref.XRef):
                                        {"$set": {"orthodb_id": obj["orthodb_id"],
                                                  "orthodb_name": obj["orthodb_name"]}})
         print("Done!")
+
+def main():
+    conf = config.DatanatorAdmin()
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db="datanator-test",
+                    des_col="uniprot",
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_ortho()
+
+
+if __name__ == "__main__":
+    main()

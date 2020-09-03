@@ -18,7 +18,7 @@ class XRef(mongo_util.MongoUtil):
                          password=password)
         self.kegg = KEGG()
         self.uniprot = UniProt()
-        self.ortho = self.db_obj[des_col]
+        self.ortho = self.client["datanator"]["orthodb"]
 
     def get_kegg_rxn(self, _id):
         """Use bioservice to request kegg reaction information.
