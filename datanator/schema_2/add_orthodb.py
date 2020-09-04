@@ -76,8 +76,13 @@ class AddOrtho(x_ref.XRef):
                 refseq = row[2]
                 uniprot_id = row[4]
                 doc = self.collection.find_one({"uniprot_id": uniprot_id})
-                if doc is None or doc.get("orthodb_id") is not None:
+                if doc is None:
                     continue
+                elif doc.get("orthodb_id") is not None:  #records already exist
+                    count += 1
+                    if self.verbose and count % 10 == 0:
+                        print("Process row {} with orthodb gene ID {}, doc count {}...".format(i, orthodb_gene, count))
+                    continue 
                 tmp = requests.get("https://www.orthodb.org/search?query={}&limit=1".format(orthodb_gene)).json()["data"]
                 if len(tmp) == 0:
                     continue
