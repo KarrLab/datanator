@@ -73,13 +73,17 @@ class AddOrtho(x_ref.XRef):
                 elif i < skip or row is None:
                     continue
                 orthodb_gene = row[0]
+                refseq = row[2]
+                uniprot_id = row[4]
+                doc = self.collection.find_one({"uniprot_id": uniprot_id})
+                if doc is None or doc.get("orthodb_id") is not None:
+                    continue
                 tmp = requests.get("https://www.orthodb.org/search?query={}&limit=1".format(orthodb_gene)).json()["data"]
                 if len(tmp) == 0:
                     continue
                 else:
                     orthodb_id = tmp[0]               
-                refseq = row[2]
-                uniprot_id = row[4] 
+ 
                 doc = self.orthodb.find_one({"orthodb_id": orthodb_id})
                 if doc is None:
                     r = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb_id)).json()
