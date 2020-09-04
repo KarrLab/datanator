@@ -15,13 +15,14 @@ class TestTransform(unittest.TestCase):
                                     des_col=cls.des_col,
                                     username=conf.USERNAME,
                                     password=conf.PASSWORD,
-                                    max_entries=10,
+                                    max_entries=10000,
                                     verbose=True)
 
     @classmethod
     def tearDownClass(cls):
         cls.src.db_obj.drop_collection(cls.des_col)
 
+    @unittest.skip("passed")
     def test_pairwise_name_group(self):
         url = './docs/orthodb/odb10v1_OGs.tab'
         self.src.pairwise_name_group(url)

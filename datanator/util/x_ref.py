@@ -19,6 +19,7 @@ class XRef(mongo_util.MongoUtil):
         self.kegg = KEGG()
         self.uniprot = UniProt()
         self.ortho = self.client["datanator"]["orthodb"]
+        self.uniprot_col = self.client["datantor-test"]["uniprot"]
 
     def get_kegg_rxn(self, _id):
         """Use bioservice to request kegg reaction information.
@@ -67,8 +68,14 @@ class XRef(mongo_util.MongoUtil):
         Return:
             (:obj:`Obj`): {"orthodb_id": ... "orthodb_name": ...}
         """
+        doc = self.uniprot_col.find_one({"uniprot_id": _id})
         if cache.get(_id) is not None:
             return cache.get(_id), cache
+        elif doc is not None and doc.get("orthodb_id", "norecord") != "norecord": # records in uniprot collection
+            obj = {"orthodb_id": doc["orthodb_id"],
+                   "orthodb_name": doc["orthodb_name"]}
+            cache[_id] = obj
+            return obj, cache 
         else:
             u = self.uniprot.search("id:{}".format(_id),
                                     columns="database(OrthoDB)")
@@ -85,3 +92,21 @@ class XRef(mongo_util.MongoUtil):
                    "orthodb_name": name}
             cache[_id] = obj
             return obj, cache
+        
+    def uniprot_to_interpro(self, _id):
+        """Convert uniprot ID to interpro id.
+
+        Args:
+            (:obj:`str`): Uniprot ID.
+            (:obj:`Obj`, optional): existing x-ref records.
+
+        Return:
+            (:obj:`list`): List of InterPro IDs.
+        """
+        u = self.uniprot.search("id:{}".format(_id),
+                                columns="database(InterPro)")
+        tmp = u.strip().split("\n")
+        if len(tmp) != 1:
+            return tmp[1].split(";")[:-1]
+        else:
+            return []

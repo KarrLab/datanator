@@ -1,6 +1,7 @@
 from datanator_query_python.util import mongo_util
 from datanator_query_python.config import config
 from pymongo.collation import Collation, CollationStrength
+import requests
 from datanator.util import file_util
 import csv
 
@@ -70,7 +71,9 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.pairwise_name_group('./docs/orthodb/odb10v1_OGs.tab')
+    # src.pairwise_name_group('./docs/orthodb/odb10v1_OGs.tab')
+
+    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_genes.tab')
 
 
 if __name__ == "__main__":
