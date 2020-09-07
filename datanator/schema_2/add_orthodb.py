@@ -66,50 +66,84 @@ class AddOrtho(x_ref.XRef):
         with open(url) as f:
             x = csv.reader(f,
                            delimiter="\t")
-            count = 0
+            dic = {}
+            count = 0   # number of orthodb genes
+            uniprot_doc = 0  # number of uniprot doc processed
             for i, row in enumerate(x):
                 if i == self.max_entries:
                     break
                 elif i < skip or row is None:
                     continue
                 orthodb_gene = row[0]
-                refseq = row[2]
-                uniprot_id = row[4]
-                doc = self.collection.find_one({"uniprot_id": uniprot_id})
-                if doc is None:
-                    continue
-                elif doc.get("orthodb_id") is not None:  #records already exist
+                _id = row[1]
+                name = row[2]
+                if self.verbose and i % 500 == 0:
+                    print("Process row {} with orthodb gene ID {} ...".format(i, orthodb_gene)) 
+                if dic.get(orthodb_gene) is None:               # new orthodb gene
                     count += 1
-                    if self.verbose and count % 10 == 0:
-                        print("Process row {} with orthodb gene ID {}, doc count {}...".format(i, orthodb_gene, count))
-                    continue 
-                tmp = requests.get("https://www.orthodb.org/search?query={}&limit=1".format(orthodb_gene)).json()["data"]
-                if len(tmp) == 0:
-                    continue
+                    dic[orthodb_gene] = {name: [_id]}
                 else:
-                    orthodb_id = tmp[0]               
+                    if dic[orthodb_gene].get(name) is None:     # new namespace
+                        dic[orthodb_gene][name] = [_id]
+                    else:
+                        dic[orthodb_gene][name].append(_id)
+                
+                if count % batch_size == 0 and self.verbose:
+                    for key, val in dic.items():
+                        if val.get("UniProt") is None:
+                            continue
+                        else:
+                            add_ids = []                            
+                            uniprot_doc += 1
+                            for k, v in val.items():
+                                if k != "UniProt":
+                                    for l in v:
+                                        add_ids.append({"namespace": k,
+                                                        "value": l})
+                                else:
+                                    add_ids.append({"namespace": "orthodb_gene",
+                                                    "value": key})
+                                    uniprot_id = v[0]
+                            self.collection.update_one({"uniprot_id": uniprot_id},
+                                                       {"$addToSet": {"add_id": {"$each": add_ids}}},
+                                                       upsert=False)
+                            if uniprot_doc % 100 == 0 and self.verbose:
+                                print("     Processing uniprot doc {}... with uniprot_id {}".format(uniprot_doc, uniprot_id))
+                    dic = {}
+                else:
+                    continue
+                    
+
+                # tmp = requests.get("https://www.orthodb.org/search?query={}&limit=1".format(orthodb_gene)).json()["data"]
+                # if len(tmp) == 0:
+                #     continue
+                # else:
+                #     orthodb_id = tmp[0]               
  
-                doc = self.orthodb.find_one({"orthodb_id": orthodb_id})
-                if doc is None:
-                    r = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb_id)).json()
-                    orthodb_name = r["data"]["name"]
-                    self.orthodb.insert_one({"orthodb_id": orthodb_id,
-                                             "orthodb_name": orthodb_name})
-                else:
-                    orthodb_name = doc["orthodb_name"]
-                name = row[7]
-                if uniprot_id != "":
-                    count += 1
-                    if self.verbose and count % 10 == 0:
-                        print("Process row {} with orthodb gene ID {}, doc count {}...".format(i, orthodb_gene, count)) 
-                    self.collection.update_one({"uniprot_id": uniprot_id},
-                                                {"$set": {"orthodb_id": orthodb_id,
-                                                          "orthodb_name": orthodb_name},
-                                                "$addToSet": {"add_id": {"$each": [{"namespace": "orthodb_gene",
-                                                                                    "value": orthodb_gene},
-                                                                                    {"namespace": "refseq",
-                                                                                    "value": refseq}]}}},
-                                                upsert=False)
+                # doc = self.orthodb.find_one({"orthodb_id": orthodb_id})
+                # if doc is None:
+                #     r = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb_id)).json()
+                #     orthodb_name = r["data"]["name"]
+                #     self.orthodb.insert_one({"orthodb_id": orthodb_id,
+                #                              "orthodb_name": orthodb_name})
+                # else:
+                #     orthodb_name = doc["orthodb_name"]
+
+
+    def display_tab(self, _file):
+        """Display rows of tab files.
+
+        Args:
+            _file (:obj:`str`): Location of tab file.
+        """
+        with open(_file) as f:
+            x = csv.reader(f,
+                           delimiter="\t")
+            for i, row in enumerate(x):
+                if i == self.max_entries:
+                    break
+                print(row)
+
 
 def main():
     conf = config.DatanatorAdmin()
@@ -134,8 +168,8 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_genes.tab',
-                          skip=318937)
+    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+                          skip=66500)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
