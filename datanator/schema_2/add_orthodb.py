@@ -130,7 +130,8 @@ class AddOrtho(x_ref.XRef):
                 #     orthodb_name = doc["orthodb_name"]
 
 
-    def display_tab(self, _file):
+    def display_tab(self, _file, 
+                    skip=0, batch_size=100):
         """Display rows of tab files.
 
         Args:
@@ -140,9 +141,42 @@ class AddOrtho(x_ref.XRef):
             x = csv.reader(f,
                            delimiter="\t")
             for i, row in enumerate(x):
-                if i == self.max_entries:
+                if i == self.max_entries + skip:
                     break
+                elif i < skip or row is None:
+                    continue
                 print(row)
+
+    def parse_og2_genes(self, _file, skip=0):
+        """https://v101.orthodb.org/download/odb10v1_OG2genes.tab.gz
+        Only stores top level group {2, 2157, 2759, 10239}
+
+        Args:
+            _file (:obj:`str`): Location of tab file.
+        """
+        with open(_file) as f:
+            x = csv.reader(f,
+                           delimiter="\t")
+            count = 0
+            self.collection.create_index("orthodb_gene")
+            for i, row in enumerate(x):
+                if i == self.max_entries + skip:
+                    break
+                elif i < skip or row is None:
+                    continue
+                og = row[0]
+                gene = row[1]
+                if self.verbose and i % 100 == 0:
+                    print("Processing row {} with gene name {} and og {} ...".format(i, gene, og))
+                if og.endswith("at2") or og.endswith("at2157") or og.endswith("at2759") or og.endswith("at10239"):
+                    count += 1
+                    if self.verbose and count % 100 == 0:
+                        print("Updating doc {} ...".format(count))
+                    self.collection.update_one({"orthodb_gene": gene},
+                                                {"$set": {"top_level_group": og}},
+                                                upsert=True)
+                else:
+                    continue
 
 
 def main():
@@ -159,17 +193,29 @@ def main():
     #                 verbose=True)
     # src.add_ortho(skip=422500)
 
-    # add to uniprot collection
-    db = "datanator-test"
-    des_col = "uniprot"
+    # # add x ref to uniprot collection
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+    #                       skip=66500)
+
+    # add group-gene pairing in new collection.
+    db = "datanator"
+    des_col = "orthodb_gene"
     src = AddOrtho(MongoDB=conf.SERVER,
                     db=db,
                     des_col=des_col,
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-                          skip=66500)
+    src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
+                          skip=0)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
