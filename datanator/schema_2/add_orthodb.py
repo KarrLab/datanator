@@ -135,7 +135,7 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.add_x_ref_uniprot('./docs/orthodb/odb10v1_genes.tab',
-                          skip=9000)
+                          skip=318937)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
