@@ -171,7 +171,7 @@ class AddOrtho(x_ref.XRef):
                 if og.endswith("at2") or og.endswith("at2157") or og.endswith("at2759") or og.endswith("at10239"):
                     count += 1
                     if self.verbose and count % 100 == 0:
-                        print("Updating doc {} ...".format(count))
+                        print("     Updating doc {} ...".format(count))
                     self.collection.update_one({"orthodb_gene": gene},
                                                 {"$set": {"top_level_group": og}},
                                                 upsert=True)
