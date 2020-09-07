@@ -147,7 +147,7 @@ class AddOrtho(x_ref.XRef):
                     continue
                 print(row)
 
-    def parse_og2_genes(self, _file, skip=0):
+    def parse_og2_genes(self, _file, skip=0, batch_size=500):
         """https://v101.orthodb.org/download/odb10v1_OG2genes.tab.gz
         Only stores top level group {2, 2157, 2759, 10239}
 
@@ -158,6 +158,8 @@ class AddOrtho(x_ref.XRef):
             x = csv.reader(f,
                            delimiter="\t")
             count = 0
+            batch = []
+            batch_count = 0
             self.collection.create_index("orthodb_gene")
             for i, row in enumerate(x):
                 if i == self.max_entries + skip:
@@ -168,15 +170,26 @@ class AddOrtho(x_ref.XRef):
                 gene = row[1]
                 if self.verbose and i % 100 == 0:
                     print("Processing row {} with gene name {} and og {} ...".format(i, gene, og))
+
                 if og.endswith("at2") or og.endswith("at2157") or og.endswith("at2759") or og.endswith("at10239"):
                     count += 1
-                    if self.verbose and count % 100 == 0:
-                        print("     Updating doc {} ...".format(count))
-                    self.collection.update_one({"orthodb_gene": gene},
-                                                {"$set": {"top_level_group": og}},
-                                                upsert=True)
-                else:
-                    continue
+                    # if self.verbose and count % 100 == 0:
+                    #     print("     Updating doc {} ...".format(count))
+                    batch.append({"orthodb_gene": gene,
+                                  "top_level_group": og})
+                    # self.collection.update_one({"orthodb_gene": gene},
+                    #                             {"$set": {"top_level_group": og}},
+                    #                             upsert=True)
+
+                if self.verbose and count % batch_size == 0:
+                    batch_count += 1
+                    print("     Inserting batch {} ...".format(batch_count))
+                    self.collection.insert_many(batch)
+                    batch = []
+
+        if len(batch) != 0:
+            self.collection.insert_many(batch)
+            print("Done.")
 
 
 def main():
@@ -215,7 +228,7 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
-                          skip=0)
+                          skip=253100)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
