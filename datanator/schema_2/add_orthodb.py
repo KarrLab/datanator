@@ -180,12 +180,13 @@ class AddOrtho(x_ref.XRef):
                     # self.collection.update_one({"orthodb_gene": gene},
                     #                             {"$set": {"top_level_group": og}},
                     #                             upsert=True)
-
-                if self.verbose and count % batch_size == 0:
-                    batch_count += 1
-                    print("     Inserting batch {} ...".format(batch_count))
-                    self.collection.insert_many(batch)
-                    batch = []
+                    if self.verbose and count % batch_size == 0:
+                        batch_count += 1
+                        print("     Inserting batch {} ...".format(batch_count))
+                        self.collection.insert_many(batch)
+                        batch = []
+                else:
+                    continue
 
         if len(batch) != 0:
             self.collection.insert_many(batch)
@@ -228,7 +229,7 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
-                          skip=253100)
+                          skip=617300)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
