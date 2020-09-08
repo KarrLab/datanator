@@ -229,7 +229,7 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
-                          skip=617300)
+                          skip=4418100)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
