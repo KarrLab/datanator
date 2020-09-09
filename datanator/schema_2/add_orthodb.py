@@ -46,7 +46,7 @@ class AddOrtho(x_ref.XRef):
             if i == self.max_entries:
                 print("Done!")
                 break
-            if self.verbose and i % 50 == 0:
+            if self.verbose and i % 100 == 0:
                 print("Processing doc {} out of {} ...".format(i+skip, count))
             uniprot_id = doc.get("uniprot_id")
             if uniprot_id is None:
@@ -57,7 +57,6 @@ class AddOrtho(x_ref.XRef):
                                                 "orthodb_name": obj["orthodb_name"]}}))
             if len(bulk) == batch_size:
                 print("     Bulk updating...")
-                print(bulk)
                 self.collection.bulk_write(bulk)
                 bulk = []
             else:
@@ -103,6 +102,7 @@ class AddOrtho(x_ref.XRef):
                         dic[orthodb_gene][name].append(_id)
                 
                 if count % batch_size == 0 and self.verbose:
+                    bulk = []
                     for key, val in dic.items():
                         if val.get("UniProt") is None:
                             continue
@@ -118,11 +118,12 @@ class AddOrtho(x_ref.XRef):
                                     add_ids.append({"namespace": "orthodb_gene",
                                                     "value": key})
                                     uniprot_id = v[0]
-                            self.collection.update_one({"uniprot_id": uniprot_id},
-                                                       {"$addToSet": {"add_id": {"$each": add_ids}}},
-                                                       upsert=False)
+                            bulk.append(UpdateOne({"uniprot_id": uniprot_id},
+                                                    {"$addToSet": {"add_id": {"$each": add_ids}}},
+                                                    upsert=False))
                             if uniprot_doc % 100 == 0 and self.verbose:
                                 print("     Processing uniprot doc {}... with uniprot_id {}".format(uniprot_doc, uniprot_id))
+                    self.collection.bulk_write(bulk)
                     dic = {}
                 else:
                     continue
@@ -241,18 +242,7 @@ class AddOrtho(x_ref.XRef):
 def main():
     conf = config.DatanatorAdmin()
 
-    # add to uniprot collection
-    db = "datanator-test"
-    des_col = "uniprot"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.add_ortho(skip=0)
-
-    # # add x ref to uniprot collection
+    # # add to uniprot collection
     # db = "datanator-test"
     # des_col = "uniprot"
     # src = AddOrtho(MongoDB=conf.SERVER,
@@ -261,8 +251,19 @@ def main():
     #                 username=conf.USERNAME,
     #                 password=conf.PASSWORD,
     #                 verbose=True)
-    # src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-    #                       skip=66500)
+    # src.add_ortho(skip=0)
+
+    # add x ref to uniprot collection
+    db = "datanator-test"
+    des_col = "uniprot"
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db=db,
+                    des_col=des_col,
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+                          skip=30507000)
 
     # # add group-gene pairing in new collection.
     # db = "datanator"
