@@ -194,6 +194,35 @@ class AddOrtho(x_ref.XRef):
             print("Done.")
 
 
+    def add_uniprot(self, 
+                url,
+                skip=0):
+        """Add uniprot_id to docs in orthodb_gene collection
+
+        Args:
+            url(:obj:`str`): URL of the file.
+            skip(:obj:`int`, optional): First number of rows to skip.
+        """
+        with open(url) as f:
+            x = csv.reader(f,
+                           delimiter="\t")
+            for i, row in enumerate(x):
+                if i == self.max_entries:
+                    break
+                elif i < skip or row is None:
+                    continue
+                orthodb_gene = row[0]
+                _id = row[1]
+                name = row[2]
+                if self.verbose and i % 500 == 0:
+                    print("Process row {}...".format(i))
+                if name != "UniProt": 
+                    continue
+                else:
+                    self.collection.update_one({"orthodb_gene": orthodb_gene},
+                                               {"$set": {"uniprot_id": _id}},
+                                               upsert=False)
+
 
 def main():
     conf = config.DatanatorAdmin()
@@ -221,17 +250,17 @@ def main():
     # src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
     #                       skip=66500)
 
-    # add group-gene pairing in new collection.
-    db = "datanator"
-    des_col = "orthodb_gene"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
-                          skip=4418100)
+    # # add group-gene pairing in new collection.
+    # db = "datanator"
+    # des_col = "orthodb_gene"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
+    #                       skip=4418100)
 
     # # add to rna_halflife_new collection
     # db = "datanator"
@@ -243,6 +272,18 @@ def main():
     #                 password=conf.PASSWORD,
     #                 verbose=True)
     # src.add_ortho(skip=0)
+
+    # add uniprot_id to orthodb_gene collection
+    db = "datanator"
+    des_col = "orthodb_gene"
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db=db,
+                    des_col=des_col,
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+                    skip=0)
 
 
 if __name__ == "__main__":
