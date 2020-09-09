@@ -29,7 +29,8 @@ class AddOrtho(x_ref.XRef):
 
     def add_ortho(self, skip=0,
                   batch_size=100):
-        """Add OrthoDB to existing uniprot entries.
+        """Add OrthoDB to existing uniprot entries, specifically
+        orthodb_id and orthodb_name
 
         Args:
             skip(:obj:`int`, optional): Skipping for x number of records.
@@ -69,7 +70,7 @@ class AddOrtho(x_ref.XRef):
                 url,
                 batch_size=100,
                 skip=0):
-        """Add orthodb gene id to uniprot_id
+        """Add orthodb gene id to add_id field in uniprot collection
 
         Args:
             (:obj:`str`): URL of the file.
@@ -243,18 +244,7 @@ class AddOrtho(x_ref.XRef):
 def main():
     conf = config.DatanatorAdmin()
 
-    # # add to uniprot collection
-    # db = "datanator-test"
-    # des_col = "uniprot"
-    # src = AddOrtho(MongoDB=conf.SERVER,
-    #                 db=db,
-    #                 des_col=des_col,
-    #                 username=conf.USERNAME,
-    #                 password=conf.PASSWORD,
-    #                 verbose=True)
-    # src.add_ortho(skip=0)
-
-    # add x ref to uniprot collection
+    # add to uniprot collection
     db = "datanator-test"
     des_col = "uniprot"
     src = AddOrtho(MongoDB=conf.SERVER,
@@ -263,8 +253,19 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-                          skip=30517000)
+    src.add_ortho(skip=0)
+
+    # # add x ref to uniprot collection
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+    #                       skip=30517000)
 
     # # add group-gene pairing in new collection.
     # db = "datanator"
