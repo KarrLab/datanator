@@ -68,14 +68,8 @@ class XRef(mongo_util.MongoUtil):
         Return:
             (:obj:`Obj`): {"orthodb_id": ... "orthodb_name": ...}
         """
-        doc = self.uniprot_col.find_one({"uniprot_id": _id})
         if cache.get(_id) is not None:
             return cache.get(_id), cache
-        elif doc is not None and doc.get("orthodb_id", "norecord") != "norecord": # records in uniprot collection
-            obj = {"orthodb_id": doc["orthodb_id"],
-                   "orthodb_name": doc["orthodb_name"]}
-            cache[_id] = obj
-            return obj, cache 
         else:
             u = self.uniprot.search("id:{}".format(_id),
                                     columns="database(OrthoDB)")

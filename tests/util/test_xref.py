@@ -35,7 +35,7 @@ class TestTransform(unittest.TestCase):
         sub, s_n, pro, p_n = self.src.get_kegg_rxn("rn:R00627")
         self.assertEqual(sub, ["ZSLZBFCDCINBPY-ZSJPKINUSA-N", "O[*]"])
 
-    @unittest.skip("passed")
+    # @unittest.skip("passed")
     def test_uniprot_id_to_orthodb(self):
         cache = {"mock": "something"}
         r, _ = self.src.uniprot_id_to_orthodb("P12345")
