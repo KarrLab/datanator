@@ -3,6 +3,7 @@ from datanator_query_python.config import config
 import requests
 import pandas as pd
 import csv
+from pymongo import UpdateOne
 
 
 class AddOrtho(x_ref.XRef):
@@ -26,31 +27,43 @@ class AddOrtho(x_ref.XRef):
         self.max_entries = max_entries
         self.verbose = verbose
 
-    def add_ortho(self, skip=0):
+    def add_ortho(self, skip=0,
+                  batch_size=100):
         """Add OrthoDB to existing uniprot entries.
 
         Args:
-            (:obj:`int`, optional): Skipping for x number of records.
+            skip(:obj:`int`, optional): Skipping for x number of records.
+            batch_size(:obj:`int`, optional): Bulk write size
         """
         query = {"orthodb_id": {"$exists": False}}
         docs = self.collection.find(query,
-                                    projection={"_id": 0, "uniprot_id": 1},
+                                    projection={"_id": 1, "uniprot_id": 1},
                                     skip=skip, 
                                     no_cursor_timeout=True)
         count = self.collection.count_documents(query)
+        bulk = []
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 print("Done!")
                 break
-            if self.verbose and i % 500 == 0:
+            if self.verbose and i % 50 == 0:
                 print("Processing doc {} out of {} ...".format(i+skip, count))
             uniprot_id = doc.get("uniprot_id")
             if uniprot_id is None:
                 continue
             obj, _ = self.uniprot_id_to_orthodb(uniprot_id)
-            self.collection.update_one({"uniprot_id": uniprot_id},
-                                       {"$set": {"orthodb_id": obj["orthodb_id"],
-                                                 "orthodb_name": obj["orthodb_name"]}})
+            bulk.append(UpdateOne({"_id": doc["_id"]},
+                                    {"$set": {"orthodb_id": obj["orthodb_id"],
+                                                "orthodb_name": obj["orthodb_name"]}}))
+            if len(bulk) == batch_size:
+                print("     Bulk updating...")
+                print(bulk)
+                self.collection.bulk_write(bulk)
+                bulk = []
+            else:
+                continue
+        if len(bulk) != 0:
+            self.collection.bulk_write(bulk)
         print("Done!")
 
     def add_x_ref_uniprot(self, 
