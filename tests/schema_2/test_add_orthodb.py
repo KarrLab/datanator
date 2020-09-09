@@ -25,7 +25,7 @@ class TestTransform(unittest.TestCase):
     def test_add_ortho(self):
         self.src.add_ortho()
 
-    @unittest.skip("passed")
+    # @unittest.skip("passed")
     def test_display_tab(self):
         _file = './docs/orthodb/odb10v1_gene_xrefs.tab'
         print(self.src.display_tab(_file, skip=20000))
@@ -34,7 +34,3 @@ class TestTransform(unittest.TestCase):
     def test_add_x_ref_uniprot(self):
         url = './docs/orthodb/odb10v1_gene_xrefs.tab'
         print(self.src.add_x_ref_uniprot(url, batch_size=20, skip=9000))
-
-    def test_query_df(self):
-        _file = './docs/orthodb/odb10v1_gene_xrefs.tab'
-        print(self.src.query_df(_file))
