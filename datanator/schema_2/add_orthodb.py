@@ -123,7 +123,8 @@ class AddOrtho(x_ref.XRef):
                                                     upsert=False))
                             if uniprot_doc % 100 == 0 and self.verbose:
                                 print("     Processing uniprot doc {}... with uniprot_id {}".format(uniprot_doc, uniprot_id))
-                    self.collection.bulk_write(bulk)
+                    if bulk != []:
+                        self.collection.bulk_write(bulk)
                     dic = {}
                 else:
                     continue
@@ -263,7 +264,7 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.add_x_ref_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-                          skip=30507000)
+                          skip=30517000)
 
     # # add group-gene pairing in new collection.
     # db = "datanator"
