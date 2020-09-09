@@ -237,7 +237,7 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_ortho(skip=422500)
+    src.add_ortho(skip=0)
 
     # # add x ref to uniprot collection
     # db = "datanator-test"
