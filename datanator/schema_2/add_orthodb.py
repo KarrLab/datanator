@@ -1,6 +1,7 @@
 from datanator.util import x_ref
 from datanator_query_python.config import config
 import requests
+import pandas as pd
 import csv
 
 
@@ -191,6 +192,21 @@ class AddOrtho(x_ref.XRef):
         if len(batch) != 0:
             self.collection.insert_many(batch)
             print("Done.")
+
+    def query_df(self, url):
+        """Read in ./docs/orthodb/odb10v1_gene_xrefs.tab as DataFrame
+        to find orthodb_gene's corresponding UniProt ID.
+
+        Args:
+            url(:obj:`str`): File location
+        """
+        uniprot_ids = ["Q75IW1", "Q5HPK8", "A3CV25"]
+        with open(url) as f:
+            df = pd.read_csv(f,
+                            delimiter="\t",
+                            names=["a", "b", "c"])
+            for _id in uniprot_ids:
+                print(df.loc[df["c"] == _id])
 
 
 def main():
