@@ -1,6 +1,7 @@
 from bioservices import *
 from datanator_query_python.util import mongo_util
 import requests
+import simplejson
 
 
 class XRef(mongo_util.MongoUtil):
@@ -82,6 +83,9 @@ class XRef(mongo_util.MongoUtil):
                 name = self.ortho.find_one(filter={"orthodb_id": orthodb})["orthodb_name"]
             except TypeError:
                 name = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb)).json()["data"]["name"]
+            except simplejson.errors.JSONDecodeError:
+                return {"orthodb_id": None,
+                        "orthodb_name": None}, cache
             obj = {"orthodb_id": orthodb,
                    "orthodb_name": name}
             cache[_id] = obj
