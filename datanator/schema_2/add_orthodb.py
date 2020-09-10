@@ -212,14 +212,17 @@ class AddOrtho(x_ref.XRef):
 
     def add_uniprot(self, 
                 url,
-                skip=0):
+                skip=0,
+                batch_size=100):
         """Add uniprot_id to docs in orthodb_gene collection
 
         Args:
             url(:obj:`str`): URL of the file.
             skip(:obj:`int`, optional): First number of rows to skip.
         """
+        bulk = []
         with open(url) as f:
+            batch_count = 0
             x = csv.reader(f,
                            delimiter="\t")
             for i, row in enumerate(x):
@@ -235,25 +238,35 @@ class AddOrtho(x_ref.XRef):
                 if name != "UniProt": 
                     continue
                 else:
-                    self.collection.update_one({"orthodb_gene": orthodb_gene},
-                                               {"$set": {"uniprot_id": _id}},
-                                               upsert=False)
+                    bulk.append(UpdateOne({"orthodb_gene": orthodb_gene},
+                                            {"$set": {"uniprot_id": _id}},
+                                            upsert=False))
+                    if len(bulk) == batch_size:
+                        batch_count += 1
+                        print("     Bulk inserting btach {}".format(batch_count))
+                        self.collection.bulk_write(bulk)
+                        bulk = []
+                    else:
+                        continue
+            if len(bulk) != 0:
+                self.collection.bulk_write(bulk)
+                print("Done.")
                                                
 
 
 def main():
     conf = config.DatanatorAdmin()
 
-    # add to uniprot collection
-    db = "datanator-test"
-    des_col = "uniprot"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.add_ortho(skip=0)
+    # # add to uniprot collection
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_ortho(skip=0)
 
     # # add x ref to uniprot collection
     # db = "datanator-test"
@@ -290,17 +303,17 @@ def main():
     #                 verbose=True)
     # src.add_ortho(skip=0)
 
-    # # add uniprot_id to orthodb_gene collection
-    # db = "datanator"
-    # des_col = "orthodb_gene"
-    # src = AddOrtho(MongoDB=conf.SERVER,
-    #                 db=db,
-    #                 des_col=des_col,
-    #                 username=conf.USERNAME,
-    #                 password=conf.PASSWORD,
-    #                 verbose=True)
-    # src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-    #                 skip=39500)
+    # add uniprot_id to orthodb_gene collection
+    db = "datanator"
+    des_col = "orthodb_gene"
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db=db,
+                    des_col=des_col,
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+                    skip=0)
 
 
 if __name__ == "__main__":
