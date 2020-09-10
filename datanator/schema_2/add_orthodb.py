@@ -332,16 +332,16 @@ class AddOrtho(x_ref.XRef):
 def main():
     conf = config.DatanatorAdmin()
 
-    # add to uniprot collection
-    db = "datanator-test"
-    des_col = "uniprot"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.add_ortho(skip=0)
+    # # add to uniprot collection
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_ortho(skip=0)
 
     # # add x ref to uniprot collection
     # db = "datanator-test"
