@@ -249,7 +249,7 @@ class AddOrtho(x_ref.XRef):
                                                     upsert=False))
                     if len(bulk) == batch_size:
                         batch_count += 1
-                        print("     Bulk inserting btach {}".format(batch_count))
+                        print("     Bulk inserting batch {}".format(batch_count))
                         self.collection.bulk_write(bulk)
                         self.uniprot.bulk_write(bulk_uniprot)
                         bulk = []
