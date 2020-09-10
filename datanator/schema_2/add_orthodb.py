@@ -286,8 +286,16 @@ class AddOrtho(x_ref.XRef):
             if self.verbose and i % 50 == 0:
                 print("Processing doc {} out of {}...".format(i + skip, count))            
             name = doc["protein_names"][0]
-            level = self.uniprot.find_one({"uniprot_id": doc["uniprot_id"]},
-                                           projection={"canon_anc_ids": 1})["canon_anc_ids"][1]
+            try:
+                level = self.uniprot.find_one({"uniprot_id": doc["uniprot_id"]},
+                                            projection={"canon_anc_ids": 1})["canon_anc_ids"][1]
+            except TypeError:
+                print("     Cannot find Orthodb group ID for uniprot_id {}".format(doc["uniprot_id"]))
+                bulk.append(UpdateOne({"_id": doc["_id"]},
+                                    {"$set": {"orthodb_id": None,
+                                                "orthodb_name": None}},
+                                    upsert=False))
+                continue
             orthodb_id = self.name_level(name, level=level)
             if orthodb_id == "":  # didn't find anything using protein name, use KEGG instead
                 orthodb_id = self.name_level(doc["ko_number"], level=level)
@@ -379,7 +387,7 @@ def main():
     #                 username=conf.USERNAME,
     #                 password=conf.PASSWORD,
     #                 verbose=True)
-    # src.add_x_ref_rna_halflife(skip=250)
+    # src.add_x_ref_rna_halflife(skip=260)
 
 
 if __name__ == "__main__":
