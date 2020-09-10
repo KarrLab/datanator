@@ -72,8 +72,12 @@ class XRef(mongo_util.MongoUtil):
         if cache.get(_id) is not None:
             return cache.get(_id), cache
         else:
-            u = self.uniprot.search("id:{}".format(_id),
-                                    columns="database(OrthoDB)")
+            try:
+                u = self.uniprot.search("id:{}".format(_id),
+                                        columns="database(OrthoDB)")
+            except TypeError:
+                return {"orthodb_id": None,
+                        "orthodb_name": None}, cache                
             _list = u.split()
             if len(_list) == 2:
                 return {"orthodb_id": None,
