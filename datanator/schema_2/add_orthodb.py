@@ -24,6 +24,7 @@ class AddOrtho(x_ref.XRef):
                          max_entries=max_entries)
         self.collection = self.db_obj[des_col]
         self.orthodb = self.client["datanator"]["orthodb"]
+        self.uniprot = self.client["datanator-test"]["uniprot"]
         self.max_entries = max_entries
         self.verbose = verbose
 
@@ -221,6 +222,7 @@ class AddOrtho(x_ref.XRef):
             skip(:obj:`int`, optional): First number of rows to skip.
         """
         bulk = []
+        bulk_uniprot = []
         with open(url) as f:
             batch_count = 0
             x = csv.reader(f,
@@ -241,16 +243,80 @@ class AddOrtho(x_ref.XRef):
                     bulk.append(UpdateOne({"orthodb_gene": orthodb_gene},
                                             {"$set": {"uniprot_id": _id}},
                                             upsert=False))
+                    bulk_uniprot.append(UpdateOne({"uniprot_id": _id},
+                                                    {"$addToSet": {"add_id": {"namespace": "orthodb_gene",
+                                                                              "value": orthodb_gene}}},
+                                                    upsert=False))
                     if len(bulk) == batch_size:
                         batch_count += 1
                         print("     Bulk inserting btach {}".format(batch_count))
                         self.collection.bulk_write(bulk)
+                        self.uniprot.bulk_write(bulk_uniprot)
                         bulk = []
+                        bulk_uniprot = []
                     else:
                         continue
             if len(bulk) != 0:
                 self.collection.bulk_write(bulk)
                 print("Done.")
+
+    def add_x_ref_rna_halflife(self,
+                               skip=0,
+                               batch_size=100):
+        """Add orthodb_id and orthodb_name to rna_halflives_new collection.
+
+        Args:
+            skip (:obj:`int`, optional): First number of docs to  skip. Defaults to 0.
+            batch_size (:obj:`int`, optional): Bulk write size. Defaults to 100.
+        """
+        con_0 = {"orthodb_id": None}
+        con_1 = {"orthodb_id": {"$exists": False}}
+        query = {"$or": [con_0, con_1]}
+        docs = self.collection.find(filter=query,
+                                    projection={"halflives": 0},
+                                    skip=skip)
+        count = self.collection.count_documents(query)
+        bulk = []
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if doc.get("uniprot_id") is None:
+                continue
+            if self.verbose and i % 50 == 0:
+                print("Processing doc {} out of {}...".format(i, count))            
+            name = doc["protein_names"][0]
+            level = self.uniprot.find_one({"uniprot_id": doc["uniprot_id"]},
+                                           projection={"canon_anc_ids": 1})["canon_anc_ids"][1]
+            orthodb_id = self.name_level(name, level=level)
+            if orthodb_id == "":  # didn't find anything using protein name, use KEGG instead
+                orthodb_id = self.name_level(doc["ko_number"], level=level)
+                if orthodb_id == "": # Still cannot find anything
+                    print("     Cannot find Orthodb group ID for uniprot_id {}".format(doc["uniprot_id"]))
+                    bulk.append(UpdateOne({"_id": doc["_id"]},
+                                        {"$set": {"orthodb_id": None,
+                                                    "orthodb_name": None}},
+                                        upsert=False))
+                    continue
+            tmp = self.orthodb.find_one({"orthodb_id": orthodb_id})
+            if tmp is not None:
+                orthodb_name = tmp["orthodb_name"]
+            else:   # orthodb_id not in collection orthodb
+                orthodb_name = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb_id)).json()["data"]["name"]
+                self.orthodb.insert_one({"orthodb_id": orthodb_id,
+                                        "orthodb_name": orthodb_name})
+            bulk.append(UpdateOne({"_id": doc["_id"]},
+                                  {"$set": {"orthodb_id": orthodb_id,
+                                            "orthodb_name": orthodb_name}},
+                                   upsert=False))
+            if len(bulk) >= batch_size:
+                print("     Bulk insertion...")
+                self.collection.bulk_write(bulk)
+                bulk = []
+            else:
+                continue
+        if len(bulk) != 0:
+            self.collection.bulk_write(bulk)
+        print("Done.")
                                                
 
 
@@ -292,18 +358,7 @@ def main():
     # src.parse_og2_genes('./docs/orthodb/odb10v1_OG2genes.tab',
     #                       skip=4418100)
 
-    # # add to rna_halflife_new collection
-    # db = "datanator"
-    # des_col = "rna_halflife_new"
-    # src = AddOrtho(MongoDB=conf.SERVER,
-    #                 db=db,
-    #                 des_col=des_col,
-    #                 username=conf.USERNAME,
-    #                 password=conf.PASSWORD,
-    #                 verbose=True)
-    # src.add_ortho(skip=0)
-
-    # add uniprot_id to orthodb_gene collection
+    # # add uniprot_id to orthodb_gene collection and add orthodb_gene info to uniprot collection
     db = "datanator"
     des_col = "orthodb_gene"
     src = AddOrtho(MongoDB=conf.SERVER,
@@ -313,7 +368,17 @@ def main():
                     password=conf.PASSWORD,
                     verbose=True)
     src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-                    skip=0)
+                    skip=64249000)
+
+    # db = "datanator"
+    # des_col = "rna_halflife_new"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_x_ref_rna_halflife()
 
 
 if __name__ == "__main__":

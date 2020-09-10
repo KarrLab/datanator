@@ -35,7 +35,7 @@ class TestTransform(unittest.TestCase):
         sub, s_n, pro, p_n = self.src.get_kegg_rxn("rn:R00627")
         self.assertEqual(sub, ["ZSLZBFCDCINBPY-ZSJPKINUSA-N", "O[*]"])
 
-    # @unittest.skip("passed")
+    @unittest.skip("passed")
     def test_uniprot_id_to_orthodb(self):
         cache = {"mock": "something"}
         r, _ = self.src.uniprot_id_to_orthodb("P12345")
@@ -45,8 +45,17 @@ class TestTransform(unittest.TestCase):
         r, _ = self.src.uniprot_id_to_orthodb("A5I6W0")
         self.assertEqual(r, {'orthodb_id': None, 'orthodb_name': None})
 
+    @unittest.skip("passed")
     def test_uniprot_to_interpro(self):
         r = self.src.uniprot_to_interpro("P15367")
         self.assertEqual(['IPR036286', 'IPR019758', 'IPR019756', 'IPR015927', 'IPR001733'], r)
         r = self.src.uniprot_to_interpro("asdfa")
         self.assertEqual([], r)
+
+    def test_name_level(self):
+        name = "F-actin-capping protein subunit alpha"
+        r = self.src.name_level(name)
+        self.assertEqual(r, "1076134at2759")
+        name = "asdfasdf"
+        r = self.src.name_level(name)
+        self.assertEqual(r, "")

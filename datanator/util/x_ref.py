@@ -108,3 +108,23 @@ class XRef(mongo_util.MongoUtil):
             return tmp[1].split(";")[:-1]
         else:
             return []
+
+    def name_level(self,
+                   name,
+                   level=2759,
+                   limit=1):
+        """Given protein name and taxon level, return orthodb group ID.
+
+        Args:
+            name (:obj:`str`): Name of the protein.
+            level (:obj:`int`, optional): Taxon level. Defaults to 2759.
+            limit (:obj:`int`, optional): Number of data to return. Defaults to 1.
+
+        Return:
+            (:obj:`str`): Orthodb Group ID.
+        """
+        tmp = requests.get("https://dev.orthodb.org/search?query={}&limit={}&level={}".format(name, limit, level)).json()["data"]
+        if len(tmp) == 0:
+            return ""
+        else:
+            return tmp[0]
