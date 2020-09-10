@@ -82,10 +82,12 @@ class XRef(mongo_util.MongoUtil):
             try:
                 name = self.ortho.find_one(filter={"orthodb_id": orthodb})["orthodb_name"]
             except TypeError:
-                name = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb)).json()["data"]["name"]
-            except simplejson.errors.JSONDecodeError:
-                return {"orthodb_id": None,
-                        "orthodb_name": None}, cache
+                tmp = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb)).json()["data"]
+                if isinstance(tmp, list):
+                    return {"orthodb_id": None,
+                            "orthodb_name": None}, cache
+                else:
+                    name = tmp["name"]
             obj = {"orthodb_id": orthodb,
                    "orthodb_name": name}
             cache[_id] = obj

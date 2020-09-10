@@ -271,19 +271,20 @@ class AddOrtho(x_ref.XRef):
         """
         con_0 = {"orthodb_id": None}
         con_1 = {"orthodb_id": {"$exists": False}}
-        query = {"$or": [con_0, con_1]}
+        con_2 = {"uniprot_id": {"$ne": None}}
+        comb = {"$or": [con_0, con_1]}
+        query = {"$and": [comb, con_2]}
         docs = self.collection.find(filter=query,
                                     projection={"halflives": 0},
-                                    skip=skip)
+                                    skip=skip,
+                                    no_cursor_timeout=True)
         count = self.collection.count_documents(query)
         bulk = []
         for i, doc in enumerate(docs):
             if i == self.max_entries:
                 break
-            if doc.get("uniprot_id") is None:
-                continue
             if self.verbose and i % 50 == 0:
-                print("Processing doc {} out of {}...".format(i, count))            
+                print("Processing doc {} out of {}...".format(i + skip, count))            
             name = doc["protein_names"][0]
             level = self.uniprot.find_one({"uniprot_id": doc["uniprot_id"]},
                                            projection={"canon_anc_ids": 1})["canon_anc_ids"][1]
@@ -359,26 +360,26 @@ def main():
     #                       skip=4418100)
 
     # # add uniprot_id to orthodb_gene collection and add orthodb_gene info to uniprot collection
-    db = "datanator"
-    des_col = "orthodb_gene"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
-                    skip=64249000)
-
     # db = "datanator"
-    # des_col = "rna_halflife_new"
+    # des_col = "orthodb_gene"
     # src = AddOrtho(MongoDB=conf.SERVER,
     #                 db=db,
     #                 des_col=des_col,
     #                 username=conf.USERNAME,
     #                 password=conf.PASSWORD,
     #                 verbose=True)
-    # src.add_x_ref_rna_halflife()
+    # src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
+    #                 skip=64249000)
+
+    db = "datanator"
+    des_col = "rna_halflife_new"
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db=db,
+                    des_col=des_col,
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_x_ref_rna_halflife(skip=250)
 
 
 if __name__ == "__main__":
