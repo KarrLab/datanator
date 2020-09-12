@@ -271,14 +271,14 @@ def main():
 
 
     # data from "protein" collection
-    # index_name = 'uniprot'
-    # _ = manager.delete_index(index_name)
-    # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB)
-    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
-    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
-    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
-    # _ = manager.create_index_with_file(index_name, setting_file)
-    # _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
+    index_name = 'uniprot'
+    _ = manager.delete_index(index_name)
+    count, docs = manager.data_from_mongo_protein(server, "datanator-test", username, password, authSource=authDB)
+    mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    _ = manager.create_index_with_file(index_name, setting_file)
+    _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
     
     # data from "ecmdb" and "ymdb" collection
     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
@@ -319,11 +319,11 @@ def main():
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
     # # data from "sabio_reaction_entries" collection
-    index_name = 'sabio_reaction_entries'
-    _ = manager.delete_index(index_name)
-    count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
-    r = manager.create_index(index_name)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
+    # index_name = 'sabio_reaction_entries'
+    # _ = manager.delete_index(index_name)
+    # count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
+    # r = manager.create_index(index_name)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
     # data from "rna_halflife" collection
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB)

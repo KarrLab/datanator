@@ -269,11 +269,11 @@ class AddOrtho(x_ref.XRef):
             skip (:obj:`int`, optional): First number of docs to  skip. Defaults to 0.
             batch_size (:obj:`int`, optional): Bulk write size. Defaults to 100.
         """
-        con_0 = {"orthodb_id": None}
+        # con_0 = {"orthodb_id": None}
         con_1 = {"orthodb_id": {"$exists": False}}
         con_2 = {"uniprot_id": {"$ne": None}}
-        comb = {"$or": [con_0, con_1]}
-        query = {"$and": [comb, con_2]}
+        # comb = {"$or": [con_0, con_1]}
+        query = {"$and": [con_1, con_2]}
         docs = self.collection.find(filter=query,
                                     projection={"halflives": 0},
                                     skip=skip,
@@ -296,6 +296,13 @@ class AddOrtho(x_ref.XRef):
                                                 "orthodb_name": None}},
                                     upsert=False))
                 continue
+            except IndexError:
+                print("     Cannot ancestors for uniprot_id {}".format(doc["uniprot_id"]))
+                bulk.append(UpdateOne({"_id": doc["_id"]},
+                                    {"$set": {"orthodb_id": None,
+                                                "orthodb_name": None}},
+                                    upsert=False))
+                continue    
             orthodb_id = self.name_level(name, level=level)
             if orthodb_id == "":  # didn't find anything using protein name, use KEGG instead
                 orthodb_id = self.name_level(doc["ko_number"], level=level)
@@ -372,7 +379,46 @@ class AddOrtho(x_ref.XRef):
             self.collection.bulk_write(bulk)
         print("Done.")
 
+    def final_passthrough(self,
+                          batch_size=500):
+        """Final passthrough of uniprot collection by using orthodb API
+        after x_ref file and uniprot.org have been exhausted.
 
+        Args:
+            batch_size(:obj:`int`): Size of each bulk write
+        """
+        query = {"orthodb_id": None}
+        docs = self.collection.find(filter=query,
+                                    projection={"orthodb_id": 1,
+                                                "canon_ancestor_ids": 1,
+                                                "protein_name": 1})
+        count = self.collection.count_documents(query)
+        bulk = []
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 100 == 0:
+                print("Processing doc {} out of {}...".format(i, count))
+            if len(doc["canon_ancestor_ids"]) <= 1:
+                bulk.append(UpdateOne({"_id": doc["_id"]},
+                                      {"$set": {"orthodb_id": "",
+                                                "orthodb_name": ""}}))
+                continue
+            orthodb_id = self.name_level(doc["protein_name"], level=doc["canon_ancestor_ids"][1])
+            tmp = self.orthodb.find_one(filter={"orthodb_id": orthodb_id})
+            orthodb_name = "" if tmp is None else tmp["orthodb_name"]
+            bulk.append(UpdateOne({"_id": doc["_id"]},
+                                  {"$set": {"orthodb_id": orthodb_id,
+                                            "orthodb_name": orthodb_name}}))
+            if len(bulk) >= batch_size:
+                self.collection.bulk_write(bulk)
+                print("     Bulk updating...")
+                bulk = []
+            else:
+                continue
+        if len(bulk) != 0:
+            self.collection.bulk_write(bulk)
+        print("Done.")    
 
                                                
 
@@ -435,17 +481,27 @@ def main():
     #                 username=conf.USERNAME,
     #                 password=conf.PASSWORD,
     #                 verbose=True)
-    # src.add_x_ref_rna_halflife(skip=320)
+    # src.add_x_ref_rna_halflife()
 
-    db = "datanator"
-    des_col = "rna_modification"
+    # db = "datanator"
+    # des_col = "rna_modification"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.add_x_ref_rna_mod()
+
+    db = "datanator-test"
+    des_col = "uniprot"
     src = AddOrtho(MongoDB=conf.SERVER,
                     db=db,
                     des_col=des_col,
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.add_x_ref_rna_mod()
+    src.final_passthrough()
 
 
 if __name__ == "__main__":
