@@ -26,3 +26,4 @@ sqlalchemy_utils
 tabula_py
 wc_utils
 xmltodict
+aiohttp

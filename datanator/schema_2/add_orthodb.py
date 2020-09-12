@@ -379,46 +379,47 @@ class AddOrtho(x_ref.XRef):
             self.collection.bulk_write(bulk)
         print("Done.")
 
-    def final_passthrough(self,
-                          batch_size=500):
-        """Final passthrough of uniprot collection by using orthodb API
-        after x_ref file and uniprot.org have been exhausted.
+    def ko_passthrough(self,
+                          batch_size=100):
+        """Use KEGG and phylogenetic information to find orthodb group ID.
 
         Args:
             batch_size(:obj:`int`): Size of each bulk write
         """
-        query = {"orthodb_id": None}
-        docs = self.collection.find(filter=query,
-                                    projection={"orthodb_id": 1,
-                                                "canon_ancestor_ids": 1,
-                                                "protein_name": 1})
-        count = self.collection.count_documents(query)
-        bulk = []
-        for i, doc in enumerate(docs):
+        con_0 = {"orthodb_id": ""}
+        con_1 = {"orthodb_id": None}
+        comb = {"$or": [con_0, con_1]}
+        comb_nor = {"$nor": [con_0, con_1]}
+        con_2 = {"ko_number": {"$ne": None}}
+        query = {"$and": [comb, con_2]}
+        kos = self.collection.distinct("ko_number",
+                                        filter=query)
+        ancs = [2, 2157, 2759, 10239]
+        for i, ko in enumerate(kos):
             if i == self.max_entries:
                 break
-            if self.verbose and i % 100 == 0:
-                print("Processing doc {} out of {}...".format(i, count))
-            if len(doc["canon_ancestor_ids"]) <= 1:
-                bulk.append(UpdateOne({"_id": doc["_id"]},
-                                      {"$set": {"orthodb_id": "",
-                                                "orthodb_name": ""}}))
-                continue
-            orthodb_id = self.name_level(doc["protein_name"], level=doc["canon_ancestor_ids"][1])
-            tmp = self.orthodb.find_one(filter={"orthodb_id": orthodb_id})
-            orthodb_name = "" if tmp is None else tmp["orthodb_name"]
-            bulk.append(UpdateOne({"_id": doc["_id"]},
-                                  {"$set": {"orthodb_id": orthodb_id,
-                                            "orthodb_name": orthodb_name}}))
-            if len(bulk) >= batch_size:
-                self.collection.bulk_write(bulk)
-                print("     Bulk updating...")
-                bulk = []
-            else:
-                continue
-        if len(bulk) != 0:
-            self.collection.bulk_write(bulk)
-        print("Done.")    
+            if self.verbose and i % 50 == 0:
+                print("Processing ko {}, {} out of {}...".format(ko, i, len(kos)))
+            for anc in ancs:
+                if self.verbose and i % 50 == 0:
+                    print("     Processing species with ancestor {}...".format(anc))
+                con_3 = {"canon_anc_ids": anc}
+                con_4 = {"ko_number": ko}
+                q = {"$and": [comb_nor, con_3, con_4]}
+                doc = self.collection.find_one(filter=q,
+                                               projection={"orthodb_id": 1,
+                                                           "orthodb_name": 1,
+                                                           "gene_name": 1,
+                                                           "protein_name": 1})
+                if doc is None:
+                    continue
+                else:
+                    orthodb_name = doc["orthodb_name"]
+                    orthodb_id = doc["orthodb_id"]
+                q = {"$and": [comb, con_3, con_4]}
+                self.collection.update_many(q,
+                                            {"$set": {"orthodb_id": orthodb_id,
+                                                      "orthodb_name": orthodb_name}})
 
                                                
 
@@ -501,7 +502,7 @@ def main():
                     username=conf.USERNAME,
                     password=conf.PASSWORD,
                     verbose=True)
-    src.final_passthrough()
+    src.ko_passthrough()
 
 
 if __name__ == "__main__":
