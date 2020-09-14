@@ -18,9 +18,10 @@ class XRef(mongo_util.MongoUtil):
                          username=username,
                          password=password)
         self.kegg = KEGG()
-        self.uniprot = UniProt()
+        self.uniprot_ser = UniProt()
         self.ortho = self.client["datanator"]["orthodb"]
-        self.uniprot_col = self.client["datantor-test"]["uniprot"]
+        self.uniprot_ser_col = self.client["datantor-test"]["uniprot"]
+        self.taxon = self.client["datanator-test"]["taxon_tree"]
 
     def get_kegg_rxn(self, _id):
         """Use bioservice to request kegg reaction information.
@@ -73,7 +74,7 @@ class XRef(mongo_util.MongoUtil):
             return cache.get(_id), cache
         else:
             try:
-                u = self.uniprot.search("id:{}".format(_id),
+                u = self.uniprot_ser.search("id:{}".format(_id),
                                         columns="database(OrthoDB)")
             except TypeError:
                 return {"orthodb_id": None,
@@ -107,7 +108,7 @@ class XRef(mongo_util.MongoUtil):
         Return:
             (:obj:`list`): List of InterPro IDs.
         """
-        u = self.uniprot.search("id:{}".format(_id),
+        u = self.uniprot_ser.search("id:{}".format(_id),
                                 columns="database(InterPro)")
         tmp = u.strip().split("\n")
         if len(tmp) != 1:
@@ -134,3 +135,25 @@ class XRef(mongo_util.MongoUtil):
             return ""
         else:
             return tmp[0]
+
+    def uniprot_taxon(self, _id):
+        """Use uniprot ID to find organism's ancestor information
+
+        Args:
+            _id (:obj:`str`): Uniprot ID of a protein.
+
+        Return:
+            (:obj:`list` of :obj:`int`): List of canon ancestors.
+        """
+        u = self.uniprot_ser.search("id:{}".format(_id),
+                                columns="organism-id")
+        try:
+            tax_id = int(u.split()[2])
+        except IndexError:
+            return []
+        obj = self.taxon.find_one({"tax_id": tax_id},
+                                   projection={"canon_anc_ids": 1})
+        if obj is None:
+            return []
+        else:
+            return obj["canon_anc_ids"]

@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import csv
 from pymongo import UpdateOne
+import json
 
 
 class AddOrtho(x_ref.XRef):
@@ -284,30 +285,34 @@ class AddOrtho(x_ref.XRef):
             if i == self.max_entries:
                 break
             if self.verbose and i % 50 == 0:
-                print("Processing doc {} out of {}...".format(i + skip, count))            
+                print("Processing doc {} out of {}...".format(i + skip, count))
+            uniprot_id = doc["uniprot_id"]
+            obj = self.uniprot.find_one({"uniprot_id": uniprot_id},
+                                        projection={"orthodb_id": 1,
+                                                    "orthodb_name": 1,
+                                                    "ncbi_taxonomy_id": 1})
+            if obj is not None:
+                bulk.append(UpdateOne({"_id": obj["_id"]},
+                                      {"$set": {"orthodb_id": obj["orthodb_id"],
+                                                "orthodb_name": obj["orthodb_name"]}}))
+                if len(bulk) >= batch_size:
+                    print("     Bulk insertion...")
+                    self.collection.bulk_write(bulk)
+                    bulk = []
+                continue            
             name = doc["protein_names"][0]
-            try:
-                level = self.uniprot.find_one({"uniprot_id": doc["uniprot_id"]},
-                                            projection={"canon_anc_ids": 1})["canon_anc_ids"][1]
-            except TypeError:
-                print("     Cannot find Orthodb group ID for uniprot_id {}".format(doc["uniprot_id"]))
-                bulk.append(UpdateOne({"_id": doc["_id"]},
-                                    {"$set": {"orthodb_id": None,
-                                                "orthodb_name": None}},
-                                    upsert=False))
+            level = self.uniprot_taxon(uniprot_id)
+            if level == []:
                 continue
-            except IndexError:
-                print("     Cannot ancestors for uniprot_id {}".format(doc["uniprot_id"]))
-                bulk.append(UpdateOne({"_id": doc["_id"]},
-                                    {"$set": {"orthodb_id": None,
-                                                "orthodb_name": None}},
-                                    upsert=False))
-                continue    
+            elif level[1] not in [2, 2157, 2759]:
+                level = 10239
+            else:
+                level = level[1]
             orthodb_id = self.name_level(name, level=level)
             if orthodb_id == "":  # didn't find anything using protein name, use KEGG instead
                 orthodb_id = self.name_level(doc["ko_number"], level=level)
                 if orthodb_id == "": # Still cannot find anything
-                    print("     Cannot find Orthodb group ID for uniprot_id {}".format(doc["uniprot_id"]))
+                    print("     Cannot find Orthodb group ID for uniprot_id {}".format(uniprot_id))
                     bulk.append(UpdateOne({"_id": doc["_id"]},
                                         {"$set": {"orthodb_id": None,
                                                     "orthodb_name": None}},
@@ -421,7 +426,68 @@ class AddOrtho(x_ref.XRef):
                                             {"$set": {"orthodb_id": orthodb_id,
                                                       "orthodb_name": orthodb_name}})
 
-                                               
+    def final_passthrough(self,
+                          skip=0,
+                          batch_size=100):
+        """Use gene_name or protein_name to identify the remaining protein
+        records without OrthoDB group ID, needs orthodb API.
+
+        Args:
+            batch_size(:obj:`int`): Bulk write size.
+        """
+        con_0 = {"ko_number": None}
+        con_1 = {"orthodb_id": {"$in": [None, ""]}}
+        query = {"$and": [con_0, con_1]}
+        docs = self.collection.find(filter=query,
+                                    projection={"protein_name": 1,
+                                                "gene_name": 1,
+                                                "canon_anc_ids": 1,
+                                                "uniprot_id": 1},
+                                    skip=skip)
+        count = self.collection.count_documents(query)        
+        bulk = []
+        with open("./docs/orthodb/id_cache.json") as f:
+            # try:
+            cache = json.load(f)
+            # except json.decoder.JSONDecodeError:
+            #     cache = {}
+        for i, doc in enumerate(docs):
+            if i == self.max_entries:
+                break
+            if self.verbose and i % 10 == 0:
+                print("Processing doc {} out of {}...".format(i, count))
+                with open("./docs/orthodb/id_cache.json", "w+") as x:
+                    json.dump(cache, x, indent=4)
+            if len(doc.get("canon_anc_ids", [])) <= 1:
+                continue
+            dic_name = doc["protein_name"] if doc["gene_name"] is None else doc["gene_name"]
+            tmp_0 = doc["canon_anc_ids"][1]
+            if tmp_0 not in [2, 2157, 2759]:
+                anc = 10239
+            else:
+                anc = tmp_0
+            tmp_1 = cache.get("{}at{}_id".format(dic_name, anc))
+            if tmp_1 is None:
+                orthodb_id = self.name_level(dic_name, level=anc)
+                cache["{}at{}_id".format(dic_name, anc)] = orthodb_id
+                tmp_2 = self.collection.find_one({"orthodb_id": orthodb_id})
+                orthodb_name = "" if tmp_2 is None else tmp_2["orthodb_name"]
+                cache["{}at{}_name".format(dic_name, anc)] = orthodb_name
+            else:
+                orthodb_id = tmp_1
+                orthodb_name = cache["{}at{}_name".format(dic_name, anc)]
+
+            bulk.append(UpdateOne({"_id": doc["_id"]},
+                                    {"$set": {"orthodb_id": orthodb_id,
+                                            "orthodb_name": orthodb_name}}))
+            if len(bulk) >= batch_size:
+                print("     Bulk writing ...")
+                self.collection.bulk_write(bulk)
+                bulk = []
+        if len(bulk) != 0:
+            self.collection.bulk_write(bulk)
+        print("Done!")
+
 
 
 def main():
@@ -474,15 +540,15 @@ def main():
     # src.add_uniprot('./docs/orthodb/odb10v1_gene_xrefs.tab',
     #                 skip=64249000)
 
-    # db = "datanator"
-    # des_col = "rna_halflife_new"
-    # src = AddOrtho(MongoDB=conf.SERVER,
-    #                 db=db,
-    #                 des_col=des_col,
-    #                 username=conf.USERNAME,
-    #                 password=conf.PASSWORD,
-    #                 verbose=True)
-    # src.add_x_ref_rna_halflife()
+    db = "datanator"
+    des_col = "rna_halflife_new"
+    src = AddOrtho(MongoDB=conf.SERVER,
+                    db=db,
+                    des_col=des_col,
+                    username=conf.USERNAME,
+                    password=conf.PASSWORD,
+                    verbose=True)
+    src.add_x_ref_rna_halflife()
 
     # db = "datanator"
     # des_col = "rna_modification"
@@ -494,15 +560,25 @@ def main():
     #                 verbose=True)
     # src.add_x_ref_rna_mod()
 
-    db = "datanator-test"
-    des_col = "uniprot"
-    src = AddOrtho(MongoDB=conf.SERVER,
-                    db=db,
-                    des_col=des_col,
-                    username=conf.USERNAME,
-                    password=conf.PASSWORD,
-                    verbose=True)
-    src.ko_passthrough()
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.ko_passthrough()
+
+    # db = "datanator-test"
+    # des_col = "uniprot"
+    # src = AddOrtho(MongoDB=conf.SERVER,
+    #                 db=db,
+    #                 des_col=des_col,
+    #                 username=conf.USERNAME,
+    #                 password=conf.PASSWORD,
+    #                 verbose=True)
+    # src.final_passthrough()    
 
 
 if __name__ == "__main__":

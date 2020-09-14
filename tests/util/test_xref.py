@@ -59,3 +59,7 @@ class TestTransform(unittest.TestCase):
         name = "asdfasdf"
         r = self.src.name_level(name)
         self.assertEqual(r, "")
+
+    def test_uniprot_taxon(self):
+        _id = "Q8TUP8"
+        print(self.src.uniprot_taxon(_id))
