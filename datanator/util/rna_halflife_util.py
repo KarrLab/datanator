@@ -4,6 +4,7 @@ from datanator.util import file_util
 from datanator_query_python.util import mongo_util
 from pathlib import Path, PurePath, PurePosixPath
 import math
+from bioservices import *
 import pandas as pd
 
 
@@ -14,7 +15,8 @@ class RnaHLUtil(mongo_util.MongoUtil):
                 max_entries=float('inf'), verbose=False, cache_dir=None):
         super().__init__(MongoDB=server, db=des_db, verbose=verbose, max_entries=max_entries,
         username=username, password=password, authSource=authDB, readPreference=readPreference)
-        _, _, self.rna_hl_collection = self.con_db(rna_col)
+        self.uniprot_ser = UniProt()
+        self.rna_hl_collection = self.client[db][rna_col]
         self.max_entries = max_entries
         self.verbose = verbose
         self.file_manager = file_util.FileUtil()
@@ -137,3 +139,21 @@ class RnaHLUtil(mongo_util.MongoUtil):
                 self.fill_uniprot_by_gn(name, species=species)
             elif identifier_type == 'sequence_embl':
                 self.fill_uniprot_by_embl(name, species=species)
+
+    def gene_tax_to_uniprot(self, gene, tax_id):
+        """Use gene symbol and taxon ID to identify UniProt ID.
+
+        Args:
+            (:obj:`str`): gene symbol.
+            (:obj:`int`): NCBI Taxonomy ID.
+
+        Return:
+            (:obj:`str`): UniProt ID.
+        """
+        query = "{} {}".format(gene, tax_id)
+        s = self.uniprot_ser.search(query, columns="id", limit=1)
+        _list = s.split()
+        if _list == []:
+            return ""
+        else:
+            return _list[1]

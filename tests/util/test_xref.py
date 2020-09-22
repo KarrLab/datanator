@@ -63,3 +63,10 @@ class TestTransform(unittest.TestCase):
     def test_uniprot_taxon(self):
         _id = "Q8TUP8"
         print(self.src.uniprot_taxon(_id))
+
+    def test_gene_tax_to_uniprot(self):
+        gene = "yabM"
+        tax_id = 83333
+        self.assertEqual(self.src.gene_tax_to_uniprot(gene, tax_id), {'orthodb_id': '626204at2', 'orthodb_name': 'Major facilitator superfamily', 'uniprot_id': 'P31675'})
+        gene = "asdferwer"
+        self.assertEqual(self.src.gene_tax_to_uniprot(gene, tax_id), {})

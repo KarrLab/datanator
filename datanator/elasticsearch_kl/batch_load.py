@@ -29,7 +29,7 @@ class MongoToES(es_util.EsUtil):
         self.index = index
 
     def data_from_mongo_protein(self, server, db, username, password, verbose=False,
-                                readPreference='nearest', authSource='admin', projection={'_id': 0},
+                                readPreference='nearest', authSource='admin', projection={'_id': 0, "orthologs": 0, "ortholog": 0},
                                 query={}):
         ''' Acquire documents from protein collection in datanator
 
@@ -270,15 +270,14 @@ def main():
     # _, _, _, = manager.migrate_index(new_index, old_index)
 
 
-    # data from "protein" collection
-    index_name = 'uniprot'
-    _ = manager.delete_index(index_name)
-    count, docs = manager.data_from_mongo_protein(server, "datanator-test", username, password, authSource=authDB)
-    mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
-    _ = manager.create_index_with_file(index_name, setting_file)
-    _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
+    # data from "protein" collection (protein needs more settings adjustment done in karr_lab_aws_manager/elasticsearch_kl/util.py)
+    # index_name = 'protein'
+    # count, docs = manager.data_from_mongo_protein(server, "datanator-test", username, password, authSource=authDB)
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
     
     # data from "ecmdb" and "ymdb" collection
     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 

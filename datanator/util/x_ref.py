@@ -20,7 +20,7 @@ class XRef(mongo_util.MongoUtil):
         self.kegg = KEGG()
         self.uniprot_ser = UniProt()
         self.ortho = self.client["datanator"]["orthodb"]
-        self.uniprot_ser_col = self.client["datantor-test"]["uniprot"]
+        self.uniprot_ser_col = self.client["datanator-test"]["uniprot"]
         self.taxon = self.client["datanator-test"]["taxon_tree"]
 
     def get_kegg_rxn(self, _id):
@@ -72,6 +72,12 @@ class XRef(mongo_util.MongoUtil):
         """
         if cache.get(_id) is not None:
             return cache.get(_id), cache
+        elif self.uniprot_ser_col.find_one({"uniprot_id": _id}) is not None:
+            x = self.uniprot_ser_col.find_one({"uniprot_id": _id})
+            obj = {"orthodb_id": x.get("orthodb_id"),
+                    "orthodb_name": x.get("orthodb_name")}
+            cache[_id] = obj
+            return obj, cache
         else:
             try:
                 u = self.uniprot_ser.search("id:{}".format(_id),
@@ -157,3 +163,24 @@ class XRef(mongo_util.MongoUtil):
             return []
         else:
             return obj["canon_anc_ids"]
+
+    def gene_tax_to_uniprot(self, gene, tax_id):
+        """Use gene symbol and taxon ID to identify UniProt ID.
+
+        Args:
+            (:obj:`str`): gene symbol.
+            (:obj:`int`): NCBI Taxonomy ID.
+
+        Return:
+            (:obj:`str`): UniProt ID.
+        """
+        query = "{} {}".format(gene, tax_id)
+        s = self.uniprot_ser.search(query, columns="id", limit=1)
+        _list = s.split()
+        if _list == []:
+            return {}
+        else:
+            _id = _list[1]
+            obj, _ = self.uniprot_id_to_orthodb(_id)
+            obj["uniprot_id"] = _id
+            return obj
