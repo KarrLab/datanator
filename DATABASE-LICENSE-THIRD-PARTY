@@ -10,9 +10,20 @@ MODOMICS
     License summary: Requests attribution.
     License statement URL: https://iimcb.genesilico.pl/modomics/download
 
+NCBI Taxonomy
+    URL: https://www.ncbi.nlm.nih.gov/taxonomy
+    License summary: Public domain. Information may be freely distributed and copied. Requests attribution.
+    License statement URL: https://www.ncbi.nlm.nih.gov/home/about/policies/#copyright
+
+OrthoDB
+    URL: https://www.orthodb.org
+    License: CC BY 3.0
+    License statement URL: https://www.orthodb.org/?page=disclaimer
+    License URL: https://creativecommons.org/licenses/by/3.0/
+
 PaxDB
     URL: https://pax-db.org
-    License: CC BY-ND 3.0
+    License: CC BY-ND 3.0 for the copyrightable parts of the database
     License statement URL: https://pax-db.org/license
     License URL: https://creativecommons.org/licenses/by-nd/3.0/
 
@@ -26,6 +37,12 @@ SABIO-RK
     URL: http://sabio.h-its.org
     License summary: Grants database for non-commercial research and academic purposes only, excluding as part of any product or service which is licensed. This license is not transferable. Requests attribution.
     License URL: http://sabio.h-its.org/layouts/content/termscondition.gsp
+
+UniProt
+    URL: https://www.uniprot.org
+    License: CC BY 4.0 for the copyrightable parts of the database
+    License statement URL: https://www.uniprot.org/help/license
+    License URL: https://creativecommons.org/licenses/by/4.0/
 
 Yeast Metabolome Database (YMDB)
     URL: http://www.ymdb.ca
