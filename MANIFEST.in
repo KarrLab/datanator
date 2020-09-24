@@ -4,8 +4,8 @@ include README.rst
 # license
 include LICENSE
 
-# quilt3-license
-include DATA_LICENSE
+# database license
+include DATABASE_LICENSE
 
 # requirements
 include requirements.txt
