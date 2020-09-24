@@ -1,0 +1,33 @@
+The Datanator database is composed, in part, from data from several third-party databases. Below is a summary of the licenses of these databases.
+
+E. coli Metabolome Database (ECMDB)
+    URL: https://ecmdb.ca
+    License summary: Offered freely to the public. Use and re-distribution of the data, in whole or in part, for commercial purposes requires permission of the authors and attribution.
+    License statement URL: https://ecmdb.ca/citations
+
+MODOMICS
+    URL: https://iimcb.genesilico.pl/modomics
+    License summary: Requests attribution.
+    License statement URL: https://iimcb.genesilico.pl/modomics/download
+
+PaxDB
+    URL: https://pax-db.org
+    License: CC BY-ND 3.0
+    License statement URL: https://pax-db.org/license
+    License URL: https://creativecommons.org/licenses/by-nd/3.0/
+
+Protein Ontology (PRO)
+    URL: https://proconsortium.org
+    License: CC BY 4.0
+    License statement URL: https://proconsortium.org/download/current/pro_nonreasoned.obo
+    License URL: https://creativecommons.org/licenses/by/4.0/
+
+SABIO-RK
+    URL: http://sabio.h-its.org
+    License summary: Grants database for non-commercial research and academic purposes only.
+    License URL: http://sabio.h-its.org/layouts/content/termscondition.gsp
+
+Yeast Metabolome Database (YMDB)
+    URL: http://www.ymdb.ca
+    License summary: Offered freely to the public. Use and re-distribution of the data, in whole or in part, for commercial purposes requires permission of the authors and attribution.
+    License statement URL: http://www.ymdb.ca/downloads

@@ -40,7 +40,7 @@ python3 -m pytest tests
 ## License
 This software is released open-source under the [MIT license](LICENSE). 
 
-The data aggregated by the software is released under the [CC BY-NC-ND 4.0 license](DATABASE_LICENSE)
+The [copyrightable](https://wiki.creativecommons.org/wiki/Data#Which_components_of_databases_are_protected_by_copyright.3F) parts of the database are released under the [Creative Commons 1.0 Universal (CC0) license](DATABASE-LICENSE). A summary of the licenses of the sources used to build the database is available [here](DATABASE-LICENSE-THIRD-PATRY).
 
 ## Development team
 The model was developed by the [Karr Lab](https://www.karrlab.org) at the Icahn School of Medicine at Mount Sinai in New York, US.
