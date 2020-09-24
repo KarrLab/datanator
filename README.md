@@ -40,10 +40,10 @@ python3 -m pytest tests
 ## License
 We aim to provide data and tools for working with this data with no additional restrictions beyond those imposed by the third-party data sources and software libraries used to construct Datanator.
 
-Due to restrictions by some of the data sources for Datanator, all of the data is released under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC) [License](DATA-LICENSE).
-Some of the data is available under more permissive licenses as summarized [here](DATA-LICENSE-THIRD-PATRY).
+Due to restrictions by some of the data sources for Datanator, all of the data is released under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC) [License](LICENSE-DATA).
+Some of the data is available under more permissive licenses as summarized [here](LICENSE-THIRD-PATRY-DATA).
 
-The structure of the database is released under the Creative Commons 1.0 Universal (CC0) [License](DATABASE-STRUCTURE-LICENSE). This software is released open-source under the [MIT license](LICENSE).
+The structure of the database is released under the Creative Commons 1.0 Universal (CC0) [License](LICENSE-DATABASE-STRUCTURE). This software is released open-source under the [MIT license](LICENSE).
 
 ## Development team
 The model was developed by the [Karr Lab](https://www.karrlab.org) at the Icahn School of Medicine at Mount Sinai in New York, US.
