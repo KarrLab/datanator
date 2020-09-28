@@ -5,6 +5,7 @@ include README.rst
 include LICENSE
 
 # database license
+include LICNESE-DATA
 include LICENSE-DATABASE-STRUCTURE
 include LICENSE-THIRD-PARTRY-DATA
 
