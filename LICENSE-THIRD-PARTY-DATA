@@ -1,4 +1,4 @@
-The Datanator database is composed of data curated from the literature by the Datanator team and data aggregated from third-party databases. The data curated by the Datanator team is available under the Creative Commons 1.0 Universal (CC0) License. Below is a summary of the licenses of the data obtained from each third-party database.
+The Datanator database is a compilation of data curated from the literature by the Datanator team and data aggregated from third-party databases. The data curated by the Datanator team is available under the Creative Commons 1.0 Universal (CC0) License. The data compiled from third-party sources is available under the licenses summarized below.
 
 E. coli Metabolome Database (ECMDB)
     URL: https://ecmdb.ca
@@ -23,9 +23,7 @@ OrthoDB
 
 PaxDB
     URL: https://pax-db.org
-    License: CC BY-ND 3.0 for the copyrightable parts of the database
-    License statement URL: https://pax-db.org/license
-    License URL: https://creativecommons.org/licenses/by-nd/3.0/
+    License summary: The creators have granted Datanator permissions for derivations beyond the CC BY-ND 3.0 license stated at https://pax-db.org/license
 
 Protein Ontology (PRO)
     URL: https://proconsortium.org
