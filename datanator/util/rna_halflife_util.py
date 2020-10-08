@@ -16,7 +16,7 @@ class RnaHLUtil(mongo_util.MongoUtil):
         super().__init__(MongoDB=server, db=des_db, verbose=verbose, max_entries=max_entries,
         username=username, password=password, authSource=authDB, readPreference=readPreference)
         self.uniprot_ser = UniProt()
-        self.rna_hl_collection = self.client[db][rna_col]
+        self.rna_hl_collection = self.client[des_db][rna_col]
         self.max_entries = max_entries
         self.verbose = verbose
         self.file_manager = file_util.FileUtil()

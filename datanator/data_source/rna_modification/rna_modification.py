@@ -82,6 +82,14 @@ class RNAMod(mongo_util.MongoUtil):
                                         {'$addToSet': {'modifications': obj}},
                                         collation=self.collation, upsert=True)
 
+    def fill_dummy_orthodb(self):
+        docs = self.collection.find({})
+        for i, doc in docs:
+            self.collection.update_one({"_id": doc["_id"]},
+                                        {"$set": {"orthodb_id": "dummy_id_{}".format(i),
+                                                  "orthodb_name": "dummy_name_{}".format(i)}})
+        print("Done.")
+
 
 import datanator.config.core
 from pathlib import Path
@@ -127,6 +135,8 @@ def main():
     # file_location = Path('~/karr_lab/datanator/docs/rna_modification/modomics.rrna.tsv').expanduser()
     # manager.fill_trna_collection(file_location, column_names=column_names,
     #                              start_row=None, query='kegg_orthology_name')
+
+    manager.fill_dummy_orthodb()
 
 if __name__ == '__main__':
     main()
