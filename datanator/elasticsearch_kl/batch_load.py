@@ -374,7 +374,7 @@ def main():
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
 
-    # data from "rna_modification" collection
+    # # data from "rna_modification" collection
     # index_name = 'rna_modification'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)

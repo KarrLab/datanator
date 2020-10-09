@@ -4,6 +4,7 @@ import simplejson as json
 from pymongo import UpdateOne
 from pymongo.errors import BulkWriteError
 from pprint import pprint
+import requests
 
 
 class MigrateUniprot:
@@ -15,6 +16,7 @@ class MigrateUniprot:
         self.to_database = to_database
         self.from_collection = motor_client_manager.client.get_database(from_database)[collection]
         self.to_collection = motor_client_manager.client.get_database(to_database)[collection]
+        self.orthodb = motor_client_manager.client.get_database(from_database)["orthodb"]
         self.max_entries = max_entries
 
     def index_primary(self, _key, background=True):
@@ -86,14 +88,53 @@ class MigrateUniprot:
             except BulkWriteError as bwe:
                 pprint(bwe.details)
             finally:
-                print("Done.")   
+                print("Done.")
+
+    async def fill_orthodb_name(self):
+        """Fill docs where orthodb_id exists but orthodb_name is ""
+        """   
+        query = {"$and": [{"orthodb_id": {"$ne": ""}}, {"orthodb_name": ""}]}
+        docs = self.to_collection.find(filter=query,
+                                        projection={"_id": 1,
+                                                    "orthodb_id": 1})
+        count = await self.to_collection.count_documents(query)
+        cache = {}
+        bulk = []
+        i = 0
+        async for doc in docs:
+            i += 1
+            if i == self.max_entries:
+                break
+            if i != 0 and i % 50 == 0:
+                print("Processing doc {} out of {}...".format(i, count))
+            orthodb_id = doc["orthodb_id"]
+            if cache.get(orthodb_id) is not None:
+                orthodb_name = cache[orthodb_id]
+            else:
+                tmp = await self.orthodb.find_one({"orthodb_id": orthodb_id})
+                if tmp is None:
+                    orthodb_name = requests.get("https://dev.orthodb.org/group?id={}".format(orthodb_id)).json()["data"]["name"]
+                else:
+                    orthodb_name = tmp["orthodb_name"]
+                cache[orthodb_id] = orthodb_name
+            bulk.append(UpdateOne({'_id': doc["_id"]}, {'$set': {"orthodb_name": orthodb_name}}, upsert=False))
+            if len(bulk) >= 100:
+                await self.to_collection.bulk_write(bulk)
+                bulk = []
+                print("     Bulk inserting ...")
+        if len(bulk) != 0:
+            await self.to_collection.bulk_write(bulk)
+            print("Done")
+
 
 
 def main():
     loop = asyncio.get_event_loop()
     src = MigrateUniprot()
-    src.index_primary('uniprot_id')
-    loop.run_until_complete(src.process_cursor(skip=11000))
+
+    # src.index_primary('uniprot_id')
+    # loop.run_until_complete(src.process_cursor(skip=11000))
+    loop.run_until_complete(src.fill_orthodb_name())
 
 if __name__ == '__main__':
     main()

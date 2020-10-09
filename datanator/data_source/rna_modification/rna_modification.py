@@ -84,7 +84,7 @@ class RNAMod(mongo_util.MongoUtil):
 
     def fill_dummy_orthodb(self):
         docs = self.collection.find({})
-        for i, doc in docs:
+        for i, doc in enumerate(docs):
             self.collection.update_one({"_id": doc["_id"]},
                                         {"$set": {"orthodb_id": "dummy_id_{}".format(i),
                                                   "orthodb_name": "dummy_name_{}".format(i)}})
@@ -136,7 +136,7 @@ def main():
     # manager.fill_trna_collection(file_location, column_names=column_names,
     #                              start_row=None, query='kegg_orthology_name')
 
-    manager.fill_dummy_orthodb()
+    # manager.fill_dummy_orthodb()
 
 if __name__ == '__main__':
     main()
