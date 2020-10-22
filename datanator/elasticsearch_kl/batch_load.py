@@ -250,7 +250,7 @@ class MongoToES(es_util.EsUtil):
         count = collection.count_documents(query)
         return (count, docs)
 
-    def data_from_entity(self, server, db, username, password, verbose=False,
+    def data_from_schema_v2(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin',
                                 query={}, collection_str='entity', limit=0):
         ''' Acquire documents from entity collection in datanator-demo
@@ -419,6 +419,19 @@ def main():
     # x = manager.create_index_with_file(index_name, setting_file)
     # print(x.text)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+
+    # data from "entity" collection
+    index_name = 'entity'
+    _ = manager.delete_index(index_name)
+    count, docs = manager.data_from_schema_v2(server, "datanator-demo", username, password, authSource=authDB, collection_str=index_name, limit=20)
+    print(count)
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
+    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
+    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
+    x = manager.create_index_with_file(index_name, setting_file)
+    print(x.text)
+    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+
 
 
     r = manager.index_health_status()
