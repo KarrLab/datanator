@@ -423,8 +423,10 @@ def main():
     # data from "entity" collection
     index_name = 'entity'
     _ = manager.delete_index(index_name)
-    count, docs = manager.data_from_schema_v2(server, "datanator-demo", username, password, authSource=authDB, collection_str=index_name, limit=20)
-    print(count)
+    limit = 200
+    count, docs = manager.data_from_schema_v2(server, "datanator-demo", username, password, authSource=authDB, collection_str=index_name, limit=limit)
+    if limit < count:
+        count = limit
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
     index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
     setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
