@@ -3,6 +3,7 @@ from datanator_query_python.query import (query_protein, query_metabolites,
 from datanator_query_python.config import config as config_mongo
 from karr_lab_aws_manager.elasticsearch_kl import index_setting_file
 from datanator.util import mongo_util
+from datanator_query_python.util import mongo_util as dqp_mongo_util
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
 import json
 from pathlib import Path
@@ -249,6 +250,38 @@ class MongoToES(es_util.EsUtil):
         count = collection.count_documents(query)
         return (count, docs)
 
+    def data_from_entity(self, server, db, username, password, verbose=False,
+                                readPreference='nearest', authSource='admin',
+                                query={}, collection_str='entity', limit=0):
+        ''' Acquire documents from entity collection in datanator-demo
+
+            Args:
+                server (:obj:`str`): mongodb ip address
+                db (:obj:`str`): database name
+                username (:obj:`str`): username for mongodb login
+                password (:obj:`str`): password for mongodb login
+                verbose (:obj:`bool`): display verbose messages
+                readPreference (:obj:`str`): mongodb readpreference
+                authSource (:obj:`str`): database login info is authenticating against
+                projection (:obj:`str`): mongodb query projection
+                query (:obj:`str`): mongodb query filter
+                collection_str(:obj:`str`): Name of collection.
+                limit(:obj:`int`): Number of documents to be returned.
+
+            Returns:
+                (:obj:`tuple`): tuple containing:
+
+                    docs (:obj:`pymongo.Cursor`): pymongo cursor object that points to all documents in protein collection;
+                    count (:obj:`int`): number of documents returned
+        '''
+        mongo_manager = dqp_mongo_util.MongoUtil(MongoDB=server, username=username,
+                                                password=password, authSource=authSource, db=db,
+                                                readPreference=readPreference)
+        collection = mongo_manager.client[db][collection_str]
+        docs = collection.find(filter=query, limit=limit)
+        count = collection.count_documents(query)
+        return (count, docs)
+
 
 
 def main():
@@ -379,9 +412,12 @@ def main():
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
     # print(count)
-    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
-    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
-    # _ = manager.create_index_with_file(index_name, setting_file)
+    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)     
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
+    # _ = manager.put_mapping(index_name, setting_file)
+    # x = manager.create_index_with_file(index_name, setting_file)
+    # print(x.text)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
 

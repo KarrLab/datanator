@@ -1,7 +1,8 @@
 import datanator.config.core
-from datanator.util import mongo_util
+from datanator_query_python.util import mongo_util
 from datanator.util import file_util, chem_util
 from datanator.util import molecule_util
+from datanator_query_python.config import config
 import requests
 from xml import etree
 import libsbml
@@ -19,24 +20,23 @@ import logging
 import pymongo
 
 
-class SabioRk:
+class SabioRk(mongo_util.MongoUtil):
 
     def __init__(self, cache_dirname=None, MongoDB=None, replicaSet=None, db=None,
                  verbose=False, max_entries=float('inf'), username=None,
                  password=None, authSource='admin', webservice_batch_size=50,
                  excel_batch_size=50):
+        super().__init__(MongoDB=MongoDB,
+                         db=db,
+                         username=username,
+                         password=password,
+                         verbose=verbose,
+                         max_entries=max_entries)
         self.cache_dirname = cache_dirname
-        self.MongoDB = MongoDB
-        self.replicaSet = replicaSet
-        self.db = db
         self.verbose = verbose
         self.max_entries = max_entries
-        self.client, self.db_obj, self.collection = mongo_util.MongoUtil(
-            MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_rk')
-        self.client, self.db_obj, self.collection_compound = mongo_util.MongoUtil(
-            MongoDB=MongoDB, db=db, username=username, password=password,
-            authSource=authSource).con_db('sabio_compound')
+        self.collection = self.db_obj["sabio_rk"]
+        self.collection_compound = self.db_obj["sabio_compound"]
         self.excel_batch_size = excel_batch_size
         self.ENDPOINT_DOMAINS = {
             'sabio_rk': 'http://sabiork.h-its.org',
@@ -108,17 +108,16 @@ class SabioRk:
         # if len(exisitng_ids) != 0:
         #     new_ids.append(exisitng_ids[-1])
         # new_ids.sort()
-        new_ids = []
-        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
-        print(doc['kinlaw_id'])
-        last_modified = doc['parameters'][0]['modified']
-        query = {'parameters.modified': {'$lte': last_modified}}
-        loaded_new_ids = ids_to_process(ids, query)        
+        # doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)])
+        # last_modified = doc['parameters'][0]['modified']
+        # query = {'parameters.modified': {'$lte': last_modified}}
+        query = {}
+        # loaded_new_ids = ids_to_process(ids, query)        
 
         if self.verbose:
-            print('Downloading {} kinetic laws ...'.format(len(loaded_new_ids)))
+            print('Downloading {} kinetic laws ...'.format(len(ids)))
 
-        missing_ids = self.load_kinetic_laws(loaded_new_ids)
+        missing_ids = self.load_kinetic_laws(ids)
         if self.verbose:
             print('  done')
 
@@ -127,9 +126,9 @@ class SabioRk:
 
         # fill in missing information from Excel export
         # query = {'mechanism': {'$exists': False}}
-        doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
-        last_modified = doc['parameters'][0]['modified']
-        query = {'parameters.modified': {'$lte': last_modified}}
+        # doc = self.collection.find_one(filter={}, projection={'kinlaw_id': 1,'parameters': 1}, sort=[('kinlaw_id', -1)], limit=1)
+        # last_modified = doc['parameters'][0]['modified']
+        # query = {'parameters.modified': {'$lte': last_modified}}
         loaded_new_ids = ids_to_process(ids, query)
 
         if self.verbose:
@@ -142,18 +141,18 @@ class SabioRk:
 
         # ##################################
         # ##################################
-        # # fill in missing information from HTML pages
-        # constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
-        # constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
-        # query = {'$and':[constraint_0, constraint_1]}
-        # loaded_new_ids = ids_to_process(ids, query)
+        # fill in missing information from HTML pages
+        constraint_0 = {'enzyme.subunits.uniprot': {'$exists': True}}
+        constraint_1 = {'enzyme.subunits.coefficient': {'$exists': False}}
+        query = {'$and':[constraint_0, constraint_1]}
+        loaded_new_ids = ids_to_process(ids, query)
 
-        # if self.verbose:
-        #     print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
+        if self.verbose:
+            print('Updating {} kinetic laws ...'.format(len(loaded_new_ids)))
 
-        # self.load_missing_enzyme_information_from_html(loaded_new_ids)
-        # if self.verbose:
-        #     print('  done')
+        self.load_missing_enzyme_information_from_html(loaded_new_ids)
+        if self.verbose:
+            print('  done')
 
         ##################################
         ##################################
@@ -170,18 +169,18 @@ class SabioRk:
 
         # ##################################
         # ##################################
-        # constraint_0 = {'products.structures': {'$exists': True}}
-        # # constraint_1 = {'products.structures.InChI_Key': {'$exists': True}}
-        # constraint_1 = {'reactants.structures': {'$exists': True}}
-        # query = {'$or': [constraint_0, constraint_1]}
-        # loaded_new_ids = ids_to_process(ids, query)
-        # if self.verbose:
-        #     print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
+        constraint_0 = {'products.structures': {'$exists': True}}
+        # constraint_1 = {'products.structures.InChI_Key': {'$exists': True}}
+        constraint_1 = {'reactants.structures': {'$exists': True}}
+        query = {'$or': [constraint_0, constraint_1]}
+        loaded_new_ids = ids_to_process(ids, query)
+        if self.verbose:
+            print('Adding {} inchikey values ...'.format(len(loaded_new_ids)))
 
-        # self.add_inchi_hash(loaded_new_ids)
+        self.add_inchi_hash(loaded_new_ids)
 
-        # if self.verbose:
-        #     print('  Completed')
+        if self.verbose:
+            print('  Completed')
 
     def load_kinetic_law_ids(self):
         """ Download the IDs of all of the kinetic laws stored in SABIO-RK
@@ -1018,7 +1017,7 @@ class SabioRk:
                                                 'tissue': law['tissue'],
                                                 'mechanism': law['mechanism'],
                                                 'modified': datetime.datetime.utcnow()} },
-                                       upsert=False)
+                                       upsert=True)
 
     def get_parameter_by_properties(self, kinetic_law, parameter_properties):
         """ Get the parameter of :obj:`kinetic_law` whose attribute values are 
@@ -1064,6 +1063,8 @@ class SabioRk:
         parameters = list(filter(func, kinetic_law['parameters']))
         if len(parameters) == 1:
             return parameters[0]
+
+        return None
 
     def infer_compound_structures_from_names(self, compounds):
         """ Try to use PubChem to infer the structure of compounds from their names
@@ -1509,20 +1510,11 @@ class SabioRk:
 
 
 def main():
-    db = 'datanator'
-    username = datanator.config.core.get_config()[
-        'datanator']['mongodb']['user']
-    password = datanator.config.core.get_config(
-    )['datanator']['mongodb']['password']
-    MongoDB = datanator.config.core.get_config(
-    )['datanator']['mongodb']['server']
-    port = datanator.config.core.get_config(
-    )['datanator']['mongodb']['port']
-    replSet = datanator.config.core.get_config(
-    )['datanator']['mongodb']['replSet']
-    manager = SabioRk(MongoDB=MongoDB, db=db,
-                        verbose=True, username=username,
-                        password=password)
+    conf = config.DatanatorAdmin()
+    manager = SabioRk(MongoDB=conf.SERVER, db="test",
+                        verbose=True, username=conf.USERNAME,
+                        password=conf.PASSWORD,
+                        max_entries=100)
     manager.load_content()
 
 
