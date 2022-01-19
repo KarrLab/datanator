@@ -5,6 +5,7 @@ from karr_lab_aws_manager.elasticsearch_kl import index_setting_file
 from datanator.util import mongo_util
 from datanator_query_python.util import mongo_util as dqp_mongo_util
 from karr_lab_aws_manager.elasticsearch_kl import util as es_util
+from pymongo import ASCENDING
 import json
 from pathlib import Path
 
@@ -31,7 +32,7 @@ class MongoToES(es_util.EsUtil):
 
     def data_from_mongo_protein(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin', projection={'_id': 0, "orthologs": 0, "ortholog": 0},
-                                query={}):
+                                query={}, skip=0):
         ''' Acquire documents from protein collection in datanator
 
             Args:
@@ -54,7 +55,7 @@ class MongoToES(es_util.EsUtil):
         protein_manager = query_protein.QueryProtein(server=server, database=db,
                  verbose=verbose, username=username, authSource=authSource,
                  password=password, readPreference=readPreference)
-        docs = protein_manager.collection.find(filter=query, projection=projection)
+        docs = protein_manager.collection.find(filter=query, projection=projection, skip=skip).sort('uniprot_id', ASCENDING)
         count = protein_manager.collection.count_documents(query)
         return (count, docs)
 
@@ -96,7 +97,7 @@ class MongoToES(es_util.EsUtil):
 
     def data_from_mongo_metabolites_meta(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin', projection={'_id': 0},
-                                query={}):
+                                query={}, skip=0):
         ''' Acquire documents from metabolites_meta collection in datanator
 
             Args:
@@ -119,7 +120,14 @@ class MongoToES(es_util.EsUtil):
         manager = query_metabolites_meta.QueryMetabolitesMeta(MongoDB=server, db=db,
                  collection_str='metabolites_meta', verbose=verbose, username=username,
                  password=password, authSource=authSource, readPreference=readPreference)
-        docs = manager._collection.find(filter=query, projection=projection)
+        docs = manager._collection.aggregate(
+            [
+                {'$match': query},
+                {'$sort': {'InChI_Key': 1}}, 
+                {'$skip': skip},
+                {'$project': projection},
+            ], allowDiskUse=True
+        )
         for doc in docs:
             if doc['InChI_Key'] is None:
                 continue    
@@ -135,7 +143,7 @@ class MongoToES(es_util.EsUtil):
 
     def data_from_mongo_sabiork(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin', projection={'_id': 0},
-                                query={}):
+                                query={}, skip=0):
         ''' Acquire documents from protein collection in datanator
 
             Args:
@@ -158,7 +166,7 @@ class MongoToES(es_util.EsUtil):
         sabio_manager = query_sabiork_old.QuerySabioOld(MongoDB=server, db=db,
                  verbose=verbose, username=username, authSource=authSource,
                  password=password, readPreference=readPreference)
-        docs = sabio_manager.collection.find(filter=query, projection=projection)
+        docs = sabio_manager.collection.find(filter=query, projection=projection, skip=skip).sort('kinlaw_id', ASCENDING)
         count = sabio_manager.collection.count_documents(query)
         return (count, docs)
 
@@ -193,7 +201,8 @@ class MongoToES(es_util.EsUtil):
 
     def data_from_mongo(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin',
-                                query={}, collection_str='rna_halflife_new'):
+                                query={}, collection_str='rna_halflife_new',
+                                skip=0):
         ''' Acquire documents from protein collection in datanator
 
             Args:
@@ -216,13 +225,13 @@ class MongoToES(es_util.EsUtil):
                                             password=password, authSource=authSource, db=db,
                                             readPreference=readPreference)
         _, _, collection = mongo_manager.con_db(collection_str)
-        docs = collection.find(filter=query)
-        count = collection.count_documents(query)
+        docs = collection.find(filter=query, skip=skip)
+        count = collection.count_documents(query) - skip
         return (count, docs)
 
     def data_from_mongo_kegg_orthology(self, server, db, username, password, verbose=False,
                                 readPreference='nearest', authSource='admin',
-                                query={}, collection_str='kegg_orthology'):
+                                query={}, collection_str='kegg_orthology', skip=0):
         ''' Acquire documents from protein collection in datanator
 
             Args:
@@ -246,7 +255,13 @@ class MongoToES(es_util.EsUtil):
                                             password=password, authSource=authSource, db=db,
                                             readPreference=readPreference)
         _, _, collection = mongo_manager.con_db(collection_str)
-        docs = collection.find(filter=query)
+        docs = collection.aggregate(
+            [
+                {'$match': query}, 
+                {'$sort': {'kegg_orthology_id': 1}},
+                {'$skip': skip},
+            ], allowDiskUse=True
+        )
         count = collection.count_documents(query)
         return (count, docs)
 
@@ -297,22 +312,18 @@ def main():
     filter_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/filters/autocomplete_filter.json'
     analyzer_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/analyzers/auto_complete.json'
     
-    # old_index = 'protein'
-    # new_index = 'protein_something'
-    # _, _, _, = manager.migrate_index(old_index, new_index)
-    # _, _, _, = manager.migrate_index(new_index, old_index)
-
-
-    # data from "protein" collection (protein needs more settings adjustment done in karr_lab_aws_manager/elasticsearch_kl/util.py)
+    # # data from "protein" collection (protein needs more settings adjustment done in karr_lab_aws_manager/elasticsearch_kl/util.py)
+    # # Because of the size of the collection, one might need to run this multiple times due to timeouts. Use skip to skip the records
+    # # already processed. The default batch size is 100, so the skip number should be bulk_number * 100 + previous_skip
     # index_name = 'protein'
-    # count, docs = manager.data_from_mongo_protein(server, "datanator-test", username, password, authSource=authDB)
+    # count, docs = manager.data_from_mongo_protein(server, db, username, password, authSource=authDB, skip=0)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/protein.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, count=count, index=index_name, _id='uniprot_id')
     
-    # data from "ecmdb" and "ymdb" collection
+    # # data from "ecmdb" and "ymdb" collection
     # ecmdb_docs, ecmdb_count, ymdb_docs, ymdb_count = manager.data_from_mongo_metabolite(server, 
     #                                                 db, username, password, authSource=authDB)
     # ecmdb = 'ecmdb'
@@ -321,7 +332,7 @@ def main():
     # ecmdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ecmdb_mappings_dir)
     # ecmdb_setting_file = ecmdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(ecmdb, ecmdb_setting_file)
-    # status = manager.data_to_es_bulk(ecmdb_docs, index=ecmdb, count=ecmdb_count, _id='m2m_id')
+    # _ = manager.data_to_es_bulk(ecmdb_docs, index=ecmdb, count=ecmdb_count, _id='m2m_id')
 
     # ymdb = 'ymdb'
     # _ = manager.delete_index(ymdb)
@@ -329,110 +340,107 @@ def main():
     # ymdb_index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=ymdb_mappings_dir)
     # ymdb_setting_file = ymdb_index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(ymdb, ymdb_setting_file)    
-    # status = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
+    # _ = manager.data_to_es_bulk(ymdb_docs, index=ymdb, count=ymdb_count, _id='ymdb_id')
 
-    # data from "metabolites_meta" collection
+    # # data from "metabolites_meta" collection
     # index_name = 'metabolites_meta'
+    # skip = 0
     # _ = manager.delete_index(index_name)
-    # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB)
+    # docs = manager.data_from_mongo_metabolites_meta(server, db, username, password, authSource=authDB, skip=skip)
     # # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/metabolites_meta.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_single(5225, docs, index_name, _id='InChI_Key')
 
-    # data from "sabio_rk_old" collection
-    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB)
+    # # data from "sabio_rk_old" collection
     # index_name = 'sabio_rk'
+    # skip = 0
+    # count, docs = manager.data_from_mongo_sabiork(server, db, username, password, authSource=authDB, skip=skip)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/sabio_rk.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kinlaw_id')
 
-    # # data from "sabio_reaction_entries" collection
+    # # # data from "sabio_reaction_entries" collection
     # index_name = 'sabio_reaction_entries'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo_sabiork_rxn_entries(server, db, username, password, authSource=authDB)
     # r = manager.create_index(index_name)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='rxn_id')
 
-    # data from "rna_halflife" collection
+    # # data from "rna_halflife" collection
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB)
     # print(count)
-    # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
+    # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_hafllife.json').expanduser())
     # with open(index_schema_path) as json_file:
     #     index_schema = json.load(json_file)
     # _ = manager.create_index('rna_halflife')
     # _ = manager.data_to_es_bulk(docs, index='rna_halflife', count=count, _id='_id')
 
-    # data from "taxon_tree" collection
+    # # data from "taxon_tree" collection
     # index_name = 'taxon_tree'
-    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
+    # skip = 0
+    # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name, skip=skip)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/taxon_tree.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='tax_id')
 
-    # data from "kegg_orthology" collection
-    # count, docs = manager.data_from_mongo_kegg_orthology(server, db, username, password, authSource=authDB)
+    # # data from "kegg_orthology" collection
     # index_name = 'kegg_orthology'
-    # _ = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
-    # with open(index_schema_path) as json_file:
-    #     index_schema = json.load(json_file)
+    # # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
+    # # with open(index_schema_path) as json_file:
+    # #     index_schema = json.load(json_file)
+    # skip = 0
+    # count, docs = manager.data_from_mongo_kegg_orthology(server, db, username, password, authSource=authDB, skip=skip)
     # _ = manager.delete_index(index_name)
     # _ = manager.create_index(index_name)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='kegg_orthology_id')
 
-    # data from "brenda_reactions" collection
+    # # data from "brenda_reactions" collection
     # index_name = 'brenda_reactions'
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    # print(count)    
-    # index_schema_path = str(Path('/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_halflife.json').expanduser())
-    # with open(index_schema_path) as json_file:
-    #     index_schema = json.load(json_file)
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
-    # data from "metabolite_concentrations" collection
+    # # data from "metabolite_concentrations" collection
     # index_name = 'metabolite_concentrations'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    # print(count)
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     # _ = manager.create_index_with_file(index_name, setting_file)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='inchikey')
 
-    # # data from "rna_modification" collection
+    # # # data from "rna_modification" collection
     # index_name = 'rna_modification'
     # _ = manager.delete_index(index_name)
     # count, docs = manager.data_from_mongo(server, db, username, password, authSource=authDB, collection_str=index_name)
-    # print(count)
     # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
     # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir, mapping_properties_dir=mappings_dir)     
     # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=True)
     # _ = manager.put_mapping(index_name, setting_file)
+    # _ = manager.create_index_with_file(index_name, setting_file)
+    # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
+
+    # # data from "entity" collection
+    # index_name = 'entity'
+    # _ = manager.delete_index(index_name)
+    # limit = 200
+    # count, docs = manager.data_from_schema_v2(server, "datanator-demo", username, password, authSource=authDB, collection_str=index_name, limit=limit)
+    # if limit < count:
+    #     count = limit
+    # # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
+    # index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
+    # setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
     # x = manager.create_index_with_file(index_name, setting_file)
     # print(x.text)
     # _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
-
-    # data from "entity" collection
-    index_name = 'entity'
-    _ = manager.delete_index(index_name)
-    limit = 200
-    count, docs = manager.data_from_schema_v2(server, "datanator-demo", username, password, authSource=authDB, collection_str=index_name, limit=limit)
-    if limit < count:
-        count = limit
-    # mappings_dir = '/root/karr_lab/karr_lab_aws_manager/karr_lab_aws_manager/elasticsearch_kl/mappings/rna_modification.json'
-    index_manager = index_setting_file.IndexUtil(filter_dir=filter_dir, analyzer_dir=analyzer_dir)     
-    setting_file = index_manager.combine_files(_filter=True, analyzer=True, mappings=False)
-    x = manager.create_index_with_file(index_name, setting_file)
-    print(x.text)
-    _ = manager.data_to_es_bulk(docs, index=index_name, count=count, _id='_id')
 
 
 
